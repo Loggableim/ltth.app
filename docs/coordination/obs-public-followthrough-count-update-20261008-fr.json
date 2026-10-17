@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-08",
+  "sourceBase": "d65a54891f6ba1d055e95fda70d0df696d5299f0",
+  "kind": "incremental synthetic-fixture supplement; not full matrix re-audit",
+  "publicCases": 68,
+  "directCpuFollowthrough": 52,
+  "partialCpuFollowthrough": 2,
+  "missingCpuFollowthrough": 14,
+  "addedCase": "weather-control:fr",
+  "previousSupplement": "obs-public-followthrough-count-update-20261008.json",
+  "obsPassed": 0,
+  "obsDocumented": 104,
+  "test": "app/test/weather-control-fr-renderer-effect-fixture.test.js",
+  "testSha256": "53d602b2fe92d23ec3c2497df5532ea4b286da2f2529e1d993bd8f827d2b6de1",
+  "result": "1 suite / 1 test PASS",
+  "limits": "French document locale seeded; no translated backend/pixel/browser/OBS/live proof"
+}

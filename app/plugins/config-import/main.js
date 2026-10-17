@@ -17,6 +17,9 @@ const os = require('os');
 const crypto = require('crypto');
 const Database = require('better-sqlite3');
 const { MAX_BACKUP_SIZE_BYTES } = require('../../modules/backup/validators');
+const { redactLocalPaths } = require('../../modules/backup/redact-local-paths');
+const { assertSelectionConfirmed, selectionFromOptions } = require('../../modules/backup/selection');
+const { canonicalizePluginId } = require('../../modules/plugin-identities');
 const legacyDiscoveryPath = require.resolve('../../modules/legacy-config-discovery');
 delete require.cache[legacyDiscoveryPath];
 const {
@@ -26,6 +29,77 @@ const {
 
 const TOKEN_TTL_MS = 60000;          // One-time download tokens expire after 60 s
 const TOKEN_CLEANUP_TTL_MS = 120000; // Remove stale tokens after 120 s
+const IMPORT_CONFIRMATION_TTL_MS = 5 * 60 * 1000;
+const EXPORT_PREVIEW_TTL_MS = 5 * 60 * 1000;
+const OPAQUE_EXPORT_CATEGORIES = Object.freeze([
+    'globalSettings', 'pluginSettings', 'profileDatabases', 'userData', 'pluginFiles', 'uploads',
+    'profileScopedPluginData', 'schnorrbecherPersistentState'
+]);
+
+function isExplicitConfirmation(value) {
+    if (value === true) return true;
+    return typeof value === 'string' && ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+}
+
+function hashBackupFile(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        const stream = fs.createReadStream(filePath);
+        stream.on('error', reject);
+        stream.on('data', chunk => hash.update(chunk));
+        stream.on('end', () => resolve(hash.digest('hex')));
+    });
+}
+
+function normalizeImportOptions(body = {}) {
+    const toBoolean = (value, fallback = false) => {
+        if (value === undefined || value === null || value === '') return fallback;
+        if (typeof value === 'boolean') return value;
+        if (typeof value === 'string') {
+            const normalised = value.trim().toLowerCase();
+            if (['false', '0', 'no', 'off'].includes(normalised)) return false;
+            if (['true', '1', 'yes', 'on'].includes(normalised)) return true;
+            throw new Error('Invalid boolean import option');
+        }
+        if (typeof value === 'number' && (value === 0 || value === 1)) return value === 1;
+        throw new Error('Invalid boolean import option');
+    };
+    let pluginFilter = null;
+    if (body.pluginFilter) {
+        const parsedFilter = typeof body.pluginFilter === 'string' ? JSON.parse(body.pluginFilter) : body.pluginFilter;
+        if (!Array.isArray(parsedFilter) || parsedFilter.some(id => typeof id !== 'string' || !id.trim())) {
+            throw new Error('Invalid plugin filter');
+        }
+        pluginFilter = [...new Set(parsedFilter.map(canonicalizePluginId))].sort();
+    }
+
+    const mode = body.mode === undefined || body.mode === null || body.mode === '' ? 'replace' : body.mode;
+    if (mode !== 'merge' && mode !== 'replace') throw new Error('Invalid import mode');
+
+    return {
+        mode,
+        includeGlobalSettings: toBoolean(body.includeGlobalSettings, true),
+        includePluginSettings: toBoolean(body.includePluginSettings, true),
+        includePluginData: toBoolean(body.includePluginData, true),
+        includeUserConfigs: toBoolean(body.includeUserConfigs, true),
+        includeUploads: toBoolean(body.includeUploads, true),
+        includeUserData: toBoolean(body.includeUserData, true),
+        includeProfileScopedPluginData: toBoolean(body.includeProfileScopedPluginData, false),
+        includeLegacyQuizShowDatabase: toBoolean(body.includeLegacyQuizShowDatabase, false),
+        includeSchnorrbecherPersistentState: toBoolean(body.includeSchnorrbecherPersistentState, false),
+        targetProfile: typeof body.targetProfile === 'string' ? body.targetProfile : null,
+        pluginFilter,
+        confirmProfileReplacement: toBoolean(body.confirmProfileReplacement, false)
+    };
+}
+
+function importSensitivityRisk(manifest) {
+    const selected = manifest?.dataSelection;
+    if (selected?.sensitiveDataIncluded === true) return 'sensitive';
+    // The archive's manifest and its checksums are self-asserted, not signed.
+    // Even an explicit false therefore cannot establish provenance.
+    return 'unknown';
+}
 
 class ConfigImportPlugin {
     constructor(api) {
@@ -175,6 +249,8 @@ class ConfigImportPlugin {
 
         // Map of one-time download tokens: token -> { opts, timestamp, filename }
         this._exportTokens = new Map();
+        this._exportPreviews = new Map();
+        this._importConfirmations = new Map();
 
         // Store uploads in the OS temp directory
         const upload = multer({
@@ -193,6 +269,29 @@ class ConfigImportPlugin {
                 }
             }
         });
+        const uploadSingleBackup = upload.single('backup');
+        const uploadBackup = (req, res, next) => {
+            uploadSingleBackup(req, res, error => {
+                if (!error) return next();
+                this.api.log(`Backup upload rejected: ${error.message}`, 'warn');
+                const status = error.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+                return res.status(status).json({ success: false, error: 'Backup upload rejected' });
+            });
+        };
+        const reportInternalError = (res, operation, error) => {
+            this.api.log(`${operation}: ${redactLocalPaths(error.message)}`, 'error');
+            if (!res.headersSent) {
+                res.status(500).type('application/json').json({ success: false, error: `${operation} failed` });
+            }
+        };
+        const setSensitiveExportHeaders = res => {
+            res.setHeader('Cache-Control', 'no-store');
+            res.setHeader('Referrer-Policy', 'no-referrer');
+        };
+        const rejectInvalidBackup = (res) => res.status(400).json({
+            success: false,
+            errors: ['Backup file is invalid or unsafe.']
+        });
 
         const parseBooleanOption = (value, defaultValue) => {
             if (value === undefined || value === null || value === '') {
@@ -208,6 +307,87 @@ class ConfigImportPlugin {
             }
             return Boolean(value);
         };
+        const normalizeExportSelection = body => selectionFromOptions({
+            globalSettings: parseBooleanOption(body.globalSettings ?? body.includeGlobalSettings, true),
+            pluginSettings: parseBooleanOption(body.pluginSettings ?? body.includePluginSettings, true),
+            profileDatabases: parseBooleanOption(body.profileDatabases ?? body.includeUserConfigs, true),
+            userData: parseBooleanOption(body.userData ?? body.includeUserData, true),
+            pluginFiles: parseBooleanOption(body.pluginFiles ?? body.includePluginData, true),
+            uploads: parseBooleanOption(body.uploads ?? body.includeUploads, true),
+            profileScopedPluginData: parseBooleanOption(body.profileScopedPluginData ?? body.includeProfileScopedPluginData, false),
+            schnorrbecherPersistentState: parseBooleanOption(body.schnorrbecherPersistentState ?? body.includeSchnorrbecherPersistentState, false),
+            credentialsAndSessions: parseBooleanOption(body.credentialsAndSessions ?? body.includeCredentialsSessions, false)
+        });
+        const canonicalExportOptions = body => {
+            const selection = normalizeExportSelection(body);
+            const pluginFilter = Array.isArray(body.pluginFilter) && body.pluginFilter.length > 0
+                ? [...new Set(body.pluginFilter
+                    .filter(id => typeof id === 'string' && id.trim())
+                    .map(canonicalizePluginId))].sort()
+                : null;
+            return { selection, pluginFilter };
+        };
+        const hasUnclassifiedContentRisk = selection => OPAQUE_EXPORT_CATEGORIES.some(category => selection[category]);
+        const buildExportOptions = (selection, pluginFilter, body) => ({
+            includeGlobalSettings: selection.globalSettings,
+            includePluginSettings: selection.pluginSettings,
+            includePluginData: selection.pluginFiles,
+            includeUserConfigs: selection.profileDatabases,
+            includeUploads: selection.uploads,
+            includeUserData: selection.userData,
+            profileScopedDataPlugins: selection.profileScopedPluginData
+                ? require('../../modules/backup/profile-scoped-data').PROFILE_SCOPED_PLUGIN_DATA
+                : [],
+            includeSchnorrbecherPersistentState: selection.schnorrbecherPersistentState,
+            includeCredentialsSessions: selection.credentialsAndSessions,
+            confirmSensitiveExport: isExplicitConfirmation(body.confirmSensitiveExport),
+            confirmFullBackup: isExplicitConfirmation(body.confirmFullBackup),
+            confirmUnclassifiedData: isExplicitConfirmation(body.confirmUnclassifiedData),
+            pluginFilter
+        });
+        const getUnclassifiedConfirmationError = (selection, body) => {
+            if (hasUnclassifiedContentRisk(selection) && !isExplicitConfirmation(body.confirmUnclassifiedData)) {
+                return 'Selected settings, databases, or file contents may include unclassified personal or secret data; explicit confirmation is required';
+            }
+            return null;
+        };
+        const getExportConfirmationError = body => {
+            try {
+                assertSelectionConfirmed({
+                    ...normalizeExportSelection(body),
+                    confirmSensitiveExport: isExplicitConfirmation(body.confirmSensitiveExport),
+                    confirmFullBackup: isExplicitConfirmation(body.confirmFullBackup)
+                });
+                return null;
+            } catch (error) {
+                return error.message;
+            }
+        };
+
+        this.api.registerRoute('POST', '/api/config-backup/preview-export', (req, res) => {
+            setSensitiveExportHeaders(res);
+            try {
+                const backupManager = this.getBackupManager();
+                if (!backupManager) return res.status(503).json({ success: false, error: 'Backup system not available' });
+                const body = req.body || {};
+                const { selection, pluginFilter } = canonicalExportOptions(body);
+                const preview = backupManager.previewExport(selection);
+                const now = Date.now();
+                for (const [token, entry] of this._exportPreviews) {
+                    if (now - entry.timestamp > EXPORT_PREVIEW_TTL_MS) this._exportPreviews.delete(token);
+                }
+                const exportPreviewToken = crypto.randomBytes(32).toString('hex');
+                const unclassifiedContentRisk = hasUnclassifiedContentRisk(selection);
+                this._exportPreviews.set(exportPreviewToken, {
+                    options: JSON.stringify({ selection, pluginFilter }),
+                    unclassifiedContentRisk,
+                    timestamp: now
+                });
+                return res.json({ success: true, preview, exportPreviewToken, unclassifiedContentRisk });
+            } catch (error) {
+                return reportInternalError(res, 'Backup export preview', error);
+            }
+        });
 
         // GET /api/config-backup/capabilities
         this.api.registerRoute('GET', '/api/config-backup/capabilities', (req, res) => {
@@ -218,42 +398,26 @@ class ConfigImportPlugin {
                 }
                 res.json({ success: true, ...backupManager.getCapabilities() });
             } catch (error) {
-                this.api.log(`Capabilities error: ${error.message}`, 'error');
-                res.status(500).json({ success: false, error: error.message });
+                reportInternalError(res, 'Backup capabilities', error);
             }
         });
 
         // POST /api/config-backup/export
         this.api.registerRoute('POST', '/api/config-backup/export', async (req, res) => {
+            setSensitiveExportHeaders(res);
             try {
                 const backupManager = this.getBackupManager();
                 if (!backupManager) {
                     return res.status(503).json({ success: false, error: 'Backup system not available' });
                 }
 
-                const {
-                    includeGlobalSettings = true,
-                    includePluginSettings = true,
-                    includePluginData = true,
-                    includeUserConfigs = true,
-                    includeUploads = true,
-                    includeUserData = true,
-                    pluginFilter = null
-                } = req.body || {};
-
-                const opts = {
-                    includeGlobalSettings: parseBooleanOption(includeGlobalSettings, true),
-                    includePluginSettings: parseBooleanOption(includePluginSettings, true),
-                    includePluginData: parseBooleanOption(includePluginData, true),
-                    includeUserConfigs: parseBooleanOption(includeUserConfigs, true),
-                    includeUploads: parseBooleanOption(includeUploads, true),
-                    includeUserData: parseBooleanOption(includeUserData, true),
-                    profileScopedDataPlugins: parseBooleanOption((req.body || {}).includeProfileScopedPluginData, false)
-                        ? require('../../modules/backup/profile-scoped-data').PROFILE_SCOPED_PLUGIN_DATA
-                        : [],
-                    includeSchnorrbecherPersistentState: parseBooleanOption((req.body || {}).includeSchnorrbecherPersistentState, false),
-                    pluginFilter: Array.isArray(pluginFilter) && pluginFilter.length > 0 ? pluginFilter : null
-                };
+                const body = req.body || {};
+                const { selection, pluginFilter } = canonicalExportOptions(body);
+                const opts = buildExportOptions(selection, pluginFilter, body);
+                const confirmationError = getExportConfirmationError(req.body || {});
+                if (confirmationError) return res.status(400).json({ success: false, error: confirmationError });
+                const unclassifiedConfirmationError = getUnclassifiedConfirmationError(selection, body);
+                if (unclassifiedConfirmationError) return res.status(400).json({ success: false, error: unclassifiedConfirmationError });
                 if (opts.profileScopedDataPlugins.length && !opts.includePluginData) {
                     return res.status(400).json({ success: false, error: 'Profile-scoped plugin data requires Plugin Data Files to be enabled' });
                 }
@@ -271,56 +435,47 @@ class ConfigImportPlugin {
 
                 // Pipe warnings into response headers before streaming
                 if (warnings && warnings.length > 0) {
-                    res.setHeader('X-Backup-Warnings', JSON.stringify(warnings.slice(0, 10)));
+                    res.setHeader('X-Backup-Warnings', JSON.stringify(warnings.slice(0, 10).map(redactLocalPaths)));
                 }
 
                 stream.on('error', err => {
-                    this.api.log(`Export stream error: ${err.message}`, 'error');
-                    if (!res.headersSent) {
-                        res.status(500).json({ success: false, error: err.message });
-                    }
+                    reportInternalError(res, 'Backup export stream', err);
                 });
 
                 stream.pipe(res);
             } catch (error) {
-                this.api.log(`Export error: ${error.message}`, 'error');
-                if (!res.headersSent) {
-                    res.status(500).json({ success: false, error: error.message });
-                }
+                reportInternalError(res, 'Backup export', error);
             }
         });
 
         // POST /api/config-backup/export-token  – issue a one-time download token
         this.api.registerRoute('POST', '/api/config-backup/export-token', async (req, res) => {
+            setSensitiveExportHeaders(res);
             try {
                 const backupManager = this.getBackupManager();
                 if (!backupManager) {
                     return res.status(503).json({ success: false, error: 'Backup system not available' });
                 }
 
-                const {
-                    includeGlobalSettings = true,
-                    includePluginSettings = true,
-                    includePluginData = true,
-                    includeUserConfigs = true,
-                    includeUploads = true,
-                    includeUserData = true,
-                    pluginFilter = null
-                } = req.body || {};
-
-                const opts = {
-                    includeGlobalSettings: parseBooleanOption(includeGlobalSettings, true),
-                    includePluginSettings: parseBooleanOption(includePluginSettings, true),
-                    includePluginData: parseBooleanOption(includePluginData, true),
-                    includeUserConfigs: parseBooleanOption(includeUserConfigs, true),
-                    includeUploads: parseBooleanOption(includeUploads, true),
-                    includeUserData: parseBooleanOption(includeUserData, true),
-                    profileScopedDataPlugins: parseBooleanOption((req.body || {}).includeProfileScopedPluginData, false)
-                        ? require('../../modules/backup/profile-scoped-data').PROFILE_SCOPED_PLUGIN_DATA
-                        : [],
-                    includeSchnorrbecherPersistentState: parseBooleanOption((req.body || {}).includeSchnorrbecherPersistentState, false),
-                    pluginFilter: Array.isArray(pluginFilter) && pluginFilter.length > 0 ? pluginFilter : null
-                };
+                const body = req.body || {};
+                const { selection, pluginFilter } = canonicalExportOptions(body);
+                const opts = buildExportOptions(selection, pluginFilter, body);
+                const confirmationError = getExportConfirmationError(body);
+                if (confirmationError) return res.status(400).json({ success: false, error: confirmationError });
+                const unclassifiedConfirmationError = getUnclassifiedConfirmationError(selection, body);
+                if (unclassifiedConfirmationError) return res.status(400).json({ success: false, error: unclassifiedConfirmationError });
+                const previewToken = typeof body.exportPreviewToken === 'string' ? body.exportPreviewToken : '';
+                const previewEntry = this._exportPreviews.get(previewToken);
+                const previewMatches = previewEntry && previewEntry.options === JSON.stringify({ selection, pluginFilter });
+                const previewIsFresh = previewEntry && Date.now() - previewEntry.timestamp <= EXPORT_PREVIEW_TTL_MS;
+                if (!previewEntry || !previewMatches || !previewIsFresh) {
+                    if (previewEntry) this._exportPreviews.delete(previewToken);
+                    return res.status(400).json({ success: false, error: 'Export preview expired or selection changed. Preview again before export.' });
+                }
+                if (previewEntry.unclassifiedContentRisk && !opts.confirmUnclassifiedData) {
+                    return res.status(400).json({ success: false, error: 'Selected settings, databases, or file contents may include unclassified personal or secret data; explicit confirmation is required' });
+                }
+                this._exportPreviews.delete(previewToken);
                 if (opts.profileScopedDataPlugins.length && !opts.includePluginData) {
                     return res.status(400).json({ success: false, error: 'Profile-scoped plugin data requires Plugin Data Files to be enabled' });
                 }
@@ -339,18 +494,18 @@ class ConfigImportPlugin {
                 const token = crypto.randomBytes(16).toString('hex');
                 const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
                 const filename = `ltth-backup-${timestamp}.zip`;
-                this._exportTokens.set(token, { opts, timestamp: now, filename });
+                this._exportTokens.set(token, { opts, timestamp: now, filename, selection, exportPreviewToken: previewToken });
 
                 const downloadUrl = `/api/config-backup/download?token=${token}`;
                 res.json({ success: true, token, downloadUrl, filename });
             } catch (error) {
-                this.api.log(`Export token error: ${error.message}`, 'error');
-                res.status(500).json({ success: false, error: error.message });
+                reportInternalError(res, 'Backup export token creation', error);
             }
         });
 
         // GET /api/config-backup/download?token=<token>  – one-time token-based download
         this.api.registerRoute('GET', '/api/config-backup/download', async (req, res) => {
+            setSensitiveExportHeaders(res);
             try {
                 const backupManager = this.getBackupManager();
                 if (!backupManager) {
@@ -381,27 +536,21 @@ class ConfigImportPlugin {
                 const { stream, warnings } = await backupManager.export(entry.opts);
 
                 if (warnings && warnings.length > 0) {
-                    res.setHeader('X-Backup-Warnings', JSON.stringify(warnings.slice(0, 10)));
+                    res.setHeader('X-Backup-Warnings', JSON.stringify(warnings.slice(0, 10).map(redactLocalPaths)));
                 }
 
                 stream.on('error', err => {
-                    this.api.log(`Export stream error: ${err.message}`, 'error');
-                    if (!res.headersSent) {
-                        res.status(500).json({ success: false, error: err.message });
-                    }
+                    reportInternalError(res, 'Backup download stream', err);
                 });
 
                 stream.pipe(res);
             } catch (error) {
-                this.api.log(`Download error: ${error.message}`, 'error');
-                if (!res.headersSent) {
-                    res.status(500).json({ success: false, error: error.message });
-                }
+                reportInternalError(res, 'Backup download', error);
             }
         });
 
         // POST /api/config-backup/validate  (accepts file upload)
-        this.api.registerRoute('POST', '/api/config-backup/validate', upload.single('backup'), async (req, res) => {
+        this.api.registerRoute('POST', '/api/config-backup/validate', uploadBackup, async (req, res) => {
             let tmpPath = null;
             try {
                 const backupManager = this.getBackupManager();
@@ -417,11 +566,7 @@ class ConfigImportPlugin {
                 const parsed = await backupManager.parseBackup(tmpPath, req.file.size);
 
                 if (parsed.errors && parsed.errors.length > 0) {
-                    return res.status(400).json({
-                        success: false,
-                        errors: parsed.errors,
-                        warnings: parsed.warnings
-                    });
+                    return rejectInvalidBackup(res);
                 }
 
                 res.json({
@@ -442,8 +587,7 @@ class ConfigImportPlugin {
                     cleanupTempDir(parsed.tmpDir);
                 }
             } catch (error) {
-                this.api.log(`Backup validation error: ${error.message}`, 'error');
-                res.status(500).json({ success: false, error: error.message });
+                reportInternalError(res, 'Backup validation', error);
             } finally {
                 // Remove the multer temp file
                 if (tmpPath) {
@@ -453,7 +597,8 @@ class ConfigImportPlugin {
         });
 
         // POST /api/config-backup/preview-import  (accepts file upload)
-        this.api.registerRoute('POST', '/api/config-backup/preview-import', upload.single('backup'), async (req, res) => {
+        this.api.registerRoute('POST', '/api/config-backup/preview-import', uploadBackup, async (req, res) => {
+            setSensitiveExportHeaders(res);
             let tmpPath = null;
             try {
                 const backupManager = this.getBackupManager();
@@ -466,10 +611,23 @@ class ConfigImportPlugin {
                 }
 
                 tmpPath = req.file.path;
+                const archiveHashBeforeParse = await hashBackupFile(tmpPath);
                 const parsed = await backupManager.parseBackup(tmpPath, req.file.size);
 
                 if (parsed.errors && parsed.errors.length > 0) {
-                    return res.status(400).json({ success: false, errors: parsed.errors });
+                    return rejectInvalidBackup(res);
+                }
+
+                const archiveHash = await hashBackupFile(tmpPath);
+                if (archiveHash !== archiveHashBeforeParse) {
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Backup file changed while it was being processed. Preview the file again.'
+                    });
                 }
 
                 const pluginFilter = req.body && req.body.pluginFilter
@@ -477,6 +635,31 @@ class ConfigImportPlugin {
                     : null;
 
                 const preview = backupManager.previewImport(parsed, { pluginFilter });
+                const sensitivityRisk = importSensitivityRisk(parsed.manifest);
+                let importConfirmationToken = null;
+                if (isExplicitConfirmation(req.body?.prepareImport)) {
+                    let importOptions;
+                    try {
+                        importOptions = normalizeImportOptions(req.body || {});
+                    } catch {
+                        if (parsed.tmpDir) {
+                            const { cleanupTempDir } = require('../../modules/backup/importer');
+                            cleanupTempDir(parsed.tmpDir);
+                        }
+                        return res.status(400).json({ success: false, error: 'Invalid import selection.' });
+                    }
+                    const now = Date.now();
+                    for (const [token, entry] of this._importConfirmations) {
+                        if (now - entry.timestamp > IMPORT_CONFIRMATION_TTL_MS) this._importConfirmations.delete(token);
+                    }
+                    importConfirmationToken = crypto.randomBytes(32).toString('hex');
+                    this._importConfirmations.set(importConfirmationToken, {
+                        archiveHash,
+                        options: JSON.stringify(importOptions),
+                        sensitivityRisk,
+                        timestamp: now
+                    });
+                }
 
                 // Clean up temp extraction dir
                 if (parsed.tmpDir) {
@@ -484,10 +667,9 @@ class ConfigImportPlugin {
                     cleanupTempDir(parsed.tmpDir);
                 }
 
-                res.json({ success: true, preview, warnings: parsed.warnings });
+                res.json({ success: true, preview, warnings: parsed.warnings, sensitivityRisk, importConfirmationToken });
             } catch (error) {
-                this.api.log(`Preview import error: ${error.message}`, 'error');
-                res.status(500).json({ success: false, error: error.message });
+                reportInternalError(res, 'Backup preview', error);
             } finally {
                 if (tmpPath) {
                     try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }
@@ -496,7 +678,7 @@ class ConfigImportPlugin {
         });
 
         // POST /api/config-backup/import  (accepts file upload)
-        this.api.registerRoute('POST', '/api/config-backup/import', upload.single('backup'), async (req, res) => {
+        this.api.registerRoute('POST', '/api/config-backup/import', uploadBackup, async (req, res) => {
             let tmpPath = null;
             try {
                 const backupManager = this.getBackupManager();
@@ -509,31 +691,93 @@ class ConfigImportPlugin {
                 }
 
                 tmpPath = req.file.path;
+                const archiveHashBeforeParse = await hashBackupFile(tmpPath);
                 const parsed = await backupManager.parseBackup(tmpPath, req.file.size);
 
                 if (parsed.errors && parsed.errors.length > 0) {
-                    return res.status(400).json({ success: false, errors: parsed.errors });
+                    return rejectInvalidBackup(res);
+                }
+
+                const archiveHash = await hashBackupFile(tmpPath);
+                if (archiveHash !== archiveHashBeforeParse) {
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Backup file changed while it was being processed. Preview the file again.'
+                    });
                 }
 
                 const body = req.body || {};
+                let opts;
+                try {
+                    opts = normalizeImportOptions(body);
+                } catch {
+                    if (typeof body.importConfirmationToken === 'string') {
+                        this._importConfirmations.delete(body.importConfirmationToken);
+                    }
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({ success: false, error: 'Invalid import selection.' });
+                }
+                const importConfirmationToken = typeof body.importConfirmationToken === 'string'
+                    ? body.importConfirmationToken
+                    : '';
+                // Re-read the token after the asynchronous hash so concurrent replays
+                // cannot both retain a reference to the same one-time entry.
+                const confirmationEntry = this._importConfirmations.get(importConfirmationToken);
+                const optionsMatch = confirmationEntry &&
+                    confirmationEntry.options === JSON.stringify(opts);
+                const archiveMatches = confirmationEntry && confirmationEntry.archiveHash === archiveHash;
+                const confirmationIsFresh = confirmationEntry &&
+                    Date.now() - confirmationEntry.timestamp <= IMPORT_CONFIRMATION_TTL_MS;
 
-                const opts = {
-                    mode: body.mode === 'merge' ? 'merge' : 'replace',
-                    includeGlobalSettings: parseBooleanOption(body.includeGlobalSettings, true),
-                    includePluginSettings: parseBooleanOption(body.includePluginSettings, true),
-                    includePluginData: parseBooleanOption(body.includePluginData, true),
-                    includeUserConfigs: parseBooleanOption(body.includeUserConfigs, true),
-                    includeUploads: parseBooleanOption(body.includeUploads, true),
-                    includeUserData: parseBooleanOption(body.includeUserData, true),
-                    pluginFilter: body.pluginFilter ? JSON.parse(body.pluginFilter) : null
-                };
+                if (!confirmationEntry || !optionsMatch || !archiveMatches || !confirmationIsFresh) {
+                    if (confirmationEntry) this._importConfirmations.delete(importConfirmationToken);
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Import preview expired or changed. Preview this exact backup and selection again.'
+                    });
+                }
 
-                const result = await backupManager.import(parsed, {
-                    ...opts,
-                    includeProfileScopedPluginData: parseBooleanOption(body.includeProfileScopedPluginData, false),
-                    includeSchnorrbecherPersistentState: parseBooleanOption(body.includeSchnorrbecherPersistentState, false),
-                    targetProfile: typeof body.targetProfile === 'string' ? body.targetProfile : null
+                if (confirmationEntry.sensitivityRisk !== 'none' && !isExplicitConfirmation(body.confirmSensitiveImport)) {
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Sensitive or unclassified backup contents require explicit import confirmation.'
+                    });
+                }
+
+                const confirmProfileReplacement = isExplicitConfirmation(body.confirmProfileReplacement);
+                const hasProfileRestoreFiles = (parsed.userConfigsFiles || []).some(file => {
+                    const relPath = String(file.relPath || '').replace(/\\/g, '/');
+                    return relPath === '.active_profile' || (!relPath.includes('/') && relPath.endsWith('.db'));
                 });
+                if (opts.mode === 'replace' && opts.includeUserConfigs && hasProfileRestoreFiles && !confirmProfileReplacement) {
+                    if (parsed.tmpDir) {
+                        const { cleanupTempDir } = require('../../modules/backup/importer');
+                        cleanupTempDir(parsed.tmpDir);
+                    }
+                    return res.status(400).json({
+                        success: false,
+                        error: 'Replacing user profiles requires explicit confirmation that matching profiles may be overwritten and the active profile may change'
+                    });
+                }
+
+                this._importConfirmations.delete(importConfirmationToken);
+
+                const result = await backupManager.import(parsed, opts);
 
                 res.json({
                     success: result.success,
@@ -542,8 +786,7 @@ class ConfigImportPlugin {
                     errors: result.errors
                 });
             } catch (error) {
-                this.api.log(`Import error: ${error.message}`, 'error');
-                res.status(500).json({ success: false, error: error.message });
+                reportInternalError(res, 'Backup import', error);
             } finally {
                 if (tmpPath) {
                     try { fs.unlinkSync(tmpPath); } catch { /* ignore */ }

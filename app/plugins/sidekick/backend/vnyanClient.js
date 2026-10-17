@@ -98,6 +98,7 @@ class VNyanClient extends BaseAvatarDriver {
    * @returns {Promise<boolean>}
    */
   async connect() {
+    if (this.api?.isDocsCapture === true) return false;
     if (this.isConnected) {
       return true;
     }
@@ -209,6 +210,7 @@ class VNyanClient extends BaseAvatarDriver {
    * @private
    */
   _scheduleReconnect() {
+    if (this.api?.isDocsCapture === true) return;
     const conf = this.getVnyanConfig();
     if (this.reconnectAttempts >= conf.maxReconnectAttempts) {
       this.api.log('[VNyan] Maximum reconnect attempts reached', 'warn');
@@ -257,6 +259,7 @@ class VNyanClient extends BaseAvatarDriver {
    * @returns {boolean}
    */
   send(payload) {
+    if (this.api?.isDocsCapture === true) return false;
     if (!this.isConnected || !this.ws || this.ws.readyState !== WebSocket.OPEN) {
       return false;
     }

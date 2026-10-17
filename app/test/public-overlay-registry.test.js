@@ -98,6 +98,7 @@ describe('public overlay HTTP registry', () => {
     ['GET', '/socket.io/socket.io.js'],
     ['POST', '/socket.io/'],
     ['GET', '/js/i18n-client.js'],
+    ['GET', '/api/i18n/locales'],
 
     ['GET', '/js/public-overlay-render-mode.js'],
     ['GET', '/plugins/advanced-timer/overlay/overlay.js'],
@@ -161,6 +162,18 @@ describe('public overlay HTTP registry', () => {
       ]) {
         expect(isHttpAllowed({ method, pathname })).toBe(false);
       }
+    }
+  });
+
+  test('allows locale discovery only as a read-only exact path', () => {
+    for (const method of ['GET', 'HEAD']) {
+      expect(isHttpAllowed({ method, pathname: '/api/i18n/locales' })).toBe(true);
+    }
+    for (const [method, pathname] of [
+      ['POST', '/api/i18n/locales'],
+      ['GET', '/api/i18n/locales/extra']
+    ]) {
+      expect(isHttpAllowed({ method, pathname })).toBe(false);
     }
   });
 

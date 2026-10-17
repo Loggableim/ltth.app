@@ -237,13 +237,7 @@ function auditGuideContracts(guides) {
   });
 }
 
-function main() {
-  if (process.argv.includes('--audit-contracts')) {
-    const audit = auditGuideContracts(buildGuides(ROOT));
-    console.log(formatGuideContractAudit(audit));
-    if (!audit.compliant) process.exitCode = 1;
-    return;
-  }
+function buildPluginDocs() {
   const guides = buildGuides(ROOT);
   const values = buildLocales(guides);
   const byId = new Map(guides.map((guide) => [guide.id, guide]));
@@ -272,6 +266,16 @@ function main() {
   console.log(`Built ${guides.length} detailed plugin tutorial pages in four locales.`);
 }
 
+function main() {
+  if (process.argv.includes('--audit-contracts')) {
+    const audit = auditGuideContracts(buildGuides(ROOT));
+    console.log(formatGuideContractAudit(audit));
+    if (!audit.compliant) process.exitCode = 1;
+    return;
+  }
+  buildPluginDocs();
+}
+
 if (require.main === module) main();
 
-module.exports = { writeFileAtomically };
+module.exports = { writeFileAtomically, auditGuideContracts, buildPluginDocs };

@@ -156,6 +156,56 @@ describe('Music Bot radio routes', () => {
     expect(stopResponse.json).toHaveBeenCalledWith({ success: true, stopped: true, status });
   });
 
+  test('sanitizes unexpected artist-radio start exceptions as HTTP 500', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const privateMessage = 'provider token=CANARY C:\\profiles\\private\\music.db';
+    const privateCode = 'PROVIDER_INTERNAL_CANARY';
+    plugin.autoDJ = {
+      startArtistRadio: jest.fn(() => { throw Object.assign(new Error(privateMessage), { code: privateCode }); })
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ title: 'Seed', youtubeId: 'seed-id' })) };
+    plugin._registerRoutes();
+
+    const res = response();
+    await api.handlers['POST:/api/plugins/music-bot/artist-radio/start']({}, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Song radio could not be started' });
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain(privateMessage);
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain(privateCode);
+  });
+
+  test('preserves known artist-radio validation responses', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const status = { artistRadio: { active: false } };
+    plugin.autoDJ = {
+      startArtistRadio: jest.fn(() => false),
+      getStatus: jest.fn(() => status)
+    };
+    plugin.playbackEngine = { getNowPlaying: jest.fn(() => ({ title: 'Seed', provider: 'soundcloud' })) };
+    plugin._registerRoutes();
+
+    const invalidSeed = response();
+    await api.handlers['POST:/api/plugins/music-bot/artist-radio/start']({}, invalidSeed);
+    expect(invalidSeed.status).toHaveBeenCalledWith(400);
+    expect(invalidSeed.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'Current track cannot start a song radio',
+      status
+    });
+
+    plugin.playbackEngine.getNowPlaying.mockReturnValue(null);
+    const noCurrentTrack = response();
+    await api.handlers['POST:/api/plugins/music-bot/artist-radio/start']({}, noCurrentTrack);
+    expect(noCurrentTrack.status).toHaveBeenCalledWith(409);
+    expect(noCurrentTrack.json).toHaveBeenCalledWith({
+      success: false,
+      error: 'No current track is available as a song-radio seed'
+    });
+  });
+
   test('keeps player thumbs isolated to the Streamer Playlist and accepts curated suggestions', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);

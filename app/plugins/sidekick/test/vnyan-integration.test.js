@@ -11,14 +11,19 @@ function createMockApi(initialConfig = {}) {
   const socketHandlers = new Map();
   const tiktokHandlers = new Map();
   let storedConfig = initialConfig;
+  const publicRoomEmit = jest.fn();
+  const io = {
+    emit: jest.fn(),
+    to: jest.fn(() => ({ emit: publicRoomEmit }))
+  };
 
   return {
     routes,
     socketHandlers,
     tiktokHandlers,
-    getSocketIO: () => ({
-      emit: jest.fn()
-    }),
+    io,
+    publicRoomEmit,
+    getSocketIO: () => io,
     getDatabase: () => ({
       prepare: jest.fn(() => ({
         run: jest.fn(),
@@ -224,6 +229,12 @@ describe('Sidekick AvatarDriver Integration', () => {
     const postRes = { json: jest.fn(), status: jest.fn(() => postRes) };
     const postHandler = api.routes.get('POST /api/sidekick/avatar/rules');
     postHandler(postReq, postRes);
+
+    expect(api.io.to).toHaveBeenCalledWith('__ltth_public_quick_tunnel__');
+    expect(api.publicRoomEmit).toHaveBeenCalledWith('sidekick:public-status', expect.objectContaining({
+      connected: false,
+      muted: false
+    }));
 
     expect(postRes.json).toHaveBeenCalledWith(
       expect.objectContaining({

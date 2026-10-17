@@ -1,5 +1,11 @@
 'use strict';
 
+// These tests exercise the legacy projection mechanics under explicit test-only
+// admission. Production owner admission is covered by approved-surface tests.
+jest.mock('../modules/public-overlay-release-event-policy', () => ({
+  createPublicReleaseEventGuard: () => () => true
+}));
+
 const {
   PUBLIC_QUICK_TUNNEL_ROOM,
   createPublicOverlayAdapter
@@ -306,12 +312,12 @@ describe('PublicOverlayAdapter', () => {
     expect(adapter.broadcastWithAckCalls[0].packet.data[1].audioId).toBe('private');
   });
 
-  test('preserves protocol packets that do not contain an application event', () => {
+  test('excludes protocol packets from the public room when no projection contract exists', () => {
     const adapter = new Adapter({ name: '/' });
     const options = { rooms: new Set(), except: new Set() };
 
     adapter.broadcast({ type: 3, data: undefined }, options);
 
-    expect(adapter.broadcastCalls[0].options).toBe(options);
+    expect(adapter.broadcastCalls[0].options.except).toContain(PUBLIC_QUICK_TUNNEL_ROOM);
   });
 });

@@ -461,7 +461,7 @@
                     🔌 Plugin Settings
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incPluginData" checked><span data-i18n="plugins.config-import.config-import.ui.pluginData">
+                    <input type="checkbox" id="incPluginData"><span data-i18n="plugins.config-import.config-import.ui.pluginData">
                     📁 Plugin Data Files
                 </span></label>
                 <label class="checkbox-label">
@@ -473,7 +473,7 @@
                     <span data-i18n="plugins.config-import.config-import.ui.profileScopedExportState">Include Schnorrbecher persistent state (session state is always omitted)</span>
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs">
+                    <input type="checkbox" id="incUserConfigs"><span data-i18n="plugins.config-import.config-import.ui.userConfigs">
                     User Configs
                 </span></label>
                 <label class="checkbox-label">
@@ -481,14 +481,35 @@
                     🖼️ Uploads
                 </span></label>
                 <label class="checkbox-label">
-                    <input type="checkbox" id="incUserData" checked><span data-i18n="plugins.config-import.config-import.ui.userData">
+                    <input type="checkbox" id="incUserData"><span data-i18n="plugins.config-import.config-import.ui.userData">
                     🗄️ User Data
                 </span></label>
+                <label class="checkbox-label"><input type="checkbox" id="incCredentialsSessions"><span data-i18n="plugins.config-import.config-import.ui.includeCredentialsSessions">🔐 Include known credentials and session data (API keys, tokens, session files)</span></label>
             </div>
+
+            <div id="exportPreviewArea" class="card" style="margin-top:14px;padding:14px;">
+                <strong data-i18n="plugins.config-import.config-import.ui.exportPreviewTitle">Export preview</strong>
+                <p class="desc" data-i18n="plugins.config-import.config-import.ui.exportPreviewDescription">Category counts and estimated size only. Setting values and file names are never shown.</p>
+                <div id="exportPreviewSummary" aria-live="polite" data-i18n="plugins.config-import.config-import.ui.exportPreviewInitial">Run preview before exporting.</div>
+            </div>
+
+            <label class="checkbox-label hidden" id="confirmSensitiveExportWrap" style="margin-top:12px;padding:12px;border:1px solid #b45309;border-radius:8px;">
+                <input type="checkbox" id="confirmSensitiveExport">
+                <span data-i18n="plugins.config-import.config-import.ui.confirmSensitiveExport">I confirm that known credentials and session data may be included.</span>
+            </label>
+            <label class="checkbox-label hidden" id="confirmUnclassifiedExportWrap" style="margin-top:12px;padding:12px;border:1px solid #b45309;border-radius:8px;">
+                <input type="checkbox" id="confirmUnclassifiedExport">
+                <span data-i18n="plugins.config-import.config-import.ui.confirmUnclassifiedExport">I understand selected databases/files may contain unclassified personal or secret data.</span>
+            </label>
+            <label class="checkbox-label hidden" id="confirmFullBackupWrap" style="margin-top:12px;padding:12px;border:1px solid #b45309;border-radius:8px;">
+                <input type="checkbox" id="confirmFullBackup">
+                <span data-i18n="plugins.config-import.config-import.ui.confirmFullBackup">I confirm a full backup of every category, including known sensitive data. Unclassified database/file contents may contain other personal or secret values.</span>
+            </label>
 
             <div id="capWarning" class="alert alert-warn hidden" style="margin-top:14px;"></div>
 
             <div style="margin-top:20px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-secondary" id="previewExportBtn" data-i18n="plugins.config-import.config-import.ui.previewSelectionButton">🔍 Preview selection</button>
                 <button class="btn btn-primary" id="exportBtn" data-i18n="plugins.config-import.config-import.ui.exportButton">
                     📤 Download Backup
                 </button>
@@ -550,11 +571,13 @@
             <div class="summary-grid" id="summaryGrid"></div>
 
             <div id="previewWarnings"></div>
+            <div id="importSensitivityWarning" class="alert alert-warn hidden" style="margin:10px 0;"></div>
 
             <div class="card" style="margin:12px 0;padding:14px;">
                 <strong data-i18n="plugins.config-import.config-import.ui.profileScopedTitle">Profile-scoped plugin data</strong>
                 <p id="profileScopedImportInfo" style="margin:6px 0 10px;" data-i18n="plugins.config-import.config-import.ui.profileScopedInfo">Archive metadata never selects the target profile.</p>
                 <label class="checkbox-label"><input type="checkbox" id="impProfileScopedPluginData"><span data-i18n="plugins.config-import.config-import.ui.profileScopedFiles">Import profile-scoped Advanced Timer / Schnorrbecher files</span></label>
+                <label class="checkbox-label hidden" id="impLegacyQuizShowDatabaseLbl"><input type="checkbox" id="impLegacyQuizShowDatabase"><span data-i18n="plugins.config-import.config-import.ui.legacyQuizShowDatabase">Import legacy Quiz Show database to the selected profile (requires confirmation)</span></label>
                 <label class="checkbox-label"><input type="checkbox" id="impSchnorrbecherPersistentState" disabled><span data-i18n="plugins.config-import.config-import.ui.profileScopedState">Import Schnorrbecher persistent state (session state is never imported)</span></label>
                 <label for="profileScopedTarget" data-i18n="plugins.config-import.config-import.ui.targetProfile">Target profile</label>
                 <select id="profileScopedTarget" style="display:block;min-width:220px;margin-top:4px;"></select>
@@ -597,6 +620,11 @@
                 <label class="checkbox-label" id="impUserDataLbl"><input type="checkbox" id="impUserData"><span data-i18n="plugins.config-import.config-import.ui.userData"> 🗄️ User Data</span></label>
             </div>
 
+            <label class="checkbox-label hidden" id="profileReplaceConfirmationWrap" style="margin-top:12px;padding:12px;border:1px solid #b45309;border-radius:8px;">
+                <input type="checkbox" id="confirmProfileReplacement">
+                <span data-i18n="plugins.config-import.config-import.ui.confirmProfileReplacement">I confirm: this import may overwrite existing profiles with matching names and change the active profile to one from this backup.</span>
+            </label>
+
             <div style="margin-top:20px; display:flex; gap:12px; flex-wrap:wrap;">
                 <button class="btn btn-primary" id="doImportBtn" data-i18n="plugins.config-import.config-import.ui.importButton">
                     ✅ Restore Now
@@ -615,7 +643,7 @@
             <h2 data-i18n="plugins.config-import.config-import.ui.resultTitle">📋 Import Result</h2>
             <div id="importResultMsg"></div>
             <div id="importResultLog" class="log-area"></div>
-            <button class="btn btn-secondary hidden" id="toggleLogBtn" style="margin-top:10px;" data-i18n="plugins.config-import.config-import.ui.showDetails">
+            <button class="btn btn-secondary" id="toggleLogBtn" style="margin-top:10px;display:none;" data-i18n="plugins.config-import.config-import.ui.showDetails">
                 🔽 Show Details
             </button>
             <div style="margin-top:16px;">
@@ -680,7 +708,77 @@
 </div>
 
 <script src="/js/i18n-client.js"></script>
-<script>
+    <script>
+    window.renderBackupExportPreview = function (container, preview, translate, formatBytes) {
+        const categories = {
+            globalSettings: 'plugins.config-import.config-import.ui.exportCategoryGlobalSettings',
+            pluginSettings: 'plugins.config-import.config-import.ui.exportCategoryPluginSettings',
+            profileDatabases: 'plugins.config-import.config-import.ui.exportCategoryProfileDatabases',
+            userData: 'plugins.config-import.config-import.ui.exportCategoryUserData',
+            pluginFiles: 'plugins.config-import.config-import.ui.exportCategoryPluginFiles',
+            uploads: 'plugins.config-import.config-import.ui.exportCategoryUploads',
+            profileScopedPluginData: 'plugins.config-import.config-import.ui.exportCategoryProfileScopedPluginData',
+            schnorrbecherPersistentState: 'plugins.config-import.config-import.ui.exportCategorySchnorrbecherState',
+            credentialsAndSessions: 'plugins.config-import.config-import.ui.exportCategoryCredentialsSessions'
+        };
+        container.replaceChildren();
+        const table = document.createElement('table');
+        table.className = 'preview-table';
+        for (const [category, stats] of Object.entries(preview.categories || {})) {
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            const countCell = document.createElement('td');
+            const label = categories[category] ? translate(categories[category]) : translate('plugins.config-import.config-import.ui.exportCategoryOther');
+            cell.textContent = `${label}${stats.selected ? '' : ` (${translate('plugins.config-import.config-import.ui.exportCategoryNotSelected')})`}`;
+            countCell.textContent = translate('plugins.config-import.config-import.ui.exportCategoryCount', {
+                files: stats.files || 0,
+                entries: stats.entries || 0,
+                bytes: formatBytes(stats.bytes || 0)
+            });
+            row.append(cell, countCell);
+            table.appendChild(row);
+        }
+        container.appendChild(table);
+        const total = document.createElement('p');
+        total.textContent = translate('plugins.config-import.config-import.ui.exportSelectionEstimate', {
+            files: preview.totals?.files || 0,
+            entries: preview.totals?.entries || 0,
+            bytes: formatBytes(preview.totals?.bytes || 0)
+        });
+        container.appendChild(total);
+        if (preview.fullBackupWarning) {
+            const warning = document.createElement('p');
+            warning.className = 'alert alert-warn';
+            warning.textContent = translate('plugins.config-import.config-import.ui.fullBackupUnknownContentWarning');
+            container.appendChild(warning);
+        }
+        if (preview.unclassifiedContentRisk) {
+            const warning = document.createElement('p');
+            warning.className = 'alert alert-warn';
+            warning.textContent = translate('plugins.config-import.config-import.ui.unclassifiedContentWarning');
+            container.appendChild(warning);
+        }
+        if (preview.categories?.credentialsAndSessions?.selected === true) {
+            const warning = document.createElement('p');
+            warning.className = 'alert alert-warn';
+            warning.textContent = translate('plugins.config-import.config-import.ui.sensitiveContentWarning');
+            container.appendChild(warning);
+        }
+    };
+
+    window.localizeBackupImportWarning = function (warning, translate) {
+        const keys = {
+            'This is a partial backup; categories not selected at export time are absent.': 'plugins.config-import.config-import.ui.partialBackupWarning',
+            'This legacy archive has no data-scope metadata; backup completeness cannot be determined.': 'plugins.config-import.config-import.ui.legacyBackupScopeWarning',
+            '[original export] Credentials and session fields/files were explicitly selected. Unclassified database or file contents may also contain personal or secret values; keep this backup secure.': 'plugins.config-import.config-import.ui.backupSensitiveIncludedWarning',
+            '[original export] Known credential and session fields/files were omitted. Unclassified database or file contents may still contain personal or secret values.': 'plugins.config-import.config-import.ui.backupSensitiveOmittedWarning',
+            '[original export] Full backup selected: generic database and file contents may include unclassified personal or secret values.': 'plugins.config-import.config-import.ui.backupFullUnknownContentWarning'
+        };
+        return keys[warning] ? translate(keys[warning]) : warning;
+    };
+    </script>
+
+    <script>
 (function () {
     'use strict';
 
@@ -701,8 +799,7 @@
     });
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    function showAlert(el, msg, type, validationNotice = false) {
-        el.dataset.validationNotice = String(validationNotice);
+    function showAlert(el, msg, type) {
         el.className = 'alert alert-' + type;
         el.textContent = msg;
         el.classList.remove('hidden');
@@ -745,15 +842,6 @@
         if (activeInfo) activeInfo.textContent = t('plugins.config-import.config-import.ui.activeProfileInfo', { profile: serverActiveProfile || t('plugins.config-import.config-import.ui.unknownActiveProfile') });
     }
     importTargetProfile.addEventListener('change', syncProfileScopedSettingsAvailability);
-    let previewPersistentStateAvailable = false;
-    function syncImportStateToggle() {
-        const scoped = document.getElementById('impProfileScopedPluginData');
-        const state = document.getElementById('impSchnorrbecherPersistentState');
-        state.disabled = !scoped.checked || scoped.disabled || !previewPersistentStateAvailable;
-        if (state.disabled) state.checked = false;
-        if (scoped.checked && !scoped.disabled) selectImportMode('merge');
-    }
-    document.getElementById('impProfileScopedPluginData').addEventListener('change', syncImportStateToggle);
     const syncExportStateToggle = () => {
         exportStateToggle.disabled = !exportScopedToggle.checked || !exportPluginDataToggle.checked;
         if (exportStateToggle.disabled) exportStateToggle.checked = false;
@@ -761,6 +849,118 @@
     exportScopedToggle.addEventListener('change', syncExportStateToggle);
     exportPluginDataToggle.addEventListener('change', syncExportStateToggle);
     syncExportStateToggle();
+
+    const exportAreaIds = [
+        'incGlobal', 'incPluginSettings', 'incUserConfigs', 'incUserData', 'incPluginData', 'incUploads',
+        'incProfileScopedPluginData', 'incSchnorrbecherPersistentState', 'incCredentialsSessions'
+    ];
+    let exportPreviewKey = null;
+    let exportPreviewData = null;
+    let exportPreviewToken = null;
+    window.i18n?.onLanguageChange?.(() => {
+        if (exportPreviewData) {
+            window.renderBackupExportPreview(
+                document.getElementById('exportPreviewSummary'), exportPreviewData, t, formatExportBytes
+            );
+        }
+    });
+    function readExportOptions() {
+        return {
+            includeGlobalSettings: document.getElementById('incGlobal').checked,
+            includePluginSettings: document.getElementById('incPluginSettings').checked,
+            includePluginData: document.getElementById('incPluginData').checked,
+            includeUserConfigs: document.getElementById('incUserConfigs').checked,
+            includeUploads: document.getElementById('incUploads').checked,
+            includeUserData: document.getElementById('incUserData').checked,
+            includeProfileScopedPluginData: document.getElementById('incProfileScopedPluginData').checked,
+            includeSchnorrbecherPersistentState: document.getElementById('incSchnorrbecherPersistentState').checked,
+            includeCredentialsSessions: document.getElementById('incCredentialsSessions').checked,
+            confirmSensitiveExport: document.getElementById('confirmSensitiveExport').checked,
+            confirmFullBackup: document.getElementById('confirmFullBackup').checked,
+            confirmUnclassifiedData: document.getElementById('confirmUnclassifiedExport').checked
+        };
+    }
+    function exportSelectionKey() {
+        const options = readExportOptions();
+        delete options.confirmSensitiveExport;
+        delete options.confirmFullBackup;
+        delete options.confirmUnclassifiedData;
+        return JSON.stringify(options);
+    }
+    function syncExportConfirmations() {
+        const includeSensitive = document.getElementById('incCredentialsSessions').checked;
+        document.getElementById('confirmSensitiveExportWrap').classList.toggle('hidden', !includeSensitive);
+        if (!includeSensitive) document.getElementById('confirmSensitiveExport').checked = false;
+        const fullSelection = exportAreaIds.every(id => document.getElementById(id).checked);
+        document.getElementById('confirmFullBackupWrap').classList.toggle('hidden', !fullSelection);
+        if (!fullSelection) document.getElementById('confirmFullBackup').checked = false;
+        const showUnclassifiedConfirmation = Boolean(exportPreviewData?.unclassifiedContentRisk);
+        document.getElementById('confirmUnclassifiedExportWrap').classList.toggle('hidden', !showUnclassifiedConfirmation);
+        if (!showUnclassifiedConfirmation) document.getElementById('confirmUnclassifiedExport').checked = false;
+    }
+    for (const id of exportAreaIds) {
+        document.getElementById(id).addEventListener('change', () => {
+            exportPreviewKey = null;
+            exportPreviewData = null;
+            exportPreviewToken = null;
+            syncExportStateToggle();
+            syncExportConfirmations();
+            document.getElementById('exportPreviewSummary').textContent = t('plugins.config-import.config-import.ui.exportPreviewSelectionChanged');
+        });
+    }
+    syncExportConfirmations();
+
+    document.getElementById('previewExportBtn').addEventListener('click', async () => {
+        const button = document.getElementById('previewExportBtn');
+        button.disabled = true;
+        const summary = document.getElementById('exportPreviewSummary');
+        exportPreviewKey = null;
+        exportPreviewData = null;
+        exportPreviewToken = null;
+        const requestedSelectionKey = exportSelectionKey();
+        syncExportConfirmations();
+        summary.textContent = t('plugins.config-import.config-import.ui.exportPreviewCalculating');
+        try {
+            const response = await fetch('/api/config-backup/preview-export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(readExportOptions())
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || `HTTP ${response.status}`);
+            if (exportSelectionKey() !== requestedSelectionKey) {
+                exportPreviewKey = null;
+                exportPreviewData = null;
+                exportPreviewToken = null;
+                syncExportConfirmations();
+                summary.textContent = t('plugins.config-import.config-import.ui.exportPreviewSelectionChanged');
+                return;
+            }
+            const preview = result.preview;
+            preview.unclassifiedContentRisk = result.unclassifiedContentRisk === true;
+            exportPreviewData = preview;
+            exportPreviewToken = result.exportPreviewToken;
+            summary.removeAttribute('data-i18n');
+            window.renderBackupExportPreview(summary, preview, t, formatExportBytes);
+            syncExportConfirmations();
+            exportPreviewKey = exportSelectionKey();
+        } catch (error) {
+            exportPreviewKey = null;
+            exportPreviewData = null;
+            exportPreviewToken = null;
+            syncExportConfirmations();
+            summary.textContent = `${t('plugins.config-import.config-import.ui.exportPreviewFailed')} ${error.message}`;
+        } finally {
+            button.disabled = false;
+        }
+    });
+
+    function formatExportBytes(bytes) {
+        if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+        return `${(bytes / (1024 ** index)).toFixed(index ? 1 : 0)} ${units[index]}`;
+    }
 
     function loadCapabilities() {
         fetch('/api/config-backup/capabilities')
@@ -781,21 +981,30 @@
 
     exportBtn.addEventListener('click', async () => {
         await i18nReady;
+        if (exportPreviewKey !== exportSelectionKey()) {
+            showAlert(exportAlert, 'Run the export preview again before downloading this selection.', 'error');
+            return;
+        }
+        if (!exportPreviewToken) {
+            showAlert(exportAlert, t('plugins.config-import.config-import.ui.exportPreviewSelectionChanged'), 'error');
+            return;
+        }
+        if (exportPreviewData?.unclassifiedContentRisk && !document.getElementById('confirmUnclassifiedExport').checked) {
+            showAlert(exportAlert, t('plugins.config-import.config-import.ui.confirmUnclassifiedExportRequired'), 'error');
+            return;
+        }
+        if (readExportOptions().includeCredentialsSessions &&
+            !document.getElementById('confirmSensitiveExport').checked) {
+            showAlert(exportAlert, t('plugins.config-import.config-import.ui.confirmSensitiveExportRequired'), 'error');
+            return;
+        }
         hideEl(exportAlert);
         hideEl(exportResultCard);
         exportBtn.disabled = true;
         showEl(exportStatus);
 
-        const opts = {
-            includeGlobalSettings: document.getElementById('incGlobal').checked,
-            includePluginSettings: document.getElementById('incPluginSettings').checked,
-            includePluginData: document.getElementById('incPluginData').checked,
-            includeUserConfigs: document.getElementById('incUserConfigs').checked,
-            includeUploads: document.getElementById('incUploads').checked,
-            includeUserData: document.getElementById('incUserData').checked,
-            includeProfileScopedPluginData: document.getElementById('incProfileScopedPluginData').checked,
-            includeSchnorrbecherPersistentState: document.getElementById('incSchnorrbecherPersistentState').checked
-        };
+        const opts = readExportOptions();
+        opts.exportPreviewToken = exportPreviewToken;
 
         try {
             // Step 1: Request a one-time download token from the server
@@ -807,6 +1016,9 @@
 
             if (!tokenResp.ok) {
                 const err = await tokenResp.json().catch(() => ({ error: tokenResp.statusText }));
+                if (String(err.error || '').includes('Export preview expired or selection changed')) {
+                    throw new Error(t('plugins.config-import.config-import.ui.exportPreviewExpired'));
+                }
                 throw new Error(err.error || `HTTP ${tokenResp.status}`);
             }
 
@@ -891,8 +1103,9 @@
         const userConfigsLabel = document.createElement('label');
         userConfigsLabel.className = 'checkbox-label';
         userConfigsLabel.id = 'impUserConfigsLbl';
-        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs"><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>';
+        userConfigsLabel.innerHTML = '<input type="checkbox" id="impUserConfigs" checked><span data-i18n="plugins.config-import.config-import.ui.userConfigs"></span>';
         importSections.insertBefore(userConfigsLabel, document.getElementById('impUploadsLbl'));
+        userConfigsLabel.querySelector('input').addEventListener('change', syncProfileReplacementConfirmation);
     }
     ['impUploads', 'impUserData'].forEach(id => {
         const checkbox = document.getElementById(id);
@@ -902,6 +1115,18 @@
     let selectedFile = null;
     let parsedPreview = null;
     let importMode = 'replace';
+
+    function syncProfileReplacementConfirmation() {
+        const wrapper = document.getElementById('profileReplaceConfirmationWrap');
+        const checkbox = document.getElementById('confirmProfileReplacement');
+        const userConfigsLabel = document.getElementById('impUserConfigsLbl');
+        const userConfigs = document.getElementById('impUserConfigs');
+        const showConfirmation = importMode === 'replace'
+            && Boolean(userConfigs?.checked)
+            && Boolean(userConfigsLabel && !userConfigsLabel.classList.contains('hidden'));
+        wrapper.classList.toggle('hidden', !showConfirmation);
+        if (!showConfirmation) checkbox.checked = false;
+    }
 
     uploadZone.addEventListener('click', () => fileInput.click());
     uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
@@ -917,23 +1142,12 @@
     document.getElementById('cancelImportBtn').addEventListener('click', resetImport);
     document.getElementById('newImportBtn').addEventListener('click', resetImport);
 
-    function clearImportValidationAlert() {
-        if (importAlert.dataset.validationNotice === 'true') {
-            hideEl(importAlert);
-            importAlert.dataset.validationNotice = 'false';
-        }
-    }
-
-    function selectImportMode(mode) {
-        clearImportValidationAlert();
-        importMode = mode;
-        document.querySelectorAll('.mode-btn').forEach(button =>
-            button.classList.toggle('selected', button.dataset.mode === mode));
-    }
-
     document.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-            selectImportMode(btn.dataset.mode);
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            importMode = btn.dataset.mode;
+            syncProfileReplacementConfirmation();
         });
     });
 
@@ -961,23 +1175,9 @@
         validateBtn.disabled = true;
     }
 
-    function resetImportDetails() {
-        const log = document.getElementById('importResultLog');
-        const button = document.getElementById('toggleLogBtn');
-        log.replaceChildren();
-        log.classList.remove('show');
-        button.onclick = null;
-        hideEl(button);
-    }
-
     function resetImport() {
-        resetImportDetails();
         clearFile();
         parsedPreview = null;
-        previewPersistentStateAvailable = false;
-        document.getElementById('impProfileScopedPluginData').checked = false;
-        document.getElementById('impUserConfigs').checked = false;
-        syncImportStateToggle();
         hideEl(importAlert);
         hideEl(importStep2);
         hideEl(importStep3);
@@ -1005,7 +1205,7 @@
             }
 
             parsedPreview = data.preview;
-            renderPreview(data.preview, data.warnings || []);
+            renderPreview(data.preview, data.warnings || [], data.sensitivityRisk);
             hideEl(importStep1);
             showEl(importStep2);
         } catch (e) {
@@ -1016,8 +1216,7 @@
         }
     });
 
-    function renderPreview(preview, warnings) {
-        clearImportValidationAlert();
+    function renderPreview(preview, warnings, sensitivityRisk) {
         const manifest = preview.manifest || {};
         const appInfo = manifest.app || {};
         document.getElementById('manifestInfo').innerHTML =
@@ -1029,11 +1228,11 @@
             ? t('plugins.config-import.config-import.ui.scopedArchiveInfo', { profile: scoped.sourceProfile || t('plugins.config-import.config-import.ui.unknownValue'), plugins: scoped.plugins.join(', ') })
             : t('plugins.config-import.config-import.ui.scopedArchiveMissing');
         document.getElementById('impProfileScopedPluginData').disabled = !scoped.plugins?.length;
-        document.getElementById('impProfileScopedPluginData').checked = false;
-        previewPersistentStateAvailable = scoped.schnorrbecherPersistentStateAvailable === true;
+        const legacyQuizLabel = document.getElementById('impLegacyQuizShowDatabaseLbl');
+        legacyQuizLabel.classList.toggle('hidden', !scoped.legacyQuizShowDatabaseAvailable);
+        document.getElementById('impLegacyQuizShowDatabase').checked = false;
+        document.getElementById('impSchnorrbecherPersistentState').disabled = !scoped.schnorrbecherPersistentStateAvailable;
         document.getElementById('impSchnorrbecherPersistentState').checked = false;
-        document.getElementById('impUserConfigs').checked = false;
-        syncImportStateToggle();
 
         // Summary grid
         const grid = document.getElementById('summaryGrid');
@@ -1073,19 +1272,32 @@
         const warnEl = document.getElementById('previewWarnings');
         if (warnings && warnings.length > 0) {
             warnEl.innerHTML = warnings.slice(0, 5).map(w =>
-                `<div class="alert alert-warn" style="margin-bottom:6px;">${escHtml(w)}</div>`
+                `<div class="alert alert-warn" style="margin-bottom:6px;">${escHtml(window.localizeBackupImportWarning(w, t))}</div>`
             ).join('');
         } else {
             warnEl.innerHTML = '';
         }
 
+        const sensitivityWarning = document.getElementById('importSensitivityWarning');
+        if (sensitivityRisk === 'sensitive') {
+            sensitivityWarning.textContent = t('plugins.config-import.config-import.ui.importSensitiveDataWarning');
+            showEl(sensitivityWarning);
+        } else if (sensitivityRisk === 'unknown') {
+            sensitivityWarning.textContent = t('plugins.config-import.config-import.ui.importUnknownDataWarning');
+            showEl(sensitivityWarning);
+        } else {
+            sensitivityWarning.textContent = '';
+            hideEl(sensitivityWarning);
+        }
+
         // Show/hide file sections based on backup content
         if ((preview.userConfigFiles || 0) > 0) {
             showEl(document.getElementById('impUserConfigsLbl'));
-            document.getElementById('impUserConfigs').checked = false;
+            document.getElementById('impUserConfigs').checked = true;
         } else {
             hideEl(document.getElementById('impUserConfigsLbl'));
         }
+        syncProfileReplacementConfirmation();
         if ((preview.uploadFiles || 0) > 0) {
             showEl(document.getElementById('impUploadsLbl'));
             document.getElementById('impUploads').checked = true;
@@ -1104,49 +1316,81 @@
         await i18nReady;
         if (!selectedFile) return;
         const includeScoped = document.getElementById('impProfileScopedPluginData').checked;
+        const includeLegacyQuizShowDatabase = document.getElementById('impLegacyQuizShowDatabase').checked;
         const includeJarState = document.getElementById('impSchnorrbecherPersistentState').checked;
         const targetProfile = document.getElementById('profileScopedTarget').value;
-        if (includeScoped && importMode !== 'merge') {
-            showAlert(importAlert, t('plugins.config-import.config-import.ui.scopedMergeRequired'), 'error', true);
+        const includeUserConfigs = document.getElementById('impUserConfigs').checked;
+        const confirmProfileReplacement = document.getElementById('confirmProfileReplacement').checked;
+        const profileReplaceConfirmationVisible = !document.getElementById('impUserConfigsLbl').classList.contains('hidden');
+        if (importMode === 'replace' && includeUserConfigs && profileReplaceConfirmationVisible && !confirmProfileReplacement) {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.confirmProfileReplacementRequired'), 'error');
             return;
         }
-        if (includeScoped && targetProfile !== serverActiveProfile && (importGlobalSettings.checked || importPluginSettings.checked)) {
-            showAlert(importAlert, t('plugins.config-import.config-import.ui.settingsTargetMustBeActive'), 'error', true);
+        if ((includeScoped || includeLegacyQuizShowDatabase) && targetProfile !== serverActiveProfile && (importGlobalSettings.checked || importPluginSettings.checked)) {
+            showAlert(importAlert, t('plugins.config-import.config-import.ui.settingsTargetMustBeActive'), 'error');
             return;
         }
         if (includeJarState && !includeScoped) {
-            showAlert(importAlert, t('plugins.config-import.config-import.ui.persistentStateRequiresScoped'), 'error', true);
+            showAlert(importAlert, 'Persistent Schnorrbecher state requires profile-scoped data import.', 'error');
             return;
         }
-        if (includeScoped && (!targetProfile || !window.confirm(t('plugins.config-import.config-import.ui.confirmProfileScopedImport', { profile: targetProfile })))) return;
-        clearImportValidationAlert();
+        if ((includeScoped || includeLegacyQuizShowDatabase) && (!targetProfile || !window.confirm(t('plugins.config-import.config-import.ui.confirmProfileScopedImport', { profile: targetProfile })))) return;
         const btn = document.getElementById('doImportBtn');
         btn.disabled = true;
         showEl(document.getElementById('doImportStatus'));
 
-        const fd = new FormData();
-        fd.append('backup', selectedFile);
-        fd.append('mode', importMode);
-        fd.append('includeGlobalSettings', document.getElementById('impGlobal').checked);
-        fd.append('includePluginSettings', document.getElementById('impPluginSettings').checked);
-        fd.append('includePluginData', document.getElementById('impPluginData').checked);
-        fd.append('includeUserConfigs', document.getElementById('impUserConfigs').checked);
-        fd.append('includeUploads', document.getElementById('impUploads').checked);
-        fd.append('includeUserData', document.getElementById('impUserData').checked);
-        fd.append('includeProfileScopedPluginData', includeScoped);
-        fd.append('includeSchnorrbecherPersistentState', includeJarState);
-        fd.append('targetProfile', targetProfile);
+        const importOptions = new FormData();
+        importOptions.append('mode', importMode);
+        importOptions.append('includeGlobalSettings', document.getElementById('impGlobal').checked);
+        importOptions.append('includePluginSettings', document.getElementById('impPluginSettings').checked);
+        importOptions.append('includePluginData', document.getElementById('impPluginData').checked);
+        importOptions.append('includeUserConfigs', includeUserConfigs);
+        importOptions.append('confirmProfileReplacement', confirmProfileReplacement);
+        importOptions.append('includeUploads', document.getElementById('impUploads').checked);
+        importOptions.append('includeUserData', document.getElementById('impUserData').checked);
+        importOptions.append('includeProfileScopedPluginData', includeScoped);
+        importOptions.append('includeLegacyQuizShowDatabase', includeLegacyQuizShowDatabase);
+        importOptions.append('includeSchnorrbecherPersistentState', includeJarState);
+        importOptions.append('targetProfile', targetProfile);
 
         try {
+            const prepareData = new FormData();
+            prepareData.append('backup', selectedFile);
+            prepareData.append('prepareImport', 'true');
+            for (const [key, value] of importOptions.entries()) prepareData.append(key, value);
+            const preparedResponse = await fetch('/api/config-backup/preview-import', { method: 'POST', body: prepareData });
+            const prepared = await preparedResponse.json();
+            if (!preparedResponse.ok || !prepared.success || !prepared.importConfirmationToken) {
+                throw new Error(prepared.error || t('plugins.config-import.config-import.ui.importPreviewExpired'));
+            }
+
+            const confirmSensitiveImport = prepared.sensitivityRisk !== 'none';
+            if (confirmSensitiveImport) {
+                const message = prepared.sensitivityRisk === 'sensitive'
+                    ? t('plugins.config-import.config-import.ui.confirmSensitiveImport')
+                    : t('plugins.config-import.config-import.ui.confirmUnknownSensitiveImport');
+                if (!window.confirm(message)) return;
+            }
+
+            const fd = new FormData();
+            fd.append('backup', selectedFile);
+            for (const [key, value] of importOptions.entries()) fd.append(key, value);
+            fd.append('importConfirmationToken', prepared.importConfirmationToken);
+            fd.append('confirmSensitiveImport', confirmSensitiveImport);
             const resp = await fetch('/api/config-backup/import', { method: 'POST', body: fd });
             const data = await resp.json();
+
+            if (resp.status === 400 && data.error?.includes('preview expired or changed')) {
+                showAlert(importAlert, t('plugins.config-import.config-import.ui.importPreviewExpired'), 'error');
+                return;
+            }
 
             hideEl(importStep2);
             showEl(importStep3);
 
             const logArea = document.getElementById('importResultLog');
             const toggleBtn = document.getElementById('toggleLogBtn');
-            resetImportDetails();
+            logArea.innerHTML = '';
 
             if (data.success) {
                 document.getElementById('importResultMsg').innerHTML =
@@ -1157,21 +1401,10 @@
                     `<div class="alert alert-error">${t('plugins.config-import.config-import.ui.importCompletedWithErrors')}\n${escHtml(errMsg)}</div>`;
             }
 
-            const recoveryError = (data.errors || []).find(error =>
-                /recovery data retained at|recovery path became unsafe/i.test(error));
-            if (recoveryError) {
-                const hint = document.createElement('div');
-                hint.className = 'alert alert-warn';
-                const retainedPath = /recovery data retained at (.+)$/i.exec(recoveryError)?.[1];
-                hint.textContent = t('plugins.config-import.config-import.ui.recoveryRetainedHint') +
-                    (retainedPath ? ' ' + retainedPath : '');
-                document.getElementById('importResultMsg').appendChild(hint);
-            }
-
             // Build log lines
             const allLines = [];
             if (data.warnings && data.warnings.length > 0) {
-                data.warnings.forEach(w => allLines.push({ cls: 'log-warn', text: '⚠ ' + w }));
+                data.warnings.forEach(w => allLines.push({ cls: 'log-warn', text: '⚠ ' + window.localizeBackupImportWarning(w, t) }));
             }
             if (data.errors && data.errors.length > 0) {
                 data.errors.forEach(e => allLines.push({ cls: 'log-err', text: '✕ ' + e }));

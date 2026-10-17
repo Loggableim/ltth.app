@@ -16,6 +16,10 @@ import sys
 import json
 import shutil
 import re
+import unicodedata
+from urllib.parse import unquote
+import zipfile
+import zlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Tuple, List
@@ -23,6 +27,149 @@ from typing import Optional, Tuple, List
 # Configuration constants
 MAX_CHANGELOG_CHARS = 2000  # Maximum characters for changelog notes
 MAX_CHANGELOG_LINES = 50    # Maximum lines for changelog notes
+RETIRED_APP_PLUGIN_IDS = {"chatango"}
+APP_PLUGIN_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]{0,63}$")
+
+
+def public_runtime_excluded_ids(policy_path: Path) -> set[str]:
+    """Load the canonical public runtime exclusions; malformed policy fails closed."""
+    policy = json.loads(policy_path.read_text(encoding="utf-8-sig"))
+    closed_beta = policy.get("closedBeta") if isinstance(policy, dict) else None
+    runtime_excluded = policy.get("publicRuntimeExcluded", []) if isinstance(policy, dict) else None
+    aliases = policy.get("aliases", {}) if isinstance(policy, dict) else None
+    if (not isinstance(policy, dict) or type(policy.get("schemaVersion")) is not int
+            or policy.get("schemaVersion") != 1 or not isinstance(closed_beta, list)
+            or not isinstance(runtime_excluded, list) or not isinstance(aliases, dict)):
+        raise ValueError("Invalid public runtime release policy")
+
+    policy_ids = [*closed_beta, *runtime_excluded]
+    if (not all(isinstance(plugin_id, str) and APP_PLUGIN_ID_PATTERN.fullmatch(plugin_id)
+                for plugin_id in policy_ids)
+            or len(set(policy_ids)) != len(policy_ids)
+            or not all(isinstance(alias, str) and APP_PLUGIN_ID_PATTERN.fullmatch(alias)
+                       and alias not in policy_ids and isinstance(target, str)
+                       and target in closed_beta for alias, target in aliases.items())):
+        raise ValueError("Invalid public runtime release policy IDs or aliases")
+
+    return {plugin_id.casefold() for plugin_id in [*policy_ids, *aliases.keys(), *RETIRED_APP_PLUGIN_IDS]}
+
+
+def normalize_plugin_path_id(value: str) -> str:
+    """Normalize hostile ZIP path spellings like the runtime retirement guard."""
+    normalized = unicodedata.normalize("NFKC", value).strip()
+    for _ in range(8):
+        if "%" not in normalized:
+            break
+        decoded = unquote(normalized)
+        if decoded == normalized:
+            break
+        normalized = unicodedata.normalize("NFKC", decoded)
+    return unicodedata.normalize("NFKC", normalized).strip().casefold()
+
+
+def archive_contains_unapproved_env_file(zip_path: Path) -> bool:
+    """Reject environment files in prepared app ZIPs except the canonical template."""
+    with zipfile.ZipFile(zip_path) as archive:
+        for info in archive.infolist():
+            normalized = info.filename.replace('\\', '/')
+            parts = [part for part in normalized.split('/') if part]
+            if not parts:
+                continue
+
+            portable_name = parts[-1].rstrip('. ').casefold()
+            if portable_name != '.env' and not portable_name.startswith('.env.'):
+                continue
+
+            # The launcher requires this one template for first-start repair and
+            # config compatibility checks. Keep its package path canonical.
+            is_canonical_template = (
+                not info.is_dir()
+                and parts[-2:] == ['app', '.env.example']
+                and parts.count('app') == 1
+            )
+            if not is_canonical_template:
+                return True
+    return False
+
+
+def archive_contains_retired_app_plugin(zip_path: Path, blocked_ids: set[str]) -> bool:
+    """Fail closed when an app/plugins path or manifest reintroduces withheld code."""
+    with zipfile.ZipFile(zip_path) as archive:
+        for info in archive.infolist():
+            normalized = info.filename.replace('\\', '/')
+            normalized = normalize_plugin_path_id(normalized)
+            parts = [part for part in normalized.split('/') if part]
+            app_index = next((index for index, part in enumerate(parts) if part == 'app'), None)
+            if app_index is None:
+                continue
+            plugins_index = next((index for index in range(app_index + 1, len(parts)) if parts[index] == 'plugins'), None)
+            if plugins_index is None:
+                continue
+
+            plugin_parts = parts[plugins_index + 1:]
+            if any(part in blocked_ids or '%' in part for part in plugin_parts):
+                return True
+            if not plugin_parts or plugin_parts[-1] != 'plugin.json':
+                continue
+            if info.file_size > 1024 * 1024:
+                return True
+            manifest = json.loads(archive.read(info).decode('utf-8-sig'))
+            if not isinstance(manifest, dict):
+                return True
+            identities = [manifest.get('id')]
+            for field in ('aliases', 'replaces'):
+                values = manifest.get(field, [])
+                if not isinstance(values, list):
+                    return True
+                identities.extend(values)
+            if any(not isinstance(identity, str) for identity in identities):
+                return True
+            if any(not APP_PLUGIN_ID_PATTERN.fullmatch(identity) or identity.casefold() in blocked_ids
+                   for identity in identities):
+                return True
+    return False
+
+
+def archive_contains_retired_user_docs(zip_path: Path) -> bool:
+    """Fail closed if active package documentation advertises a retired integration."""
+    text_suffixes = {'.md', '.markdown', '.txt', '.html', '.htm', '.json'}
+    historical_parts = {'archive', 'archives', 'archived', 'history', 'historical', 'changelog', 'changelogs'}
+    retired_terms = RETIRED_APP_PLUGIN_IDS
+    max_doc_bytes = 2 * 1024 * 1024
+    with zipfile.ZipFile(zip_path) as archive:
+        for info in archive.infolist():
+            if info.is_dir():
+                continue
+            parts = [part.casefold() for part in info.filename.replace('\\', '/').split('/') if part]
+            if not any(part in {'docs', 'wiki'} for part in parts):
+                continue
+            if any(part in historical_parts for part in parts[:-1]):
+                continue
+            if any(marker in parts[-1] for marker in ('changelog', 'history', 'historical')):
+                continue
+            if Path(parts[-1]).suffix not in text_suffixes:
+                continue
+            if info.file_size > max_doc_bytes:
+                return True
+            try:
+                chunks = []
+                total = 0
+                with archive.open(info) as stream:
+                    while True:
+                        chunk = stream.read(min(65536, max_doc_bytes + 1 - total))
+                        if not chunk:
+                            break
+                        total += len(chunk)
+                        if total > max_doc_bytes:
+                            return True
+                        chunks.append(chunk)
+                text = b''.join(chunks).decode('utf-8-sig')
+            except (OSError, ValueError, RuntimeError, NotImplementedError, EOFError,
+                    zipfile.BadZipFile, UnicodeDecodeError, zlib.error):
+                return True
+            if any(retired_id in text.casefold() for retired_id in retired_terms):
+                return True
+    return False
 
 
 class SemVer:
@@ -148,6 +295,21 @@ class ReleaseManager:
         
         if not zip_file.exists():
             print(f"❌ Error: Missing ZIP file: {zip_file}")
+            return False
+
+        try:
+            if archive_contains_unapproved_env_file(zip_file):
+                print("❌ Error: ZIP contains an environment file outside canonical app/.env.example")
+                return False
+            blocked_ids = public_runtime_excluded_ids(
+                Path(__file__).resolve().parent.parent / 'app' / 'config' / 'plugin-release-policy.json'
+            )
+            if (archive_contains_retired_app_plugin(zip_file, blocked_ids)
+                    or archive_contains_retired_user_docs(zip_file)):
+                print("❌ Error: ZIP contains a closed-beta or retired app plugin/document")
+                return False
+        except (OSError, ValueError, zipfile.BadZipFile, json.JSONDecodeError, UnicodeDecodeError) as error:
+            print(f"❌ Error: ZIP could not be safely validated: {error}")
             return False
         
         if not changelog_file.exists():
@@ -351,27 +513,27 @@ class ReleaseManager:
         print(f"   Path: {patch_dir}")
         print()
         
-        # Step 2: Validate patch
-        print("🔍 Step 2: Validating patch files")
-        if not self.validate_patch(patch_dir, new_version):
-            return False
-        print()
-        
-        # Step 3: Get current version
-        print("📋 Step 3: Checking current deployed version")
+        # Step 2: Check version before opening or validating the candidate ZIP.
+        print("📋 Step 2: Checking current deployed version")
         current_version = self.get_current_version()
         if current_version:
             print(f"   Current version: {current_version}")
             try:
                 current_semver = SemVer(current_version)
                 if new_version <= current_semver:
-                    print(f"⚠️  Warning: New version {new_version} is not higher than current {current_version}")
-                    print(f"   Continuing anyway...")
+                    print(f"❌ Error: New version {new_version} must be strictly higher than current {current_version}")
+                    return False
             except ValueError:
                 print(f"⚠️  Warning: Current version '{current_version}' is not valid SemVer")
         else:
             print("   No current version found (first release)")
             current_version = None
+        print()
+
+        # Step 3: Validate patch only after the monotonic version gate.
+        print("🔍 Step 3: Validating patch files")
+        if not self.validate_patch(patch_dir, new_version):
+            return False
         print()
         
         # Step 4: Archive current version

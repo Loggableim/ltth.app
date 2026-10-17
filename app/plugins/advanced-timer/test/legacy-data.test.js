@@ -60,6 +60,89 @@ describe('Advanced Timer legacy-data import', () => {
     sourceDb.close();
   });
 
+  test('does not auto-assign plugin-directory legacy timers to the active profile', () => {
+    const isolatedRoot = path.join(root, 'isolated-migration');
+    const pluginDir = path.join(isolatedRoot, 'app', 'plugins', 'advanced-timer');
+    const sharedDir = path.join(isolatedRoot, 'user-data', 'plugins', 'advanced-timer', 'data');
+    const sourceDir = path.join(pluginDir, 'data');
+    const profileDir = profile => path.join(isolatedRoot, 'profiles', profile, 'plugins', 'advanced-timer', 'data');
+    const makeApi = profile => ({
+      log: jest.fn(),
+      getActiveProfile: () => profile,
+      getPluginDir: () => pluginDir,
+      getConfigPathManager: () => ({
+        getPluginDataDir: (_id, options = {}) => options.profileId ? profileDir(options.profileId) : sharedDir
+      }),
+      getPluginDataDir: options => options?.profileScoped ? profileDir(profile) : sharedDir
+    });
+    const sourceApi = { ...makeApi('profile_a'), getPluginDataDir: () => sourceDir };
+    const source = new TimerDatabase(sourceApi);
+    source.initialize();
+    source.db.prepare('INSERT INTO advanced_timers (id, name, mode) VALUES (?, ?, ?)').run('legacy-only', 'Legacy only', 'countdown');
+    source.destroy();
+
+    const apiA = makeApi('profile_a');
+    const targetA = new TimerDatabase(apiA);
+    targetA.initialize();
+    const targetB = new TimerDatabase(makeApi('profile_b'));
+    targetB.initialize();
+    try {
+      expect(targetA.db.prepare('SELECT COUNT(*) AS count FROM advanced_timers').get().count).toBe(0);
+      expect(targetB.db.prepare('SELECT COUNT(*) AS count FROM advanced_timers').get().count).toBe(0);
+
+      const preview = inspectLegacy(apiA, targetA);
+      expect(preview.sourceId).toBe('plugin_directory');
+      expect(preview.canImport).toBe(true);
+      importLegacy(apiA, targetA, { sourceId: preview.sourceId });
+
+      expect(targetA.db.prepare('SELECT name FROM advanced_timers WHERE id=?').get('legacy-only').name).toBe('Legacy only');
+      expect(targetB.db.prepare('SELECT COUNT(*) AS count FROM advanced_timers').get().count).toBe(0);
+      const retainedSource = new Database(path.join(sourceDir, 'timers.db'), { readonly: true });
+      expect(retainedSource.prepare('SELECT COUNT(*) AS count FROM advanced_timers').get().count).toBe(1);
+      retainedSource.close();
+    } finally {
+      targetA.destroy();
+      targetB.destroy();
+    }
+  });
+
+  test('requires source selection when multiple legacy stores contain data', () => {
+    const isolatedRoot = path.join(root, 'ambiguous-migration');
+    const pluginDir = path.join(isolatedRoot, 'app', 'plugins', 'advanced-timer');
+    const sharedDir = path.join(isolatedRoot, 'user-data', 'plugins', 'advanced-timer', 'data');
+    const sourceDir = path.join(pluginDir, 'data');
+    const targetDir = path.join(isolatedRoot, 'profiles', 'profile_a', 'plugins', 'advanced-timer', 'data');
+    const api = {
+      log: jest.fn(),
+      getActiveProfile: () => 'profile_a',
+      getPluginDir: () => pluginDir,
+      getConfigPathManager: () => ({ getPluginDataDir: (_id, options = {}) => options.profileId ? targetDir : sharedDir }),
+      getPluginDataDir: options => options?.profileScoped ? targetDir : sharedDir
+    };
+    for (const [dir, id, name] of [[sourceDir, 'plugin-copy', 'Plugin copy'], [sharedDir, 'shared-copy', 'Shared copy']]) {
+      const writer = new TimerDatabase({ ...api, getPluginDataDir: () => dir });
+      writer.initialize();
+      writer.db.prepare('INSERT INTO advanced_timers (id, name, mode) VALUES (?, ?, ?)').run(id, name, 'countdown');
+      writer.destroy();
+    }
+    const target = new TimerDatabase(api);
+    target.initialize();
+    try {
+      const ambiguous = inspectLegacy(api, target);
+      expect(ambiguous.requiresSourceSelection).toBe(true);
+      expect(ambiguous.canImport).toBe(false);
+      expect(ambiguous.availableSources).toEqual(['shared_data', 'plugin_directory']);
+
+      const selected = inspectLegacy(api, target, { sourceId: 'plugin_directory' });
+      expect(selected.canImport).toBe(true);
+      expect(selected.sourceId).toBe('plugin_directory');
+      importLegacy(api, target, { sourceId: selected.sourceId });
+      expect(target.db.prepare('SELECT name FROM advanced_timers').all()).toEqual([{ name: 'Plugin copy' }]);
+    } finally {
+      target.destroy();
+    }
+  });
+
   test('refuses target data or frame conflicts without overwriting', () => {
     fs.writeFileSync(path.join(targetDir, 'frames', 'old-frame.png'), 'keep');
     expect(inspectLegacy(api, targetTimerDatabase).canImport).toBe(false);

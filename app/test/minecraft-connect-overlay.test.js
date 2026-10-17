@@ -127,4 +127,72 @@ describe('Minecraft Connect overlay renderer', () => {
       dom.window.close();
     }
   });
+
+  test('disconnects its parent-theme observer only on final pagehide', async () => {
+    const html = fs.readFileSync(path.join(overlayDir, 'minecraft_overlay.html'), 'utf8');
+    const script = fs.readFileSync(path.join(overlayDir, 'minecraft_overlay.js'), 'utf8');
+    const parent = new JSDOM('<!doctype html><html data-theme="night"><body></body></html>');
+    const observerAudit = { created: 0, disconnected: 0 };
+    const timers = new Map();
+    const listeners = new Map();
+    let nextTimer = 0;
+    const socket = {
+      on: (event, listener) => listeners.set(event, listener),
+      disconnect: jest.fn()
+    };
+    const dom = new JSDOM(html, {
+      runScripts: 'dangerously',
+      url: 'http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=de',
+      beforeParse(window) {
+        Object.defineProperty(window, 'parent', { configurable: true, value: parent.window });
+        const NativeMutationObserver = window.MutationObserver;
+        window.MutationObserver = class extends NativeMutationObserver {
+          constructor(callback) {
+            super(callback);
+            observerAudit.created += 1;
+          }
+
+          disconnect() {
+            observerAudit.disconnected += 1;
+            return super.disconnect();
+          }
+        };
+        window.io = () => socket;
+        window.console = { log: jest.fn(), error: jest.fn() };
+        window.setTimeout = (callback, delay) => {
+          const id = ++nextTimer;
+          timers.set(id, { callback, delay });
+          return id;
+        };
+        window.clearTimeout = id => timers.delete(id);
+      }
+    });
+
+    try {
+      dom.window.eval(script);
+      dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+      expect(observerAudit.created).toBe(1);
+      expect(listeners.has('minecraft-connect:overlay-show')).toBe(true);
+
+      const persistedHide = new dom.window.Event('pagehide');
+      Object.defineProperty(persistedHide, 'persisted', { value: true });
+      dom.window.dispatchEvent(persistedHide);
+      expect(observerAudit.disconnected).toBe(0);
+      expect(socket.disconnect).not.toHaveBeenCalled();
+
+      parent.window.document.documentElement.setAttribute('data-theme', 'day');
+      await Promise.resolve();
+      await new Promise(resolve => setImmediate(resolve));
+      expect(dom.window.document.documentElement.getAttribute('data-theme')).toBe('day');
+
+      dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+      dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+      expect(observerAudit.disconnected).toBe(1);
+      expect(socket.disconnect).toHaveBeenCalledTimes(1);
+      expect(timers.size).toBe(0);
+    } finally {
+      dom.window.close();
+      parent.window.close();
+    }
+  });
 });

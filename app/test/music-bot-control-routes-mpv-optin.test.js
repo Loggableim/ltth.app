@@ -175,7 +175,7 @@ integrationTest('drives real null-audio MPV through direct Music Bot control rou
 
     const stopResponse = await invokeRoute(routes.get('post:/api/plugins/music-bot/clear'));
     expect(stopResponse.statusCode).toBe(200);
-    expect(stopResponse.payload).toEqual({ success: true });
+    expect(stopResponse.payload).toEqual({ success: true, queueCleared: true, playbackStopped: true });
     expect(controller.getNowPlaying()).toBeNull();
     expect(controller.getState()).toBe('idle');
     expect(child.exitCode).toBe(0);

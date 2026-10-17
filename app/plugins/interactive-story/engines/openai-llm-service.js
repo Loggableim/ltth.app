@@ -14,11 +14,22 @@ class OpenAILLMService {
     this.defaultModel = options.defaultModel || 'gpt-4o-mini';
     this.allowCustomModels = options.allowCustomModels === true;
     this.defaultHeaders = options.defaultHeaders || undefined;
+    this.timeout = Number.isFinite(Number(options.timeout)) && Number(options.timeout) > 0
+      ? Number(options.timeout)
+      : 120000;
+    this.maxRetries = Number.isFinite(Number(options.maxRetries)) && Number(options.maxRetries) > 0
+      ? Math.floor(Number(options.maxRetries))
+      : 3;
+    this.retryDelay = Number.isFinite(Number(options.retryDelay)) && Number(options.retryDelay) >= 0
+      ? Number(options.retryDelay)
+      : 2000;
 
     this.client = new OpenAI({
       apiKey: this.apiKey,
       baseURL: this.baseURL,
-      defaultHeaders: this.defaultHeaders
+      defaultHeaders: this.defaultHeaders,
+      timeout: this.timeout,
+      maxRetries: 0
     });
 
     this.models = {
@@ -41,10 +52,7 @@ class OpenAILLMService {
       this.models = { ...this.models, ...options.models };
     }
 
-    // Configurable options
-    this.timeout = options.timeout || 120000; // Default 120 seconds
-    this.maxRetries = options.maxRetries || 3;
-    this.retryDelay = options.retryDelay || 2000; // Initial retry delay in ms
+    // Configurable request timeout and service-level retry options.
   }
 
   /**

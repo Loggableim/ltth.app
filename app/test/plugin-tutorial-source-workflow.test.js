@@ -1,23 +1,10 @@
 'use strict';
 
 const path = require('path');
-const fs = require('fs');
 
 const { buildGuides } = require('../../scripts/plugin-tutorial-source');
-const { loadPublishedPluginCatalog } = require('../../scripts/lib/published-plugin-catalog');
 
 describe('plugin tutorial workflow evidence', () => {
-  test('publishes only the current public guide catalog while retaining closed-beta sources', () => {
-    const repoRoot = path.join(__dirname, '..', '..');
-    const catalog = loadPublishedPluginCatalog(repoRoot);
-    const guideIds = buildGuides(repoRoot).map((guide) => guide.id).sort();
-
-    expect(guideIds).toEqual(catalog.guideIds);
-    expect(guideIds).not.toContain('chatango');
-    expect(catalog.closedBetaIds.every((id) => !guideIds.includes(id))).toBe(true);
-    expect(catalog.closedBetaIds.every((id) => fs.existsSync(path.join(repoRoot, 'app', 'plugins', id)))).toBe(true);
-  });
-
   test('backs every declared local interaction with an executable local action', () => {
     const interactiveTypes = new Set([
       'set-demo-value',
@@ -58,6 +45,7 @@ describe('plugin tutorial workflow evidence', () => {
     ['fireworks', 'fireworks-reset', '#save-btn', '#toast'],
     ['spotlight', 'chatter-preview', '#preview-test-btn', '#toast'],
     ['toptier', 'tier-threshold', '#test-overlay', '#toast'],
+    ['emoji-rain', 'save-emoji-rain', '#save-config-btn', '#notification']
   ])('uses a real local result surface for %s/%s', (guideId, stepId, clickSelector, evidenceSelector) => {
     const guide = buildGuides(path.join(__dirname, '..', '..')).find((entry) => entry.id === guideId);
     const step = guide.steps.find((entry) => entry.id === stepId);

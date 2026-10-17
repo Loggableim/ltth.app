@@ -15,8 +15,14 @@ describe('guide capture postcondition contracts', () => {
   const assetsById = new Map(spec.assets.map((asset) => [asset.id, asset]));
 
   test('declares a narrow HTTP status set that contains the local capture result', () => {
+    const staleOutputs = manifest.outputs
+      .filter((output) => !assetsById.has(output.id))
+      .map((output) => `${output.locale}/${output.id}`);
+    expect(staleOutputs).toEqual([]);
+
     for (const output of manifest.outputs) {
       const asset = assetsById.get(output.id);
+      if (!asset) continue;
       const condition = asset.workflow.postconditions.find((entry) => entry.type === 'http-status');
 
       expect(condition).toBeDefined();

@@ -1,0 +1,58 @@
+# Source-anchored implementation sketch; review artifact, not directly applyable.
+# See companion .md for SHA-256 anchors, complete guard rules, and test cases.
+
+--- a/app/modules/public-overlay-payload-projection.js
++++ b/app/modules/public-overlay-payload-projection.js
+@@ projectQuizShowRoundEnded only
+-    if (!Number.isFinite(payload.answerDisplayDuration) || payload.answerDisplayDuration < 6 || payload.answerDisplayDuration > 600) return null;
++    if (!Number.isFinite(payload.answerDisplayDuration) || payload.answerDisplayDuration <= 0 || payload.answerDisplayDuration > 600) return null;
+     result.answerDisplayDuration = payload.answerDisplayDuration;
+
+--- a/app/plugins/quiz-show/main.js
++++ requester-only existing get-public-state handler
+         socket.emit('quiz-show:state-update', this.buildGameStatePayload());
++        const snapshot = this.activeRevealSnapshot;
++        if (snapshot && snapshot.generation === this.revealGeneration &&
++            snapshot.questionId === this.gameState.currentQuestionId &&
++            this.gameState.roundState === 'ended' && Date.now() < snapshot.expiresAt) {
++            const remainingSeconds = (snapshot.expiresAt - Date.now()) / 1000;
++            if (Number.isFinite(remainingSeconds) && remainingSeconds > 0) {
++                socket.emit('quiz-show:round-ended', {
++                    ...snapshot.payload,
++                    answerDisplayDuration: remainingSeconds
++                });
++            }
++        }
++
++// Private helper contract (wire shape remains the current round-ended projector DTO):
++// - invalidateRevealSnapshot(): ++generation; activeRevealSnapshot = null
++// - call before start/next/reset awaits and when resetGameState starts
++// - endRound captures generation + currentQuestionId before awaits; return if already ended
++// - after awaits, abort if generation/question/state changed; save only projected public fields
++// - expiresAt = emittedAt + configuredDuration * 1000; api.emit original DTO once
++// - next skips endRound when roundState is already ended
+
+--- a/app/plugins/quiz-show/quiz_show_overlay.js
++++ handleRoundEnded(data)
++        const isReconnectReveal = currentState === States.IDLE || currentState === States.QUESTION_INTRO;
++        if (isReconnectReveal && Number.isFinite(data.answerDisplayDuration) && data.answerDisplayDuration > 0) {
++            if (stateTimeout) {
++                clearTrackedTimeout(stateTimeout);
++                stateTimeout = null;
++            }
++            // Existing REVEAL_CORRECT timer consumes fractional seconds via seconds * 1000.
++            transitionToState(States.REVEAL_CORRECT);
++            return;
++        }
+         // Existing RUNNING/TIME_LOW -> TIME_UP behavior remains for live round end.
+
+--- a/app/test/quiz-show-public-reconnect.test.js
++++ requester-only reconnect regression coverage
++// Add tests for requester-only state-then-reveal ordering, 250ms remaining,
++// exact/after-expiry silence, reset/next/new-round invalidation, and delayed
++// saveConfig/TTS completion after generation changes. Assert no room broadcast.
+
+--- a/app/test/quiz-show-public-projection.test.js
++++ existing round-ended projection regression coverage
++// Accept finite positive fractional answerDisplayDuration; reject 0, negatives,
++// NaN/Infinity, and >600. Preserve existing allowed-field filtering.

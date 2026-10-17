@@ -230,6 +230,29 @@ describe('CoinBattle Match State Emission', () => {
       stateEvent = emittedEvents.find(e => e.event === 'coinbattle:match-state');
       expect(stateEvent.data.active).toBe(false);
     });
+
+    test('freezes remaining time while paused and resumes from the same elapsed time', () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-10-06T12:00:00.000Z'));
+      engine.startMatch('solo', 90);
+
+      jest.advanceTimersByTime(7000);
+      engine.pauseMatch();
+      const pausedState = engine.getMatchState().match;
+      expect(pausedState.elapsed).toBe(7);
+      expect(pausedState.remaining).toBe(83);
+
+      jest.advanceTimersByTime(14000);
+      expect(engine.getMatchState().match).toMatchObject({ elapsed: 7, remaining: 83, isPaused: true });
+
+      engine.extendMatch(60);
+      expect(engine.getMatchState().match).toMatchObject({ elapsed: 7, remaining: 143, isPaused: true });
+
+      engine.resumeMatch();
+      jest.advanceTimersByTime(2000);
+      expect(engine.getMatchState().match).toMatchObject({ elapsed: 9, remaining: 141, isPaused: false });
+      jest.useRealTimers();
+    });
   });
 
   describe('startSimulation', () => {

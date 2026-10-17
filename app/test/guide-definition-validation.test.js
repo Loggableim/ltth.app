@@ -3,7 +3,7 @@ const {
   formatGuideContractAudit
 } = require('../../scripts/lib/guide-definition-validation');
 const { buildGuides } = require('../../scripts/plugin-tutorial-source');
-const childProcess = require('child_process');
+const { auditGuideContracts } = require('../../scripts/build-plugin-docs');
 const path = require('path');
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
@@ -396,16 +396,12 @@ describe('GuideDefinition contract audit', () => {
 
   test('requires every shipped guide definition to cover its sourced controls and integrations', () => {
     const repoRoot = path.join(__dirname, '..', '..');
-    const result = childProcess.spawnSync(process.execPath, [
-      path.join(repoRoot, 'scripts', 'build-plugin-docs.js'),
-      '--audit-contracts'
-    ], {
-      cwd: repoRoot,
-      encoding: 'utf8'
-    });
+    const guides = buildGuides(repoRoot);
+    const audit = auditGuideContracts(guides);
+    const output = formatGuideContractAudit(audit);
 
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain(`GuideDefinition contract audit: ${buildGuides(repoRoot).length} guide(s)`);
-    expect(result.stdout).toContain('0 error(s)');
+    expect(audit.compliant).toBe(true);
+    expect(output).toContain(`GuideDefinition contract audit: ${guides.length} guide(s)`);
+    expect(output).toContain('0 error(s)');
   });
 });

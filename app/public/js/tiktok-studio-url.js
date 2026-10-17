@@ -79,6 +79,48 @@
       throw new TikTokStudioUrlError(code, message);
     }
 
+    const SIDEKICK_POSITIONS = new Set([
+      'top-left',
+      'top-right',
+      'bottom-left',
+      'bottom-right'
+    ]);
+
+    function validateTemporaryOverlayQuery(url) {
+      const entries = [...url.searchParams.entries()];
+      if (entries.length === 0) return;
+
+      const allowedKeys = url.pathname === '/overlay/viewer-xp/xp-bar'
+        ? new Set(['username'])
+        : url.pathname === '/overlay/sidekick/hud'
+          ? new Set(['position', 'minimal', 'events', 'maxEvents'])
+          : new Set();
+      const seen = new Set();
+
+      for (const [key, value] of entries) {
+        if (!allowedKeys.has(key) || seen.has(key)) {
+          fail('OVERLAY_URL_QUERY_INVALID', 'Overlay URL query parameters are invalid');
+        }
+        seen.add(key);
+
+        let valid = false;
+        if (url.pathname === '/overlay/viewer-xp/xp-bar' && key === 'username') {
+          valid = value.length >= 1 && value.length <= 80 && value.trim() === value &&
+            !/[\u0000-\u001f\u007f]/.test(value);
+        } else if (key === 'position') {
+          valid = SIDEKICK_POSITIONS.has(value);
+        } else if (key === 'minimal' || key === 'events') {
+          valid = value === 'true' || value === 'false';
+        } else if (key === 'maxEvents') {
+          valid = /^(?:[1-9]|10)$/.test(value);
+        }
+
+        if (!valid) {
+          fail('OVERLAY_URL_QUERY_INVALID', 'Overlay URL query parameters are invalid');
+        }
+      }
+    }
+
     function isLocalHostname(hostname) {
       const normalized = String(hostname || '').toLowerCase();
       if (
@@ -242,6 +284,7 @@
       createEmbeddedStableUrlApi();
 
     async function ensurePublicUrl(localUrl, fetchImpl) {
+      validateTemporaryOverlayQuery(localUrl);
       const key = localUrl.href;
       if (ensureRequests.has(key)) {
         return ensureRequests.get(key);
@@ -281,7 +324,12 @@
         if (
           publicUrl.protocol !== 'https:' ||
           publicUrl.username ||
-          publicUrl.password
+          publicUrl.password ||
+          publicUrl.port ||
+          publicUrl.hash ||
+          publicUrl.pathname !== localUrl.pathname ||
+          publicUrl.search !== localUrl.search ||
+          !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.trycloudflare\.com$/i.test(publicUrl.hostname)
         ) {
           fail('OVERLAY_TUNNEL_RESPONSE_INVALID', 'Quick Tunnel response was invalid');
         }

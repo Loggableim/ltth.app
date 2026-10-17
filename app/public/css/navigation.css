@@ -480,13 +480,29 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
     padding: 0.75rem;
     margin: 0 0 0.25rem 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
     cursor: pointer;
     border-radius: 8px;
     transition: all 0.2s ease;
     user-select: none;
     min-width: 0;
+}
+
+.sidebar-category-header:focus-visible,
+.sidebar-item:focus-visible,
+.sidebar-toggle-btn:focus-visible,
+.topbar-icon-btn:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-category-header:hover {
@@ -1235,7 +1251,7 @@ html:is(
 
 .dashboard-cockpit-grid {
     display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(400px, 0.95fr);
+    grid-template-columns: minmax(0, 1.7fr) minmax(280px, 0.8fr);
     gap: 1.5rem;
     align-items: start;
     width: 100%;
@@ -1492,9 +1508,10 @@ html:is(
 }
 
 .connection-input:focus {
-    outline: none;
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--color-focus-ring);
+    box-shadow: none;
 }
 
 .connection-info {
@@ -2048,9 +2065,10 @@ input:checked + .toggle-slider:before {
 .form-input:focus,
 .form-select:focus,
 .form-textarea:focus {
-    outline: none;
-    border-color: var(--color-accent-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+    border-color: var(--color-focus-ring);
+    box-shadow: none;
 }
 
 .form-textarea {

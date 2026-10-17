@@ -49,7 +49,6 @@ Add multilingual descriptions to all 30 plugin.json files and update related doc
 
 1. advanced-timer
 2. api-bridge
-3. chatango
 4. clarityhud
 5. coinbattle
 6. config-import

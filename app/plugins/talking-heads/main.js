@@ -47,6 +47,7 @@ class TalkingHeadsPlugin {
     this.ttsBridgeHandlers = null;
     this.pendingAvatarSpins = new Map();
     this.initialAvatarPlaybackReservations = new Map();
+    this.initialAvatarPreparations = new Map();
     this.activePlaybackByUser = new Map();
     this.pendingGiftRerolls = new Map();
     this.generatedAssetCleanupTimers = new Map();
@@ -92,6 +93,19 @@ class TalkingHeadsPlugin {
       spriteMode: 'asset-library', // 'asset-library' | 'manual' | 'hybrid'
       manualFallback: true,      // fallback to local assets when no set is assigned
       defaultManualSetId: null,  // default manual set for users without an assigned set
+      // Nameplate and animation customization
+      nameplatePosition: 'below',
+      nameplateFontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+      nameplateFontSize: 14,
+      nameplateFontColor: '#ffffff',
+      nameplateBackgroundColor: '#060c1c',
+      nameplateBackgroundOpacity: 0.75,
+      nameplateTextShadow: 'subtle',
+      nameplateTextStroke: 'none',
+      headEntranceAnimation: 'slide-up',
+      headExitAnimation: 'fade',
+      nameplateEntranceAnimation: 'fade',
+      nameplateExitAnimation: 'fade',
       // Viewer Bar configuration
       viewerBar: {
         enabled: false,
@@ -157,6 +171,50 @@ class TalkingHeadsPlugin {
       ...normalizedConfig
     } = config;
 
+    const validPositions = ['above', 'below', 'hidden'];
+    const validShadows = ['none', 'subtle', 'medium', 'glow'];
+    const validStrokes = ['none', '1px black', '2px black', '1px white'];
+    const validAnimations = ['bounce', 'pop', 'slide-up', 'slide-down', 'fade'];
+
+    const nameplatePosition = validPositions.includes(config.nameplatePosition)
+      ? config.nameplatePosition
+      : 'below';
+    const nameplateFontFamily = typeof config.nameplateFontFamily === 'string' && config.nameplateFontFamily.trim()
+      ? config.nameplateFontFamily.trim().slice(0, 120)
+      : 'Inter, ui-sans-serif, system-ui, sans-serif';
+    const rawFontSize = Number(config.nameplateFontSize);
+    const nameplateFontSize = Number.isFinite(rawFontSize)
+      ? Math.min(48, Math.max(10, Math.round(rawFontSize)))
+      : 14;
+    const nameplateFontColor = typeof config.nameplateFontColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(config.nameplateFontColor.trim())
+      ? config.nameplateFontColor.trim()
+      : '#ffffff';
+    const nameplateBackgroundColor = typeof config.nameplateBackgroundColor === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(config.nameplateBackgroundColor.trim())
+      ? config.nameplateBackgroundColor.trim()
+      : '#060c1c';
+    const rawOpacity = Number(config.nameplateBackgroundOpacity);
+    const nameplateBackgroundOpacity = Number.isFinite(rawOpacity)
+      ? Math.min(1, Math.max(0, Math.round(rawOpacity * 100) / 100))
+      : 0.75;
+    const nameplateTextShadow = validShadows.includes(config.nameplateTextShadow)
+      ? config.nameplateTextShadow
+      : 'subtle';
+    const nameplateTextStroke = validStrokes.includes(config.nameplateTextStroke)
+      ? config.nameplateTextStroke
+      : 'none';
+    const headEntranceAnimation = validAnimations.includes(config.headEntranceAnimation)
+      ? config.headEntranceAnimation
+      : 'slide-up';
+    const headExitAnimation = validAnimations.includes(config.headExitAnimation)
+      ? config.headExitAnimation
+      : 'fade';
+    const nameplateEntranceAnimation = validAnimations.includes(config.nameplateEntranceAnimation)
+      ? config.nameplateEntranceAnimation
+      : 'fade';
+    const nameplateExitAnimation = validAnimations.includes(config.nameplateExitAnimation)
+      ? config.nameplateExitAnimation
+      : 'fade';
+
     return {
       ...normalizedConfig,
       firstAssignmentEnabled: hasLegacyEnabled
@@ -171,7 +229,19 @@ class TalkingHeadsPlugin {
       rerollGiftNames: rerollGiftNames.length ? rerollGiftNames : defaultGiftNames,
       spinDurationMs: Number.isFinite(requestedDuration)
         ? Math.min(10000, Math.max(800, Math.round(requestedDuration)))
-        : 2600
+        : 2600,
+      nameplatePosition,
+      nameplateFontFamily,
+      nameplateFontSize,
+      nameplateFontColor,
+      nameplateBackgroundColor,
+      nameplateBackgroundOpacity,
+      nameplateTextShadow,
+      nameplateTextStroke,
+      headEntranceAnimation,
+      headExitAnimation,
+      nameplateEntranceAnimation,
+      nameplateExitAnimation
     };
   }
 
@@ -409,6 +479,17 @@ class TalkingHeadsPlugin {
 
     const existing = this.avatarLotteryManager.getAssignment(identity.userId);
     if (existing?.selection) {
+      if (existing.selection.packId !== 'boba') {
+        const migratedSelection = this._ensureAssetSpriteLibrary().getRandomSelection();
+        const migratedAssignment = this.avatarLotteryManager.assign(identity.userId, identity.username, migratedSelection);
+        this._log(`Migrated legacy non-boba assignment for ${identity.username} to boba/${migratedSelection.characterId}`, 'info');
+        return {
+          created: false,
+          selection: migratedSelection,
+          reason: 'migrated',
+          assignment: migratedAssignment
+        };
+      }
       return {
         created: false,
         selection: existing.selection,
@@ -447,9 +528,18 @@ class TalkingHeadsPlugin {
     playbackId,
     winnerSelection,
     reason = 'initial-assignment',
-    preview = false
+    preview = false,
+    signal = null,
+    onPhase = null
   } = {}) {
     if (!userId || !winnerSelection || !this.assetSpriteLibrary) return null;
+    const throwIfAborted = () => {
+      if (!signal?.aborted) return;
+      const error = new Error('Avatar preparation aborted');
+      error.name = 'AbortError';
+      throw error;
+    };
+    throwIfAborted();
     const legacyDuration = Number(this.config.lotteryAnimationDuration);
     const duration = Number.isFinite(legacyDuration)
       ? legacyDuration
@@ -464,6 +554,26 @@ class TalkingHeadsPlugin {
     const winnerExpiresAt = reason === 'initial-assignment'
       ? Date.now() + 60 * 60 * 1000
       : candidateExpiresAt;
+    let ownerReleasePromise = null;
+    const releaseOwners = () => {
+      if (!ownerReleasePromise) {
+        const release = this.cacheManager?.releaseGeneratedAssetOwner;
+        const ownerIds = [candidateOwnerId, winnerOwnerId].filter(Boolean);
+        ownerReleasePromise = Promise.allSettled(ownerIds.map(ownerId => (
+          release ? Promise.resolve().then(() => release.call(this.cacheManager, ownerId)) : Promise.resolve()
+        )));
+        ownerReleasePromise.then((results) => {
+          results.forEach((result, index) => {
+            if (result.status === 'rejected') {
+              this.logger.warn(`TalkingHeads: Failed to release aborted spin owner ${ownerIds[index]}`, result.reason);
+            }
+          });
+        });
+      }
+      return ownerReleasePromise;
+    };
+    const releaseOwnersOnAbort = () => { void releaseOwners(); };
+    signal?.addEventListener('abort', releaseOwnersOnAbort, { once: true });
     const candidates = this.assetSpriteLibrary.getLotteryCandidates(
       3,
       Math.random,
@@ -472,16 +582,18 @@ class TalkingHeadsPlugin {
     let winnerSpriteSet;
     let candidateCards;
     try {
-      [winnerSpriteSet, candidateCards] = await Promise.all([
+      const results = await Promise.allSettled([
         this.assetSpriteLibrary.getSpriteSet(winnerSelection, {
           ownerId: winnerOwnerId,
-          expiresAt: winnerExpiresAt
+          expiresAt: winnerExpiresAt,
+          signal
         }),
-        Promise.all(candidates.map(async (selection) => {
+        Promise.allSettled(candidates.map(async (selection) => {
           const spriteSet = await this.assetSpriteLibrary.getSpriteSet(selection, {
             ownerId: candidateOwnerId,
             expiresAt: candidateExpiresAt,
-            frameNames: ['idle_neutral']
+            frameNames: ['idle_neutral'],
+            signal
           });
           const sprites = this._getRelativeSpritePaths(spriteSet.sprites);
           return {
@@ -489,14 +601,21 @@ class TalkingHeadsPlugin {
             spriteUrl: sprites.idle_neutral,
             sprites
           };
-        }))
+        })).then((results) => {
+          const failedCandidate = results.find(result => result.status === 'rejected');
+          if (failedCandidate) throw failedCandidate.reason;
+          return results.map(result => result.value);
+        })
       ]);
+      const failed = results.find(result => result.status === 'rejected');
+      if (failed) throw failed.reason;
+      [winnerSpriteSet, candidateCards] = results.map(result => result.value);
+      throwIfAborted();
     } catch (error) {
-      await Promise.allSettled([
-        this.cacheManager?.releaseGeneratedAssetOwner?.(candidateOwnerId),
-        this.cacheManager?.releaseGeneratedAssetOwner?.(winnerOwnerId)
-      ].filter(Boolean));
+      await releaseOwners();
       throw error;
+    } finally {
+      signal?.removeEventListener('abort', releaseOwnersOnAbort);
     }
     const payload = {
       spinId,
@@ -512,6 +631,8 @@ class TalkingHeadsPlugin {
         sprites: this._getRelativeSpritePaths(winnerSpriteSet.sprites)
       }
     };
+    throwIfAborted();
+    onPhase?.('spin-started');
     this.io.emit('talkingheads:avatar:spin:start', payload);
     this._scheduleGeneratedAssetRelease(candidateOwnerId, revealLifetimeMs);
     if (reason !== 'initial-assignment') {
@@ -630,7 +751,9 @@ class TalkingHeadsPlugin {
    * assignment primitive before the presentation spin starts, so an absent
    * overlay can never lose the definitive avatar result.
    */
-  async prepareAvatarForPlayback(meta = {}) {
+  async prepareAvatarForPlayback(meta = {}, options = {}) {
+    const externalSignal = options?.signal || null;
+    if (externalSignal?.aborted) return { created: false, spinStatus: 'aborted' };
     if (!this.config.enabled) {
       return { created: false, reason: 'disabled' };
     }
@@ -655,17 +778,52 @@ class TalkingHeadsPlugin {
     if (!preparation.created) return preparation;
 
     const playbackId = String(meta.playbackId || meta.id || '').trim();
+    const operation = new AbortController();
+    const abortFromExternal = () => operation.abort(externalSignal?.reason);
+    externalSignal?.addEventListener('abort', abortFromExternal, { once: true });
+    if (externalSignal?.aborted) abortFromExternal();
+    const operationId = playbackId || `avatar-preparation:${this._createSpinId()}`;
+    const priorOperation = this.initialAvatarPreparations.get(operationId);
+    priorOperation?.controller?.abort(new Error('Avatar preparation superseded'));
+    const operationRecord = { controller: operation };
+    this.initialAvatarPreparations.set(operationId, operationRecord);
     this._reserveInitialAvatarPlayback(identity.userId, playbackId);
-
-    const payload = await this._emitAvatarSpin({
-      userId: identity.userId,
-      username: identity.username,
-      playbackId,
-      winnerSelection: preparation.selection,
-      reason: 'initial-assignment'
-    });
-    if (!payload) return { ...preparation, spinStatus: 'unavailable' };
-    return this._waitForAvatarSpin(payload, preparation);
+    const clearMatchingReservation = () => {
+      if (this.initialAvatarPlaybackReservations.get(identity.userId) === playbackId) {
+        this.initialAvatarPlaybackReservations.delete(identity.userId);
+      }
+      if (this.initialAvatarPreparations.get(operationId) === operationRecord) {
+        this.initialAvatarPreparations.delete(operationId);
+      }
+    };
+    operation.signal.addEventListener('abort', clearMatchingReservation, { once: true });
+    let committedAssignment = true;
+    let spinPayloadCreated = false;
+    try {
+      if (operation.signal.aborted) return { ...preparation, spinStatus: 'aborted' };
+      const payload = await this._emitAvatarSpin({
+        userId: identity.userId,
+        username: identity.username,
+        playbackId,
+        winnerSelection: preparation.selection,
+        reason: 'initial-assignment',
+        signal: operation.signal,
+        onPhase: options?.onPhase
+      });
+      if (!payload) return { ...preparation, spinStatus: 'unavailable' };
+      spinPayloadCreated = true;
+      return await this._waitForAvatarSpin(payload, preparation);
+    } catch (error) {
+      if (error?.name !== 'AbortError') throw error;
+      return { ...preparation, spinStatus: 'aborted' };
+    } finally {
+      operation.signal.removeEventListener('abort', clearMatchingReservation);
+      externalSignal?.removeEventListener('abort', abortFromExternal);
+      if (this.initialAvatarPreparations.get(operationId) === operationRecord) {
+        this.initialAvatarPreparations.delete(operationId);
+      }
+      if ((!spinPayloadCreated || operation.signal.aborted) && committedAssignment) clearMatchingReservation();
+    }
   }
 
   /**
@@ -1133,6 +1291,11 @@ class TalkingHeadsPlugin {
         // Update managers with new config
         if (this.roleManager) {
           this.roleManager.updateConfig(this.config);
+        }
+
+        // Broadcast updated configuration to connected overlays without page reload
+        if (this.io) {
+          this.io.emit('talkingheads:config:update', { config: this.config });
         }
 
         res.json({ 
@@ -2384,6 +2547,12 @@ class TalkingHeadsPlugin {
     // gift-lottery implementation.
     const existingAssignment = this.avatarLotteryManager?.getAssignment(userId);
     if (existingAssignment?.selection) {
+      if (existingAssignment.selection.packId !== 'boba') {
+        const migratedSelection = this._ensureAssetSpriteLibrary().getRandomSelection();
+        const updatedAssignment = this.avatarLotteryManager.assign(userId, username, migratedSelection);
+        this._log(`Migrated avatar for ${username} to Boba Animals (${migratedSelection.characterId})`, 'info', migratedSelection);
+        existingAssignment.selection = updatedAssignment?.selection || migratedSelection;
+      }
       try {
         avatarData = await this._getConfiguredAssetAvatar(
           userId,
@@ -2763,6 +2932,10 @@ class TalkingHeadsPlugin {
       }
 
       this._cancelPendingAvatarSpins();
+      this.initialAvatarPreparations.forEach((operation) => {
+        operation.controller.abort(new Error('Talking Heads plugin destroyed'));
+      });
+      this.initialAvatarPreparations.clear();
       this.initialAvatarPlaybackReservations.clear();
       this.activePlaybackByUser.clear();
       this.pendingGiftRerolls.clear();

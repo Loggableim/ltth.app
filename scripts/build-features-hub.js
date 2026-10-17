@@ -26,7 +26,7 @@ const OG_LOCALES = {
   fr: 'fr_FR',
 };
 const LANGS = ['de', 'en', 'es', 'fr'];
-const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'plugin-leaderboard', 'plugin-openshock', 'plugin-chatango']);
+const REMOVED_FEATURE_SLUGS = new Set(['overlays', 'plugin-leaderboard', 'plugin-openshock']);
 const FEATURE_OVERVIEW_IMAGE = '/screenshots/features/dashboard-main.png';
 const SITE_NAME = 'ltth.app';
 const SITE_URL = 'https://ltth.app';
@@ -223,7 +223,9 @@ function buildFeatureCatalog(lang) {
     .readdirSync(FEATURES_DIR)
     .filter(file => file.endsWith('.html') && file !== 'index.html')
     .map(file => path.basename(file, '.html'));
-  const visibleSlugs = slugEntries.filter(slug => !REMOVED_FEATURE_SLUGS.has(slug));
+  const visibleSlugs = slugEntries.filter(
+    slug => !REMOVED_FEATURE_SLUGS.has(slug) && !isClosedBetaFeature(slug)
+  );
 
   const collator = new Intl.Collator(lang, { sensitivity: 'base' });
 
@@ -465,7 +467,7 @@ function renderItem(page, lang, item, category) {
               <h3>${escapeHtml(item.title)}</h3>
               ${item.closedBeta ? `<p class="catalog-entry__availability" role="status">${escapeHtml(page.closedBetaBadge)} · ${escapeHtml(page.closedBetaNotice)}</p>` : ''}
             </div>
-            <a class="catalog-entry__link" href="${escapeAttr(item.href)}">${escapeHtml(page.deepDiveLabel)}</a>
+            ${item.closedBeta ? '' : `<a class="catalog-entry__link" href="${escapeAttr(item.href)}">${escapeHtml(page.deepDiveLabel)}</a>`}
           </div>
           <p class="catalog-entry__description">${escapeHtml(item.description)}</p>
           <dl class="catalog-entry__meta">
@@ -480,7 +482,7 @@ function renderItem(page, lang, item, category) {
           </dl>
           <div class="catalog-entry__footer">
             <span class="catalog-entry__count">${shotCountLabel}</span>
-            <a class="catalog-entry__link" href="${escapeAttr(item.href)}">${escapeHtml(page.deepDiveLabel)}</a>
+            ${item.closedBeta ? '' : `<a class="catalog-entry__link" href="${escapeAttr(item.href)}">${escapeHtml(page.deepDiveLabel)}</a>`}
           </div>
         </div>
         <div class="catalog-entry__gallery">

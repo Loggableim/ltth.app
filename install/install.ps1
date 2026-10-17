@@ -139,7 +139,7 @@ function Get-LauncherDownloadUrl {
     )
 
     if (Use-OfficialLauncherRelease) {
-        if ($ReleaseTag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+        if ($ReleaseTag -notmatch '^(?:v|launcher-v|launcher-beta-v)[0-9]+\.[0-9]+\.[0-9]+$') {
             throw "Ein gueltiger Release-Tag ist fuer den offiziellen Launcher-Download erforderlich."
         }
         return "https://github.com/Loggableim/ltth.app/releases/download/$ReleaseTag/launcher.exe"
@@ -179,8 +179,9 @@ function Assert-ReleaseArtifactManifest {
     }
 
     $tag = [string]$Manifest.tag
-    if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$' -or $tag -ne "v$version") {
-        throw "Release-Manifest tag muss exakt v$version sein."
+    $allowedTags = @("v$version", "launcher-v$version", "launcher-beta-v$version")
+    if ($tag -notin $allowedTags) {
+        throw "Release-Manifest tag muss exakt einem offiziellen Launcher-Tag fuer $version entsprechen."
     }
 
     $commitSha = ([string]$Manifest.commitSha).ToLowerInvariant()
@@ -444,6 +445,19 @@ function Assert-PublicAppBundleArchive {
                 throw "App-Bundle enthaelt einen unsicheren ZIP-Pfad: $($entry.FullName)"
             }
 
+            # Windows collapses trailing dots/spaces and ignores case. Classify
+            # the normalized leaf so aliases such as `.ENV.` cannot smuggle a
+            # secret file into the extracted public app. Only the exact,
+            # version-rooted runtime template is allowed.
+            $leafName = $entryName.Split('/')[-1].TrimEnd([char[]]@(' ', '.'))
+            if ($leafName -ieq '.env' -or $leafName.StartsWith('.env.', [System.StringComparison]::OrdinalIgnoreCase)) {
+                $canonicalEnvExample = $rootPrefix + 'app/.env.example'
+                if ($entry.FullName.EndsWith('/') -or
+                    -not [string]::Equals($entry.FullName.Replace('\', '/'), $canonicalEnvExample, [System.StringComparison]::Ordinal)) {
+                    throw "App-Bundle enthaelt eine nicht erlaubte .env-Datei: $($entry.FullName)"
+                }
+            }
+
             $parts = $entryName.Split('/')
             for ($index = 0; $index -lt $parts.Count; $index++) {
                 if ($parts[$index] -ine 'app') { continue }
@@ -472,9 +486,9 @@ function Assert-PublicAppBundleArchive {
         }
         $policy = Read-AppBundleZipJson -Entry $policyEntries[0] -Description 'Plugin-Release-Policy'
         $policyKeys = @($policy.PSObject.Properties | ForEach-Object { $_.Name })
-        if ($policy.schemaVersion -isnot [int] -or $policy.schemaVersion -ne 1 -or
+        if (($policy.schemaVersion -isnot [int] -and $policy.schemaVersion -isnot [long]) -or $policy.schemaVersion -ne 1 -or
             $null -eq $policy.closedBeta -or $policy.closedBeta -isnot [System.Array] -or
-            @($policyKeys | Where-Object { $_ -notin @('schemaVersion', 'closedBeta', 'aliases') }).Count -gt 0) {
+            @($policyKeys | Where-Object { $_ -notin @('schemaVersion', 'closedBeta', 'aliases', 'publicRuntimeExcluded', 'publicAssetPathOwners') }).Count -gt 0) {
             throw "App-Bundle Plugin-Release-Policy ist ungueltig."
         }
 
@@ -484,6 +498,43 @@ function Assert-PublicAppBundleArchive {
                 throw "App-Bundle Plugin-Release-Policy enthaelt eine ungueltige Closed-Beta-ID."
             }
             $blockedIds += $id
+        }
+
+        $runtimeExcludedProperty = $policy.PSObject.Properties['publicRuntimeExcluded']
+        if ($null -ne $runtimeExcludedProperty) {
+            if ($runtimeExcludedProperty.Value -isnot [System.Array]) {
+                throw "App-Bundle Public-Runtime-Ausschluss muss eine Liste sein."
+            }
+            foreach ($id in $runtimeExcludedProperty.Value) {
+                if ($id -isnot [string] -or $id -notmatch '^[a-z0-9][a-z0-9_-]{0,63}$' -or $blockedIds -contains $id) {
+                    throw "App-Bundle Public-Runtime-Ausschluss ist ungueltig."
+                }
+                $blockedIds += $id
+            }
+        }
+
+        $blockedAssetPaths = @()
+        $assetOwnersProperty = $policy.PSObject.Properties['publicAssetPathOwners']
+        if ($null -ne $assetOwnersProperty) {
+            if ($assetOwnersProperty.Value -isnot [System.Management.Automation.PSCustomObject]) {
+                throw "App-Bundle Public-Asset-Policy ist ungueltig."
+            }
+            foreach ($asset in $assetOwnersProperty.Value.PSObject.Properties) {
+                $assetPath = $asset.Name
+                $segments = $assetPath.TrimStart('/').Split('/')
+                if (-not $assetPath.StartsWith('/') -or $assetPath.StartsWith('//') -or
+                    $assetPath -match '[\\%?#:\x00-\x1f]' -or
+                    @($segments | Where-Object { -not $_ -or $_ -in @('.', '..') -or $_ -match '[. ]$' }).Count -gt 0 -or
+                    $asset.Value -isnot [string] -or $asset.Value -notin $blockedIds) {
+                    throw "App-Bundle Public-Asset-Policy-Pfad oder Besitzer ist ungueltig."
+                }
+                $blockedAssetPaths += $rootPrefix + 'app/public' + $assetPath
+            }
+        }
+        foreach ($entry in $archive.Entries) {
+            if ($blockedAssetPaths -contains $entry.FullName.Replace('\', '/').TrimEnd('/')) {
+                throw "App-Bundle enthaelt ein geschlossenes Public-Asset."
+            }
         }
 
         $aliasProperty = $policy.PSObject.Properties['aliases']
@@ -503,6 +554,14 @@ function Assert-PublicAppBundleArchive {
             }
         }
 
+        if ($blockedIds -notcontains 'chatango') { $blockedIds += 'chatango' }
+        $retiredThemeAdapter = $rootPrefix + 'app/public/js/chatango-theme-adapter.js'
+        foreach ($entry in $archive.Entries) {
+            if ([string]::Equals($entry.FullName.Replace('\', '/').TrimEnd('/'), $retiredThemeAdapter, [System.StringComparison]::OrdinalIgnoreCase)) {
+                throw "App-Bundle enthaelt den entfernten Chatango-Theme-Adapter."
+            }
+        }
+
         $packageName = $rootPrefix + 'app/package.json'
         $packageEntries = @($archive.Entries | Where-Object {
             $_.FullName.Replace('\', '/') -ieq $packageName
@@ -516,6 +575,16 @@ function Assert-PublicAppBundleArchive {
         }
 
         $pluginPrefix = $rootPrefix + 'app/plugins/'
+        $normalizePluginPathPart = {
+            param([string]$Value)
+            $normalized = $Value.Normalize([System.Text.NormalizationForm]::FormKC)
+            for ($attempt = 0; $attempt -lt 8 -and $normalized.Contains('%'); $attempt++) {
+                $decoded = [System.Uri]::UnescapeDataString($normalized)
+                if ($decoded -ceq $normalized) { break }
+                $normalized = $decoded.Normalize([System.Text.NormalizationForm]::FormKC)
+            }
+            return $normalized.Normalize([System.Text.NormalizationForm]::FormKC).ToLowerInvariant()
+        }
         foreach ($entry in $archive.Entries) {
             $entryName = $entry.FullName.Replace('\', '/')
             if (-not $entryName.StartsWith($pluginPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
@@ -529,7 +598,8 @@ function Assert-PublicAppBundleArchive {
                 $directoryPartCount--
             }
             for ($partIndex = 0; $partIndex -lt $directoryPartCount; $partIndex++) {
-                if ($blockedIds -contains $pluginParts[$partIndex]) {
+                $normalizedPart = & $normalizePluginPathPart $pluginParts[$partIndex]
+                if ($normalizedPart.Contains('%') -or @($normalizedPart.Split('/') | Where-Object { $_ -in $blockedIds }).Count -gt 0) {
                     throw "App-Bundle enthaelt den geschlossenen Plugin-Ordner $($pluginParts[$partIndex])."
                 }
             }
@@ -1713,6 +1783,9 @@ function Download-Source {
                 $_.Exception.Data['LTTHErrorCode'] -eq 'AppDirectoryContainsPersistentData') {
                 throw
             }
+            if (Use-OfficialWindowsZipBootstrap) {
+                throw "Offizielles App-Bundle ist nicht verfuegbar; kein sicherer GitHub-Latest-Source-Fallback: $($_.Exception.Message)"
+            }
             Warn "App-Bundle konnte nicht vom offiziellen ZIP geladen werden; wechsle auf Git-Clone-Fallback: $($_.Exception.Message)"
             Ensure-Git
             Resolve-Version
@@ -1907,11 +1980,16 @@ function Install-Launcher {
 
     try {
         $manifest = Assert-LauncherReleaseManifest -Manifest $manifestResponse
+        $expectedReleaseTag = "v$($manifest.version)"
         if ($script:LTTHInstallMode -ne 'latest') {
             $requestedVersion = ([string]$script:LTTHVersion).Trim().TrimStart('v')
             if ($manifest.version -ne $requestedVersion) {
                 throw "Launcher-Manifest version $($manifest.version) entspricht nicht der angeforderten Version $requestedVersion."
             }
+            $expectedReleaseTag = "v$requestedVersion"
+        }
+        if ($manifest.tag -cne $expectedReleaseTag) {
+            throw "Launcher-Manifest tag $($manifest.tag) entspricht nicht dem abgefragten Stable-Release-Tag $expectedReleaseTag."
         }
     } catch {
         Warn "Launcher-Manifest wurde abgelehnt: $($_.Exception.Message)"

@@ -1,10 +1,13 @@
 'use strict';
 
 const assert = require('assert');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { isDeepStrictEqual } = require('util');
 const { buildDocsSpec, LOCALES } = require('./docs-screenshot-spec');
 const { EXPECTED_OVERLAY_GUIDE_COUNT, OBS_DOCS_CAPTURE_LOCALES } = require('./lib/obs-docs-capture-inventory');
+const { validateDocsCaptureReceipts } = require('./verify-docs-capture-receipts');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -21,6 +24,139 @@ function galleryImagePath(capturePath) {
   return `../../${capturePath}`;
 }
 
+function captureKey(locale, id) {
+  return `${locale}:${id}`;
+}
+
+function expectedCapturePath(repoRoot, asset, locale) {
+  const canonical = asset.canonical.replace(/^\/screenshots\//, '');
+  const screenshotFile = path.join(repoRoot, 'screenshots', locale === 'en' ? canonical : path.join(locale, canonical));
+  return path.relative(repoRoot, screenshotFile).replace(/\\/g, '/');
+}
+
+function rejectCurrentOutput(reason) {
+  const error = new Error('Current screenshot evidence does not match the documentation capture contract');
+  error.galleryReason = reason;
+  throw error;
+}
+
+function assertCurrentOutput(condition, reason) {
+  if (!condition) rejectCurrentOutput(reason);
+}
+
+function assertCurrentOutputEqual(actual, expected, reason) {
+  if (!isDeepStrictEqual(actual, expected)) rejectCurrentOutput(reason);
+}
+
+function validateCurrentOutput({ repoRoot, output, asset, locale }) {
+  assertCurrentOutput(output.guideId === asset.guideId, 'guide-mismatch');
+  assertCurrentOutput(output.stepId === asset.stepId, 'step-mismatch');
+  assertCurrentOutput(output.route === asset.route, 'route-mismatch');
+  assertCurrentOutput(output.selector === asset.selector, 'selector-mismatch');
+  assertCurrentOutputEqual(output.action, asset.action, 'action-mismatch');
+  assertCurrentOutputEqual(output.workflow, asset.workflow, 'workflow-mismatch');
+  const screenshotPath = expectedCapturePath(repoRoot, asset, locale);
+  assertCurrentOutput(output.path === screenshotPath, 'image-path-mismatch');
+  const screenshotFile = path.join(repoRoot, screenshotPath);
+  assertCurrentOutput(fs.existsSync(screenshotFile), 'image-missing');
+  const sha256 = crypto.createHash('sha256').update(fs.readFileSync(screenshotFile)).digest('hex');
+  assertCurrentOutput(output.sha256 === sha256, 'image-hash-mismatch');
+  try {
+    validateDocsCaptureReceipts({ manifest: { outputs: [output] }, assets: [asset], locales: [locale] });
+  } catch (_error) {
+    rejectCurrentOutput('receipt-evidence-invalid');
+  }
+  return {
+    plugin: asset.guideId,
+    locale,
+    stepId: asset.stepId,
+    route: asset.route,
+    screenshotPath,
+    sha256,
+    receipt: output.receipt
+  };
+}
+
+function classifyCurrentCaptures({ repoRoot, manifest, spec }) {
+  assert.ok(manifest && Array.isArray(manifest.outputs), 'Documentation capture manifest is invalid');
+  const expected = new Map();
+  for (const locale of spec.locales) {
+    for (const asset of spec.assets) expected.set(captureKey(locale, asset.id), { locale, asset });
+  }
+
+  const candidates = new Map();
+  const stale = [];
+  for (const output of manifest.outputs) {
+    const key = captureKey(output?.locale, output?.id);
+    if (!expected.has(key)) {
+      stale.push(output);
+      continue;
+    }
+    const rows = candidates.get(key) || [];
+    rows.push(output);
+    candidates.set(key, rows);
+  }
+
+  const records = [];
+  const missingKeys = [];
+  const invalidKeys = [];
+  const invalidDetails = [];
+  const localeHashes = new Map();
+  for (const [key, { locale, asset }] of expected) {
+    const outputs = candidates.get(key) || [];
+    if (outputs.length === 0) {
+      missingKeys.push(key);
+      continue;
+    }
+    if (outputs.length !== 1) {
+      invalidKeys.push(key);
+      invalidDetails.push({ key, reason: 'duplicate-current-key' });
+      continue;
+    }
+    try {
+      const record = validateCurrentOutput({ repoRoot, output: outputs[0], asset, locale });
+      const localeHashesForLocale = localeHashes.get(locale) || new Set();
+      assertCurrentOutput(!localeHashesForLocale.has(record.sha256), 'duplicate-screenshot-hash');
+      localeHashesForLocale.add(record.sha256);
+      localeHashes.set(locale, localeHashesForLocale);
+      records.push(record);
+    } catch (error) {
+      invalidKeys.push(key);
+      invalidDetails.push({ key, reason: error?.galleryReason || 'output-validation-failed' });
+    }
+  }
+
+  const expectedCount = expected.size;
+  const validCurrent = records.length;
+  const failures = Array.isArray(manifest.failures) ? manifest.failures.length : (manifest.failures ? 1 : 0);
+  const specHash = crypto.createHash('sha256')
+    .update(JSON.stringify({ version: spec.version, assets: spec.assets }))
+    .digest('hex');
+  const manifestVersionMatches = manifest.version === spec.version;
+  const manifestSpecHashMatches = manifest.specHash === specHash;
+  const complete = validCurrent === expectedCount && stale.length === 0 && missingKeys.length === 0 &&
+    invalidKeys.length === 0 && failures === 0 && manifestVersionMatches && manifestSpecHashMatches;
+
+  return {
+    records,
+    expected: expectedCount,
+    validCurrent,
+    stale: stale.length,
+    missing: missingKeys.length,
+    invalid: invalidKeys.length,
+    incomplete: expectedCount - validCurrent,
+    rawOutputs: manifest.outputs.length,
+    staleKeys: stale.map(output => captureKey(output?.locale, output?.id)),
+    missingKeys,
+    invalidKeys,
+    invalidDetails,
+    failures,
+    manifestVersionMatches,
+    manifestSpecHashMatches,
+    complete
+  };
+}
+
 function buildGalleryHtml({ records, report }) {
   const cards = records.map((record) => `
     <article class="capture-card" data-plugin="${escapeHtml(record.plugin)}" data-locale="${escapeHtml(record.locale)}">
@@ -33,6 +169,7 @@ function buildGalleryHtml({ records, report }) {
       </dl>
     </article>`).join('\n');
   const localeOptions = LOCALES.map((locale) => `<option value="${locale}">${locale.toUpperCase()}</option>`).join('');
+  const invalidDetails = (report.invalidDetails || []).map((item) => `<li>${escapeHtml(item.key)}: ${escapeHtml(item.reason)}</li>`).join('');
 
   return `<!doctype html>
 <html lang="en">
@@ -59,9 +196,10 @@ function buildGalleryHtml({ records, report }) {
   <header>
     <h1>LTTH Plugin Documentation QA</h1>
     <span class="status" id="reviewStatus">Review: ${escapeHtml(report.reviewStatus)}</span>
-    <span>${report.screenshots} screenshots · ${report.guides} guides · ${report.obs.records}/${report.obs.expected} OBS previews</span>
+    <span>${report.currentValid}/${report.expected} current valid screenshots · ${report.stale} stale · ${report.missing} missing · ${report.invalid} invalid · ${report.guides} guides · ${report.obs.records}/${report.obs.expected} OBS previews</span>
   </header>
   <p>Review every localized product screenshot, its route, and CaptureReceipt hash before marking this gallery approved.</p>
+${invalidDetails ? `  <section id="invalidReceipts"><h2>Invalid current receipts</h2><ul>${invalidDetails}</ul></section>` : ''}
   <div class="filters">
     <label>Plugin <input id="pluginFilter" placeholder="e.g. emoji-rain"></label>
     <label>Language <select id="localeFilter"><option value="">All</option>${localeOptions}</select></label>
@@ -89,35 +227,36 @@ function buildPluginDocsGallery({ repoRoot = ROOT, outputDir = path.join(ROOT, '
   assert.ok(fs.existsSync(manifestPath), 'Missing docs capture manifest. Run npm run docs:screenshots first.');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   const spec = buildDocsSpec(repoRoot);
-  const expectedCount = spec.assets.length * LOCALES.length;
-  assert.strictEqual((manifest.outputs || []).length, expectedCount, 'Gallery requires a complete localized capture manifest');
-  assert.deepStrictEqual(manifest.failures || [], [], 'Gallery cannot be built from capture failures');
-
-  const records = manifest.outputs.map((output) => {
-    assert.ok(output.receipt, `${output.locale}/${output.id} is missing its CaptureReceipt`);
-    return {
-      plugin: output.guideId,
-      locale: output.locale,
-      stepId: output.stepId,
-      route: output.route,
-      screenshotPath: output.path,
-      sha256: output.sha256,
-      receipt: output.receipt
-    };
-  }).sort((left, right) => (
+  const coverage = classifyCurrentCaptures({ repoRoot, manifest, spec: { ...spec, locales: LOCALES } });
+  const records = coverage.records.sort((left, right) => (
     left.plugin.localeCompare(right.plugin) || left.locale.localeCompare(right.locale) || left.stepId.localeCompare(right.stepId)
   ));
 
   const obsReportPath = path.join(repoRoot, 'screenshots', 'docs-obs-capture-report.json');
   const obsReport = fs.existsSync(obsReportPath) ? JSON.parse(fs.readFileSync(obsReportPath, 'utf8')) : null;
   const report = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     reviewStatus: 'pending',
-    guides: new Set(records.map((record) => record.plugin)).size,
+    guides: new Set(spec.assets.map((asset) => asset.guideId)).size,
     locales: [...LOCALES],
     screenshots: records.length,
-    receipts: records.filter((record) => record.receipt).length,
+    receipts: records.length,
+    rawOutputs: coverage.rawOutputs,
+    expected: coverage.expected,
+    currentValid: coverage.validCurrent,
+    stale: coverage.stale,
+    missing: coverage.missing,
+    invalid: coverage.invalid,
+    incomplete: coverage.incomplete,
+    staleKeys: coverage.staleKeys,
+    missingKeys: coverage.missingKeys,
+    invalidKeys: coverage.invalidKeys,
+    invalidDetails: coverage.invalidDetails,
+    captureFailures: coverage.failures,
+    manifestVersionMatches: coverage.manifestVersionMatches,
+    manifestSpecHashMatches: coverage.manifestSpecHashMatches,
+    coverageComplete: coverage.complete,
     obs: {
       expected: EXPECTED_OVERLAY_GUIDE_COUNT * OBS_DOCS_CAPTURE_LOCALES.length,
       records: Array.isArray(obsReport?.records) ? obsReport.records.length : 0,
@@ -136,4 +275,4 @@ if (require.main === module) {
   console.log(`Built QA gallery for ${result.screenshotCount} localized captures at ${result.outputDir}`);
 }
 
-module.exports = { buildPluginDocsGallery };
+module.exports = { buildPluginDocsGallery, classifyCurrentCaptures };

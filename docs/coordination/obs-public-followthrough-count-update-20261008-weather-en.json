@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-08",
+  "sourceBase": "d65a54891f6ba1d055e95fda70d0df696d5299f0",
+  "kind": "incremental CPU fixture supplement; not full matrix re-audit",
+  "publicCases": 68,
+  "directCpuFollowthrough": 54,
+  "partialCpuFollowthrough": 1,
+  "missingCpuFollowthrough": 13,
+  "upgradedCase": "weather-control:en",
+  "previousSupplement": "obs-public-followthrough-count-update-20261008-emoji-fr.json",
+  "obsPassed": 0,
+  "obsDocumented": 104,
+  "test": "app/test/weather-control-en-renderer-effect-fixture.test.js",
+  "testSha256": "6c6a9744a65f0c5becb2280f83014988e8124d9bb74724a5b528f3618da254ca",
+  "result": "1 suite / 1 test PASS",
+  "limits": "Original engine CPU/state/draw-call proof only; no pixels/backend/OBS/live"
+}

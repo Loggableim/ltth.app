@@ -118,7 +118,7 @@ describe('documentation capture real workflows', () => {
     expect(uiSource).toContain("const isPreviewMode = new URLSearchParams(window.location.search).get('demo') === '1';");
     expect(uiSource).toContain("const socket = isPreviewMode ? { on: () => {}, emit: () => {} } : io();");
     expect(uiSource).toContain('await window.i18n.init();');
-    expect(uiSource).toMatch(/if\s*\(!isPreviewMode\)\s*\{\s*loadStatus\(\);\s*loadConfig\(\);\s*loadThemes\(\);\s*loadDebugLogs\(\);/);
+    expect(uiSource).toMatch(/if\s*\(!isPreviewMode\)\s*\{[\s\S]*?loadStatus\(\);[\s\S]*?loadConfig\(\);[\s\S]*?loadThemes\(\);[\s\S]*?loadDebugLogs\(\);/);
   });
 
   test('describes the Interactive Story preview without inventing a demo vote', () => {
@@ -245,7 +245,7 @@ describe('documentation capture real workflows', () => {
   test.each([
     ['emoji-rain', 'verify-obs-hud', '/emoji-rain/ui', 'a[href="/emoji-rain/obs-hud"]'],
     ['spotlight', 'spotlight-overlay', '/plugins/spotlight/ui/main.html', 'button[data-action="preview"][data-type="chatter"]'],
-    ['streamalchemy', 'alchemy-overlay', '/streammonsters/ui', '#overlayUrl'],
+    ['stream-monsters', 'alchemy-overlay', '/stream-monsters/ui', '#overlayUrl'],
     ['talking-heads', 'heads-overlay', '/plugins/talking-heads/ui.html', '#testAnimationBtn'],
     ['flame-overlay', 'frame-obs-source', '/flame-overlay/ui', '#overlayUrl'],
     ['visual-fx-frame-webgpu', 'frame-obs-source', '/visual-fx-frame-webgpu/ui', '#overlayUrl'],
@@ -283,21 +283,31 @@ describe('documentation capture real workflows', () => {
   test.each(['alchemy-card', 'automation-rule', 'action-chain', 'rule-dry-run'])(
     'opens the current read-only Stream Monsters surface before documenting %s',
     (stepId) => {
-      expect(step('streamalchemy', stepId).capture.action).toMatchObject({
+      expect(step('stream-monsters', stepId).capture.action).toMatchObject({
         type: 'open-plugin-surface',
         stepId
       });
     }
   );
 
+  test('frames the complete Stream Monsters Live Center with per-step viewport geometry', () => {
+    const liveCenter = step('stream-monsters', 'alchemy-card');
+    expect(liveCenter.workflow.captureRule).toMatchObject({
+      selector: '#live-center',
+      viewport: { width: 1440, height: 1040 },
+      imageCrop: { width: 1400, height: 1000 },
+      stateChange: false
+    });
+  });
+
   test('captures the current portrait battle preview instead of the removed legacy stage', () => {
-    expect(step('streamalchemy', 'rule-dry-run').workflow.captureRule).toEqual(
+    expect(step('stream-monsters', 'rule-dry-run').workflow.captureRule).toEqual(
       expect.objectContaining({ selector: '#portraitBattlePreview' })
     );
   });
 
   test('captures the current Stream Monsters overlay URL control at the documented viewport', () => {
-    expect(step('streamalchemy', 'alchemy-overlay').workflow.captureRule).toEqual(
+    expect(step('stream-monsters', 'alchemy-overlay').workflow.captureRule).toEqual(
       expect.objectContaining({
         selector: '#overlayUrl',
         viewport: { width: 1440, height: 900 },

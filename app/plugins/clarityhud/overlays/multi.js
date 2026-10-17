@@ -425,8 +425,15 @@ function renderChatMessage(event) {
     headerEl.appendChild(avatarEl);
   }
   
-  // Add badges (if badge renderer available)
-  if (STATE.badgeRenderer && event.user.badge) {
+  // Prefer the normalized source payload so moderator/subscriber flags survive
+  // even when no pre-rendered badge object was supplied by the connector.
+  const extractedBadges = STATE.badgeRenderer?.extractBadges(event.raw || event);
+  const hasExtractedBadges = extractedBadges && (
+    extractedBadges.isModerator || extractedBadges.isSubscriber || extractedBadges.teamLevel > 0 ||
+    extractedBadges.gifterLevel > 0 || extractedBadges.fanClubLevel > 0 || extractedBadges.customBadges.length > 0
+  );
+  const badgeData = hasExtractedBadges ? extractedBadges : event.user.badge;
+  if (STATE.badgeRenderer && badgeData) {
     const badgeContainerEl = document.createElement('div');
     badgeContainerEl.className = 'badge-container';
     if (typeof STATE.badgeRenderer.renderToHTML === 'function') {

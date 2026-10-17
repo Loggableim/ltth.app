@@ -147,9 +147,14 @@ describe('ChessGame safety invariants', () => {
     expect(game.makeMove('e4', 'viewer-1')).toMatchObject({ success: true });
 
     const corrupted = { ...game.getState(), currentPlayer: 'white' };
-    expect(() => createGame().restoreState(corrupted)).toThrow(
+    const target = createGame();
+    expect(target.makeMove('d4', 'viewer-1')).toMatchObject({ success: true });
+    const before = target.getState();
+
+    expect(() => target.restoreState(corrupted)).toThrow(
       'Invalid chess state: current player does not match FEN'
     );
+    expect(target.getState()).toEqual(before);
   });
 
   test('does not allow an unknown player to force a draw', () => {

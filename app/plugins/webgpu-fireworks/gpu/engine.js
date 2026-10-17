@@ -830,6 +830,8 @@ class WebGPUFireworksEngine {
             if (this.socket?.connected) this.emitStatus();
         });
         this.socket = null;
+        this.socketHandlers = [];
+        this.destroyed = false;
         this.running = false;
         this.animationFrame = null;
         this.lastFrameAt = performance.now();
@@ -866,6 +868,7 @@ class WebGPUFireworksEngine {
         this.imageCacheLimit = 64;
         this.imageLoadTimeoutMs = 5_000;
         this.failedImageWarnings = new Set();
+        this.popupTimers = new Set();
         this.runtimeConfigChangePromise = Promise.resolve();
         const query = new URLSearchParams(window.location.search);
         this.isBenchmark = query.get('benchmark') === 'true';
@@ -909,6 +912,7 @@ class WebGPUFireworksEngine {
     }
 
     async init() {
+        if (this.destroyed) return false;
         if (!this.canvas || typeof WebGPUParticleEngine === 'undefined') {
             this.setStatus({ state: 'error', reason: 'WebGPU engine script or canvas is missing', backend: 'webgpu' });
             return false;
@@ -932,7 +936,7 @@ class WebGPUFireworksEngine {
         this.connectSocket();
         const ready = await this.rendererReadyPromise;
         if (this.renderer === initializingRenderer) this.rendererReadyPromise = null;
-        if (!ready) return false;
+        if (!ready || this.destroyed || this.renderer !== initializingRenderer) return false;
         // The renderer only owns a configured WebGPU canvas after init. Resize
         // once more so the backing texture and the logical orientation always
         // agree on the first frame, even before the first socket config update.
@@ -949,8 +953,9 @@ class WebGPUFireworksEngine {
     }
 
     connectSocket() {
+        if (this.destroyed || this.socket) return;
         this.socket = io({ transports: ['websocket', 'polling'], reconnection: true, reconnectionDelay: 1000 });
-        this.socket.on('connect', () => {
+        this.registerSocketHandler('connect', () => {
             this.socket.emit('webgpu-fireworks:register-overlay', {
                 benchmark: this.isBenchmark,
                 ...this.benchmarkSessionMetadata(),
@@ -963,7 +968,7 @@ class WebGPUFireworksEngine {
             this.startNextFinaleIfReady(this.getRuntimeNow());
             this.audio.ensureContext();
         });
-        this.socket.on('webgpu-fireworks:trigger', async (data, acknowledge) => {
+        this.registerSocketHandler('webgpu-fireworks:trigger', async (data, acknowledge) => {
             if (!this.acceptsScopedSocketEvent(data)) {
                 if (typeof acknowledge === 'function') acknowledge({
                     accepted: false,
@@ -999,16 +1004,16 @@ class WebGPUFireworksEngine {
                 });
             }
         });
-        this.socket.on('webgpu-fireworks:finale', data => {
+        this.registerSocketHandler('webgpu-fireworks:finale', data => {
             if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handleFinaleSocketEvent(data);
         });
-        this.socket.on('webgpu-fireworks:preview', data => {
+        this.registerSocketHandler('webgpu-fireworks:preview', data => {
             if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.handlePreviewSocketEvent(data);
         });
-        this.socket.on('webgpu-fireworks:follower-animation', data => {
+        this.registerSocketHandler('webgpu-fireworks:follower-animation', data => {
             if (!this.isBenchmark && this.acceptsScopedSocketEvent(data)) this.showFollowerAnimation(data);
         });
-        this.socket.on('disconnect', () => {
+        this.registerSocketHandler('disconnect', () => {
             if (this.currentPreview) {
                 this.failPreview(
                     this.currentPreview.requestId,
@@ -1018,13 +1023,13 @@ class WebGPUFireworksEngine {
                 );
             }
         });
-        this.socket.on('webgpu-fireworks:get-active-count', () => {
+        this.registerSocketHandler('webgpu-fireworks:get-active-count', () => {
             const metrics = this.renderer?.getMetrics() || {};
             this.socket.emit('webgpu-fireworks:active-count-response', {
                 count: this.activeShows.size, particles: metrics.activeParticles || 0
             });
         });
-        this.socket.on('webgpu-fireworks:config-update', async (data, acknowledge) => {
+        this.registerSocketHandler('webgpu-fireworks:config-update', async (data, acknowledge) => {
             if (!data || !data.config || !this.acceptsScopedSocketEvent(data)) {
                 if (typeof acknowledge === 'function') acknowledge({
                     accepted: false,
@@ -1053,9 +1058,21 @@ class WebGPUFireworksEngine {
         });
     }
 
+    registerSocketHandler(eventName, handler) {
+        if (!this.socket) return;
+        const guardedHandler = (...args) => {
+            if (this.destroyed) return;
+            return handler(...args);
+        };
+        this.socket.on(eventName, guardedHandler);
+        this.socketHandlers.push([eventName, guardedHandler]);
+    }
+
     async applyRuntimeConfig(nextConfig) {
+        if (this.destroyed) return null;
         const configPatch = { ...nextConfig };
         const apply = async () => {
+            if (this.destroyed) return null;
             const normalizedConfig = { ...this.config, ...configPatch, renderer: 'webgpu' };
             const maxTotalParticles = Number(normalizedConfig.maxTotalParticles);
             if (!Number.isInteger(maxTotalParticles) || maxTotalParticles < 512 || maxTotalParticles > 16_384) {
@@ -1081,6 +1098,7 @@ class WebGPUFireworksEngine {
                     throw error;
                 }
                 const ready = await this.rendererReadyPromise;
+                if (this.destroyed) return null;
                 if (!ready || !this.renderer.initialized) {
                     const error = new Error('The WebGPU renderer failed before particle capacity could be applied.');
                     error.code = 'GPU_CAPACITY_REALLOCATION_FAILED';
@@ -1188,6 +1206,7 @@ class WebGPUFireworksEngine {
     }
 
     setStatus(status, options = {}) {
+        if (this.destroyed) return;
         const previousState = this.rendererStatus?.state;
         if (options.transientFrameError === true) this.transientFrameError = true;
         else if (status.state) this.transientFrameError = false;
@@ -1231,7 +1250,7 @@ class WebGPUFireworksEngine {
     }
 
     emitStatus() {
-        if (!this.socket?.connected) return;
+        if (this.destroyed || !this.socket?.connected) return;
         this.socket.emit('webgpu-fireworks:renderer-status', {
             ...this.rendererStatus,
             ...this.audio.getTelemetry(),
@@ -3130,7 +3149,11 @@ class WebGPUFireworksEngine {
         );
         popup.appendChild(label);
         document.getElementById('fireworks-container')?.appendChild(popup);
-        setTimeout(() => popup.remove(), 2500);
+        const popupTimer = setTimeout(() => {
+            this.popupTimers.delete(popupTimer);
+            popup.remove();
+        }, 2500);
+        this.popupTimers.add(popupTimer);
     }
 
     ensureFollowerAnimationState() {
@@ -3257,7 +3280,7 @@ class WebGPUFireworksEngine {
     }
 
     render() {
-        if (!this.running) return;
+        if (!this.running || this.destroyed) return;
         const now = performance.now();
         const delta = Math.min(0.05, Math.max(0.001, (now - this.lastFrameAt) / 1000));
         this.lastFrameAt = now;
@@ -3333,6 +3356,8 @@ class WebGPUFireworksEngine {
     toggleDebug() { this.debug = !this.debug; this.updateDebugPanel(); }
 
     destroy() {
+        if (this.destroyed) return;
+        this.destroyed = true;
         this.running = false;
         if (this.currentPreview) {
             this.failPreview(
@@ -3350,6 +3375,10 @@ class WebGPUFireworksEngine {
         }
         if (typeof window !== 'undefined') window.removeEventListener('resize', this.resizeHandler);
         this.canvas?.removeEventListener('pointerdown', this.clickHandler);
+        for (const timer of this.popupTimers) clearTimeout(timer);
+        this.popupTimers.clear();
+        this.socketHandlers.forEach(([eventName, handler]) => this.socket?.off?.(eventName, handler));
+        this.socketHandlers.length = 0;
         this.socket?.disconnect();
         for (const ownerToken of [...(this.activeGpuOwners || [])]) {
             this.cancelGpuOwner(ownerToken, 'renderer-destroyed');
@@ -3380,33 +3409,64 @@ class WebGPUFireworksEngine {
 }
 
 let engine = null;
-if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', async () => {
+let overlayDisposed = false;
+const unlockEvents = ['pointerdown', 'click', 'keydown', 'touchstart'];
+const unlock = async () => {
+    if (!engine || engine.destroyed || !await engine.audio.ensureContext(true)) {
+        if (DEBUG && engine && !engine.destroyed) console.warn('[WebGPU Fireworks Audio] Browser interaction did not unlock audio');
+        return;
+    }
+    if (DEBUG) console.debug('[WebGPU Fireworks Audio] Audio unlocked by browser interaction');
+    unlockEvents.forEach(type => document.removeEventListener(type, unlock, true));
+    engine.applyInteractiveMode();
+    engine.setStatus({ audioStatus: 'ready' });
+};
+const handleVisibilityChange = () => {
+    if (!overlayDisposed && engine && !engine.destroyed && document.visibilityState === 'visible') {
+        void engine.audio.ensureContext(false);
+    }
+};
+const handleDocumentKeydown = event => {
+    if (!overlayDisposed && engine && !engine.destroyed && event.key.toLowerCase() === 'd') engine.toggleDebug();
+};
+const handleDOMContentLoaded = async () => {
+    if (overlayDisposed || engine) return;
     engine = new WebGPUFireworksEngine('fireworks-canvas');
     window.fireworksEngineInstance = engine;
     await engine.init();
+    if (overlayDisposed || engine.destroyed) return;
 
     const sounds = Object.entries(engine.audio.CUE_MANIFEST);
     void Promise.all(sounds.map(([name, cue]) => engine.audio.preload(cue.url, name)))
-        .then(() => engine.audio.ensureContext(false));
-
-    const unlock = async () => {
-        if (!await engine.audio.ensureContext(true)) {
-            if (DEBUG) console.warn('[WebGPU Fireworks Audio] Browser interaction did not unlock audio');
-            return;
-        }
-        if (DEBUG) console.debug('[WebGPU Fireworks Audio] Audio unlocked by browser interaction');
-        for (const type of ['pointerdown', 'click', 'keydown', 'touchstart']) document.removeEventListener(type, unlock, true);
-        engine.applyInteractiveMode();
-        engine.setStatus({ audioStatus: 'ready' });
-    };
-    for (const type of ['pointerdown', 'click', 'keydown', 'touchstart']) document.addEventListener(type, unlock, { passive: true, capture: true });
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') void engine.audio.ensureContext(false);
-    });
-    document.addEventListener('keydown', event => { if (event.key.toLowerCase() === 'd') engine.toggleDebug(); });
-});
-
-if (typeof window !== 'undefined') window.addEventListener('pagehide', () => engine?.destroy());
+        .then(() => {
+            if (!overlayDisposed && engine && !engine.destroyed) return engine.audio.ensureContext(false);
+            return false;
+        });
+    unlockEvents.forEach(type => document.addEventListener(type, unlock, { passive: true, capture: true }));
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('keydown', handleDocumentKeydown);
+};
+const handlePageHide = event => {
+    if (event?.persisted === true || overlayDisposed) return;
+    overlayDisposed = true;
+    document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+    unlockEvents.forEach(type => document.removeEventListener(type, unlock, true));
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('keydown', handleDocumentKeydown);
+    window.removeEventListener('pagehide', handlePageHide);
+    window.removeEventListener('pageshow', handlePageShow);
+    engine?.destroy();
+};
+const handlePageShow = event => {
+    if (event?.persisted !== true || overlayDisposed || engine?.destroyed) return;
+    // Socket.IO preserves queued events while a BFCache document is suspended;
+    // its normal connect handler refreshes state if transport reconnects.
+};
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', handleDOMContentLoaded, { once:true });
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
+}
 
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { AudioManager, WebGPUFireworksEngine };

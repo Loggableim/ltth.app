@@ -1,0 +1,113 @@
+{
+  "testCommand": "cd app; ..\\\\runtime\\\\node\\\\node.exe node_modules\\\\jest\\\\bin\\\\jest.js --runInBand --no-cache --runTestsByPath test/obs-toptier-renderer-fixtures.test.js",
+  "coverage": {
+    "cleanup": "Synthetic renderer verifies persisted pagehide keeps the existing socket and timers, pageshow accepts further updates, and final pagehide disconnects only the owned socket, clears timers and ignores queued callbacks.",
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "update": "Synthetic likes board user with empty profile URL and fixed score/rank renders; unknown board and invalid score are ignored.",
+    "dynamicPath": "The only img URL is fixed local avatar-placeholder.svg; it is hash-pinned and in asset allowlist. JSDOM does not fetch img bytes, so image load is not claimed.",
+    "localeSocketSync": "The original four-locale TopTier renderer binds the same Socket.IO socket used for its board requests to the shared i18n client."
+  },
+  "notProven": [
+    "real Socket.IO/browser transport or TopTier backend/producer",
+    "actual image fetch/render in browser; JSDOM did not request img bytes",
+    "OBS Browser Source or screenshot review",
+    "shared i18n /api/i18n/locales consumer (not called; translation requests are constrained to four locales)"
+  ],
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "manifest": {
+    "path": "docs/coordination/obs-104-toptier-fixture.json",
+    "sha256": "ea08c9186afba48007a8aac8464c0553304da8c5ac58a4b5c68c2796c7b0d246",
+    "files": 11,
+    "localeFiles": 4,
+    "bytes": 300253
+  },
+  "schemaVersion": 1,
+  "transport": {
+    "producer": "excluded; TopTier backend/database is not started",
+    "socketHandling": "synthetic in-memory Socket.IO shim; real browser bundle pinned but not executed",
+    "origin": "http://127.0.0.1:3000 as synthetic JSDOM URL only",
+    "requestHandling": "in-process request interceptor and injected fetch; no listener"
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-toptier-renderer-fixtures.test.js",
+      "sha256": "a2c0bc697a48e98325d7c52d255d74ecaf145ff000cec4a21a9ad5cacc9c92ec"
+    },
+    {
+      "path": "app/test/helpers/obs-toptier-jsdom-fixture.js",
+      "sha256": "738aea55376e420b48a55fad4ffacd91bc5601ea886ea41a3833b2acc3f06406"
+    }
+  ],
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 8,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "recordedAt": "2026-10-07T07:51:02.463Z"
+  },
+  "history": [
+    {
+      "recordedAt": "2026-10-07",
+      "status": "source-hash-bound-cpu-jsdom-fixture-run",
+      "manifest": {
+        "path": "docs/coordination/obs-104-toptier-fixture.json",
+        "bytes": 298673,
+        "files": 11,
+        "sha256": "c072abb2c715c14e7c8307a111c3463e3c5548b7f6876b088e0ced1b3910d5d4",
+        "localeFiles": 4
+      },
+      "result": {
+        "testsFailed": 0,
+        "testsPassed": 4,
+        "recordedAt": "2026-10-07",
+        "exitCode": 0,
+        "testsSkipped": 0,
+        "testSuitesPassed": 1
+      },
+      "sourceWitnesses": [
+        {
+          "sha256": "1ada34f7811e1a41f8077b7e9f18a3adb6169b9dac328962304af1af45bd1b31",
+          "path": "app/test/obs-toptier-renderer-fixtures.test.js"
+        },
+        {
+          "sha256": "30065124a4ff4c1344f17879f4645961effd37bd83ea480fe899599c866ab463",
+          "path": "app/test/helpers/obs-toptier-jsdom-fixture.js"
+        }
+      ]
+    },
+    {
+      "kind": "previous-verification-before-renderer-fixture-update",
+      "recordedAt": "2026-10-07",
+      "result": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 4,
+        "testsFailed": 0,
+        "testsSkipped": 0,
+        "recordedAt": "2026-10-07"
+      },
+      "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-toptier-renderer-fixtures.test.js",
+      "sourceWitnesses": [
+        {
+          "path": "app/test/obs-toptier-renderer-fixtures.test.js",
+          "sha256": "a2c0bc697a48e98325d7c52d255d74ecaf145ff000cec4a21a9ad5cacc9c92ec"
+        },
+        {
+          "path": "app/test/helpers/obs-toptier-jsdom-fixture.js",
+          "sha256": "5ca8d64b2735d1af7a1e830b67d8dc2b18e3fa4be1eed9fc9c6dfff4c9ef73a9"
+        }
+      ]
+    }
+  ],
+  "currentLifecycleReview": {
+    "recordedAt": "2026-10-07",
+    "contractPin": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba",
+    "observed": "Original consumer JSDOM run covers bounded i18n retry, same-socket binding, BFCache restore and final owned cleanup. Frozen runnerContract cleanup text is historical and does not describe expanded lifecycle assertions."
+  }
+}

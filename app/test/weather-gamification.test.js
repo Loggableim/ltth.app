@@ -119,6 +119,75 @@ describe('Weather Control gamification', () => {
     );
   });
 
+  test('completes a non-rotating quest and emits its configured weather reward only once', async () => {
+    await plugin.loadConfig();
+    plugin.gamification = plugin.createDefaultGamificationRuntimeState();
+    plugin.config.gamification.quests.rotateOnCompletion = false;
+    plugin.config.gamification.quests.pool = [{
+      id: 'once', title: 'One time', type: 'chat_count', target: 1, eventTypes: ['chat'],
+      reward: { action: 'snow', intensity: 0.4, duration: 4000 }
+    }];
+    const quest = plugin.createNextQuest();
+
+    expect(plugin.advanceQuestProgress('chat')).toMatchObject({ id: quest.id, status: 'completed' });
+    plugin.advanceQuestProgress('chat');
+
+    const rewardCalls = mockApi.emit.mock.calls.filter(([event]) => event === 'weather:trigger');
+    expect(rewardCalls).toHaveLength(1);
+    expect(rewardCalls[0][1]).toMatchObject({
+      action: 'snow', intensity: 0.4, duration: 4000, username: 'community-quest',
+      meta: { triggeredBy: 'gamification-quest', label: 'One time', questId: 'once' }
+    });
+    expect(plugin.gamification.quest.completedCount).toBe(1);
+    expect(mockApi.emit.mock.calls.filter(([event, payload]) => (
+      event === 'weather:gamification-quest' && payload.reason === 'completed'
+    ))).toHaveLength(1);
+  });
+
+  test('rotates after completion without duplicate rewards from events before rotation', async () => {
+    jest.useFakeTimers();
+    try {
+      await plugin.loadConfig();
+      plugin.gamification = plugin.createDefaultGamificationRuntimeState();
+      plugin.config.gamification.quests.rotateOnCompletion = true;
+      plugin.config.gamification.quests.pool = [
+        { id: 'first', title: 'First', type: 'chat_count', target: 1, eventTypes: ['chat'], reward: { action: 'rain', intensity: 0.3, duration: 3000 } },
+        { id: 'second', title: 'Second', type: 'chat_count', target: 1, eventTypes: ['chat'], reward: { action: 'fog', intensity: 0.5, duration: 3000 } }
+      ];
+      plugin.createNextQuest();
+
+      plugin.advanceQuestProgress('chat');
+      plugin.advanceQuestProgress('chat');
+      expect(plugin.gamification.quest.completedCount).toBe(1);
+      expect(mockApi.emit.mock.calls.filter(([event]) => event === 'weather:trigger')).toHaveLength(1);
+
+      jest.advanceTimersByTime(0);
+      expect(plugin.gamification.quest.active).toMatchObject({ id: 'second', status: 'active', progress: 0 });
+      expect(mockApi.emit.mock.calls.filter(([event]) => event === 'weather:trigger')).toHaveLength(1);
+    } finally {
+      jest.clearAllTimers();
+      jest.useRealTimers();
+    }
+  });
+
+  test('uses the normalized fallback action and suppresses quest weather rewards when rewards are disabled', async () => {
+    await plugin.loadConfig();
+    plugin.gamification = plugin.createDefaultGamificationRuntimeState();
+    plugin.config.gamification.quests.rotateOnCompletion = false;
+    plugin.config.gamification.quests.pool = [{
+      id: 'fallback', title: 'Fallback', type: 'chat_count', target: 1, eventTypes: ['chat'],
+      reward: { action: 'not-a-weather-effect', intensity: 0.2, duration: 2000 }
+    }];
+    expect(plugin.createNextQuest().reward.action).toBe('rain');
+    plugin.advanceQuestProgress('chat');
+    expect(mockApi.emit).toHaveBeenCalledWith('weather:trigger', expect.objectContaining({ action: 'rain' }));
+
+    plugin.config.gamification.rewards.enabled = false;
+    plugin.createNextQuest();
+    plugin.advanceQuestProgress('chat');
+    expect(mockApi.emit.mock.calls.filter(([event]) => event === 'weather:trigger')).toHaveLength(1);
+  });
+
   test('registers gamification routes and TikTok handlers during init', async () => {
     await plugin.init();
 

@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { assertPluginId } = require('./plugin-paths');
 const { canonicalizePluginId } = require('./plugin-identities');
+const { isRetiredPluginId, isRetiredPluginManifest } = require('./plugin-retirement');
 
 const APP_ROOT = path.join(__dirname, '..');
 
@@ -42,7 +43,7 @@ function createPluginReleasePolicy(options = {}) {
   const policyPath = options.policyPath || path.join(appRoot, 'config', 'plugin-release-policy.json');
   const modePath = options.modePath || path.join(appRoot, 'config', 'distribution-mode.json');
 
-  function getSnapshot() {
+  function getSnapshot({ publicSurface = false } = {}) {
     const policy = readJson(policyPath);
     let publicAssetPathOwners = new Map();
     try { publicAssetPathOwners = readPublicAssetPathOwners(policy); } catch { /* public policy validation fails closed below */ }
@@ -54,25 +55,31 @@ function createPluginReleasePolicy(options = {}) {
       publicAssetPathOwners
     });
     const markerExists = fs.existsSync(modePath);
-    const mode = readJson(modePath);
+    let mode = readJson(modePath);
     if (markerExists && !mode) {
       return failClosedSnapshot();
     }
-    if (!markerExists) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
+    if (!markerExists && !publicSurface) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
+    if (!markerExists) {
+      // Public Quick-Tunnel clients remain an external surface even when the
+      // installed distribution is in local/developer mode.
+      mode = { channel: 'local' };
+    }
     const validModeKeys = mode && typeof mode === 'object' && !Array.isArray(mode) &&
       Object.keys(mode).every(key => ['channel', 'schemaVersion'].includes(key)) &&
       (mode.schemaVersion === undefined || mode.schemaVersion === 1);
-    if (!validModeKeys || !['public', 'local'].includes(mode.channel)) {
+    if (!validModeKeys || !['public', 'local', 'developer'].includes(mode.channel)) {
       return failClosedSnapshot();
     }
     const publicMode = mode.channel === 'public';
-    if (!publicMode) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
+    if (!publicMode && !publicSurface) return { publicMode: false, blockedIds: new Set(), aliases: new Map(), publicAssetPathOwners };
 
     if (!policy || typeof policy !== 'object' || Array.isArray(policy) || policy.schemaVersion !== 1 ||
         !Array.isArray(policy.closedBeta) ||
+        (policy.publicRuntimeExcluded !== undefined && !Array.isArray(policy.publicRuntimeExcluded)) ||
         !policy.publicAssetPathOwners || typeof policy.publicAssetPathOwners !== 'object' ||
         Array.isArray(policy.publicAssetPathOwners) ||
-        !Object.keys(policy).every(key => ['schemaVersion', 'closedBeta', 'aliases', 'publicAssetPathOwners'].includes(key)) ||
+        !Object.keys(policy).every(key => ['schemaVersion', 'closedBeta', 'publicRuntimeExcluded', 'aliases', 'publicAssetPathOwners'].includes(key)) ||
         (policy.aliases !== undefined && (!policy.aliases || typeof policy.aliases !== 'object' || Array.isArray(policy.aliases)))) {
       // A public marker without a usable policy must not expose an incomplete catalog.
       return failClosedSnapshot();
@@ -84,6 +91,19 @@ function createPluginReleasePolicy(options = {}) {
         const id = canonicalizePluginId(assertPluginId(rawId));
         if (blockedIds.has(id)) throw new Error('Duplicate closed-beta plugin id');
         blockedIds.add(id);
+      } catch {
+        return failClosedSnapshot();
+      }
+    }
+
+    const publicRuntimeExcludedIds = new Set();
+    for (const rawId of policy.publicRuntimeExcluded || []) {
+      try {
+        const id = canonicalizePluginId(assertPluginId(rawId));
+        if (publicRuntimeExcludedIds.has(id) || blockedIds.has(id)) {
+          throw new Error('Duplicate or conflicting public runtime exclusion ID');
+        }
+        publicRuntimeExcludedIds.add(id);
       } catch {
         return failClosedSnapshot();
       }
@@ -115,7 +135,7 @@ function createPluginReleasePolicy(options = {}) {
       return failClosedSnapshot();
     }
 
-    return { publicMode: true, blockedIds, aliases, publicAssetPathOwners };
+    return { publicMode, publicSurface, blockedIds, publicRuntimeExcludedIds, aliases, publicAssetPathOwners };
   }
 
   function resolveId(id, snapshot = getSnapshot()) {
@@ -129,8 +149,8 @@ function createPluginReleasePolicy(options = {}) {
   }
 
   function isClosedBetaId(id, snapshot = getSnapshot()) {
-    if (!snapshot.publicMode) return false;
     if (snapshot.policyInvalid) return true;
+    if (!snapshot.publicMode && snapshot.publicSurface !== true) return false;
     const safeId = String(id || '').trim();
     return snapshot.blockedIds.has(safeId) || snapshot.blockedIds.has(resolveId(safeId, snapshot));
   }
@@ -156,19 +176,31 @@ function createPluginReleasePolicy(options = {}) {
   function createRequestGuard(guardOptions = {}) {
     return function pluginReleaseRequestGuard(req, res, next) {
       let decodedPath = String(req.path || '');
-      try { decodedPath = decodeURIComponent(decodedPath); } catch { /* malformed paths are rejected downstream */ }
+      for (let attempt = 0; attempt < 8 && decodedPath.includes('%'); attempt += 1) {
+        try {
+          const decoded = decodeURIComponent(decodedPath);
+          if (decoded === decodedPath) break;
+          decodedPath = decoded;
+        } catch {
+          break;
+        }
+      }
       const normalizedPath = decodedPath.replace(/\\/g, '/').toLowerCase();
       const segments = normalizedPath.split('/').filter(Boolean);
       let pluginId = '';
       if (segments[0] === 'plugins') pluginId = segments[1] || '';
       if (segments[0] === 'api' && segments[1] === 'plugins') pluginId = segments[2] || '';
+      if (pluginId && isRetiredPluginId(pluginId)) {
+        return res.status(404).json({ success: false, error: 'Plugin not found' });
+      }
       const snapshot = getSnapshot();
       const assetOwner = snapshot.publicAssetPathOwners?.get(normalizedPath);
       if (assetOwner && isClosedBetaId(assetOwner, snapshot)) {
         return res.status(404).json({ success: false, error: 'Asset not found' });
       }
       let manifestIsClosedBeta = false;
-      if (snapshot.publicMode && segments[0] === 'plugins' && pluginId) {
+      let manifestIsRetired = false;
+      if (segments[0] === 'plugins' && pluginId) {
         try {
           const directoryName = assertPluginId(pluginId);
           const configuredPluginsDir = typeof guardOptions.pluginsDir === 'function'
@@ -180,14 +212,18 @@ function createPluginReleasePolicy(options = {}) {
             const relativeManifestPath = path.relative(pluginRoot, manifestPath);
             if (relativeManifestPath && !relativeManifestPath.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeManifestPath)) {
               const manifest = readJson(manifestPath);
+              manifestIsRetired = isRetiredPluginManifest(manifest);
               const identities = [manifest?.id, ...(Array.isArray(manifest?.aliases) ? manifest.aliases : []),
                 ...(Array.isArray(manifest?.replaces) ? manifest.replaces : [])];
-              manifestIsClosedBeta = identities.some(identity => identity && isClosedBetaId(identity, snapshot));
+              manifestIsClosedBeta = snapshot.publicMode && identities.some(identity => identity && isClosedBetaId(identity, snapshot));
             }
           }
         } catch {
           // Invalid directory names/manifests are left to the static/route layer's normal handling.
         }
+      }
+      if (manifestIsRetired) {
+        return res.status(404).json({ success: false, error: 'Plugin not found' });
       }
       if (pluginId && (isClosedBetaId(pluginId, snapshot) || manifestIsClosedBeta)) {
         return res.status(404).json({ success: false, error: 'Plugin not found' });
@@ -196,7 +232,14 @@ function createPluginReleasePolicy(options = {}) {
     };
   }
 
-  return { getSnapshot, isClosedBetaId, assertAllowed, filterRegistry, createRequestGuard };
+  return {
+    getSnapshot,
+    getPublicSurfaceSnapshot: () => getSnapshot({ publicSurface: true }),
+    isClosedBetaId,
+    assertAllowed,
+    filterRegistry,
+    createRequestGuard
+  };
 }
 
 module.exports = { createPluginReleasePolicy };

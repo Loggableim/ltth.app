@@ -12,10 +12,14 @@ REM   SIGN_ENABLED  - Set to "1" to enable signing (default: disabled)
 REM   SIGN_CERT_SHA1 - Select the intended certificate explicitly when provided
 REM ============================================================================
 
+REM Explicit mode is required even when called directly by NSIS.
+powershell -NoProfile -NonInteractive -File "%~dp0..\..\scripts\verify-nsis-release-signature.ps1" -Action preflight
+if errorlevel 1 exit /b 1
+
 REM Check if signing is enabled
 if not "%SIGN_ENABLED%"=="1" (
     echo [INFO] Code signing is disabled ^(SIGN_ENABLED not set to 1^)
-    echo [INFO] To enable signing, set SIGN_ENABLED=1 before building
+    echo NOT FOR DISTRIBUTION - unsigned developer build
     exit /b 0
 )
 
@@ -127,6 +131,8 @@ if not errorlevel 1 (
         exit /b 1
     )
     
+    powershell -NoProfile -NonInteractive -File "%~dp0..\..\scripts\verify-nsis-release-signature.ps1" -Action verify -Path "%FILE_TO_SIGN%" -SignTool "%SIGNTOOL_PATH%"
+    if errorlevel 1 exit /b 1
     exit /b 0
 ) else (
     echo.

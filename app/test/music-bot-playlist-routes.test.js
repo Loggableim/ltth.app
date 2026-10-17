@@ -123,6 +123,45 @@ describe('music-bot playlist routes and lifecycle', () => {
     expect(started.status).toHaveBeenCalledWith(202);
   });
 
+  it.each([
+    ['create', 'post:/api/plugins/music-bot/playlists', { body: { name: 'Mix' } }],
+    ['update', 'patch:/api/plugins/music-bot/playlists/:id', { params: { id: 'mix' }, body: { name: 'Updated' } }]
+  ])('returns a sanitized 500 when playlist %s encounters an unknown store error', async (_label, routeKey, request) => {
+    const api = createApi();
+    const privateMessage = 'SQLITE_ERROR: C:\\profiles\\private\\music.db providerToken=fixture-secret';
+    const privateCode = 'SQLITE_INTERNAL_FIXTURE';
+    const store = {
+      create: jest.fn(() => { throw Object.assign(new Error(privateMessage), { code: privateCode }); }),
+      update: jest.fn(() => { throw Object.assign(new Error(privateMessage), { code: privateCode }); })
+    };
+    const plugin = new MusicBotPlugin(api);
+    plugin.playlistStore = store;
+    plugin._registerRoutes();
+
+    const res = response();
+    await api.routes.get(routeKey)(request, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Playlist request failed' });
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain(privateMessage);
+    expect(JSON.stringify(res.json.mock.calls)).not.toContain(privateCode);
+  });
+
+  it('preserves the documented playlist not-found status and safe response', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    plugin.playlistStore = {
+      get: jest.fn(() => { throw Object.assign(new Error('private db detail'), { code: 'PLAYLIST_NOT_FOUND' }); })
+    };
+    plugin._registerRoutes();
+
+    const res = response();
+    await api.routes.get('get:/api/plugins/music-bot/playlists/:id')({ params: { id: 'missing' } }, res);
+
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ success: false, error: 'Playlist not found', code: 'PLAYLIST_NOT_FOUND' });
+  });
+
   it('shuts down active playlist imports when the plugin is destroyed', async () => {
     const api = createApi();
     const plugin = new MusicBotPlugin(api);
@@ -130,7 +169,7 @@ describe('music-bot playlist routes and lifecycle', () => {
     plugin.mediaCache = { destroy: jest.fn(async () => {}) };
     plugin.musicResolver = { destroy: jest.fn(async () => {}) };
     plugin.playbackEngine = { removeAllListeners: jest.fn(), shutdown: jest.fn(async () => {}) };
-    plugin.queueManager = { persistQueue: jest.fn() };
+    plugin.queueManager = { persistQueue: jest.fn(() => ({ success: true })) };
 
     await plugin.destroy();
     expect(plugin.playlistImports.destroy).toHaveBeenCalledTimes(1);

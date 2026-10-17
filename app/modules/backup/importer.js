@@ -13,11 +13,13 @@
 
 const fs = require('fs');
 const path = require('path');
-const { isDeepStrictEqual } = require('util');
 const os = require('os');
+const crypto = require('crypto');
+const { Transform } = require('stream');
 const zl = require('zip-lib');
-const { validateManifest } = require('./manifest');
-const { validateBackupSize, validateEntryPath, validateDestinationPath, sanitisePluginId, MAX_BACKUP_SIZE_BYTES } = require('./validators');
+const { validateManifest, FORMAT_VERSION } = require('./manifest');
+const { validateBackupSize, validateEntryPath, validateDestinationPath, sanitisePluginId, MAX_BACKUP_SIZE_BYTES, MAX_BACKUP_FILES } = require('./validators');
+const { DecompressionBudget } = require('./decompression-budget');
 const { discoverAllPluginSettings, discoverGlobalSettings, restorePluginSettings, restoreGlobalSettings } = require('./plugin-discovery');
 const { detectPluginConflicts, detectSettingsConflicts } = require('./conflict-resolver');
 const {
@@ -27,39 +29,15 @@ const {
 } = require('../plugin-identities');
 const { valuesEqual } = require('../plugin-identity-sync');
 const { PROFILE_SCOPED_PLUGIN_DATA, normalizeScopedPluginIds, validateProfileId, canonicalProfileId } = require('./profile-scoped-data');
-const { DEFAULT_STATE: DEFAULT_COIN_JAR_STATE } = require('./schnorrbecher-state-schema');
+const { DEFAULT_STATE: DEFAULT_COIN_JAR_STATE, normalizeState: normalizeCoinJarState } = require('../../plugins/schnorrbecher/lib/config');
 
 function isEmptyInitializedCoinJarState(filePath) {
     try {
-        const rawState = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        return rawState !== null && typeof rawState === 'object' && !Array.isArray(rawState) &&
-            isDeepStrictEqual(rawState, DEFAULT_COIN_JAR_STATE);
+        const state = normalizeCoinJarState(JSON.parse(fs.readFileSync(filePath, 'utf8')));
+        return JSON.stringify(state) === JSON.stringify(normalizeCoinJarState(DEFAULT_COIN_JAR_STATE));
     } catch (_) {
         return false;
     }
-}
-
-function findUnsafeProfilePath(pluginRoot, targetPath) {
-    const root = path.resolve(pluginRoot);
-    const target = path.resolve(targetPath);
-    const relative = path.relative(root, target);
-    if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
-        return { path: target, reason: 'escapes the plugin data root' };
-    }
-
-    let current = root;
-    const candidates = [current, ...relative.split(path.sep).filter(Boolean).map(part => (current = path.join(current, part)))];
-    for (const candidate of candidates) {
-        try {
-            if (fs.lstatSync(candidate).isSymbolicLink()) {
-                return { path: candidate, reason: 'is a symbolic link' };
-            }
-        } catch (error) {
-            if (error.code === 'ENOENT' || error.code === 'ENOTDIR') return null;
-            return { path: candidate, reason: `cannot be inspected (${error.message})` };
-        }
-    }
-    return null;
 }
 
 function normalizeBackupPluginSettings(pluginId, settings = {}) {
@@ -99,6 +77,109 @@ function canonicalPluginFilter(pluginFilter) {
     return pluginFilter ? new Set(pluginFilter.map(canonicalizePluginId)) : null;
 }
 
+function validateRestoreBase(base) {
+    const resolvedBase = path.resolve(base);
+    const parsed = path.parse(resolvedBase);
+    let cursor = parsed.root;
+    for (const part of resolvedBase.slice(parsed.root.length).split(path.sep).filter(Boolean)) {
+        cursor = path.join(cursor, part);
+        try {
+            if (fs.lstatSync(cursor).isSymbolicLink()) {
+                throw new Error(`Symbolic link in restore base: ${cursor}`);
+            }
+        } catch (error) {
+            if (error.code === 'ENOENT') continue;
+            throw error;
+        }
+    }
+}
+
+function validateRestoreDestination(base, destination) {
+    const resolvedBase = path.resolve(base);
+    const resolvedDestination = path.resolve(destination);
+    const pathCheck = validateDestinationPath(resolvedDestination, resolvedBase);
+    if (!pathCheck.valid) throw new Error(pathCheck.error);
+    validateRestoreBase(resolvedBase);
+
+    const relative = path.relative(resolvedBase, resolvedDestination);
+    const parts = relative.split(path.sep).filter(Boolean);
+    let cursor = resolvedBase;
+    for (const part of parts) {
+        cursor = path.join(cursor, part);
+        try {
+            if (fs.lstatSync(cursor).isSymbolicLink()) {
+                throw new Error(`Symbolic link in restore path: ${cursor}`);
+            }
+        } catch (error) {
+            if (error.code === 'ENOENT') continue;
+            throw error;
+        }
+    }
+}
+
+function findQuizShowDatabaseFile(parsed) {
+    const quizFiles = Object.entries(parsed?.dataFiles || {})
+        .filter(([pluginId]) => canonicalizePluginId(pluginId) === 'quiz-show')
+        .flatMap(([, files]) => files || []);
+    return quizFiles.find(file =>
+        String(file.relPath || '').replace(/\\/g, '/') === 'quiz_show.db'
+    ) || null;
+}
+
+function validateQuizShowDatabaseFile(file) {
+    const Database = require('better-sqlite3');
+    const database = new Database(file.tmpPath, { readonly: true, fileMustExist: true });
+    try {
+        return database.pragma('integrity_check', { simple: true }) === 'ok';
+    } finally {
+        if (database.open) database.close();
+    }
+}
+
+function classifyArchiveEntry(entry, seenEntries, seenPathSpellings, seenPathKinds) {
+    const entryName = entry && entry.entryName;
+    if (typeof entryName !== 'string' || !entryName) return 'invalid-entry-path';
+    if (!Number.isSafeInteger(entry.externalFileAttributes) || entry.externalFileAttributes < 0) return 'unsupported-entry-type';
+
+    const slashName = entryName.replace(/\\/g, '/');
+    const directory = slashName.endsWith('/');
+    const pathName = directory ? slashName.slice(0, -1) : slashName;
+    const normalizedPath = path.posix.normalize(pathName);
+    if (!normalizedPath || normalizedPath === '.' || normalizedPath !== pathName) return 'invalid-entry-path';
+    if (seenEntries.has(slashName)) return 'entry-path-collision';
+
+    const externalAttributes = entry.externalFileAttributes >>> 0;
+    const rawMode = (externalAttributes >>> 16) & 0xffff;
+    const fileType = rawMode & 0o170000;
+    const dosAttributes = externalAttributes & 0xffff;
+    if ((dosAttributes & 0x0400) !== 0 || (dosAttributes & 0x0040) !== 0 ||
+        (fileType !== 0 && fileType !== 0o100000 && fileType !== 0o040000) ||
+        (fileType === 0o040000 && !directory) ||
+        (fileType === 0o100000 && directory)) {
+        return 'unsupported-entry-type';
+    }
+
+    const parts = pathName.split('/');
+    for (let index = 0; index < parts.length; index += 1) {
+        const prefix = parts.slice(0, index + 1).join('/');
+        const canonicalPrefix = prefix.normalize('NFC').toLowerCase();
+        const existingSpelling = seenPathSpellings.get(canonicalPrefix);
+        if (existingSpelling !== undefined && existingSpelling !== prefix) return 'entry-path-collision';
+
+        const isFinal = index === parts.length - 1;
+        const kind = isFinal && !directory ? 'file' : 'directory';
+        const existingKind = seenPathKinds.get(canonicalPrefix);
+        if (existingKind && existingKind !== kind) return 'entry-path-collision';
+        if (!isFinal && existingKind === 'file') return 'entry-path-collision';
+
+        seenPathSpellings.set(canonicalPrefix, prefix);
+        seenPathKinds.set(canonicalPrefix, kind);
+    }
+
+    seenEntries.add(slashName);
+    return null;
+}
+
 /**
  * Parse a backup ZIP from a file path on disk.
  *
@@ -106,25 +187,132 @@ function canonicalPluginFilter(pluginFilter) {
  * @param {number} [fileSizeBytes] - Pre-computed file size for size validation
  * @returns {Promise<{ manifest: object, globalSettings: object|null, pluginSettings: object, dataFiles: object, userConfigsFiles: Array, warnings: string[], errors: string[] }>}
  */
-async function parseBackupZip(zipPath, fileSizeBytes) {
+async function parseBackupZip(zipPath, fileSizeBytes, decompressionLimits = {}) {
     const warnings = [];
     const errors = [];
 
-    // Size check
-    if (fileSizeBytes !== undefined) {
-        const sizeCheck = validateBackupSize(fileSizeBytes);
-        if (!sizeCheck.valid) {
-            return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [sizeCheck.error] };
-        }
+    // Measure the ZIP itself; the optional caller size is only a consistency check.
+    let measuredFileSize;
+    try {
+        measuredFileSize = fs.statSync(zipPath).size;
+    } catch (_) {
+        return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: ['Unable to read backup archive size'] };
+    }
+    if (fileSizeBytes !== undefined && (!Number.isSafeInteger(fileSizeBytes) || fileSizeBytes !== measuredFileSize)) {
+        return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: ['Backup archive size does not match the measured file size'] };
+    }
+    const sizeCheck = validateBackupSize(measuredFileSize);
+    if (!sizeCheck.valid) {
+        return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [sizeCheck.error] };
+    }
+
+    let decompressionBudget;
+    try {
+        // Optional lower limits are only for trusted internal callers (for example,
+        // isolated regression fixtures); callers can never raise the hard limits.
+        decompressionBudget = new DecompressionBudget(decompressionLimits);
+    } catch (error) {
+        return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [error.message] };
     }
 
     // Extract to a temp directory
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-backup-'));
+    let tooManyArchiveEntries = false;
+    let decompressionFailure = null;
+    let archiveEntryFailure = null;
+    const seenEntries = new Set();
+    const seenPathSpellings = new Map();
+    const seenPathKinds = new Map();
+    const zipEntryMetadata = [];
+    const extractedFileDigests = new Map();
+    const archiveLimitResult = () => ({
+        manifest: null,
+        globalSettings: null,
+        pluginSettings: {},
+        dataFiles: {},
+        userConfigsFiles: [],
+        warnings,
+        errors: [`Backup contains more than ${MAX_BACKUP_FILES} archive entries`],
+        tmpDir: null
+    });
+    const archiveEntryFailureResult = () => {
+        const message = archiveEntryFailure === 'unsupported-entry-type'
+            ? 'Backup archive contains an unsupported file type'
+            : 'Backup archive contains invalid, duplicate or colliding entry paths';
+        return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [message], tmpDir: null };
+    };
+    const unzip = new zl.Unzip({
+        onEntry(entry) {
+            if (entry.entryCount > MAX_BACKUP_FILES) {
+                tooManyArchiveEntries = true;
+                unzip.cancel();
+                return;
+            }
+            if (archiveEntryFailure) {
+                entry.preventDefault();
+                return;
+            }
+            const metadata = zipEntryMetadata.shift();
+            const reason = classifyArchiveEntry({
+                entryName: entry.entryName,
+                externalFileAttributes: metadata?.externalFileAttributes
+            }, seenEntries, seenPathSpellings, seenPathKinds);
+            if (reason) {
+                archiveEntryFailure = reason;
+                entry.preventDefault();
+            }
+        }
+    });
+    // zip-lib's onEntry callback omits ZIP external attributes, so capture each
+    // yauzl entry before zip-lib emits its corresponding name/count event.
+    const openZip = unzip.openZip.bind(unzip);
+    unzip.openZip = async (...args) => {
+        const zipFile = await openZip(...args);
+        zipFile.on('entry', zipEntry => {
+            if (!archiveEntryFailure && !tooManyArchiveEntries) zipEntryMetadata.push(zipEntry);
+        });
+        return zipFile;
+    };
+    const writeEntryToFile = unzip.writeEntryToFile.bind(unzip);
+    unzip.writeEntryToFile = (readStream, entry, entryContext, token) => {
+        const entryName = String(entryContext.decodeEntryFileName).replace(/\\/g, '/');
+        const entryHash = crypto.createHash('sha256');
+        const meteredStream = new Transform({
+            transform(chunk, _encoding, callback) {
+                try {
+                    decompressionBudget.add(entryContext.decodeEntryFileName, chunk.length);
+                    entryHash.update(chunk);
+                    callback(null, chunk);
+                } catch (error) {
+                    decompressionFailure = error;
+                    unzip.cancel();
+                    callback(error);
+                }
+            }
+        });
+        meteredStream.once('end', () => extractedFileDigests.set(entryName, entryHash.digest('hex')));
+        readStream.once('error', error => meteredStream.destroy(error));
+        readStream.pipe(meteredStream);
+        return writeEntryToFile(meteredStream, entry, entryContext, token);
+    };
     try {
-        await zl.extract(zipPath, tmpDir);
+        await unzip.extract(zipPath, tmpDir);
     } catch (err) {
         cleanupTempDir(tmpDir);
+        if (tooManyArchiveEntries) return archiveLimitResult();
+        if (archiveEntryFailure) return archiveEntryFailureResult();
+        if (decompressionFailure) {
+            return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [decompressionFailure.message], tmpDir: null };
+        }
         return { manifest: null, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: [`Failed to extract backup archive: ${err.message}`] };
+    }
+    if (tooManyArchiveEntries) {
+        cleanupTempDir(tmpDir);
+        return archiveLimitResult();
+    }
+    if (archiveEntryFailure) {
+        cleanupTempDir(tmpDir);
+        return archiveEntryFailureResult();
     }
 
     // ── Read manifest ─────────────────────────────────────────────────────────
@@ -147,6 +335,36 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
         cleanupTempDir(tmpDir);
         return { manifest, globalSettings: null, pluginSettings: {}, dataFiles: {}, userConfigsFiles: [], warnings, errors: manifestValidation.errors };
     }
+
+    const integrityCheck = await validateArchiveIntegrity(tmpDir, manifest);
+    warnings.push(...integrityCheck.warnings);
+    if (!integrityCheck.valid) {
+        cleanupTempDir(tmpDir);
+        return {
+            manifest,
+            globalSettings: null,
+            pluginSettings: {},
+            dataFiles: {},
+            userConfigsFiles: [],
+            warnings,
+            errors: integrityCheck.errors,
+            integrity: integrityCheck.integrity,
+            tmpDir: null
+        };
+    }
+
+    if (!integrityCheck.integrity.fileDigests) {
+        Object.defineProperty(integrityCheck.integrity, 'fileDigests', { value: Object.create(null) });
+    }
+    for (const [entryPath, sha256] of extractedFileDigests) {
+        integrityCheck.integrity.fileDigests[entryPath] = sha256;
+    }
+
+    if (manifest.dataSelection?.partial === true) {
+        warnings.push('This is a partial backup; categories not selected at export time are absent.');
+    } else if (!manifest.dataSelection) {
+        warnings.push('This legacy archive has no data-scope metadata; backup completeness cannot be determined.');
+    }
     warnings.push(...(manifest.warnings || []).map(w => `[original export] ${w}`));
     manifest.plugins = [...new Map((manifest.plugins || []).map(plugin => {
         const canonicalId = canonicalizePluginId(plugin.id);
@@ -160,7 +378,7 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
         try {
             globalSettings = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
         } catch (err) {
-            warnings.push(`Failed to parse global/settings.json: ${err.message}`);
+            errors.push(`Failed to parse global/settings.json: ${err.message}`);
         }
     }
 
@@ -186,7 +404,7 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
                     mergeBackupSettings(pluginSettings, pluginId, JSON.parse(fs.readFileSync(settingsFile, 'utf8')));
                 } catch (err) {
                     if (err.code === 'PLUGIN_IDENTITY_BACKUP_CONFLICT') errors.push(`${err.code}: ${err.message}`);
-                    else warnings.push(`Failed to parse settings for plugin ${pluginId}: ${err.message}`);
+                    else errors.push(`Failed to parse settings for plugin ${pluginId}: ${err.message}`);
                 }
             }
         }
@@ -255,6 +473,10 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
         });
     }
 
+    if (errors.length) {
+        cleanupTempDir(tmpDir);
+    }
+
     return {
         manifest,
         globalSettings,
@@ -263,10 +485,206 @@ async function parseBackupZip(zipPath, fileSizeBytes) {
         userConfigsFiles,
         uploadFiles,
         userDataFiles,
-        tmpDir,     // Caller must clean up
+        tmpDir: errors.length ? null : tmpDir, // Caller must clean up
         warnings,
-        errors
+        errors,
+        integrity: integrityCheck.integrity
     };
+}
+
+async function validateArchiveIntegrity(tmpDir, manifest) {
+    const errors = [];
+    const warnings = [];
+    const files = walkDir(tmpDir);
+    const archiveFiles = new Set(files.map(file => path.relative(tmpDir, file).replace(/\\/g, '/')));
+    const checksumPath = 'checksums.json';
+    const checksumFilePath = path.join(tmpDir, checksumPath);
+    const formatVersion = parseBackupFormatVersion(manifest.formatVersion);
+
+    if (!formatVersion) {
+        return {
+            valid: false,
+            errors: [`Unsupported backup format version: ${manifest.formatVersion}`],
+            warnings,
+            integrity: { status: 'invalid', verifiedFiles: 0, unverifiedFiles: archiveFiles.size }
+        };
+    }
+
+    if (!archiveFiles.has(checksumPath)) {
+        if (formatVersion && compareBackupVersions(formatVersion, [1, 0, 0]) < 0) {
+            warnings.push(`Legacy backup format ${manifest.formatVersion} has no checksums; its contents are unverified.`);
+            return {
+                valid: true,
+                errors,
+                warnings,
+                integrity: { status: 'unverified-legacy', verifiedFiles: 0, unverifiedFiles: archiveFiles.size }
+            };
+        }
+        return {
+            valid: false,
+            errors: ['checksums.json is required for backup format 1.0.0 and newer'],
+            warnings,
+            integrity: { status: 'invalid', verifiedFiles: 0, unverifiedFiles: archiveFiles.size }
+        };
+    }
+
+    let checksums;
+    try {
+        checksums = JSON.parse(fs.readFileSync(checksumFilePath, 'utf8'));
+    } catch (error) {
+        return {
+            valid: false,
+            errors: [`Failed to parse checksums.json: ${error.message}`],
+            warnings,
+            integrity: { status: 'invalid', verifiedFiles: 0, unverifiedFiles: archiveFiles.size }
+        };
+    }
+
+    const requiredFiles = new Set([...archiveFiles].filter(file => file !== checksumPath));
+    const fileDigests = Object.create(null);
+    if (formatVersion && compareBackupVersions(formatVersion, [1, 1, 0]) >= 0) {
+        if (!checksums || checksums.formatVersion !== manifest.formatVersion || !checksums.files ||
+            typeof checksums.files !== 'object' || Array.isArray(checksums.files) ||
+            Object.keys(checksums).some(key => !['formatVersion', 'files'].includes(key))) {
+            errors.push(`checksums.json does not match checksum schema ${FORMAT_VERSION}`);
+        } else {
+            const checksumFiles = checksums.files;
+            for (const entryPath of Object.keys(checksumFiles)) {
+                if (!validateEntryPath(entryPath).valid || entryPath.replace(/\\/g, '/') !== entryPath || !requiredFiles.has(entryPath)) {
+                    errors.push(`checksums.json contains an unknown or unsafe path: ${entryPath}`);
+                }
+            }
+            for (const entryPath of requiredFiles) {
+                if (!Object.prototype.hasOwnProperty.call(checksumFiles, entryPath)) {
+                    errors.push(`checksums.json is missing an entry for ${entryPath}`);
+                    continue;
+                }
+                const expected = checksumFiles[entryPath];
+                if (!expected || typeof expected !== 'object' || Array.isArray(expected) ||
+                    Object.keys(expected).sort().join(',') !== 'sha256,sizeBytes' ||
+                    !/^[a-f0-9]{64}$/i.test(expected.sha256) ||
+                    !Number.isSafeInteger(expected.sizeBytes) || expected.sizeBytes < 0) {
+                    errors.push(`checksums.json has an invalid digest or size for ${entryPath}`);
+                    continue;
+                }
+                const actual = await calculateFileChecksum(path.join(tmpDir, entryPath));
+                if (actual.sizeBytes !== expected.sizeBytes) {
+                    errors.push(`Backup file size mismatch for ${entryPath}`);
+                }
+                if (actual.sha256 !== expected.sha256.toLowerCase()) {
+                    errors.push(`Backup file checksum mismatch for ${entryPath}`);
+                } else {
+                    fileDigests[entryPath] = expected.sha256.toLowerCase();
+                }
+            }
+        }
+        return {
+            valid: errors.length === 0,
+            errors,
+            warnings,
+            integrity: attachFileDigests({
+                status: errors.length ? 'invalid' : 'verified',
+                verifiedFiles: errors.length ? 0 : requiredFiles.size,
+                unverifiedFiles: errors.length ? requiredFiles.size : 0
+            }, fileDigests)
+        };
+    }
+
+    // Format 1.0.0 used a digest-only map and omitted streamed payload files.
+    // Verify every declared digest and require all JSON files that its exporter covered.
+    if (!checksums || typeof checksums !== 'object' || Array.isArray(checksums) ||
+        Object.keys(checksums).some(entryPath => entryPath === 'formatVersion' || entryPath === 'files')) {
+        errors.push('checksums.json does not match the legacy checksum schema');
+        return { valid: false, errors, warnings, integrity: { status: 'invalid', verifiedFiles: 0, unverifiedFiles: requiredFiles.size } };
+    }
+
+    let verifiedFiles = 0;
+    for (const [entryPath, expectedHash] of Object.entries(checksums)) {
+        if (!validateEntryPath(entryPath).valid || entryPath.replace(/\\/g, '/') !== entryPath || !requiredFiles.has(entryPath)) {
+            errors.push(`checksums.json contains an unknown or unsafe path: ${entryPath}`);
+            continue;
+        }
+        if (typeof expectedHash !== 'string' || !/^[a-f0-9]{64}$/i.test(expectedHash)) {
+            errors.push(`checksums.json has an invalid digest for ${entryPath}`);
+            continue;
+        }
+        const actual = await calculateFileChecksum(path.join(tmpDir, entryPath));
+        if (actual.sha256 !== expectedHash.toLowerCase()) {
+            errors.push(`Backup file checksum mismatch for ${entryPath}`);
+            continue;
+        }
+        verifiedFiles++;
+        fileDigests[entryPath] = expectedHash.toLowerCase();
+    }
+
+    for (const entryPath of requiredFiles) {
+        if (/^(?:manifest\.json|global\/settings\.json|plugins\/[^/]+\/settings\.json)$/.test(entryPath) &&
+            !Object.prototype.hasOwnProperty.call(checksums, entryPath)) {
+            errors.push(`Legacy checksums.json is missing a required settings digest for ${entryPath}`);
+        }
+    }
+
+    const unverifiedFiles = requiredFiles.size - verifiedFiles;
+    if (!errors.length && unverifiedFiles > 0) {
+        warnings.push(`Legacy backup format ${manifest.formatVersion} has partial checksums; ${unverifiedFiles} file(s) are not integrity-verified.`);
+    }
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+        integrity: attachFileDigests({
+            status: errors.length ? 'invalid' : unverifiedFiles ? 'partially-verified-legacy' : 'verified-legacy',
+            verifiedFiles,
+            unverifiedFiles
+        }, fileDigests)
+    };
+}
+
+function attachFileDigests(integrity, fileDigests) {
+    Object.defineProperty(integrity, 'fileDigests', { value: fileDigests });
+    return integrity;
+}
+
+function parseBackupFormatVersion(value) {
+    if (typeof value !== 'string') return null;
+    const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(value);
+    return match ? match.slice(1).map(Number) : null;
+}
+
+function compareBackupVersions(left, right) {
+    for (let index = 0; index < 3; index++) {
+        if (left[index] !== right[index]) return left[index] < right[index] ? -1 : 1;
+    }
+    return 0;
+}
+
+function calculateFileChecksum(filePath) {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('sha256');
+        let sizeBytes = 0;
+        const input = fs.createReadStream(filePath);
+        input.on('data', chunk => {
+            hash.update(chunk);
+            sizeBytes += chunk.length;
+        });
+        input.once('error', reject);
+        input.once('end', () => resolve({ sha256: hash.digest('hex'), sizeBytes }));
+    });
+}
+
+function calculateFileChecksumSync(filePath) {
+    const descriptor = fs.openSync(filePath, 'r');
+    const hash = crypto.createHash('sha256');
+    const buffer = Buffer.allocUnsafe(64 * 1024);
+    try {
+        let bytesRead;
+        while ((bytesRead = fs.readSync(descriptor, buffer, 0, buffer.length, null)) > 0) {
+            hash.update(buffer.subarray(0, bytesRead));
+        }
+        return hash.digest('hex');
+    } finally {
+        fs.closeSync(descriptor);
+    }
 }
 
 /**
@@ -313,6 +731,7 @@ function previewImport(parsed, deps, opts = {}) {
     return {
         manifest: parsed.manifest,
         warnings: parsed.warnings,
+        dataSelection: parsed.manifest.dataSelection || { known: false, partial: null, categories: [] },
         global: {
             new: globalConflicts.new.length,
             conflicts: globalConflicts.conflicts.length,
@@ -339,7 +758,9 @@ function previewImport(parsed, deps, opts = {}) {
             plugins: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []),
             requiresExplicitTargetProfile: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []).length > 0,
             schnorrbecherPersistentStateAvailable: normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []).includes('schnorrbecher') &&
-                (parsed.dataFiles?.schnorrbecher || []).some(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json')
+                (parsed.dataFiles?.schnorrbecher || []).some(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json'),
+            legacyQuizShowDatabaseAvailable: !normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []).includes('quiz-show') &&
+                Boolean(findQuizShowDatabaseFile(parsed))
         }
     };
 }
@@ -358,6 +779,7 @@ function previewImport(parsed, deps, opts = {}) {
  * @param {boolean} [opts.includePluginSettings=true]
  * @param {boolean} [opts.includePluginData=true]
  * @param {boolean} [opts.includeUserConfigs=true]
+ * @param {boolean} [opts.confirmProfileReplacement=false]
  * @param {boolean} [opts.includeUploads=true]
  * @param {boolean} [opts.includeUserData=true]
  * @param {string[]} [opts.pluginFilter] - Only restore these plugin IDs
@@ -375,12 +797,11 @@ async function performImport(parsed, deps, opts = {}) {
         includeUserData = true,
         pluginFilter = null,
         includeProfileScopedPluginData = false,
+        includeLegacyQuizShowDatabase = false,
         includeSchnorrbecherPersistentState = false,
-        targetProfile = null
+        targetProfile = null,
+        confirmProfileReplacement = false
     } = opts;
-
-    const importProfileScopedPluginData = includeProfileScopedPluginData === true;
-    const importSchnorrbecherPersistentState = includeSchnorrbecherPersistentState === true;
 
     const warnings = [...(parsed.warnings || [])];
     const errors = [...(parsed.errors || [])];
@@ -398,27 +819,50 @@ async function performImport(parsed, deps, opts = {}) {
         };
     }
 
+    const hasProfileRestoreFiles = (parsed.userConfigsFiles || []).some(file =>
+        isRootProfileDatabase(file.relPath) || isActiveProfileMarker(file.relPath)
+    );
+    if (mode === 'replace' && includeUserConfigs && hasProfileRestoreFiles && confirmProfileReplacement !== true) {
+        errors.push('Replacing user profiles requires explicit confirmation that matching profiles may be overwritten and the active profile may change');
+        return { success: false, report, warnings, errors };
+    }
+
+    const fileTransaction = createFileRestoreTransaction();
+    const databaseSnapshot = includeGlobalSettings || (includePluginSettings && Object.keys(parsed.pluginSettings || {}).length)
+        ? snapshotSettingsTable(db)
+        : null;
+
     const archivedScopedPlugins = new Set(normalizeScopedPluginIds(parsed.manifest.profileScopedDataPlugins || []));
+    const legacyQuizShowDatabaseFile = findQuizShowDatabaseFile(parsed);
+    const requestsLegacyQuizShowImport = includeLegacyQuizShowDatabase === true;
+    if (requestsLegacyQuizShowImport && (
+        !includePluginData || archivedScopedPlugins.has('quiz-show') || !legacyQuizShowDatabaseFile ||
+        (pluginFilter && !canonicalPluginFilter(pluginFilter).has('quiz-show'))
+    )) {
+        errors.push('Legacy Quiz Show import requires an unmarked archive containing plugins/quiz-show/data/quiz_show.db and Plugin Data Files enabled');
+        return { success: false, report, warnings, errors };
+    }
     const activeProfileId = canonicalProfileId(deps.activeProfile);
-    if (importProfileScopedPluginData && archivedScopedPlugins.size &&
+    const requestsScopedTarget = (includeProfileScopedPluginData && archivedScopedPlugins.size) || requestsLegacyQuizShowImport;
+    if (requestsScopedTarget &&
         activeProfileId && targetProfile && canonicalProfileId(targetProfile) !== activeProfileId &&
         (includeGlobalSettings || includePluginSettings)) {
         errors.push('Global and plugin settings can only be restored to the currently active profile; disable settings import to target another profile');
         return { success: false, report, warnings, errors };
     }
     const schnorrStateFile = (parsed.dataFiles?.schnorrbecher || []).find(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json');
-    if (schnorrStateFile && importSchnorrbecherPersistentState) {
+    if (schnorrStateFile && includeSchnorrbecherPersistentState) {
         const configFile = (parsed.dataFiles?.schnorrbecher || []).find(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-config.json');
         let archivedPersistenceMode = null;
         try { archivedPersistenceMode = JSON.parse(fs.readFileSync(configFile.tmpPath, 'utf8')).persistenceMode; } catch (_) { /* invalid config will block state import */ }
-        if (!importProfileScopedPluginData || !archivedScopedPlugins.has('schnorrbecher') || archivedPersistenceMode !== 'persistent') {
+        if (!includeProfileScopedPluginData || !archivedScopedPlugins.has('schnorrbecher') || archivedPersistenceMode !== 'persistent') {
             errors.push('Schnorrbecher state import requires profile-scoped metadata and an archived persistent config');
             return { success: false, report, warnings, errors };
         }
     }
     let scopedTargetProfile = null;
     const replaceInitializedTargets = new Set();
-    if (includePluginData && importProfileScopedPluginData && archivedScopedPlugins.size) {
+    if (includePluginData && requestsScopedTarget) {
         if (mode !== 'merge') {
             errors.push('Profile-scoped plugin data only supports merge mode so existing target files are never overwritten');
         }
@@ -437,39 +881,88 @@ async function performImport(parsed, deps, opts = {}) {
             for (const pluginId of archivedScopedPlugins) {
                 if (pluginFilter && !canonicalPluginFilter(pluginFilter).has(pluginId)) continue;
                 const destBase = configPathManager.getPluginDataDir(pluginId, { profileId: scopedTargetProfile });
-                const pluginRoot = path.dirname(configPathManager.getPluginDataDir(pluginId));
-                for (const file of parsed.dataFiles?.[pluginId] || []) {
+                const allPluginFiles = parsed.dataFiles?.[pluginId] || [];
+                const pluginFiles = pluginId === 'quiz-show' ? allPluginFiles.filter(file => file === findQuizShowDatabaseFile(parsed)) : allPluginFiles;
+                if (pluginId === 'quiz-show' && (pluginFiles.length !== 1 || allPluginFiles.length !== 1)) {
+                    errors.push('[quiz-show] Profile-scoped archive must contain exactly quiz_show.db');
+                    continue;
+                }
+                let baseIsSafe = true;
+                try { validateRestoreBase(destBase); }
+                catch (error) {
+                    errors.push(`[${pluginId}] Profile-scoped import target is unsafe: ${error.message}`);
+                    baseIsSafe = false;
+                }
+                for (const file of baseIsSafe ? pluginFiles : []) {
                     if (pluginId === 'schnorrbecher' &&
                         file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' &&
-                        !importSchnorrbecherPersistentState) continue;
-                    const pathCheck = validateEntryPath(file.relPath);
-                    if (!pathCheck.valid) {
-                        errors.push(`[${pluginId}] Profile-scoped import preflight failed: ${pathCheck.error}`);
+                        !includeSchnorrbecherPersistentState) continue;
+                    if (pluginId === 'quiz-show' && !validateQuizShowDatabaseFile(file)) {
+                        errors.push('[quiz-show] Profile-scoped database failed SQLite integrity validation');
                         continue;
                     }
+                    const pathCheck = validateEntryPath(file.relPath);
                     const destPath = path.join(destBase, file.relPath);
                     const destCheck = validateDestinationPath(destPath, destBase);
                     const existing = fs.existsSync(destPath);
-                    const unsafePath = findUnsafeProfilePath(pluginRoot, destPath);
                     const emptyJarInitialization = pluginId === 'schnorrbecher' &&
                         file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' &&
-                        importSchnorrbecherPersistentState && isEmptyInitializedCoinJarState(destPath);
+                        includeSchnorrbecherPersistentState && isEmptyInitializedCoinJarState(destPath);
                     if (emptyJarInitialization) replaceInitializedTargets.add(destPath);
-                    if (!pathCheck.valid || !destCheck.valid || unsafePath || (existing && !emptyJarInitialization)) {
-                        const reason = !pathCheck.valid
-                            ? pathCheck.error
-                            : !destCheck.valid
-                                ? destCheck.error
-                                : unsafePath
-                                    ? `Profile-scoped import path ${unsafePath.reason}: ${unsafePath.path}`
-                                    : `Destination already exists: ${file.relPath}`;
-                        errors.push(`[${pluginId}] Profile-scoped import preflight failed: ${reason}`);
+                    if (!pathCheck.valid || !destCheck.valid || (existing && !emptyJarInitialization)) {
+                        errors.push(`[${pluginId}] Profile-scoped import preflight failed: ${!pathCheck.valid ? pathCheck.error : !destCheck.valid ? destCheck.error : `Destination already exists: ${file.relPath}`}`);
                     }
+                    try { validateRestoreDestination(destBase, destPath); }
+                    catch (error) { errors.push(`[${pluginId}] Profile-scoped import target is unsafe: ${error.message}`); }
+                }
+            }
+            if (requestsLegacyQuizShowImport && legacyQuizShowDatabaseFile) {
+                const destBase = configPathManager.getPluginDataDir('quiz-show', { profileId: scopedTargetProfile });
+                const destPath = path.join(destBase, 'quiz_show.db');
+                try {
+                    validateRestoreBase(destBase);
+                    const pathCheck = validateEntryPath(legacyQuizShowDatabaseFile.relPath);
+                    const destCheck = validateDestinationPath(destPath, destBase);
+                    if (!pathCheck.valid || !destCheck.valid || fs.existsSync(destPath)) {
+                        errors.push(`[quiz-show] Legacy profile import preflight failed: ${!pathCheck.valid ? pathCheck.error : !destCheck.valid ? destCheck.error : 'Destination already exists: quiz_show.db'}`);
+                    } else if (!validateQuizShowDatabaseFile(legacyQuizShowDatabaseFile)) {
+                        errors.push('[quiz-show] Legacy database failed SQLite integrity validation');
+                    }
+                } catch (error) {
+                    errors.push(`[quiz-show] Legacy profile import target is unsafe: ${error.message}`);
                 }
             }
         }
-        if (errors.length) return { success: false, report, warnings, errors };
+        if (errors.length) {
+            fileTransaction.cleanup();
+            return { success: false, report, warnings, errors };
+        }
     }
+
+    let userConfigProfileNameMap = {};
+    try {
+        userConfigProfileNameMap = preflightFileRestoreTargets(parsed, db, configPathManager, {
+            mode,
+            pluginFilter,
+            includePluginData,
+            includeUserConfigs,
+            includeUploads,
+            includeUserData,
+            includeProfileScopedPluginData,
+            includeSchnorrbecherPersistentState,
+            includeLegacyQuizShowDatabase,
+            archivedScopedPlugins,
+            scopedTargetProfile,
+            replaceInitializedTargets
+        }, fileTransaction);
+        await fileTransaction.stage();
+    } catch (error) {
+        fileTransaction.cleanup();
+        errors.push(`File restore preflight failed: ${error.message}`);
+        return { success: false, report, warnings, errors };
+    }
+
+    try {
 
     // ── Global settings ───────────────────────────────────────────────────────
     if (includeGlobalSettings && parsed.globalSettings) {
@@ -524,131 +1017,39 @@ async function performImport(parsed, deps, opts = {}) {
         // Plugin data files
         if (includePluginData && parsed.dataFiles && parsed.dataFiles[pluginId]) {
             const profileScoped = archivedScopedPlugins.has(pluginId);
-            if (PROFILE_SCOPED_PLUGIN_DATA.includes(pluginId) && !profileScoped) {
+            const legacyQuizShowScope = pluginId === 'quiz-show' && includeLegacyQuizShowDatabase === true && !profileScoped;
+            const scopedImport = profileScoped || legacyQuizShowScope;
+            if (PROFILE_SCOPED_PLUGIN_DATA.includes(pluginId) && !scopedImport) {
                 warnings.push(`[${pluginId}] Unmarked legacy plugin data skipped; choose an explicit legacy import in the plugin UI.`);
                 report.plugins[pluginId].skippedFiles.push(...parsed.dataFiles[pluginId].map(file => file.relPath));
                 continue;
             }
-            if (pluginId === 'schnorrbecher' && schnorrStateFile && !importSchnorrbecherPersistentState) {
+            if (pluginId === 'schnorrbecher' && schnorrStateFile && !includeSchnorrbecherPersistentState) {
                 warnings.push('[schnorrbecher] State file skipped; persistent state requires explicit selection in the import preview.');
                 report.plugins[pluginId].skippedFiles.push('coin-jar-state.json');
+                parsed.dataFiles[pluginId] = parsed.dataFiles[pluginId].filter(file => file !== schnorrStateFile);
             }
-            if (profileScoped && (!importProfileScopedPluginData || !scopedTargetProfile)) {
+            if (scopedImport && ((!legacyQuizShowScope && !includeProfileScopedPluginData) || !scopedTargetProfile)) {
                 warnings.push(`[${pluginId}] Profile-scoped data skipped; choose a target profile and explicitly enable profile data import.`);
                 report.plugins[pluginId].skippedFiles.push(...parsed.dataFiles[pluginId].map(file => file.relPath));
                 continue;
             }
-            const destBase = profileScoped
+            const destBase = scopedImport
                 ? configPathManager.getPluginDataDir(pluginId, { profileId: scopedTargetProfile })
                 : configPathManager.getPluginDataDir(pluginId);
-            if (profileScoped) {
-                const files = parsed.dataFiles[pluginId].filter(file => !(pluginId === 'schnorrbecher' &&
-                    file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' && !importSchnorrbecherPersistentState));
-                const staged = [];
-                const pluginRoot = path.dirname(configPathManager.getPluginDataDir(pluginId));
-                let stageDir = null;
-                let preserveStageForRecovery = false;
-                try {
-                    const unsafeBase = findUnsafeProfilePath(pluginRoot, destBase);
-                    if (unsafeBase) {
-                        throw new Error(`Profile-scoped import path ${unsafeBase.reason}: ${unsafeBase.path}`);
+            if (scopedImport) {
+                const files = legacyQuizShowScope
+                    ? [legacyQuizShowDatabaseFile].filter(Boolean)
+                    : parsed.dataFiles[pluginId];
+                if (legacyQuizShowScope) {
+                    const skipped = parsed.dataFiles[pluginId].filter(file => file !== legacyQuizShowDatabaseFile);
+                    if (skipped.length) {
+                        warnings.push('[quiz-show] Only the canonical legacy quiz_show.db is eligible for explicit profile import; other unmarked files were skipped.');
+                        report.plugins[pluginId].skippedFiles.push(...skipped.map(file => file.relPath));
                     }
-                    fs.mkdirSync(destBase, { recursive: true });
-                    const unsafeBeforeStage = findUnsafeProfilePath(pluginRoot, destBase);
-                    if (unsafeBeforeStage) {
-                        throw new Error(`Profile-scoped import path became unsafe before staging: ${unsafeBeforeStage.path} ${unsafeBeforeStage.reason}`);
-                    }
-                    stageDir = fs.mkdtempSync(path.join(destBase, '.ltth-backup-stage-'));
-                    for (const file of files) {
-                        const stagePath = path.join(stageDir, file.relPath);
-                        const unsafeStage = findUnsafeProfilePath(pluginRoot, stagePath);
-                        if (unsafeStage) {
-                            throw new Error(`Profile-scoped stage path became unsafe before directory creation: ${unsafeStage.path} ${unsafeStage.reason}`);
-                        }
-                        const unsafeBeforeStageMkdir = findUnsafeProfilePath(pluginRoot, stagePath);
-                        if (unsafeBeforeStageMkdir) {
-                            throw new Error(`Profile-scoped stage path became unsafe before directory creation: ${unsafeBeforeStageMkdir.path} ${unsafeBeforeStageMkdir.reason}`);
-                        }
-                        fs.mkdirSync(path.dirname(stagePath), { recursive: true });
-                        const unsafeBeforeStageCopy = findUnsafeProfilePath(pluginRoot, stagePath);
-                        if (unsafeBeforeStageCopy) {
-                            throw new Error(`Profile-scoped stage path became unsafe before copy: ${unsafeBeforeStageCopy.path} ${unsafeBeforeStageCopy.reason}`);
-                        }
-                        fs.copyFileSync(file.tmpPath, stagePath);
-                        staged.push({ stagePath, destPath: path.join(destBase, file.relPath), relPath: file.relPath });
-                    }
-                    const installed = [];
-                    const replacedTargets = [];
-                    try {
-                        for (const file of staged) {
-                            const unsafePath = findUnsafeProfilePath(pluginRoot, file.destPath);
-                            if (unsafePath) {
-                                throw new Error(`Destination path became unsafe before directory creation: ${unsafePath.path} ${unsafePath.reason}`);
-                            }
-                            fs.mkdirSync(path.dirname(file.destPath), { recursive: true });
-                            const unsafeBeforeExchange = findUnsafeProfilePath(pluginRoot, file.destPath);
-                            if (unsafeBeforeExchange) {
-                                throw new Error(`Destination path became unsafe before exchange: ${unsafeBeforeExchange.path} ${unsafeBeforeExchange.reason}`);
-                            }
-                            if (replaceInitializedTargets.has(file.destPath) && fs.existsSync(file.destPath)) {
-                                const previous = path.join(stageDir, `.previous-${replacedTargets.length}`);
-                                fs.renameSync(file.destPath, previous);
-                                replacedTargets.push({ target: file.destPath, backup: previous });
-                                if (!isEmptyInitializedCoinJarState(previous)) {
-                                    throw new Error(`Destination changed after preflight; preserved concurrent state for ${file.relPath}`);
-                                }
-                            }
-                            const unsafeBeforeInstall = findUnsafeProfilePath(pluginRoot, file.destPath);
-                            if (unsafeBeforeInstall) {
-                                throw new Error(`Destination path became unsafe before install: ${unsafeBeforeInstall.path} ${unsafeBeforeInstall.reason}`);
-                            }
-                            fs.copyFileSync(file.stagePath, file.destPath, fs.constants.COPYFILE_EXCL);
-                            installed.push(file.destPath);
-                        }
-                        // Report only the completed batch. A later failure rolls
-                        // earlier files back and must not leave success counts.
-                        report.plugins[pluginId].importedFiles.push(...staged.map(file => file.relPath));
-                    } catch (error) {
-                        const rollbackErrors = [];
-                        for (const installedPath of installed.reverse()) {
-                            try {
-                                const unsafeInstalled = findUnsafeProfilePath(pluginRoot, installedPath);
-                                if (unsafeInstalled) throw new Error(`unsafe rollback target ${unsafeInstalled.path} ${unsafeInstalled.reason}`);
-                                fs.unlinkSync(installedPath);
-                            } catch (rollbackError) { rollbackErrors.push(`${installedPath}: ${rollbackError.message}`); }
-                        }
-                        for (const entry of replacedTargets.reverse()) {
-                            try {
-                                const unsafeBackup = findUnsafeProfilePath(pluginRoot, entry.backup);
-                                const unsafeTarget = findUnsafeProfilePath(pluginRoot, entry.target);
-                                if (unsafeBackup || unsafeTarget) {
-                                    const unsafePath = unsafeBackup || unsafeTarget;
-                                    throw new Error(`unsafe rollback path ${unsafePath.path} ${unsafePath.reason}`);
-                                }
-                                fs.linkSync(entry.backup, entry.target);
-                                fs.unlinkSync(entry.backup);
-                            } catch (rollbackError) {
-                                rollbackErrors.push(`${entry.target}: ${rollbackError.message}`);
-                            }
-                        }
-                        if (rollbackErrors.length) {
-                            preserveStageForRecovery = true;
-                            error.message += `; rollback failed: ${rollbackErrors.join('; ')}; recovery data retained at ${stageDir}`;
-                        }
-                        throw error;
-                    }
-                } catch (error) {
-                    errors.push(`[${pluginId}] Profile-scoped import failed: ${error.message}`);
-                } finally {
-                    if (!preserveStageForRecovery && stageDir) {
-                        const unsafeCleanup = findUnsafeProfilePath(pluginRoot, stageDir);
-                        if (unsafeCleanup) {
-                            preserveStageForRecovery = true;
-                            errors.push(`[${pluginId}] Stage cleanup skipped because the recovery path became unsafe: ${unsafeCleanup.path} ${unsafeCleanup.reason}`);
-                        } else {
-                            cleanupTempDir(stageDir);
-                        }
-                    }
+                }
+                for (const file of files) {
+                    report.plugins[pluginId].importedFiles.push(file.relPath);
                 }
                 continue;
             }
@@ -677,11 +1078,10 @@ async function performImport(parsed, deps, opts = {}) {
                 }
 
                 try {
-                    fs.mkdirSync(path.dirname(destPath), { recursive: true });
-                    fs.copyFileSync(tmpPath, destPath);
                     report.plugins[pluginId].importedFiles.push(relPath);
                 } catch (err) {
                     warnings.push(`[${pluginId}] Failed to restore file ${relPath}: ${err.message}`);
+                    errors.push(`[${pluginId}] File restore failed for ${relPath}`);
                     report.plugins[pluginId].skippedFiles.push(relPath);
                 }
             }
@@ -695,19 +1095,26 @@ async function performImport(parsed, deps, opts = {}) {
             warnings.push('[user_configs] Config path manager does not expose getUserConfigsDir()');
         } else {
             const userConfigsBase = configPathManager.getUserConfigsDir();
-            const profileNameMap = {};
+            const profileNameMap = userConfigProfileNameMap || {};
             const activeDbPath = getActiveDbPath(db);
             const files = parsed.userConfigsFiles.slice().sort(sortUserConfigFiles);
+            let profileRestoreFailed = false;
 
             for (const { tmpPath, relPath } of files) {
                 const pathCheck = validateEntryPath(relPath);
                 if (!pathCheck.valid) {
                     warnings.push(`[user_configs] Skipping file with unsafe path: ${relPath}`);
                     report.userConfigs.skipped.push(relPath);
+                    profileRestoreFailed = true;
                     continue;
                 }
 
                 if (isActiveProfileMarker(relPath)) {
+                    if (profileRestoreFailed) {
+                        warnings.push('[user_configs] Active profile marker skipped because another profile restore file failed.');
+                        report.userConfigs.skipped.push(relPath);
+                        continue;
+                    }
                     try {
                         const originalProfile = fs.readFileSync(tmpPath, 'utf8').trim();
                         const restoredProfile = profileNameMap[originalProfile] || originalProfile;
@@ -716,6 +1123,7 @@ async function performImport(parsed, deps, opts = {}) {
                         if (!destCheck.valid) {
                             warnings.push(`[user_configs] Skipping .active_profile, ${destCheck.error}`);
                             report.userConfigs.skipped.push(relPath);
+                            profileRestoreFailed = true;
                             continue;
                         }
                         if (mode === 'merge' && fs.existsSync(destPath)) {
@@ -723,11 +1131,11 @@ async function performImport(parsed, deps, opts = {}) {
                             continue;
                         }
                         fs.mkdirSync(path.dirname(destPath), { recursive: true });
-                        fs.writeFileSync(destPath, restoredProfile, 'utf8');
                         report.userConfigs.imported.push(relPath);
                     } catch (err) {
                         warnings.push(`[user_configs] Failed to restore ${relPath}: ${err.message}`);
                         report.userConfigs.skipped.push(relPath);
+                        profileRestoreFailed = true;
                     }
                     continue;
                 }
@@ -738,6 +1146,7 @@ async function performImport(parsed, deps, opts = {}) {
                 if (!destCheck.valid) {
                     warnings.push(`[user_configs] Skipping file, ${destCheck.error}`);
                     report.userConfigs.skipped.push(relPath);
+                    profileRestoreFailed = true;
                     continue;
                 }
 
@@ -748,7 +1157,7 @@ async function performImport(parsed, deps, opts = {}) {
 
                 if (isRootProfileDatabase(relPath) && activeDbPath && path.resolve(destPath) === activeDbPath) {
                     const originalProfile = path.basename(relPath, '.db');
-                    const restoredProfile = makeRestoreProfileName(userConfigsBase, originalProfile);
+                    const restoredProfile = profileNameMap[originalProfile] || makeRestoreProfileName(userConfigsBase, originalProfile);
                     profileNameMap[originalProfile] = restoredProfile;
                     targetRelPath = `${restoredProfile}.db`;
                     destPath = path.join(userConfigsBase, targetRelPath);
@@ -760,7 +1169,6 @@ async function performImport(parsed, deps, opts = {}) {
 
                 try {
                     fs.mkdirSync(path.dirname(destPath), { recursive: true });
-                    fs.copyFileSync(tmpPath, destPath);
                     report.userConfigs.imported.push(targetRelPath);
                 } catch (err) {
                     if (isRootProfileDatabase(relPath)) {
@@ -773,8 +1181,6 @@ async function performImport(parsed, deps, opts = {}) {
 
                         if (fallbackCheck.valid) {
                             try {
-                                fs.mkdirSync(path.dirname(fallbackDestPath), { recursive: true });
-                                fs.copyFileSync(tmpPath, fallbackDestPath);
                                 report.userConfigs.imported.push(fallbackRelPath);
                                 report.userConfigs.renamed.push({ from: relPath, to: fallbackRelPath });
                                 warnings.push(
@@ -783,10 +1189,17 @@ async function performImport(parsed, deps, opts = {}) {
                                 continue;
                             } catch (fallbackErr) {
                                 warnings.push(`[user_configs] Failed fallback restore for ${relPath}: ${fallbackErr.message}`);
+                                profileRestoreFailed = true;
+                                errors.push(`[user_configs] Profile database restore failed for ${relPath}`);
                             }
+                        } else {
+                            profileRestoreFailed = true;
+                            errors.push(`[user_configs] Profile database restore failed for ${relPath}: ${fallbackCheck.error}`);
                         }
                     } else {
                         warnings.push(`[user_configs] Failed to restore ${relPath}: ${err.message}`);
+                        profileRestoreFailed = true;
+                        errors.push(`[user_configs] Restore failed for ${relPath}: ${err.message}`);
                     }
                     report.userConfigs.skipped.push(relPath);
                 }
@@ -820,11 +1233,10 @@ async function performImport(parsed, deps, opts = {}) {
             }
 
             try {
-                fs.mkdirSync(path.dirname(destPath), { recursive: true });
-                fs.copyFileSync(tmpPath, destPath);
                 report.uploads.imported.push(relPath);
             } catch (err) {
                 warnings.push(`[uploads] Failed to restore ${relPath}: ${err.message}`);
+                errors.push(`[uploads] Restore failed for ${relPath}: ${err.message}`);
                 report.uploads.skipped.push(relPath);
             }
         }
@@ -857,15 +1269,30 @@ async function performImport(parsed, deps, opts = {}) {
             }
 
             try {
-                fs.mkdirSync(path.dirname(destPath), { recursive: true });
-                fs.copyFileSync(tmpPath, destPath);
                 report.userData.imported.push(relPath);
             } catch (err) {
                 warnings.push(`[user_data] Failed to restore ${relPath}: ${err.message}`);
+                errors.push(`[user_data] Restore failed for ${relPath}: ${err.message}`);
                 report.userData.skipped.push(relPath);
             }
         }
     }
+
+    if (errors.length) {
+        try {
+            fileTransaction.rollback();
+        } catch (rollbackError) {
+            errors.push(`File restore rollback failed: ${rollbackError.message}`);
+        }
+        if (databaseSnapshot) {
+            try { restoreSettingsTable(db, databaseSnapshot); }
+            catch (rollbackError) { errors.push(`Settings database rollback failed: ${rollbackError.message}`); }
+        }
+        clearImportedReport(report);
+    } else {
+        fileTransaction.commit();
+    }
+    fileTransaction.cleanup();
 
     return {
         success: errors.length === 0,
@@ -873,6 +1300,18 @@ async function performImport(parsed, deps, opts = {}) {
         warnings,
         errors
     };
+    } catch (error) {
+        try { fileTransaction.rollback(); }
+        catch (rollbackError) { errors.push(`File restore rollback failed: ${rollbackError.message}`); }
+        if (databaseSnapshot) {
+            try { restoreSettingsTable(db, databaseSnapshot); }
+            catch (rollbackError) { errors.push(`Settings database rollback failed: ${rollbackError.message}`); }
+        }
+        clearImportedReport(report);
+        fileTransaction.cleanup();
+        errors.push(`Import failed: ${error.message}`);
+        return { success: false, report, warnings, errors };
+    }
 }
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
@@ -959,6 +1398,319 @@ function getActiveDbPath(db) {
     if (db.name && db.name !== ':memory:') return path.resolve(db.name);
     if (db.db && db.db.name && db.db.name !== ':memory:') return path.resolve(db.db.name);
     return null;
+}
+
+function snapshotSettingsTable(db) {
+    if (!db || typeof db.prepare !== 'function') return null;
+    return db.prepare('SELECT key, value FROM settings').all().map(row => ({ key: row.key, value: row.value }));
+}
+
+function restoreSettingsTable(db, rows) {
+    if (!db || !Array.isArray(rows)) return;
+    const restore = () => {
+        db.prepare('DELETE FROM settings').run();
+        const insert = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)');
+        for (const row of rows) insert.run(row.key, row.value);
+    };
+    if (typeof db.transaction === 'function') db.transaction(restore)();
+    else if (db.db && typeof db.db.exec === 'function') {
+        db.db.exec('BEGIN IMMEDIATE');
+        try { restore(); db.db.exec('COMMIT'); }
+        catch (error) { try { db.db.exec('ROLLBACK'); } catch (_) {} throw error; }
+    } else throw new Error('Database does not provide transaction support');
+}
+
+function createFileRestoreTransaction() {
+    const entries = [];
+    const stageDirs = new Set();
+    const createdDirs = new Set();
+    let preserveStageDirsForRecovery = false;
+    let committed = false;
+    function ensureDirectory(dirPath) {
+        const missing = [];
+        let cursor = path.resolve(dirPath);
+        while (!fs.existsSync(cursor)) {
+            missing.push(cursor);
+            const parent = path.dirname(cursor);
+            if (parent === cursor) break;
+            cursor = parent;
+        }
+        fs.mkdirSync(dirPath, { recursive: true });
+        missing.forEach(dir => createdDirs.add(dir));
+    }
+    return {
+        queue(source, destination, options = {}) {
+            const destPath = path.resolve(destination);
+            if (entries.some(entry => entry.destPath.toLowerCase() === destPath.toLowerCase())) {
+                throw new Error(`Multiple restore entries target ${destPath}`);
+            }
+            entries.push({
+                source,
+                destPath,
+                replace: Boolean(options.replace),
+                order: options.order || 0,
+                expectedSha256: options.expectedSha256 || null,
+                restoreBase: options.restoreBase ? path.resolve(options.restoreBase) : null,
+                originalSha256: null,
+                originalRemoved: false,
+                installed: false,
+                hadOriginal: false
+            });
+        },
+        async stage() {
+            for (const entry of entries) {
+                if (entry.restoreBase) validateRestoreDestination(entry.restoreBase, entry.destPath);
+                ensureDirectory(path.dirname(entry.destPath));
+                const stageDir = fs.mkdtempSync(path.join(path.dirname(entry.destPath), '.ltth-restore-stage-'));
+                stageDirs.add(stageDir);
+                entry.stagePath = path.join(stageDir, 'payload');
+                entry.backupPath = path.join(stageDir, 'original');
+                if (Buffer.isBuffer(entry.source)) fs.writeFileSync(entry.stagePath, entry.source);
+                else fs.copyFileSync(entry.source, entry.stagePath);
+                const stagedChecksum = await calculateFileChecksum(entry.stagePath);
+                entry.stagedSha256 = stagedChecksum.sha256;
+                if (entry.expectedSha256) {
+                    if (stagedChecksum.sha256 !== entry.expectedSha256) {
+                        throw new Error('Staged backup file failed integrity verification');
+                    }
+                }
+                entry.hadOriginal = fs.existsSync(entry.destPath);
+                if (entry.hadOriginal && !entry.replace) throw new Error(`Destination already exists: ${entry.destPath}`);
+                if (entry.hadOriginal) {
+                    fs.copyFileSync(entry.destPath, entry.backupPath);
+                    entry.originalSha256 = calculateFileChecksumSync(entry.backupPath);
+                    if (calculateFileChecksumSync(entry.destPath) !== entry.originalSha256) {
+                        throw new Error(`Destination changed while its original snapshot was created: ${entry.destPath}`);
+                    }
+                }
+            }
+        },
+        commit() {
+            const ordered = entries.slice().sort((a, b) => a.order - b.order);
+            try {
+                // All awaitable import/provider hooks have completed before this
+                // synchronous commit edge. Revalidate every staged payload without
+                // yielding so same-process hooks cannot swap bytes after stage().
+                for (const entry of ordered) {
+                    if (entry.restoreBase) validateRestoreDestination(entry.restoreBase, entry.destPath);
+                    if (calculateFileChecksumSync(entry.stagePath) !== entry.stagedSha256) {
+                        throw new Error('Staged backup file changed before commit');
+                    }
+                    preflightHardlinkInstall(entry);
+                }
+                for (const entry of ordered) {
+                    if (entry.restoreBase) validateRestoreDestination(entry.restoreBase, entry.destPath);
+                    const destinationExists = fs.existsSync(entry.destPath);
+                    if (destinationExists !== entry.hadOriginal ||
+                        (entry.hadOriginal && calculateFileChecksumSync(entry.destPath) !== entry.originalSha256)) {
+                        throw new Error(`Destination changed after restore staging: ${entry.destPath}`);
+                    }
+                    if (entry.hadOriginal) {
+                        fs.unlinkSync(entry.destPath);
+                        entry.originalRemoved = true;
+                    }
+                    if (fs.existsSync(entry.destPath)) {
+                        throw new Error(`Destination reappeared before restore rename: ${entry.destPath}`);
+                    }
+                    // Same-volume hard-link creation atomically refuses an existing target.
+                    fs.linkSync(entry.stagePath, entry.destPath);
+                    entry.installed = true;
+                    fs.unlinkSync(entry.stagePath);
+                }
+                committed = true;
+            } catch (error) {
+                try { this.rollback(); }
+                catch (rollbackError) { error.message += `; rollback failed: ${rollbackError.message}`; }
+                throw error;
+            }
+        },
+        rollback() {
+            const failures = [];
+            for (const entry of entries.slice().reverse()) {
+                try {
+                    if (entry.restoreBase) validateRestoreDestination(entry.restoreBase, entry.destPath);
+                    if (entry.installed && fs.existsSync(entry.destPath)) {
+                        if (calculateFileChecksumSync(entry.destPath) !== entry.stagedSha256) {
+                            throw new Error(`Installed destination changed before rollback: ${entry.destPath}`);
+                        }
+                        fs.unlinkSync(entry.destPath);
+                    }
+                    if (entry.hadOriginal && entry.originalRemoved && fs.existsSync(entry.backupPath)) {
+                        if (fs.existsSync(entry.destPath)) {
+                            throw new Error(`Destination reappeared before original recovery: ${entry.destPath}`);
+                        }
+                        if (entry.restoreBase) validateRestoreDestination(entry.restoreBase, entry.destPath);
+                        ensureDirectory(path.dirname(entry.destPath));
+                        fs.copyFileSync(entry.backupPath, entry.destPath, fs.constants.COPYFILE_EXCL);
+                        entry.originalRemoved = false;
+                    }
+                    entry.installed = false;
+                } catch (error) { failures.push(`${entry.destPath}: ${error.message}`); }
+            }
+            committed = false;
+            if (failures.length) {
+                preserveStageDirsForRecovery = true;
+                const recoveryPaths = entries
+                    .filter(entry => entry.hadOriginal && entry.backupPath && fs.existsSync(entry.backupPath))
+                    .map(entry => entry.backupPath);
+                throw new Error(`${failures.join('; ')}; original backups retained at: ${recoveryPaths.join(', ') || 'stage directories retained for manual recovery'}`);
+            }
+        },
+        cleanup() {
+            if (preserveStageDirsForRecovery) return;
+            for (const dir of stageDirs) cleanupTempDir(dir);
+            for (const dir of [...createdDirs].sort((a, b) => b.length - a.length)) {
+                try { fs.rmdirSync(dir); } catch (_) { /* retain non-empty or concurrently used directories */ }
+            }
+        },
+        get committed() { return committed; }
+    };
+}
+
+function preflightHardlinkInstall(entry) {
+  const token = crypto.randomBytes(16).toString('hex');
+  const source = path.join(path.dirname(entry.stagePath), `.ltth-link-probe-${token}`);
+  const target = path.join(path.dirname(entry.destPath), `.ltth-link-probe-${token}`);
+  let sourceCreated = false;
+  let targetCreated = false;
+  let failure = null;
+  try {
+    fs.writeFileSync(source, '', { flag: 'wx' });
+    sourceCreated = true;
+    fs.linkSync(source, target);
+    targetCreated = true;
+  } catch (error) {
+    failure = error;
+  } finally {
+    for (const [file, owned] of [[target, targetCreated], [source, sourceCreated]]) {
+      if (!owned) continue;
+      try { fs.unlinkSync(file); }
+      catch (error) {
+        const detail = `Hardlink probe cleanup failed at ${file}: ${error.message}`;
+        if (failure) failure.message += `; ${detail}`;
+        else failure = new Error(detail);
+      }
+    }
+  }
+  if (failure) throw failure;
+}
+
+function preflightFileRestoreTargets(parsed, db, configPathManager, opts, transaction) {
+    const {
+        mode, pluginFilter, includePluginData, includeUserConfigs, includeUploads, includeUserData,
+        includeSchnorrbecherPersistentState, includeLegacyQuizShowDatabase, archivedScopedPlugins, scopedTargetProfile, replaceInitializedTargets
+    } = opts;
+    const filterIds = canonicalPluginFilter(pluginFilter);
+    const selected = new Set([
+        ...Object.keys(parsed.dataFiles || {}),
+        ...Object.keys(parsed.pluginSettings || {})
+    ].filter(id => !filterIds || filterIds.has(canonicalizePluginId(id))));
+    const profileNameMap = {};
+    if (includePluginData) {
+        for (const pluginId of selected) {
+            const legacyQuizShowScope = pluginId === 'quiz-show' && includeLegacyQuizShowDatabase === true && !archivedScopedPlugins.has(pluginId);
+            if (PROFILE_SCOPED_PLUGIN_DATA.includes(pluginId) && !archivedScopedPlugins.has(pluginId) && !legacyQuizShowScope) continue;
+            const scoped = archivedScopedPlugins.has(pluginId) || legacyQuizShowScope;
+            if (scoped && ((!legacyQuizShowScope && !opts.includeProfileScopedPluginData) || !scopedTargetProfile)) continue;
+            const base = scoped
+                ? configPathManager.getPluginDataDir(pluginId, { profileId: scopedTargetProfile })
+                : configPathManager.getPluginDataDir(pluginId);
+            const files = legacyQuizShowScope
+                ? [findQuizShowDatabaseFile(parsed)].filter(Boolean)
+                : parsed.dataFiles?.[pluginId] || [];
+            for (const file of files) {
+                if (pluginId === 'schnorrbecher' && file.relPath.replace(/\\/g, '/') === 'coin-jar-state.json' && !includeSchnorrbecherPersistentState) continue;
+                queueRestoreFile(
+                    transaction,
+                    file,
+                    base,
+                    mode,
+                    mode === 'replace' && !scoped || replaceInitializedTargets.has(path.join(base, file.relPath)),
+                    1,
+                    null,
+                    getExpectedFileDigest(parsed, file),
+                    base
+                );
+            }
+        }
+    }
+    if (includeUserConfigs && configPathManager?.getUserConfigsDir) {
+        const base = configPathManager.getUserConfigsDir();
+        const activeDbPath = getActiveDbPath(db);
+        for (const file of parsed.userConfigsFiles || []) {
+            if (!isRootProfileDatabase(file.relPath)) continue;
+            const profileName = path.basename(file.relPath, '.db');
+            if (path.resolve(path.join(base, file.relPath)) === activeDbPath) {
+                profileNameMap[profileName] = makeRestoreProfileName(base, profileName);
+            }
+        }
+        for (const file of parsed.userConfigsFiles || []) {
+            const relPath = file.relPath;
+            if (isActiveProfileMarker(relPath)) {
+                if (mode === 'merge' && fs.existsSync(path.join(base, '.active_profile'))) continue;
+                const markerBytes = fs.readFileSync(file.tmpPath);
+                assertExpectedFileDigest(parsed, file, markerBytes);
+                const incomingProfile = markerBytes.toString('utf8').trim();
+                const source = Buffer.from(profileNameMap[incomingProfile] || incomingProfile, 'utf8');
+                transaction.queue(source, path.join(base, '.active_profile'), {
+                    replace: mode === 'replace', order: 3, restoreBase: base
+                });
+                continue;
+            }
+            let targetRelPath = mapUserConfigRelPath(relPath, profileNameMap);
+            if (isRootProfileDatabase(relPath) && profileNameMap[path.basename(relPath, '.db')]) {
+                targetRelPath = `${profileNameMap[path.basename(relPath, '.db')]}.db`;
+            }
+            let destPath = path.join(base, targetRelPath);
+            if (mode === 'merge' && fs.existsSync(destPath)) continue;
+            queueRestoreFile(transaction, file, base, mode, mode === 'replace', isRootProfileDatabase(relPath) ? 0 : 1, destPath, getExpectedFileDigest(parsed, file));
+        }
+    }
+    if (includeUploads && configPathManager?.getUploadsDir) {
+        const base = configPathManager.getUploadsDir();
+        for (const file of parsed.uploadFiles || []) queueRestoreFile(transaction, file, base, mode, mode === 'replace', 2, null, getExpectedFileDigest(parsed, file));
+    }
+    if (includeUserData && configPathManager?.getUserDataDir) {
+        const base = configPathManager.getUserDataDir();
+        for (const file of parsed.userDataFiles || []) queueRestoreFile(transaction, file, base, mode, mode === 'replace', 2, null, getExpectedFileDigest(parsed, file));
+    }
+    return profileNameMap;
+}
+
+function getExpectedFileDigest(parsed, file) {
+    if (!parsed.tmpDir || !file.tmpPath) return null;
+    const relativePath = path.relative(parsed.tmpDir, file.tmpPath).replace(/\\/g, '/');
+    return parsed.integrity?.fileDigests?.[relativePath] || null;
+}
+
+function assertExpectedFileDigest(parsed, file, data) {
+    const expectedSha256 = getExpectedFileDigest(parsed, file);
+    if (!expectedSha256) return;
+    const actualSha256 = crypto.createHash('sha256').update(data).digest('hex');
+    if (actualSha256 !== expectedSha256) throw new Error('Staged backup file failed integrity verification');
+}
+
+function queueRestoreFile(transaction, file, base, mode, replace, order, destination = null, expectedSha256 = null, restoreBase = null) {
+    const pathCheck = validateEntryPath(file.relPath);
+    if (!pathCheck.valid) throw new Error(`Unsafe relative path ${file.relPath}: ${pathCheck.error}`);
+    const destPath = destination || path.join(base, file.relPath);
+    const destCheck = validateDestinationPath(destPath, base);
+    if (!destCheck.valid) throw new Error(destCheck.error);
+    validateRestoreDestination(base, destPath);
+    if (mode === 'merge' && fs.existsSync(destPath) && !replace) return;
+    if (mode === 'replace' && fs.existsSync(destPath) && !replace) throw new Error(`Destination replacement not authorized: ${destPath}`);
+    transaction.queue(file.tmpPath, destPath, { replace, order, expectedSha256, restoreBase: restoreBase || base });
+}
+
+function clearImportedReport(report) {
+    report.globalSettings.imported = [];
+    for (const plugin of Object.values(report.plugins || {})) {
+        plugin.importedSettings = [];
+        plugin.importedFiles = [];
+    }
+    for (const section of [report.userConfigs, report.uploads, report.userData]) {
+        if (section && Array.isArray(section.imported)) section.imported = [];
+    }
 }
 
 /**

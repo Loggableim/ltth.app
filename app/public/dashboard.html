@@ -2367,6 +2367,11 @@
         html[data-live-event-log="disabled"] #view-events {
             display: none !important;
         }
+
+        #event-log-retry-btn[hidden],
+        #active-profile-retry-btn[hidden] {
+            display: none !important;
+        }
         
     </style>
     <script src="/js/lucide.min.js"></script>
@@ -2385,7 +2390,7 @@
                     <img src="/logo-wide.png" alt="LTTH logo" class="sidebar-logo-wide">
                     <img id="sidebar-mini-icon" src="/ltthicon-cutout.png?v=2" alt="LTTH icon" class="sidebar-logo-mini">
                 </div>
-                <button id="sidebar-toggle" class="sidebar-toggle-btn" aria-label="Toggle sidebar" data-i18n-aria-label="common.dashboard.toggle_sidebar">
+                <button id="sidebar-toggle" type="button" class="sidebar-toggle-btn" aria-label="Toggle sidebar" data-i18n-aria-label="common.dashboard.toggle_sidebar" aria-controls="sidebar" aria-expanded="true">
                     <i data-lucide="panel-left"></i>
                 </button>
                 <!-- Quick Action Mini Icons (only visible when collapsed) -->
@@ -2414,15 +2419,15 @@
                 </div>
             </div>
 
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" aria-label="Main navigation" data-i18n-aria-label="navigation.main_navigation">
                 <!-- Kernfunktionen (oben) -->
                 <div class="sidebar-category" data-category="core">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-core" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.core_functions">Core Functions</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
-                        <a href="#" class="sidebar-item active" data-view="dashboard" data-tooltip="Dashboard">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-core">
+                        <a href="#" class="sidebar-item active" data-view="dashboard" data-tooltip="Dashboard" aria-current="page">
                             <img src="/dashboard-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-dashboard" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.dashboard">Dashboard</span>
                         </a>
@@ -2443,11 +2448,11 @@
 
                 <!-- Automationen & Ziele -->
                 <div class="sidebar-category" data-category="automations-goals">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-automations-goals" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.automations_goals">Automations & Goals</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-automations-goals">
                         <a href="#" class="sidebar-item" data-view="events" data-tooltip="Events">
                             <i data-lucide="activity"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.events">Events</span>
@@ -2469,11 +2474,11 @@
 
                 <!-- Audio & Sprache -->
                 <div class="sidebar-category" data-category="audio-voice">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-audio-voice" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.audio_voice">Audio & Voice</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-audio-voice">
                         <a href="#" class="sidebar-item" data-view="tts" data-plugin="tts" data-tooltip="TTS">
                             <img src="/ltthttsicon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-tts" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.tts">TTS</span>
@@ -2503,11 +2508,11 @@
 
                 <!-- Visual FX -->
                 <div class="sidebar-category" data-category="visual-fx">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-visual-fx" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.visual_fx">Visual FX</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-visual-fx">
                         <a href="#" class="sidebar-item" data-view="emoji-rain" data-plugin="emoji-rain" data-tooltip="EmojiRain">
                             <img src="/plugins/emoji-rain/assets/sidebar-icon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-emoji-rain" aria-hidden="true">
                             <span class="sidebar-item-text">EmojiRain</span>
@@ -2541,11 +2546,11 @@
 
                 <!-- Games & Engagement -->
                 <div class="sidebar-category" data-category="games-engagement">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-games-engagement" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.games_engagement">Games & Engagement</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-games-engagement">
                         <a href="#" class="sidebar-item" data-view="quiz-show" data-plugin="quiz-show" data-tooltip="Quiz Show">
                             <img class="sidebar-plugin-icon" src="/plugins/quiz-show/assets/quiz-show-icon.png" alt="" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.quiz_show">Quiz Show</span>
@@ -2583,11 +2588,11 @@
 
                 <!-- Integrationen -->
                 <div class="sidebar-category" data-category="integrations">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-integrations" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.integrations">Integrations</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-integrations">
                         <a href="#" class="sidebar-item" data-view="multi-guest" data-plugin="vdoninja" data-tooltip="VDO.Ninja">
                             <i data-lucide="users"></i>
                             <span class="sidebar-item-text" data-i18n="navigation.vdoninja">VDO.Ninja</span>
@@ -2637,11 +2642,11 @@
 
                 <!-- Verwaltung -->
                 <div class="sidebar-category" data-category="management">
-                    <div class="sidebar-category-header">
+                    <button type="button" class="sidebar-category-header" aria-controls="sidebar-category-items-management" aria-expanded="true">
                         <span class="sidebar-category-label" data-i18n="navigation.management">Management</span>
-                        <i class="sidebar-category-toggle" data-lucide="chevron-down"></i>
-                    </div>
-                    <div class="sidebar-category-items">
+                        <i class="sidebar-category-toggle" data-lucide="chevron-down" aria-hidden="true"></i>
+                    </button>
+                    <div class="sidebar-category-items" id="sidebar-category-items-management">
                         <a href="#" class="sidebar-item" data-view="plugins" data-tooltip="App Store">
                             <img src="/ltthicon.png" alt="" class="sidebar-plugin-icon sidebar-plugin-icon-appstore" aria-hidden="true">
                             <span class="sidebar-item-text" data-i18n="navigation.plugins">App Store</span>
@@ -2661,6 +2666,7 @@
 
         <!-- Main Content Area -->
         <main class="main-content">
+            <div id="navigation-view-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
             <!-- Topbar (Reduced) -->
             <header class="topbar">
@@ -2677,6 +2683,7 @@
                             <i data-lucide="circle"></i>
                             <span data-i18n="dashboard.disconnected">Disconnected</span>
                         </span>
+                        <span id="transport-status" class="status-badge status-error" role="status" aria-live="polite" hidden></span>
                     </div>
                     <!-- Language Switcher with Flags -->
                     <div class="topbar-language-switcher">
@@ -2689,7 +2696,7 @@
                     </div>
                     <button id="profile-btn" class="topbar-profile-btn" aria-label="User Profiles" data-i18n-aria-label="profile.title">
                         <i data-lucide="user"></i>
-                        <span id="current-profile-name">default</span>
+                        <span id="current-profile-name" data-i18n="profile.active_profile_loading">Loading active profile…</span>
                     </button>
                     <button id="topbar-settings-btn" class="topbar-icon-btn" data-i18n-title="settings.global_settings" title="Global Settings">
                         <i data-lucide="settings"></i>
@@ -3175,6 +3182,10 @@
                         </div>
                         
                         <div class="table-container">
+                            <div class="flex items-center gap-3 mb-2">
+                                <p id="event-log-status" class="text-sm text-gray-400" role="status" aria-live="polite" hidden></p>
+                                <button type="button" id="event-log-retry-btn" class="btn btn-sm btn-ghost" data-i18n="events.history_retry" hidden>Retry</button>
+                            </div>
                             <table class="data-table">
                                 <thead>
                                     <tr>
@@ -3773,7 +3784,7 @@
                                 </div>
                                 
                                 <!-- Navigation -->
-                                <nav id="wiki-nav" class="wiki-nav">
+                                <nav id="wiki-nav" class="wiki-nav" aria-label="Wiki navigation" data-i18n-aria-label="navigation.wiki_navigation">
                                     <!-- Navigation will be populated by wiki.js -->
                                 </nav>
                                 <div class="wiki-sidebar-actions">
@@ -4127,8 +4138,10 @@
                                 <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-4 mb-4">
                                     <div style="display: flex; align-items: center; gap: 12px;">
                                         <span style="font-weight: 600;" data-i18n="common.dashboard.active_profile">Active Profile:</span>
-                                        <span id="active-profile-display" style="color: #60a5fa;">default</span>
+                                        <span id="active-profile-display" style="color: #60a5fa;" data-i18n="profile.active_profile_loading">Loading active profile…</span>
                                     </div>
+                                    <div id="active-profile-status" class="text-sm text-gray-400 mt-2" role="status" aria-live="polite" hidden></div>
+                                    <button id="active-profile-retry-btn" type="button" class="btn btn-ghost btn-sm mt-2" data-i18n="profile.retry" hidden>Retry</button>
                                     <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 8px;" data-i18n="common.dashboard.profile_changes_require_application_restart">
                                         ⚠️ Profile changes require application restart
                                     </p>

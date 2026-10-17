@@ -1500,7 +1500,7 @@ class GlobalChatCommandEngine {
                 // Enriched user data (extracted once, reused by all plugins)
                 userData: {
                     isFollower: data.isFollower || false,
-                    isSubscriber: data.isSubscriber || data.teamMemberLevel > 0 || false,
+                    isSubscriber: data.isSubscriber || false,
                     isModerator: data.isModerator || false,
                     isBroadcaster: data.isBroadcaster || data.isHost || false,
                     teamMemberLevel: data.teamMemberLevel || 0,

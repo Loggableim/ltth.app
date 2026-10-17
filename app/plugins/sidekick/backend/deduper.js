@@ -9,13 +9,15 @@
  * Event deduplication with TTL
  */
 class EventDeduper {
-  constructor(ttlSeconds = 600) {
+  constructor(ttlSeconds = 600, options = {}) {
     this.ttl = ttlSeconds * 1000; // Convert to milliseconds
     this.store = new Map();
     this.maxSize = 5000;
     
     // Cleanup interval
-    this.cleanupInterval = setInterval(() => this._cleanup(), 30000);
+    this.cleanupInterval = options.disableCleanupTimer
+      ? null
+      : setInterval(() => this._cleanup(), 30000);
     
     // Statistics
     this.stats = {

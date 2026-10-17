@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
+const { projectPublicOverlayPayload, projectGameEngineConfigResponse } = require('../../../modules/public-overlay-payload-projection');
 
 const overlayDir = path.join(__dirname, '..', 'overlay');
 
@@ -237,6 +238,63 @@ function chessState({
 }
 
 describe('interactive overlay countdown DOM', () => {
+  test('Connect4 original consumer renders only its projected initial and updated config fields', async () => {
+    const sourceConfig = {
+      boardColor: '#123456', player1Color: '#ABCDEF', player2Color: '#FEDCBA', textColor: '#FFFFFF',
+      fontFamily: 'Verdana, sans-serif', showCoordinates: false, animationSpeed: 500,
+      soundEnabled: true, soundVolume: 0.4, showWinStreaks: true, celebrationEnabled: true,
+      leaderboardEnabled: true, leaderboardDisplayTime: 5, leaderboardTypes: ['daily', 'elo'], eloEnabled: true,
+      displayTexts: { titleText: 'Public Connect4', labelPlayer1: 'Player One' },
+      chatCommand: 'private-command', timeoutLockoutMinutes: 1440, streamerRole: 'player2', privateCanary: 'secret'
+    };
+    const projectedConfig = projectGameEngineConfigResponse('connect4', sourceConfig);
+    const fetch = jest.fn(url => String(url).includes('/api/game-engine/config/connect4')
+      ? Promise.resolve(jsonResponse(projectedConfig))
+      : new Promise(() => {}));
+    const overlay = loadOverlay('connect4.html', null, { fetch });
+    await flushPromises();
+
+    const projectedEvent = projectPublicOverlayPayload('game-engine:config-updated', {
+      gameType: 'connect4', config: sourceConfig
+    });
+    overlay.listeners.get('game-engine:config-updated')(projectedEvent);
+
+    expect(overlay.dom.window.document.documentElement.style.getPropertyValue('--board-color')).toBe('#123456');
+    expect(overlay.dom.window.document.documentElement.style.getPropertyValue('--player1-color')).toBe('#ABCDEF');
+    expect(overlay.dom.window.document.body.style.fontFamily).toContain('Verdana');
+    expect(overlay.dom.window.document.getElementById('column-labels').style.display).toBe('none');
+    expect(overlay.dom.window.document.getElementById('game-title').textContent).toBe('Public Connect4');
+    expect(overlay.dom.window.playEventSound('piece_drop')).toBe(true);
+    expect(projectedEvent.config).not.toHaveProperty('chatCommand');
+    expect(projectedEvent.config).not.toHaveProperty('privateCanary');
+    overlay.dom.window.close();
+  });
+
+  test('Chess original consumer applies its projected config-update presentation', () => {
+    const sourceConfig = {
+      boardTheme: 'light', backgroundColor: '#123456', whiteColor: '#ABCDEF', blackColor: '#FEDCBA',
+      fontFamily: 'Verdana, sans-serif', showCoordinates: false, highlightLastMove: false,
+      highlightCheck: false, showCapturedPieces: false, timerWarningTime: 45, animationSpeed: 400,
+      celebrationEnabled: true,
+      displayTexts: { titleText: 'Public Chess', labelWhite: 'White', labelBlack: 'Black' },
+      streamerRole: 'black', autoplay: { enabled: true, eloOffset: 40, moveDelayMs: 750 },
+      privateCanary: 'secret'
+    };
+    const projectedConfig = projectGameEngineConfigResponse('chess', sourceConfig);
+    const overlay = loadOverlay('chess.html', null, { fetch: jest.fn(() => Promise.resolve(jsonResponse(projectedConfig))) });
+    const projectedEvent = projectPublicOverlayPayload('game-engine:config-updated', { gameType: 'chess', config: sourceConfig });
+    overlay.listeners.get('game-engine:config-updated')(projectedEvent);
+
+    expect(overlay.dom.window.document.querySelector('.glass-container').style.backgroundColor).toBe('rgb(18, 52, 86)');
+    expect(overlay.dom.window.document.getElementById('white-name').style.color).toBe('rgb(171, 205, 239)');
+    expect(overlay.dom.window.document.body.style.fontFamily).toContain('Verdana');
+    expect(overlay.dom.window.document.querySelectorAll('.coord-row, .coord-col')).toHaveLength(0);
+    expect(overlay.dom.window.document.getElementById('white-player').dataset.label).toBe('White');
+    expect(projectedEvent.config).not.toHaveProperty('autoplay');
+    expect(projectedEvent.config).not.toHaveProperty('streamerRole');
+    overlay.dom.window.close();
+  });
+
   test('Connect4 keeps both safe proxy avatars on a later board state and preserves the coloured disc when one image fails', () => {
     const { dom, listeners } = loadOverlay('connect4.html');
     const state = connect4State();

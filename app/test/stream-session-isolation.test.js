@@ -11,8 +11,10 @@ const Leaderboard = require('../modules/leaderboard');
 const { GoalManager } = require('../modules/goals');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const TEST_DB_PATH = '/tmp/test_stream_session_isolation.db';
+let TEST_DIR;
+let TEST_DB_PATH;
 
 // Mock TikTok connector
 class MockTikTokConnector extends EventEmitter {
@@ -66,6 +68,15 @@ describe('Stream Session Isolation', () => {
     let leaderboard;
     let goals;
     let tiktok;
+
+    beforeAll(() => {
+        TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-stream-session-isolation-'));
+        TEST_DB_PATH = path.join(TEST_DIR, 'session.db');
+    });
+
+    afterAll(() => {
+        fs.rmSync(TEST_DIR, { recursive: true, force: true });
+    });
 
     beforeEach(() => {
         // Clean up test database

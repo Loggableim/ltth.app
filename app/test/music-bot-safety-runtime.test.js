@@ -70,7 +70,7 @@ function hydratePlugin({ locked = false } = {}) {
       const [song] = queue.splice(index, 1);
       return { success: Boolean(song), song };
     }),
-    persistQueue: jest.fn(),
+    persistQueue: jest.fn(() => ({ success: true, blocked: false, count: queue.length })),
     clear: jest.fn(),
     markPlaying: jest.fn(),
     returnToFront: jest.fn(),
@@ -914,11 +914,63 @@ describe('Music Bot Safety Lock runtime integration', () => {
     expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
   });
 
+  test('destroy propagates an MPV shutdown failure after preserving the queue', async () => {
+    const { plugin } = hydratePlugin();
+    const shutdownError = Object.assign(new Error('MPV did not close'), {
+      code: 'MPV_SHUTDOWN_TIMEOUT'
+    });
+    plugin.playbackEngine.shutdown.mockRejectedValue(shutdownError);
+
+    await expect(plugin.destroy({ reason: 'application-shutdown' })).rejects.toBe(shutdownError);
+
+    expect(plugin.cleanupPending).toBe(true);
+    expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
+    expect(plugin.api.log).toHaveBeenCalledWith(
+      '[music-bot] Failed to shutdown playback: MPV did not close',
+      'error'
+    );
+    expect(plugin.api.log).not.toHaveBeenCalledWith('[music-bot] Plugin destroyed', 'info');
+  });
+
+  test('destroy propagates an unconfirmed resolver cleanup failure', async () => {
+    const { plugin } = hydratePlugin();
+    const shutdownError = Object.assign(new Error('yt-dlp child did not close'), {
+      code: 'YTDLP_CLOSE_TIMEOUT'
+    });
+    plugin.musicResolver.destroy = jest.fn().mockRejectedValue(shutdownError);
+
+    await expect(plugin.destroy()).rejects.toBe(shutdownError);
+
+    expect(plugin.api.log).toHaveBeenCalledWith(
+      '[music-bot] Failed to shutdown resolver: yt-dlp child did not close',
+      'error'
+    );
+    expect(plugin.api.log).not.toHaveBeenCalledWith('[music-bot] Plugin destroyed', 'info');
+  });
+
+  test('retries pending application shutdown through the retained playback owner', async () => {
+    const { plugin } = hydratePlugin();
+    const shutdownError = new Error('MPV close was not confirmed');
+    plugin.playbackEngine.shutdown
+      .mockRejectedValueOnce(shutdownError)
+      .mockResolvedValueOnce(undefined);
+
+    await expect(plugin.destroy({ reason: 'application-shutdown' })).rejects.toBe(shutdownError);
+    expect(plugin.cleanupPending).toBe(true);
+    const persistenceCalls = plugin.queueManager.persistQueue.mock.calls.length;
+
+    await plugin.destroy({ reason: 'application-shutdown' });
+
+    expect(plugin.playbackEngine.shutdown).toHaveBeenCalledTimes(2);
+    expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(persistenceCalls);
+    expect(plugin.cleanupPending).toBe(false);
+  });
+
   test.each([
     ['ordinary unload', {}, false],
     ['application shutdown', { reason: 'application-shutdown' }, true]
   ])('destroy waits for playback shutdown before persisting the queue and resolving during %s', async (_label, context, reconcileOrphans) => {
-    const { plugin } = hydratePlugin();
+    const { plugin, queue } = hydratePlugin();
     let releasePlaybackShutdown;
     let playbackShutdownFinished = false;
     plugin.playbackEngine.shutdown = jest.fn(({ reconcileOrphans: requested }) => {
@@ -932,6 +984,7 @@ describe('Music Bot Safety Lock runtime integration', () => {
     });
     plugin.queueManager.persistQueue = jest.fn(() => {
       expect(playbackShutdownFinished).toBe(true);
+      return { success: true, blocked: false, count: queue.length };
     });
 
     let destroyResolved = false;
@@ -939,6 +992,7 @@ describe('Music Bot Safety Lock runtime integration', () => {
       destroyResolved = true;
     });
 
+    await Promise.resolve();
     expect(plugin.playbackEngine.shutdown).toHaveBeenCalledTimes(1);
     expect(plugin.playbackEngine.shutdown).toHaveBeenCalledWith({ reconcileOrphans });
     expect(plugin.queueManager.persistQueue).not.toHaveBeenCalled();

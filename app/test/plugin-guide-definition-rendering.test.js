@@ -1,17 +1,14 @@
-const childProcess = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const { LOCALES, buildGuides } = require('../../scripts/plugin-tutorial-source');
+const { buildPluginDocs } = require('../../scripts/build-plugin-docs');
 
 describe('plugin guide definition rendering', () => {
   const repoRoot = path.join(__dirname, '..', '..');
 
   beforeAll(() => {
-    childProcess.execFileSync(process.execPath, [path.join(repoRoot, 'scripts', 'build-plugin-docs.js')], {
-      cwd: repoRoot,
-      stdio: 'pipe'
-    });
+    buildPluginDocs();
   });
 
   test('renders each GuideDefinition section and its localized bundle entries', () => {

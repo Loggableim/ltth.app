@@ -626,6 +626,10 @@ class WebgpuWeatherControlPlugin {
     }
 
     isAuthorizedAdminSocket(socket) {
+        if (['loopback-admin', 'admin'].includes(socket?.data?.ltthSocketAccess)) {
+            return true;
+        }
+
         return socket?.handshake?.auth?.role === 'admin' && (
             isLoopbackAddress(this.getSocketAddress(socket)) || this.hasValidAdminSocketToken(socket)
         );

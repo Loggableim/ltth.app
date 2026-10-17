@@ -76,14 +76,20 @@ describe('Last Man Standing (LMS) logic', () => {
 
     test('eliminate player and trigger winner', () => {
         const plugin = createPlugin();
-        plugin.gameState.lastManStanding.active = true;
-        plugin.gameState.lastManStanding.survivors.add('u1');
-        plugin.gameState.lastManStanding.survivors.add('u2');
-        plugin.eliminateLMSPlayer('u1', 'wrong answer');
-        expect(plugin.gameState.lastManStanding.survivors.has('u1')).toBe(false);
-        expect(plugin.gameState.lastManStanding.eliminated.has('u1')).toBe(true);
-        expect(plugin.api.emit).toHaveBeenCalledWith('quiz-show:lms-eliminated', expect.objectContaining({ userId: 'u1', survivors: 1 }));
-        // Now only one survivor -> winner
-        expect(plugin.api.emit).toHaveBeenCalledWith('quiz-show:lms-winner', expect.objectContaining({ userId: 'u2' }));
+        jest.useFakeTimers();
+        try {
+            plugin.gameState.lastManStanding.active = true;
+            plugin.gameState.lastManStanding.survivors.add('u1');
+            plugin.gameState.lastManStanding.survivors.add('u2');
+            plugin.eliminateLMSPlayer('u1', 'wrong answer');
+            expect(plugin.gameState.lastManStanding.survivors.has('u1')).toBe(false);
+            expect(plugin.gameState.lastManStanding.eliminated.has('u1')).toBe(true);
+            expect(plugin.api.emit).toHaveBeenCalledWith('quiz-show:lms-eliminated', expect.objectContaining({ userId: 'u1', survivors: 1 }));
+            // Now only one survivor -> winner
+            expect(plugin.api.emit).toHaveBeenCalledWith('quiz-show:lms-winner', expect.objectContaining({ userId: 'u2' }));
+        } finally {
+            jest.clearAllTimers();
+            jest.useRealTimers();
+        }
     });
 });

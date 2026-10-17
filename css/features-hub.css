@@ -384,6 +384,14 @@
   line-height: 1.15;
 }
 
+.features-hub .catalog-entry__availability {
+  color: var(--color-text-secondary);
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.4;
+  margin: 0.6rem 0 0;
+}
+
 .features-hub .catalog-entry__link {
   flex: 0 0 auto;
   display: inline-flex;

@@ -342,12 +342,18 @@
             sidebar.classList.add('sidebar-collapsed');
         }
 
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-controls', 'sidebar');
+            toggleBtn.setAttribute('aria-expanded', String(!sidebarCollapsed));
+        }
+
         // Toggle button
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 sidebarCollapsed = !sidebarCollapsed;
                 sidebar.classList.toggle('sidebar-collapsed');
                 localStorage.setItem('sidebar-collapsed', sidebarCollapsed);
+                toggleBtn.setAttribute('aria-expanded', String(!sidebarCollapsed));
 
                 // Re-initialize Lucide icons
                 if (typeof lucide !== 'undefined') {
@@ -370,9 +376,25 @@
                 const clickedMobileToggle = mobileMenuBtn && mobileMenuBtn.contains(e.target);
 
                 if (!clickedInsideSidebar && !clickedToggle && !clickedMobileToggle && sidebar.classList.contains('mobile-open')) {
-                    sidebar.classList.remove('mobile-open');
+                    setMobileMenuOpen(false);
                 }
             }
+        });
+
+        sidebar.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && sidebar.classList.contains('mobile-open')) {
+                event.preventDefault();
+                setMobileMenuOpen(false, { restoreFocus: true });
+            }
+        });
+
+        sidebar.addEventListener('focusout', () => {
+            if (window.innerWidth > 1024 || !sidebar.classList.contains('mobile-open')) return;
+            window.setTimeout(() => {
+                if (sidebar.classList.contains('mobile-open') && !sidebar.contains(document.activeElement)) {
+                    setMobileMenuOpen(false);
+                }
+            }, 0);
         });
     }
 
@@ -393,23 +415,16 @@
                 category.classList.add('collapsed');
             }
 
-            // Add click handler to header
+            // The button element provides native Enter/Space activation.
             header.addEventListener('click', (e) => {
                 e.preventDefault();
                 toggleCategory(category, categoryId);
             });
 
-            // Add keyboard accessibility
-            header.setAttribute('role', 'button');
-            header.setAttribute('tabindex', '0');
+            if (!items.id) items.id = `sidebar-category-items-${categoryId}`;
+            header.setAttribute('aria-controls', items.id);
+            items.hidden = category.classList.contains('collapsed');
             header.setAttribute('aria-expanded', !category.classList.contains('collapsed'));
-            
-            header.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    toggleCategory(category, categoryId);
-                }
-            });
         });
 
         // Re-initialize Lucide icons for chevron icons
@@ -494,15 +509,17 @@
     }
 
     function toggleCategory(category, categoryId) {
-        const isCollapsed = category.classList.contains('collapsed');
         const header = category.querySelector('.sidebar-category-header');
+        const items = category.querySelector('.sidebar-category-items');
         
         // Toggle collapsed state
         category.classList.toggle('collapsed');
+        const collapsed = category.classList.contains('collapsed');
+        if (items) items.hidden = collapsed;
         
         // Update aria-expanded attribute
         if (header) {
-            header.setAttribute('aria-expanded', isCollapsed);
+            header.setAttribute('aria-expanded', String(!collapsed));
         }
         
         // Save state to localStorage
@@ -622,6 +639,16 @@
         const activeNavItem = document.querySelector(`.sidebar-item[data-view="${viewName}"]`);
         if (activeNavItem) {
             activeNavItem.classList.add('active');
+            activeNavItem.setAttribute('aria-current', 'page');
+        }
+        document.querySelectorAll('.sidebar-item[data-view]').forEach(item => {
+            if (item !== activeNavItem) item.removeAttribute('aria-current');
+        });
+
+        const viewAnnouncement = document.getElementById('navigation-view-announcement');
+        if (viewAnnouncement) {
+            const activeLabel = activeNavItem?.querySelector('.sidebar-item-text')?.textContent.trim();
+            viewAnnouncement.textContent = activeLabel || viewName;
         }
 
         // Update active view
@@ -665,7 +692,7 @@
         if (window.innerWidth <= 1024) {
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
-                sidebar.classList.remove('mobile-open');
+                setMobileMenuOpen(false, { restoreFocus: true });
             }
         }
     }
@@ -1197,6 +1224,25 @@
     }
 
     // ========== MOBILE MENU TOGGLE ==========
+    function setMobileMenuOpen(open, options = {}) {
+        const sidebar = document.getElementById('sidebar');
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        if (!sidebar || !menuBtn) return;
+
+        if (open) {
+            sidebar.classList.remove('sidebar-collapsed');
+            sidebar.classList.add('mobile-open');
+            menuBtn.setAttribute('aria-expanded', 'true');
+            sidebar.querySelector('.sidebar-category-header')?.focus();
+            return;
+        }
+
+        sidebar.classList.remove('mobile-open');
+        sidebar.classList.toggle('sidebar-collapsed', sidebarCollapsed);
+        menuBtn.setAttribute('aria-expanded', 'false');
+        if (options.restoreFocus) menuBtn.focus();
+    }
+
     function initializeMobileMenu() {
         // Add a mobile menu button if needed
         const topbar = document.querySelector('.topbar-left');
@@ -1204,15 +1250,23 @@
         if (document.getElementById('mobile-menu-btn')) return;
 
         const menuBtn = document.createElement('button');
+        menuBtn.type = 'button';
         menuBtn.className = 'topbar-icon-btn';
         menuBtn.id = 'mobile-menu-btn';
+        menuBtn.setAttribute('aria-label', window.i18n?.initialized ? window.i18n.t('navigation.toggle_navigation') : 'Toggle navigation');
+        menuBtn.setAttribute('data-i18n-aria-label', 'navigation.toggle_navigation');
+        menuBtn.setAttribute('data-i18n-aria-label-fallback', 'Toggle navigation');
+        menuBtn.setAttribute('aria-controls', 'sidebar');
+        menuBtn.setAttribute('aria-expanded', 'false');
         menuBtn.innerHTML = '<i data-lucide="menu"></i>';
         menuBtn.style.marginRight = '1rem';
 
         menuBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             const sidebar = document.getElementById('sidebar');
-            sidebar.classList.toggle('mobile-open');
+            setMobileMenuOpen(!sidebar?.classList.contains('mobile-open'), {
+                restoreFocus: Boolean(sidebar?.classList.contains('mobile-open'))
+            });
         });
 
         topbar.insertBefore(menuBtn, topbar.firstChild);
@@ -1229,10 +1283,14 @@
         if (window.innerWidth > 1024) {
             const sidebar = document.getElementById('sidebar');
             sidebar.classList.remove('mobile-open');
+            document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
 
             // Remove mobile menu button if exists
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
             if (mobileMenuBtn) {
+                if (document.activeElement === mobileMenuBtn) {
+                    document.getElementById('sidebar-toggle')?.focus();
+                }
                 mobileMenuBtn.remove();
             }
         } else {

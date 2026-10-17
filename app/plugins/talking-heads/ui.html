@@ -77,6 +77,124 @@
         <button class="director-button primary" id="saveConfigBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.save_settings">Save director settings</button>
       </section>
 
+      <section id="nameplateAnimationSettings" class="director-card director-card--nameplate" aria-labelledby="nameplateTitle">
+        <div class="card-heading">
+          <div>
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.kickers.nameplate_style">NAMEPLATE &amp; ANIMATIONS</p>
+            <h2 id="nameplateTitle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.sections.nameplate_style">Username plate and animation style</h2>
+          </div>
+        </div>
+        <div class="nameplate-lab-grid">
+          <div class="nameplate-controls-col">
+            <div class="form-grid form-grid--three">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_position">Nameplate position</span>
+                <select id="nameplatePosition">
+                  <option value="below" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.position_below">Below avatar</option>
+                  <option value="above" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.position_above">Above avatar</option>
+                  <option value="hidden" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.position_hidden">Hidden</option>
+                </select>
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_family">Font family</span>
+                <select id="nameplateFontFamily">
+                  <option value="Inter, ui-sans-serif, system-ui, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.inter">Inter</option>
+                  <option value="Roboto, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.roboto">Roboto</option>
+                  <option value="Montserrat, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.montserrat">Montserrat</option>
+                  <option value="Poppins, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.poppins">Poppins</option>
+                  <option value="Impact, fantasy, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.impact">Impact</option>
+                  <option value="Arial, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.arial">Arial</option>
+                  <option value="&quot;Comic Sans MS&quot;, cursive, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.comic_sans">Comic Sans MS</option>
+                  <option value="&quot;Press Start 2P&quot;, monospace, sans-serif" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.fonts.press_start_2p">Press Start 2P</option>
+                </select>
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_size">Font size (px)</span>
+                <input id="nameplateFontSize" type="number" min="10" max="48" step="1" value="14">
+              </label>
+            </div>
+            <div class="form-grid form-grid--three">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_color">Font color</span>
+                <input id="nameplateFontColor" type="color" value="#ffffff">
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_background_color">Background color</span>
+                <input id="nameplateBackgroundColor" type="color" value="#060c1c">
+              </label>
+              <label><span><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_background_opacity">Background opacity</span> (<span id="opacityValue">75%</span>)</span>
+                <input id="nameplateBackgroundOpacity" type="range" min="0" max="1" step="0.05" value="0.75">
+              </label>
+            </div>
+            <div class="form-grid">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_text_shadow">Text shadow</span>
+                <select id="nameplateTextShadow">
+                  <option value="subtle" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.shadow_subtle">Subtle</option>
+                  <option value="none" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.shadow_none">None</option>
+                  <option value="medium" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.shadow_medium">Medium</option>
+                  <option value="glow" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.shadow_glow">Glow</option>
+                </select>
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_text_stroke">Text stroke</span>
+                <select id="nameplateTextStroke">
+                  <option value="none" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.stroke_none">None</option>
+                  <option value="1px black" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.stroke_1px_black">1px black</option>
+                  <option value="2px black" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.stroke_2px_black">2px black</option>
+                  <option value="1px white" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.stroke_1px_white">1px white</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-grid">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.head_entrance_animation">Head entrance animation</span>
+                <select id="headEntranceAnimation">
+                  <option value="slide-up" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_up">Slide up</option>
+                  <option value="slide-down" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_down">Slide down</option>
+                  <option value="pop" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_pop">Pop</option>
+                  <option value="bounce" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_bounce">Bounce</option>
+                  <option value="fade" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_fade">Fade</option>
+                </select>
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.head_exit_animation">Head exit animation</span>
+                <select id="headExitAnimation">
+                  <option value="fade" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_fade">Fade</option>
+                  <option value="slide-down" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_down">Slide down</option>
+                  <option value="slide-up" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_up">Slide up</option>
+                  <option value="pop" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_pop">Pop</option>
+                  <option value="bounce" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_bounce">Bounce</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-grid">
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_entrance_animation">Nameplate entrance animation</span>
+                <select id="nameplateEntranceAnimation">
+                  <option value="fade" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_fade">Fade</option>
+                  <option value="slide-up" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_up">Slide up</option>
+                  <option value="slide-down" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_down">Slide down</option>
+                  <option value="pop" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_pop">Pop</option>
+                  <option value="bounce" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_bounce">Bounce</option>
+                </select>
+              </label>
+              <label><span data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_exit_animation">Nameplate exit animation</span>
+                <select id="nameplateExitAnimation">
+                  <option value="fade" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_fade">Fade</option>
+                  <option value="slide-down" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_down">Slide down</option>
+                  <option value="slide-up" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_slide_up">Slide up</option>
+                  <option value="pop" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_pop">Pop</option>
+                  <option value="bounce" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.options.anim_bounce">Bounce</option>
+                </select>
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="director-button primary" id="saveNameplateSettingsBtn" type="button" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.actions.save_settings">Save director settings</button>
+            </div>
+          </div>
+          <div class="nameplate-preview-panel">
+            <p class="card-kicker" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_preview">LIVE MINI-PREVIEW</p>
+            <div id="nameplatePreviewBox" class="nameplate-preview-box">
+              <div id="nameplatePreviewAvatar" class="avatar nameplate-below">
+                <img id="nameplatePreviewHead" src="/plugins/talking-heads/assets/asset-packs/boba/animals/Fox/Ready-To-Use/Fox.png" alt="Preview avatar head" data-i18n-aria-label="plugins.talking-heads.talking_heads_ui.stream_director.labels.preview_head">
+                <span id="nameplatePreviewName" class="avatar-name" data-i18n="plugins.talking-heads.talking_heads_ui.stream_director.preview_speaker">Streamer</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="bobaCharacterLab" class="director-card director-card--lab" aria-labelledby="labTitle">
         <div class="card-heading">
           <div>

@@ -362,9 +362,19 @@ class InteractiveStoryPlugin {
    * @returns {string} Normalized base URL with trailing slash removed.
    */
   _normalizeOllamaBaseUrl(rawUrl) {
-    const defaultUrl = 'https://api.ollama.com/v1';
+    const defaultUrl = 'https://ollama.com/v1';
     const normalized = (rawUrl || defaultUrl).trim().replace(/\/+$/, '');
-    return normalized || defaultUrl;
+    if (!normalized) return defaultUrl;
+    try {
+      const parsed = new URL(normalized);
+      if (parsed.hostname.toLowerCase() === 'api.ollama.com') {
+        parsed.hostname = 'ollama.com';
+        return parsed.toString().replace(/\/+$/, '');
+      }
+    } catch (_) {
+      // Keep the user's custom endpoint unchanged; request validation handles invalid URLs.
+    }
+    return normalized;
   }
 
   /**
@@ -1196,7 +1206,7 @@ class InteractiveStoryPlugin {
       openRouterModel: 'openrouter/free',
 
       // Ollama settings
-      ollamaBaseUrl: 'https://api.ollama.com/v1',
+      ollamaBaseUrl: 'https://ollama.com/v1',
       ollamaApiKey: '',
       ollamaModel: 'qwen3.5:cloud',
       

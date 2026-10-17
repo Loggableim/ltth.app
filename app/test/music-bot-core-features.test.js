@@ -565,29 +565,38 @@ describe('Music Bot core features', () => {
   });
 
   test('keeps shutdown protection active until the MPV child closes', async () => {
-    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() }, { platform: 'linux' });
     const child = {
+      pid: 94101,
+      exitCode: null,
+      signalCode: null,
       kill: jest.fn(),
-      once: jest.fn()
+      once: jest.fn((event, handler) => {
+        if (event === 'close') child.closeHandler = handler;
+      })
     };
+    engine._ownedPids.add(child.pid);
     engine.process = child;
-
-    await engine.shutdown();
+    const shutdown = engine.shutdown();
 
     expect(child.once).toHaveBeenCalledWith('close', expect.any(Function));
     expect(child.kill).toHaveBeenCalledWith('SIGTERM');
     expect(engine._shuttingDown).toBe(true);
 
-    child.once.mock.calls[0][1]();
+    child.exitCode = 0;
+    child.closeHandler(0, null);
+    await shutdown;
     expect(engine._shuttingDown).toBe(false);
   });
 
   test('restarts an unresponsive MPV process without discarding the active track', async () => {
-    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() }, { platform: 'linux' });
     const track = { id: 'keep-playing', title: 'Keep Playing' };
     let closeHandler;
     const child = {
+      pid: 94102,
       exitCode: null,
+      signalCode: null,
       kill: jest.fn(),
       once: jest.fn((event, handler) => {
         if (event === 'close') closeHandler = handler;
@@ -595,6 +604,7 @@ describe('Music Bot core features', () => {
     };
 
     engine.process = child;
+    engine._ownedPids.add(child.pid);
     engine.socket = { destroy: jest.fn() };
     engine.nowPlaying = track;
     engine.state = 'playing';
@@ -603,10 +613,47 @@ describe('Music Bot core features', () => {
 
     expect(child.kill).toHaveBeenCalledWith('SIGTERM');
     expect(engine.getNowPlaying()).toEqual(track);
-    closeHandler();
+    child.exitCode = 0;
+    closeHandler(0, null);
     await expect(restart).resolves.toEqual(track);
     expect(engine.process).toBeNull();
     expect(engine.getState()).toBe('idle');
+  });
+
+  test('does not forget a live MPV child when restart termination is unconfirmed and permits retry', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() }, { platform: 'linux' });
+    const track = { id: 'retry-restart', title: 'Retry restart' };
+    const child = {
+      pid: 94103,
+      exitCode: null,
+      signalCode: null,
+      kill: jest.fn()
+    };
+    engine.process = child;
+    engine._ownedPids.add(child.pid);
+    engine.socket = { destroy: jest.fn() };
+    engine.nowPlaying = track;
+    engine.state = 'playing';
+    engine._terminateProcess = jest.fn()
+      .mockResolvedValueOnce(false)
+      .mockImplementationOnce(async () => {
+        child.exitCode = 0;
+        return true;
+      });
+
+    await expect(engine.restart()).rejects.toMatchObject({
+      code: 'MPV_RESTART_SHUTDOWN_UNCONFIRMED'
+    });
+    expect(engine.process).toBe(child);
+    expect(engine.getNowPlaying()).toEqual(track);
+    expect(engine.getState()).toBe('playing');
+    expect(engine._restarting).toBe(false);
+    expect(engine._shuttingDown).toBe(false);
+
+    await expect(engine.restart()).resolves.toEqual(track);
+    expect(engine.process).toBeNull();
+    expect(engine.getState()).toBe('idle');
+    expect(engine._terminateProcess).toHaveBeenCalledTimes(2);
   });
 
   test('waits for MPV acknowledgement before considering a command applied', async () => {

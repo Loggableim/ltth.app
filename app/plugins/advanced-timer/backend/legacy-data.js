@@ -10,19 +10,63 @@ const TABLES = [
   'advanced_timer_threshold_effects', 'advanced_timer_threshold_frames', 'advanced_timer_logs'
 ];
 
-function openLegacy(api) {
-  const dir = api.getConfigPathManager().getPluginDataDir('advanced-timer');
+function getLegacyCandidates(api) {
+  return [
+    {
+      id: 'shared_data',
+      dir: api.getConfigPathManager().getPluginDataDir('advanced-timer')
+    },
+    {
+      id: 'plugin_directory',
+      dir: path.join(api.getPluginDir(), 'data')
+    }
+  ].filter((candidate, index, candidates) => candidates.findIndex(item => path.resolve(item.dir) === path.resolve(candidate.dir)) === index);
+}
+
+function candidateHasData(candidate) {
+  return fs.existsSync(path.join(candidate.dir, 'timers.db')) || fs.existsSync(path.join(candidate.dir, 'frames'));
+}
+
+function openLegacy(api, sourceId) {
+  const candidates = getLegacyCandidates(api);
+  const available = candidates.filter(candidateHasData);
+  const selected = sourceId
+    ? candidates.find(candidate => candidate.id === sourceId)
+    : available.length === 1 ? available[0] : null;
+  if (!selected) {
+    return {
+      dir: candidates[0]?.dir,
+      dbPath: candidates[0] ? path.join(candidates[0].dir, 'timers.db') : null,
+      db: null,
+      error: sourceId ? 'Unknown legacy data source' : null,
+      availableSources: available.map(({ id }) => id),
+      requiresSourceSelection: available.length > 1
+    };
+  }
+  const dir = selected.dir;
   const dbPath = path.join(dir, 'timers.db');
-  if (!fs.existsSync(dbPath)) return { dir, dbPath, db: null };
+  if (!fs.existsSync(dbPath)) return { dir, dbPath, db: null, sourceId: selected.id, availableSources: available.map(({ id }) => id) };
   try {
-    return { dir, dbPath, db: new Database(dbPath, { readonly: true, fileMustExist: true }), error: null };
+    return { dir, dbPath, db: new Database(dbPath, { readonly: true, fileMustExist: true }), error: null, sourceId: selected.id, availableSources: available.map(({ id }) => id) };
   } catch (error) {
-    return { dir, dbPath, db: null, error: error.message };
+    return { dir, dbPath, db: null, error: error.message, sourceId: selected.id, availableSources: available.map(({ id }) => id) };
   }
 }
 
-function inspectLegacy(api, targetDatabase) {
-  const legacy = openLegacy(api);
+function inspectLegacy(api, targetDatabase, options = {}) {
+  const legacy = openLegacy(api, options.sourceId);
+  const availableSources = legacy.availableSources || [];
+  if (legacy.requiresSourceSelection || (options.sourceId && !legacy.sourceId)) {
+    return {
+      success: true,
+      hasLegacyData: availableSources.length > 0,
+      availableSources,
+      requiresSourceSelection: Boolean(legacy.requiresSourceSelection),
+      sourceSelectionError: legacy.error || null,
+      canImport: false,
+      originalsPreserved: true
+    };
+  }
   const counts = {};
   const targetCounts = {};
   try {
@@ -43,6 +87,9 @@ function inspectLegacy(api, targetDatabase) {
     return {
       success: true,
       hasLegacyData: (fs.existsSync(legacy.dbPath) || frameNames.length > 0),
+      availableSources,
+      sourceId: legacy.sourceId || null,
+      requiresSourceSelection: false,
       legacyDatabaseError: legacy.error,
       rows: counts,
       targetRows: targetCounts,
@@ -57,9 +104,9 @@ function inspectLegacy(api, targetDatabase) {
 }
 
 function importLegacy(api, targetDatabase, options = {}) {
-  const preview = inspectLegacy(api, targetDatabase);
+  const preview = inspectLegacy(api, targetDatabase, options);
   if (!preview.canImport) throw new Error('Legacy data is unavailable or the target profile already contains timer data or conflicting frame files');
-  const legacy = openLegacy(api);
+  const legacy = openLegacy(api, preview.sourceId);
   const targetDir = api.getPluginDataDir({ profileScoped: true });
   const targetFramesDir = path.join(targetDir, 'frames');
   const sourceFramesDir = path.join(legacy.dir, 'frames');

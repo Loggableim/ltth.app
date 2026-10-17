@@ -27,12 +27,25 @@ const {
   projectArenaPublicState,
   projectGameEngineConfigResponse
 } = require('./public-overlay-payload-projection');
+const { createPublicReleaseEventGuard } = require('./public-overlay-release-event-policy');
 const {
   PUBLIC_QUICK_TUNNEL_ROOM
 } = require('./public-overlay-socket-adapter');
+const { isPublicClarityEventAllowed } = require('./public-overlay-event-policy');
 
 const QUICK_TUNNEL_HOST_PATTERN =
   /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.trycloudflare\.com$/;
+const APPROVED_QUICK_TUNNEL_PATHS = new Set([
+  '/overlay/viewer-xp/leaderboard',
+  '/overlay/viewer-xp/xp-bar',
+  '/overlay/viewer-xp/level-up',
+  '/overlay/sidekick/hud',
+  '/api/sidekick/public-events',
+  '/api/i18n/locales',
+  '/js/i18n-client.js',
+  '/socket.io/socket.io.js',
+  '/plugins/viewer-leaderboard/viewer-xp-i18n.js'
+]);
 const METHOD_OVERRIDE_HEADERS = [
   'x-http-method-override',
   'x-method-override',
@@ -62,6 +75,14 @@ function isQuickTunnelRequest(req) {
   return isQuickTunnelHost(normalizeHostname(req?.headers?.host));
 }
 
+function isApprovedQuickTunnelRequest({ method, pathname }) {
+  const normalizedMethod = String(method || '').toUpperCase();
+  if (!['GET', 'HEAD'].includes(normalizedMethod) || typeof pathname !== 'string') return false;
+  if (APPROVED_QUICK_TUNNEL_PATHS.has(pathname)) return true;
+  return /^\/api\/i18n\/translations\/(?:de|en|es|fr)$/.test(pathname) ||
+    /^\/plugins\/viewer-leaderboard\/locales\/(?:de|en|es|fr)\.json$/.test(pathname);
+}
+
 function sendNeutralNotFound(res) {
   return res.status(404).json({ error: 'Not found' });
 }
@@ -76,6 +97,16 @@ function createPublicOverlayMiddleware({ logger = console } = {}) {
       return sendNeutralNotFound(res);
     }
 
+    let requestPath;
+    try {
+      requestPath = new URL(req.originalUrl || req.url, 'http://localhost').pathname;
+    } catch (_) {
+      requestPath = '';
+    }
+    if (!isApprovedQuickTunnelRequest({ method: req.method, pathname: requestPath })) {
+      return sendNeutralNotFound(res);
+    }
+
     if (!isHttpAllowed({
       method: req.method,
       pathname: req.originalUrl || req.url
@@ -84,12 +115,6 @@ function createPublicOverlayMiddleware({ logger = console } = {}) {
     }
 
     const originalJson = res.json.bind(res);
-    let requestPath;
-    try {
-      requestPath = new URL(req.originalUrl || req.url, 'http://localhost').pathname;
-    } catch (_) {
-      requestPath = '';
-    }
     res.json = payload => {
       try {
         let publicPayload = payload;
@@ -165,7 +190,25 @@ function createPublicOverlayMiddleware({ logger = console } = {}) {
   };
 }
 
-const { createPublicReleaseEventGuard } = require('./public-overlay-release-event-policy');
+function isApprovedPublicIncomingPacket(packet) {
+  if (!Array.isArray(packet) || packet.length !== 2) return false;
+  const [eventName, payload] = packet;
+  if (eventName === 'viewer-xp:public-profile:request') {
+    return typeof payload === 'string' && payload.length >= 1 && payload.length <= 80;
+  }
+  if (eventName !== 'viewer-xp:public-leaderboard:request' ||
+      !payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
+  const keys = Object.keys(payload);
+  if (keys.some(key => !['limit', 'days'].includes(key))) return false;
+  const isBoundedInteger = (value, minimum, maximum) => {
+    const parsed = typeof value === 'number'
+      ? value
+      : typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : NaN;
+    return Number.isSafeInteger(parsed) && parsed >= minimum && parsed <= maximum;
+  };
+  return (payload.limit === undefined || isBoundedInteger(payload.limit, 1, 50)) &&
+    (payload.days === undefined || payload.days === null || isBoundedInteger(payload.days, 1, 365));
+}
 
 function protectPublicSocket({ socket, logger = console, pluginReleasePolicy }) {
   const hostname = normalizeHostname(socket?.handshake?.headers?.host);
@@ -177,10 +220,13 @@ function protectPublicSocket({ socket, logger = console, pluginReleasePolicy }) 
     return socket;
   }
 
-  const releaseEventAllowed = createPublicReleaseEventGuard(pluginReleasePolicy);
   socket.join(PUBLIC_QUICK_TUNNEL_ROOM);
-  socket.use(([eventName], next) => {
-    if (isIncomingSocketEventAllowed(eventName) && releaseEventAllowed('incoming', eventName)) {
+  const releaseEventGuard = createPublicReleaseEventGuard(pluginReleasePolicy);
+  socket.use((packet, next) => {
+    const eventName = packet?.[0];
+    if (isIncomingSocketEventAllowed(eventName) &&
+        releaseEventGuard('incoming', eventName) &&
+        isApprovedPublicIncomingPacket(packet)) {
       next();
       return;
     }
@@ -197,7 +243,7 @@ function protectPublicSocket({ socket, logger = console, pluginReleasePolicy }) 
   socket.emit = (eventName, ...args) => {
     if (
       typeof eventName === 'string' &&
-      (!isOutgoingSocketEventAllowed(eventName) || !releaseEventAllowed('outgoing', eventName))
+      (!isOutgoingSocketEventAllowed(eventName) || !isPublicClarityEventAllowed(eventName) || !releaseEventGuard('outgoing', eventName))
     ) {
       logger.warn?.(
         'Blocked one disallowed outgoing public Quick Tunnel Socket.IO event.'
@@ -208,14 +254,11 @@ function protectPublicSocket({ socket, logger = console, pluginReleasePolicy }) 
     const projection = typeof eventName === 'string'
       ? projectPublicOverlayPayload(eventName, args[0])
       : undefined;
-    if (projection === null || (projection !== undefined && args.length !== 1)) {
-      logger.warn?.('Withheld one malformed public overlay Socket.IO payload.');
+    if (projection === undefined || projection === null || args.length !== 1) {
+      logger.warn?.('Withheld one unowned, unprojected, or malformed public overlay Socket.IO payload.');
       return false;
     }
-    if (projection !== undefined) {
-      return originalEmit(eventName, projection);
-    }
-    return originalEmit(eventName, ...args);
+    return originalEmit(eventName, projection);
   };
   return socket;
 }
@@ -236,6 +279,8 @@ module.exports = {
   isQuickTunnelHost,
   isQuickTunnelRequest,
   createPublicOverlayMiddleware,
+  isApprovedQuickTunnelRequest,
+  isApprovedPublicIncomingPacket,
   protectPublicSocket,
   attachPublicSocketPolicy
 };

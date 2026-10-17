@@ -592,6 +592,20 @@ function publicCRC(data) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
+function normalizedPluginPath(value) {
+  let normalized = value.normalize('NFKC');
+  for (let attempt = 0; attempt < 8 && normalized.includes('%'); attempt += 1) {
+    try {
+      const decoded = decodeURIComponent(normalized);
+      if (decoded === normalized) break;
+      normalized = decoded.normalize('NFKC');
+    } catch {
+      break;
+    }
+  }
+  return normalized.normalize('NFKC').toLowerCase();
+}
+
 function publicZipEntries(buffer, version) {
   let end = -1;
   for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 65557); i--) {
@@ -614,6 +628,11 @@ function publicZipEntries(buffer, version) {
     if (!Buffer.from(name).equals(rawName) || !name.startsWith(root) || name.includes('\\')) throw new Error('Unexpected release root/name.');
     const relative = name.slice(root.length).replace(/\/$/, '');
     if (relative && relative.split('/').some((part) => !part || part === '.' || part === '..' || /[:\x00-\x1f]/.test(part) || /[. ]$/.test(part))) throw new Error('Unsafe ZIP path.');
+    const leaf = relative.split('/').at(-1).replace(/[. ]+$/, '').toLowerCase();
+    if (leaf === '.env' || leaf.startsWith('.env.')) {
+      const canonicalTemplate = `${root}app/.env.example`;
+      if (name.endsWith('/') || name !== canonicalTemplate) throw new Error('Unapproved environment file in public release.');
+    }
     if (local + 30 > offset || buffer.readUInt32LE(local) !== 0x04034b50 || buffer.readUInt16LE(local + 8) !== method) throw new Error('Invalid ZIP local header.');
     const localNameLength = buffer.readUInt16LE(local + 26); const start = local + 30 + localNameLength + buffer.readUInt16LE(local + 28);
     if (!buffer.subarray(local + 30, local + 30 + localNameLength).equals(rawName) || start + compressed > offset) throw new Error('Invalid ZIP member range.');
@@ -659,9 +678,11 @@ function validatePublicZip(buffer, m) {
   }
   for (const [key, entry] of entries) {
     if (deniedAssets.has(key)) throw new Error('Withdrawn public asset present.');
-    if (key.startsWith('app/plugins/')) {
-      if (key.split('/').slice(2).some((part) => blocked.has(part))) throw new Error('Withdrawn plugin directory present.');
-      if (key.endsWith('/plugin.json')) { const manifest = JSON.parse(entry.data().toString('utf8')); const ids = [manifest.id, ...(manifest.aliases || []), ...(manifest.replaces || [])]; if (ids.some((id) => typeof id !== 'string' || !idPattern.test(id) || blocked.has(id))) throw new Error('Withdrawn/invalid plugin identity present.'); }
+    const normalizedKey = normalizedPluginPath(key);
+    if (normalizedKey.startsWith('app/plugins/') && normalizedKey.includes('%')) throw new Error('Invalid encoded plugin path.');
+    if (normalizedKey.startsWith('app/plugins/')) {
+      if (normalizedKey.split('/').slice(2).some((part) => blocked.has(part))) throw new Error('Withdrawn plugin directory present.');
+      if (normalizedKey.endsWith('/plugin.json')) { const manifest = JSON.parse(entry.data().toString('utf8')); const ids = [manifest.id, ...(manifest.aliases || []), ...(manifest.replaces || [])]; if (ids.some((id) => typeof id !== 'string' || !idPattern.test(id) || blocked.has(id))) throw new Error('Withdrawn/invalid plugin identity present.'); }
     }
     if (!entry.directory) entry.data(); // CRC validation before any destination mutation.
   }

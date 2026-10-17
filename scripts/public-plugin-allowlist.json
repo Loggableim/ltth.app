@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "publicPluginIds": [
+    "advanced-timer",
+    "api-bridge",
+    "clarityhud",
+    "coinbattle",
+    "config-import",
+    "emoji-rain",
+    "fireworks",
+    "flame-overlay",
+    "game-engine",
+    "gcce",
+    "goals",
+    "milestone-leaderboard",
+    "multicam",
+    "openshock",
+    "quiz-show",
+    "soundboard",
+    "spotlight",
+    "store-admin",
+    "stt-ticker",
+    "thermal-printer",
+    "toptier",
+    "tts",
+    "vdoninja",
+    "weather-control"
+  ]
+}

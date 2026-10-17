@@ -5,6 +5,7 @@ const { spawnSync } = require('child_process');
 
 const {
   BOOT_CRITICAL_DEPENDENCIES,
+  describeDependencyVerification,
   verifyProductionDependencies
 } = require('../modules/dependency-integrity');
 
@@ -121,6 +122,20 @@ describe('production dependency integrity', () => {
       missing: [],
       errors: ['@deepgram/sdk']
     });
+  });
+
+  test('verifier diagnostic format reports package names only for a partial SDK', () => {
+    const projectRoot = createProject({ '@deepgram/sdk': '5.5.0' });
+    writeBootCriticalDependencies(projectRoot);
+    writeDependency(projectRoot, '@deepgram/sdk', "require('./api/index.js'); module.exports = {};");
+
+    const verification = verifyProductionDependencies(projectRoot);
+    const stderr = `Dependency integrity check failed: ${describeDependencyVerification(verification)}\n`;
+
+    expect(verification.valid).toBe(false);
+    expect(stderr).toContain('@deepgram/sdk');
+    expect(stderr).not.toContain('api/index.js');
+    expect(stderr).not.toMatch(/Error:|stack/i);
   });
 
   test('CLI returns failure with package names only for a partial SDK', () => {

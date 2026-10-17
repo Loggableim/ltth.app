@@ -38,6 +38,7 @@ describe('public distribution plugin release policy', () => {
     writeJson(path.join(appRoot, 'config', 'plugin-release-policy.json'), {
       schemaVersion: 1,
       closedBeta,
+      publicRuntimeExcluded: ['gift-catalog'],
       aliases: { streamalchemy: 'stream-monsters' },
       publicAssetPathOwners
     });
@@ -53,7 +54,7 @@ describe('public distribution plugin release policy', () => {
 
   test('public loader hides all closed-beta manifests including aliases without pruning saved state', async () => {
     writeJson(path.join(appRoot, 'config', 'distribution-mode.json'), { channel: 'public' });
-    for (const id of closedBeta) writePlugin(path.join(root, 'plugins'), id);
+    for (const id of [...closedBeta, 'chatango']) writePlugin(path.join(root, 'plugins'), id);
     writePlugin(path.join(root, 'plugins'), 'streamalchemy');
     writePlugin(path.join(root, 'plugins'), 'tts');
 
@@ -73,12 +74,26 @@ describe('public distribution plugin release policy', () => {
 
     expect(inventory.map(item => item.canonicalId)).toEqual(['tts']);
     expect(loader.resolvePluginInstallation('streamalchemy')).toBeNull();
-    expect(loader.getPlugin('music-bot')).toBeNull();
-    expect(loader.isPluginEnabledFromDisk('music-bot')).toBe(false);
-    await expect(loader.enablePlugin('music-bot')).rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
+    for (const id of closedBeta) {
+      expect(loader.resolvePluginInstallation(id)).toBeNull();
+      expect(loader.getPlugin(id)).toBeNull();
+      expect(loader.isPluginEnabledFromDisk(id)).toBe(false);
+      await expect(loader.enablePlugin(id)).rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
+    }
+    expect(loader.resolvePluginInstallation('chatango')).toBeNull();
     loader.pruneStalePluginState(inventory);
     expect(loader.state).toEqual(savedState);
     expect(saveState).not.toHaveBeenCalled();
+  });
+
+  test('runtime-only plugin IDs are not mislabeled as Closed Beta', () => {
+    writeJson(path.join(appRoot, 'config', 'distribution-mode.json'), { channel: 'public' });
+    const policy = createPluginReleasePolicy({ appRoot });
+    for (const id of ['gift-catalog', 'minecraft-connect', 'webgpu-fireworks', 'fireworks']) {
+      expect(closedBeta).not.toContain(id);
+      expect(policy.isClosedBetaId(id)).toBe(false);
+    }
+    expect([...policy.getSnapshot().publicRuntimeExcludedIds]).toEqual(['gift-catalog']);
   });
 
   test('explicit local marker keeps all eleven apps discoverable and store-listed', async () => {
@@ -117,12 +132,14 @@ describe('public distribution plugin release policy', () => {
     const cacheDir = path.join(root, 'plugins');
     fs.mkdirSync(cacheDir, { recursive: true });
     const registry = { schemaVersion: 1, plugins: [
-      { id: 'music-bot', name: { en: 'Music Bot' } },
+      ...closedBeta.map(id => ({ id, name: { en: id } })),
+      { id: 'chatango', name: { en: 'Chatango' } },
       { id: 'streamalchemy', name: { en: 'Stream Monsters' } },
       { id: 'tts', name: { en: 'TTS' } }
     ] };
     const communityRegistry = { schemaVersion: 1, plugins: [
-      { id: 'music-bot', name: { en: 'Music Bot' } },
+      ...closedBeta.map(id => ({ id, name: { en: id } })),
+      { id: 'chatango', name: { en: 'Chatango' } },
       { id: 'stream-monsters', name: { en: 'Stream Monsters' } },
       { id: 'tts', name: { en: 'TTS' } }
     ] };
@@ -156,9 +173,14 @@ describe('public distribution plugin release policy', () => {
     expect(store.cache.get('community').registry.plugins.map(plugin => plugin.id)).toEqual(['tts']);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(store.buildBundledOfficialRegistry().plugins.some(plugin => closedBeta.includes(plugin.id))).toBe(false);
-    await expect(store.findPlugin('official', 'music-bot')).rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
-    await expect(store.installPlugin('official', 'music-bot', { plugin: { id: 'music-bot' } }))
-      .rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
+    for (const id of closedBeta) {
+      await expect(store.findPlugin('official', id)).rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
+      await expect(store.installPlugin('official', id, { plugin: { id } }))
+        .rejects.toMatchObject({ code: 'PLUGIN_CLOSED_BETA_PUBLIC' });
+    }
+    await expect(store.findPlugin('official', 'chatango')).rejects.toMatchObject({ code: 'PLUGIN_RETIRED' });
+    await expect(store.installPlugin('official', 'chatango', { plugin: { id: 'chatango' } }))
+      .rejects.toMatchObject({ code: 'PLUGIN_RETIRED' });
     expect(fs.existsSync(path.join(cacheDir, 'music-bot'))).toBe(false);
 
     const packageDir = path.join(root, 'manifest-probe');
@@ -202,8 +224,8 @@ describe('public distribution plugin release policy', () => {
 
   test('guards closed-beta plugin assets and canonical API routes only in public mode', async () => {
     const pluginRoot = path.join(root, 'plugins');
-    writePlugin(pluginRoot, 'music-bot');
-    writePlugin(pluginRoot, 'stream-monsters');
+    for (const id of [...closedBeta, 'chatango']) writePlugin(pluginRoot, id);
+    writePlugin(pluginRoot, 'tts');
     writePlugin(pluginRoot, 'renamed-source');
     writeJson(path.join(pluginRoot, 'renamed-source', 'plugin.json'), {
       id: 'music-bot', name: 'Music Bot', entry: 'index.js'
@@ -213,14 +235,14 @@ describe('public distribution plugin release policy', () => {
     const app = express();
     app.use(policy.createRequestGuard({ pluginsDir: pluginRoot }));
     app.use('/plugins', express.static(pluginRoot));
-    app.get('/api/plugins/music-bot/status', (_req, res) => res.json({ live: true }));
-    app.get('/api/plugins/tts/status', (_req, res) => res.json({ live: true }));
+    app.get('/api/plugins/:pluginId/status', (_req, res) => res.json({ live: true }));
 
-    await request(app).get('/plugins/music-bot/plugin.json').expect(404);
+    for (const id of [...closedBeta, 'chatango', 'streamalchemy']) {
+      await request(app).get(`/plugins/${id}/plugin.json`).expect(404);
+      await request(app).get(`/api/plugins/${id}/status`).expect(404);
+    }
     await request(app).get('/Plugins/Music-Bot/plugin.json').expect(404);
-    await request(app).get('/plugins/streamalchemy/plugin.json').expect(404);
     await request(app).get('/plugins/renamed-source/plugin.json').expect(404);
-    await request(app).get('/api/plugins/music-bot/status').expect(404);
     await request(app).get('/api/plugins/tts/status').expect(200);
 
     writeJson(path.join(appRoot, 'config', 'distribution-mode.json'), { channel: 'local' });

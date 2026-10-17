@@ -1,0 +1,173 @@
+{
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-spotlight-renderer-fixtures.test.js",
+      "sha256": "92f66a261136f9532db0565a5b553d5d628a0f5a4638a4380c02fa1b868da44d"
+    },
+    {
+      "path": "app/test/helpers/obs-spotlight-jsdom-fixture.js",
+      "sha256": "3305ca0ba691ae9d0383a6c6107dabe588b933e84c113553a47c5c17fd95d8bb"
+    }
+  ],
+  "schemaVersion": 1,
+  "transport": {
+    "socketHandling": "synthetic in-memory Socket.IO shim; browser Socket.IO bundle pinned in manifest but not executed",
+    "producer": "excluded; Spotlight backend, TikTok producer and database are not started",
+    "origin": "http://127.0.0.1:3000 as synthetic JSDOM URL only",
+    "requestHandling": "in-process JSDOM interceptor and injected fetch; no TCP listener"
+  },
+  "coverage": {
+    "initial": "Original Chatter entry loads synthetic settings and last user through two exact fixed GET routes (duplicated once by initial connect plus boot path), and renders synthetic username.",
+    "reset": "Synthetic session reset clears content and rejects old-token update.",
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "dynamicAssets": "No profile/gift images are present; preload and profile pictures disabled; no runtime asset request observed.",
+    "update": "Matching fixture session update renders; mismatched session token is ignored.",
+    "cleanup": "Original renderer publishes its own Socket.IO socket for bounded i18n binding; persisted pagehide retains it, final pagehide disconnects and removes owned handlers. Fixture verifies DE/EN/ES/FR, locale-changed rerender of the current user, and no active intervals after cleanup.",
+    "localeSocketSync": "Synthetic locale-changed event updates the rendered event label while preserving the current username and overlay session."
+  },
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "recordedAt": "2026-10-07"
+  },
+  "notProven": [
+    "real Socket.IO/browser transport or product backend/producer",
+    "OBS Browser Source rendering or screenshot review",
+    "actual font rendering; CSS pinned but font files are not fetched in JSDOM"
+  ],
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-spotlight-renderer-fixtures.test.js",
+  "manifest": {
+    "path": "docs/coordination/obs-104-spotlight-fixture.json",
+    "sha256": "e6bc71e36b3045983fe8d7b72f3d93ced0223b18f6d06b428fe0013e60caed5d",
+    "files": 12,
+    "localeFiles": 4,
+    "bytes": 276085
+  },
+  "sharedI18nCompatibilityReview": {
+    "recordedAt": "2026-10-07T06:39:57.581Z",
+    "source": {
+      "path": "app/public/js/i18n-client.js",
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "bytes": 24907
+    },
+    "previousPin": {
+      "bytes": 24765,
+      "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c"
+    },
+    "sourceStableBeforeAfterTests": true,
+    "scope": "Original CPU/JSDOM renderer only; no browser, backend, transport, audio or OBS acceptance",
+    "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-quiz-show-renderer-fixtures.test.js test/obs-stt-renderer-fixtures.test.js test/obs-spotlight-renderer-fixtures.test.js",
+    "familyResult": {
+      "testSuitesPassed": 1,
+      "testsPassed": 5,
+      "testsFailed": 0
+    },
+    "combinedRun": {
+      "exitCode": 1,
+      "testSuitesPassed": 2,
+      "testSuitesFailed": 1,
+      "testsPassed": 13,
+      "testsFailed": 5,
+      "note": "STT stale zero-pending-retry expectations fail separately; this receipt does not claim the combined run passed"
+    },
+    "testSource": {
+      "path": "app/test/obs-spotlight-renderer-fixtures.test.js",
+      "sha256": "92f66a261136f9532db0565a5b553d5d628a0f5a4638a4380c02fa1b868da44d"
+    },
+    "contractSource": {
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+    },
+    "manifestValidation": {
+      "status": "PASS",
+      "files": 12,
+      "bytes": 276085
+    }
+  },
+  "history": [
+    {
+      "recordedAt": "2026-10-07",
+      "status": "source-hash-bound-cpu-jsdom-fixture-run",
+      "manifest": {
+        "path": "docs/coordination/obs-104-spotlight-fixture.json",
+        "files": 12,
+        "bytes": 275965,
+        "localeFiles": 4,
+        "sha256": "1490b8bf8a3bd63f71ad26f33a7326f788e2f161e0cd8b37abe82268a44b28e2"
+      },
+      "result": {
+        "testsFailed": 0,
+        "exitCode": 0,
+        "testsPassed": 5,
+        "recordedAt": "2026-10-07",
+        "testsSkipped": 0,
+        "testSuitesPassed": 1
+      },
+      "sourceWitnesses": [
+        {
+          "sha256": "c82918d869e04ecec0d2bd5417612ead4637b1e9fefb2979c2df3476945acc37",
+          "path": "app/test/obs-spotlight-renderer-fixtures.test.js"
+        },
+        {
+          "sha256": "5dfe994d769c682400ab15b68b92a81ac4c77fd3accf6c5f3767a3fad735dd46",
+          "path": "app/test/helpers/obs-spotlight-jsdom-fixture.js"
+        }
+      ],
+      "sharedI18nCompatibilityReview": {
+        "recordedAt": "2026-10-07T06:39:57.581Z",
+        "source": {
+          "path": "app/public/js/i18n-client.js",
+          "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+          "bytes": 24907
+        },
+        "previousPin": {
+          "bytes": 24765,
+          "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c"
+        },
+        "sourceStableBeforeAfterTests": true,
+        "scope": "Original CPU/JSDOM renderer only; no browser, backend, transport, audio or OBS acceptance",
+        "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-quiz-show-renderer-fixtures.test.js test/obs-stt-renderer-fixtures.test.js test/obs-spotlight-renderer-fixtures.test.js",
+        "familyResult": {
+          "testSuitesPassed": 1,
+          "testsPassed": 5,
+          "testsFailed": 0
+        },
+        "combinedRun": {
+          "exitCode": 1,
+          "testSuitesPassed": 2,
+          "testSuitesFailed": 1,
+          "testsPassed": 13,
+          "testsFailed": 5,
+          "note": "STT stale zero-pending-retry expectations fail separately; this receipt does not claim the combined run passed"
+        },
+        "testSource": {
+          "path": "app/test/obs-spotlight-renderer-fixtures.test.js",
+          "sha256": "92f66a261136f9532db0565a5b553d5d628a0f5a4638a4380c02fa1b868da44d"
+        },
+        "contractSource": {
+          "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+          "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+        },
+        "manifestValidation": {
+          "status": "PASS",
+          "files": 12,
+          "bytes": 276085
+        }
+      }
+    }
+  ],
+  "currentLifecycleReview": {
+    "recordedAt": "2026-10-07",
+    "contractPin": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba",
+    "observed": "Original consumer JSDOM run verifies same-socket locale-changed DE/EN/ES/FR and owned final pagehide cleanup. Frozen runnerContract cleanup text is historical and does not describe the expanded assertions."
+  }
+}

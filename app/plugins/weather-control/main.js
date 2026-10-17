@@ -1624,13 +1624,20 @@ class WeatherControlPlugin {
                 return true;
             }
 
-            // Check superfans (users with high gift count)
-            if (permissions.allowedGroups.superfans && user.gifts_sent >= 50) {
+            // Gift history is not evidence of an explicit SuperFan role.
+            const isSuperFan = contextUserData?.isSuperFan === true
+                || contextUserData?.superFan === true
+                || user.is_superfan === true
+                || user.is_superfan === 1;
+            if (permissions.allowedGroups.superfans && isSuperFan) {
                 return true;
             }
 
-            // Check subscribers (team members level 1+)
-            if (permissions.allowedGroups.subscribers && user.team_member_level > 0) {
+            // Fanclub membership is distinct from a subscription.
+            const isSubscriber = contextUserData?.isSubscriber === true
+                || user.is_subscriber === true
+                || user.is_subscriber === 1;
+            if (permissions.allowedGroups.subscribers && isSubscriber) {
                 return true;
             }
 
@@ -2150,7 +2157,7 @@ class WeatherControlPlugin {
         }
 
         const questIndex = this.gamification.quest.rotationIndex % pool.length;
-        const questDefinition = pool[questIndex];
+        const questDefinition = this.normalizeQuestDefinition(pool[questIndex], questIndex);
         const activeQuest = {
             ...questDefinition,
             progress: 0,
@@ -2179,6 +2186,9 @@ class WeatherControlPlugin {
         const quest = this.gamification.quest.active;
         if (!quest) {
             return null;
+        }
+        if (quest.status === 'completed') {
+            return quest;
         }
 
         const normalizedType = contribution?.normalizedType || eventType;
@@ -2213,13 +2223,36 @@ class WeatherControlPlugin {
                 quest: { ...quest }
             });
 
+            if (config.rewards?.enabled !== false) {
+                const reward = quest.reward || {};
+                const action = this.supportedEffects.includes(reward.action) ? reward.action : 'rain';
+                const rewardEvent = this.createWeatherEvent({
+                    action,
+                    intensity: reward.intensity,
+                    duration: reward.duration,
+                    permanent: false,
+                    username: 'community-quest',
+                    meta: {
+                        triggeredBy: 'gamification-quest',
+                        label: quest.title,
+                        questId: quest.id
+                    },
+                    options: { rewardLabel: quest.title }
+                });
+                this.api.emit('weather:trigger', rewardEvent);
+            }
+
             if (config.quests?.rotateOnCompletion !== false) {
                 if (this.questRotationTimer) {
                     clearTimeout(this.questRotationTimer);
                 }
+                const completedQuestId = quest.id;
                 this.questRotationTimer = setTimeout(() => {
                     this.questRotationTimer = null;
-                    if (this.config?.enabled && this.config?.gamification?.enabled !== false) {
+                    if (this.config?.enabled
+                        && this.config?.gamification?.enabled !== false
+                        && this.gamification.quest.active?.id === completedQuestId
+                        && this.gamification.quest.active?.status === 'completed') {
                         this.createNextQuest();
                     }
                 }, 0);

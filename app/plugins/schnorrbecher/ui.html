@@ -28,17 +28,28 @@
 </head>
 <body>
   <header>
-    <h1>Schnorrbecher</h1>
-    <p class="subtitle">TikTok-LIVE Geschenkeglas für OBS Browser Sources</p>
+    <h1 data-i18n="plugins.schnorrbecher.title">Schnorrbecher</h1>
+    <p class="subtitle" data-i18n="plugins.schnorrbecher.labels.subtitle">TikTok-LIVE Geschenkeglas für OBS Browser Sources</p>
   </header>
-  <section class="grid" aria-label="Aktueller Status">
-    <div class="card"><span>Verbindung</span><strong id="connection-status">Prüfe…</strong></div>
-    <div class="card"><span>Livestream</span><strong id="livestream-status">Prüfe…</strong></div>
-    <div class="card"><span>Gesamtwert</span><strong id="total-value">0</strong></div>
-    <div class="card"><span>Physische Icons</span><strong id="physical-count">0</strong></div>
-    <div class="card"><span>Spawn-Warteschlange</span><strong id="pending-count">0</strong></div>
+  <section class="grid" aria-label="Aktueller Status" data-i18n-aria-label="plugins.schnorrbecher.labels.status">
+    <div class="card"><span data-i18n="plugins.schnorrbecher.labels.connection">Verbindung</span><strong id="connection-status">Prüfe…</strong></div>
+    <div class="card"><span data-i18n="plugins.schnorrbecher.labels.livestream">Livestream</span><strong id="livestream-status">Prüfe…</strong></div>
+    <div class="card"><span data-i18n="plugins.schnorrbecher.labels.totalValue">Gesamtwert</span><strong id="total-value">0</strong></div>
+    <div class="card"><span data-i18n="plugins.schnorrbecher.labels.physicalIcons">Physische Icons</span><strong id="physical-count">0</strong></div>
+    <div class="card"><span data-i18n="plugins.schnorrbecher.labels.spawnQueue">Spawn-Warteschlange</span><strong id="pending-count">0</strong></div>
   </section>
   <main class="layout">
+    <section class="panel" id="legacy-data-panel" hidden>
+      <h2 data-i18n="plugins.schnorrbecher.legacy.title">Gemeinsame Legacy-Daten</h2>
+      <p id="legacy-data-status" data-i18n="plugins.schnorrbecher.legacy.status">Vorhandene gemeinsame Daten werden keinem Profil automatisch zugeordnet.</p>
+      <button id="preview-legacy-data" type="button" class="secondary" data-i18n="plugins.schnorrbecher.legacy.previewButton">Legacy-Übernahme prüfen</button>
+      <div id="legacy-data-preview" hidden>
+        <p id="legacy-data-preview-text"></p>
+        <label class="check"><input id="import-legacy-config" type="checkbox"><span data-i18n="plugins.schnorrbecher.legacy.config">Konfiguration übernehmen</span></label>
+        <label class="check"><input id="import-legacy-state" type="checkbox"><span data-i18n="plugins.schnorrbecher.legacy.persistentState">Persistenten Stand übernehmen (nur im persistenten Modus)</span></label>
+        <button id="import-legacy-data" type="button" class="danger" data-i18n="plugins.schnorrbecher.legacy.importButton">Ausgewählte Daten in dieses Profil übernehmen</button>
+      </div>
+    </section>
     <section class="panel">
       <h2>Steuerung</h2>
       <div class="actions">

@@ -75,7 +75,7 @@ app/modules/
   webgpu-engine/            ← experimental WebGPU engine (TypeScript)
 
 app/plugins/
-  37 plugin manifests
+  36 plugin manifests
   plugin-specific backend, UI, overlay, tests, assets
 
 app/routes/
@@ -112,7 +112,7 @@ locales/           ← client-side website translations (de/en/es/fr + home-*.js
 features/          ← static HTML feature pages (alerts, emoji-rain, tts, etc.)
 screenshots/       ← website screenshots (de/, features/, live-check/)
 install/           ← one-line installer scripts (install.js, install.sh, install.ps1)
-plugin-store.json  ← official plugin store registry (36 entries)
+plugin-store.json  ← official plugin store registry (24 entries)
 plugin-store/      ← pre-packaged plugin ZIPs (packages/*.zip)
 build-src/         ← Go launcher sources (launcher-gui.go, bootstrapper.go, etc.)
 runtime/           ← runtime state (launcher_settings.json, node/)

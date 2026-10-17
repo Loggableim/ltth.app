@@ -1,0 +1,404 @@
+name: Publish Signed Launcher Handoff
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful build workflow run that created launcher-candidate
+        required: true
+        type: string
+      source_commit:
+        description: Full source commit SHA from that run
+        required: true
+        type: string
+      handoff_commit:
+        description: Full commit SHA containing launcher-release-handoff/<source-commit>/<tag>
+        required: true
+        type: string
+      release_tag:
+        description: Existing source tag (vX.Y.Z, launcher-vX.Y.Z or launcher-beta-vX.Y.Z)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify_dispatch_ref:
+    name: Verify canonical source workflow run before artifact access
+    if: >-
+      github.repository == 'Loggableim/ltth.app' &&
+      github.ref == 'refs/heads/main' &&
+      github.workflow_ref == 'Loggableim/ltth.app/.github/workflows/publish-launcher-handoff.yml@refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source_run_id: ${{ steps.verify.outputs.run_id }}
+      source_commit_sha: ${{ steps.verify.outputs.commit_sha }}
+    steps:
+      - name: Checkout publisher workflow validators
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify source run and workflow provenance
+        id: verify
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_COMMIT_SHA: ${{ inputs.source_commit }}
+        run: |
+          python3 scripts/verify_launcher_source_run.py \
+            --repository "$SOURCE_REPOSITORY" \
+            --run-id "$SOURCE_RUN_ID" \
+            --commit-sha "$SOURCE_COMMIT_SHA"
+
+  validate-and-stage:
+    name: Validate exact signed handoff and stage run-bound payload
+    runs-on: windows-latest
+    needs: verify_dispatch_ref
+    if: >-
+      needs.verify_dispatch_ref.result == 'success' &&
+      github.repository == 'Loggableim/ltth.app' &&
+      github.ref == 'refs/heads/main' &&
+      github.workflow_ref == 'Loggableim/ltth.app/.github/workflows/publish-launcher-handoff.yml@refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      source_run_id: ${{ needs.verify_dispatch_ref.outputs.source_run_id }}
+      source_commit_sha: ${{ needs.verify_dispatch_ref.outputs.source_commit_sha }}
+    env:
+      SOURCE_RUN_ID: ${{ needs.verify_dispatch_ref.outputs.source_run_id }}
+      SOURCE_COMMIT: ${{ needs.verify_dispatch_ref.outputs.source_commit_sha }}
+      HANDOFF_COMMIT: ${{ inputs.handoff_commit }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      LAUNCHER_SIGNER_THUMBPRINT: ${{ vars.LAUNCHER_SIGNER_THUMBPRINT }}
+
+    steps:
+      - name: Checkout publisher workflow validators
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          path: publisher
+          persist-credentials: false
+
+      - name: Set up Python for payload manifest
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+
+      - name: Checkout exact source commit and tags
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ needs.verify_dispatch_ref.outputs.source_commit_sha }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+
+      - name: Checkout commit-bound local signing handoff
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ inputs.handoff_commit }}
+          fetch-depth: 1
+          path: handoff
+          persist-credentials: false
+
+      - name: Set up Go 1.24.10
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.24.10'
+          cache-dependency-path: source/build-src/go.sum
+
+      - name: Download exact source-run candidate artifact
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: launcher-candidate
+          path: ${{ runner.temp }}/source-candidate
+          run-id: ${{ needs.verify_dispatch_ref.outputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download app release artifact for app version tags
+        if: startsWith(inputs.release_tag, 'v')
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: app-release-assets
+          path: ${{ runner.temp }}/app-release-assets
+          run-id: ${{ needs.verify_dispatch_ref.outputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate source run inputs and signer configuration
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:SOURCE_RUN_ID -notmatch '^[0-9]+$' -or
+              $env:SOURCE_COMMIT -notmatch '^[0-9a-fA-F]{40}$' -or
+              $env:HANDOFF_COMMIT -notmatch '^[0-9a-fA-F]{40}$' -or
+              $env:RELEASE_TAG -notmatch '^(?:v|launcher-v|launcher-beta-v)[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw 'Source run, commit, handoff commit or release tag input is invalid.'
+          }
+          if ($env:LAUNCHER_SIGNER_THUMBPRINT -notmatch '^[0-9a-fA-F]{40}$') {
+            throw 'Environment variable LAUNCHER_SIGNER_THUMBPRINT must be configured for launcher-release.'
+          }
+          $handoffPath = Join-Path $env:GITHUB_WORKSPACE "handoff\launcher-release-handoff\$($env:SOURCE_COMMIT.ToLowerInvariant())\$env:RELEASE_TAG"
+          if (-not (Test-Path -LiteralPath $handoffPath -PathType Container)) {
+            throw 'Commit-bound launcher handoff folder is missing.'
+          }
+          "HANDOFF_PATH=$handoffPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Run source Go tests
+        working-directory: source/build-src
+        shell: powershell
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOFLAGS: '-mod=readonly'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go test ./...
+          if ($LASTEXITCODE -ne 0) { throw 'Source Go tests failed.' }
+
+      - name: Validate source rebuild, signature, manifests and stage exact release file
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stageRoot = Join-Path $env:RUNNER_TEMP 'validated-launcher-assets'
+          New-Item -ItemType Directory -Path $stageRoot | Out-Null
+          $releaseAssets = Join-Path $stageRoot 'launcher'
+          & "$env:GITHUB_WORKSPACE\source\scripts\validate-launcher-release-handoff.ps1" `
+            -SourceRoot "$env:GITHUB_WORKSPACE\source" `
+            -CandidateDirectory (Join-Path $env:RUNNER_TEMP 'source-candidate') `
+            -SignedDirectory $env:HANDOFF_PATH `
+            -ExpectedCommitSha $env:SOURCE_COMMIT `
+            -ExpectedTag $env:RELEASE_TAG `
+            -ExpectedSourceRunId $env:SOURCE_RUN_ID `
+            -ExpectedSignerThumbprint $env:LAUNCHER_SIGNER_THUMBPRINT `
+            -OutputDirectory $releaseAssets `
+            -GoExecutable (Get-Command go.exe).Source
+          if ($LASTEXITCODE -ne 0) { throw 'Signed launcher handoff validation failed.' }
+
+          if ($env:RELEASE_TAG.StartsWith('v')) {
+            $manifestPath = Join-Path $env:RUNNER_TEMP 'app-release-assets\ltth_latest.json'
+            $archivePath = Join-Path $env:RUNNER_TEMP 'app-release-assets\ltth_latest.zip'
+            if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf) -or
+                -not (Test-Path -LiteralPath $archivePath -PathType Leaf)) {
+              throw 'Source run app release artifact is incomplete.'
+            }
+            $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
+            $version = $env:RELEASE_TAG.Substring(1)
+            $archive = Get-Item -LiteralPath $archivePath
+            $sha256 = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($manifest.schema -ne 1 -or $manifest.component -cne 'ltth_latest.zip' -or
+                $manifest.version -cne $version -or $manifest.tag -cne $env:RELEASE_TAG -or
+                ([string]$manifest.commitSha).ToLowerInvariant() -cne $env:SOURCE_COMMIT.ToLowerInvariant() -or
+                [int64]$manifest.bytes -ne $archive.Length -or
+                ([string]$manifest.sha256).ToLowerInvariant() -cne $sha256) {
+              throw 'App release artifact manifest does not match the selected source run.'
+            }
+            Copy-Item -LiteralPath $archivePath -Destination $stageRoot
+            Copy-Item -LiteralPath $manifestPath -Destination $stageRoot
+          }
+
+          $launcherPath = Join-Path $releaseAssets 'launcher.exe'
+          $signedManifest = Join-Path $releaseAssets 'launcher-release.json'
+          $provenance = Join-Path $releaseAssets 'launcher-build-provenance.json'
+          $verifiedHash = (Get-FileHash -LiteralPath $launcherPath -Algorithm SHA256).Hash.ToLowerInvariant()
+          $releaseManifest = Get-Content -LiteralPath $signedManifest -Raw | ConvertFrom-Json
+          if ($verifiedHash -cne $releaseManifest.sha256) { throw 'Validated launcher changed before artifact upload.' }
+          Copy-Item -LiteralPath $launcherPath -Destination (Join-Path $stageRoot 'launcher.exe')
+          Copy-Item -LiteralPath $signedManifest -Destination (Join-Path $stageRoot 'launcher-release.json')
+          Copy-Item -LiteralPath $provenance -Destination (Join-Path $stageRoot 'launcher-build-provenance.json')
+          if ((Get-FileHash -LiteralPath (Join-Path $stageRoot 'launcher.exe') -Algorithm SHA256).Hash.ToLowerInvariant() -cne $verifiedHash) {
+            throw 'Release asset copy differs from the validated signed launcher.'
+          }
+          "RELEASE_ASSETS=$stageRoot" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Create exact run-bound payload manifest
+        shell: powershell
+        env:
+          PAYLOAD_DIR: ${{ runner.temp }}/validated-launcher-assets
+          PAYLOAD_REPOSITORY: ${{ github.repository }}
+          PUBLISHER_RUN_ID: ${{ github.run_id }}
+          SOURCE_RUN_ID: ${{ needs.verify_dispatch_ref.outputs.source_run_id }}
+          SOURCE_COMMIT_SHA: ${{ needs.verify_dispatch_ref.outputs.source_commit_sha }}
+          HANDOFF_COMMIT_SHA: ${{ inputs.handoff_commit }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python "$env:GITHUB_WORKSPACE\publisher\scripts\launcher_publish_payload.py"
+          if ($LASTEXITCODE -ne 0) { throw 'Publish payload manifest creation failed.' }
+
+      - name: Upload immutable verified payload for this workflow run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: verified-release-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/validated-launcher-assets
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish verified payload only
+    runs-on: windows-latest
+    needs: validate-and-stage
+    if: >-
+      needs.validate-and-stage.result == 'success' &&
+      github.repository == 'Loggableim/ltth.app' &&
+      github.ref == 'refs/heads/main' &&
+      github.workflow_ref == 'Loggableim/ltth.app/.github/workflows/publish-launcher-handoff.yml@refs/heads/main'
+    environment: launcher-release
+    permissions:
+      contents: write
+    env:
+      PAYLOAD_DIR: ${{ runner.temp }}/publish-payload
+      PAYLOAD_REPOSITORY: ${{ github.repository }}
+      PUBLISHER_RUN_ID: ${{ github.run_id }}
+      SOURCE_RUN_ID: ${{ needs.validate-and-stage.outputs.source_run_id }}
+      SOURCE_COMMIT_SHA: ${{ needs.validate-and-stage.outputs.source_commit_sha }}
+      HANDOFF_COMMIT_SHA: ${{ inputs.handoff_commit }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
+
+    steps:
+      - name: Download verified payload from this workflow run
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: verified-release-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/publish-payload
+
+      - name: Verify exact payload files, run binding and SHA-256 again
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $expectedFiles = if ($env:RELEASE_TAG -match '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            @('launcher.exe', 'launcher-release.json', 'launcher-build-provenance.json', 'ltth_latest.zip', 'ltth_latest.json')
+          } elseif ($env:RELEASE_TAG -match '^launcher-(?:beta-)?v[0-9]+\.[0-9]+\.[0-9]+$') {
+            @('launcher.exe', 'launcher-release.json', 'launcher-build-provenance.json')
+          } else {
+            throw 'Release tag is outside the publisher allowlist.'
+          }
+          $expectedLines = @(
+            'format=ltth-publish-payload-v1',
+            "repository=$env:PAYLOAD_REPOSITORY",
+            "publisher_run_id=$env:PUBLISHER_RUN_ID",
+            "source_run_id=$env:SOURCE_RUN_ID",
+            "source_commit_sha=$($env:SOURCE_COMMIT_SHA.ToLowerInvariant())",
+            "handoff_commit_sha=$($env:HANDOFF_COMMIT_SHA.ToLowerInvariant())",
+            "release_tag=$env:RELEASE_TAG",
+            "file_count=$($expectedFiles.Count)"
+          )
+          $manifestPath = Join-Path $env:PAYLOAD_DIR 'publish-payload.manifest'
+          if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) { throw 'Publish payload manifest is missing.' }
+          $manifestItem = Get-Item -LiteralPath $manifestPath -ErrorAction Stop
+          if ($manifestItem.Length -gt 8192 -or ($manifestItem.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Publish payload manifest is oversized or not a regular file.' }
+          $lines = [System.IO.File]::ReadAllLines($manifestPath)
+          if ($lines.Count -ne ($expectedLines.Count + $expectedFiles.Count)) { throw 'Publish payload manifest has an unexpected line count.' }
+          for ($i = 0; $i -lt $expectedLines.Count; $i++) {
+            if ($lines[$i] -cne $expectedLines[$i]) { throw 'Publish payload run metadata does not match this workflow run.' }
+          }
+          $actualEntries = @(Get-ChildItem -LiteralPath $env:PAYLOAD_DIR -Force)
+          $expectedNames = @($expectedFiles + 'publish-payload.manifest' | Sort-Object)
+          $actualNames = @($actualEntries | ForEach-Object { $_.Name } | Sort-Object)
+          if (Compare-Object -CaseSensitive -ReferenceObject $expectedNames -DifferenceObject $actualNames) { throw 'Publish payload contains missing or unexpected entries.' }
+          $verifiedFiles = @{}
+          for ($i = 0; $i -lt $expectedFiles.Count; $i++) {
+            $fields = $lines[$expectedLines.Count + $i].Split("`t")
+            $name = $expectedFiles[$i]
+            if ($fields.Count -ne 3 -or $fields[0] -cne "file=$name" -or $fields[1] -notmatch '^[1-9][0-9]*$' -or $fields[2] -notmatch '^[0-9a-f]{64}$') {
+              throw 'Publish payload file entry is malformed or out of order.'
+            }
+            $filePath = Join-Path $env:PAYLOAD_DIR $name
+            $item = Get-Item -LiteralPath $filePath -ErrorAction Stop
+            if ($item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Publish payload member is not a regular file.' }
+            $hash = (Get-FileHash -LiteralPath $filePath -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ([int64]$fields[1] -ne $item.Length -or $fields[2] -cne $hash) { throw 'Publish payload size or digest does not match manifest.' }
+            $verifiedFiles[$name] = @{ Length = [int64]$item.Length; Sha256 = $hash }
+          }
+          if ($env:RELEASE_TAG -match '^(?:launcher-beta-|launcher-)?v(?<version>[0-9]+\.[0-9]+\.[0-9]+)$') {
+            $version = $Matches.version
+          } else {
+            throw 'Release tag version cannot be resolved.'
+          }
+          $launcherManifest = Get-Content -LiteralPath (Join-Path $env:PAYLOAD_DIR 'launcher-release.json') -Raw | ConvertFrom-Json
+          $launcherFile = $verifiedFiles['launcher.exe']
+          if ($launcherManifest.schema -ne 1 -or $launcherManifest.component -cne 'launcher.exe' -or
+              $launcherManifest.version -cne $version -or $launcherManifest.tag -cne $env:RELEASE_TAG -or
+              ([string]$launcherManifest.commitSha).ToLowerInvariant() -cne $env:SOURCE_COMMIT_SHA.ToLowerInvariant() -or
+              [int64]$launcherManifest.bytes -ne $launcherFile.Length -or
+              ([string]$launcherManifest.sha256).ToLowerInvariant() -cne $launcherFile.Sha256) {
+            throw 'Launcher release manifest does not match verified payload bytes or source tag.'
+          }
+          if ($env:RELEASE_TAG.StartsWith('v')) {
+            $appManifest = Get-Content -LiteralPath (Join-Path $env:PAYLOAD_DIR 'ltth_latest.json') -Raw | ConvertFrom-Json
+            $appFile = $verifiedFiles['ltth_latest.zip']
+            if ($appManifest.schema -ne 1 -or $appManifest.component -cne 'ltth_latest.zip' -or
+                $appManifest.version -cne $version -or $appManifest.tag -cne $env:RELEASE_TAG -or
+                ([string]$appManifest.commitSha).ToLowerInvariant() -cne $env:SOURCE_COMMIT_SHA.ToLowerInvariant() -or
+                [int64]$appManifest.bytes -ne $appFile.Length -or
+                ([string]$appManifest.sha256).ToLowerInvariant() -cne $appFile.Sha256) {
+              throw 'App release manifest does not match verified payload bytes or source tag.'
+            }
+          }
+
+      - name: Reverify existing release tag target before upload
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_API_URL: ${{ github.api_url }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tagPattern = '^(?:v|launcher-v|launcher-beta-v)[0-9]+\.[0-9]+\.[0-9]+$'
+          if ($env:RELEASE_TAG -notmatch $tagPattern) { throw 'Release tag is outside the publisher allowlist.' }
+          $escapedTag = [uri]::EscapeDataString($env:RELEASE_TAG)
+          $uri = "$env:GITHUB_API_URL/repos/$env:PAYLOAD_REPOSITORY/git/ref/tags/$escapedTag"
+          $headers = @{ Authorization = "Bearer $env:GH_TOKEN"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
+          $ref = Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
+          $object = $ref.object
+          $seen = @{}
+          for ($depth = 0; $object.type -eq 'tag' -and $depth -lt 5; $depth++) {
+            if ($seen.ContainsKey($object.sha)) { throw 'Release tag reference contains a cycle.' }
+            $seen[$object.sha] = $true
+            $tagObject = Invoke-RestMethod -Method Get -Uri "$env:GITHUB_API_URL/repos/$env:PAYLOAD_REPOSITORY/git/tags/$($object.sha)" -Headers $headers
+            $object = $tagObject.object
+          }
+          if ($object.type -cne 'commit' -or $object.sha -cne $env:SOURCE_COMMIT_SHA) { throw 'Release tag no longer points to the verified source commit.' }
+
+      - name: Publish validated app release
+        if: startsWith(inputs.release_tag, 'v')
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ needs.validate-and-stage.outputs.source_commit_sha }}
+          name: Stable release ${{ inputs.release_tag }}
+          files: |
+            ${{ runner.temp }}/publish-payload/launcher.exe
+            ${{ runner.temp }}/publish-payload/launcher-release.json
+            ${{ runner.temp }}/publish-payload/launcher-build-provenance.json
+            ${{ runner.temp }}/publish-payload/ltth_latest.zip
+            ${{ runner.temp }}/publish-payload/ltth_latest.json
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish validated launcher-only release
+        if: startsWith(inputs.release_tag, 'launcher-')
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ needs.validate-and-stage.outputs.source_commit_sha }}
+          name: Launcher release ${{ inputs.release_tag }}
+          files: |
+            ${{ runner.temp }}/publish-payload/launcher.exe
+            ${{ runner.temp }}/publish-payload/launcher-release.json
+            ${{ runner.temp }}/publish-payload/launcher-build-provenance.json
+          draft: false
+          # Launcher-only releases must never become /releases/latest: they do
+          # not contain the app bundle consumed by the official latest installer.
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

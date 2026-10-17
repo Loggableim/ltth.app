@@ -1,5 +1,4 @@
 {
-  "features.closedBeta.notice": "Closed Beta · Kommt bald. Diese App ist derzeit nicht öffentlich zum Download verfügbar; die lokale Entwicklung läuft weiter.",
   "home": {
     "meta": {
       "canonical": "https://ltth.app/",
@@ -357,6 +356,9 @@
   "features.cta.download": "Herunterladen",
   "features.cta.learnMore": "Mehr erfahren",
   "features.cta.viewAll": "Alle Features ansehen",
+  "features.closedBeta.notice": "Closed Beta · Kommt bald. Diese App ist derzeit nicht öffentlich zum Download verfügbar; die lokale Entwicklung läuft weiter.",
+  "features.closedBeta.overviewLink": "Zur Feature-Übersicht",
+  "features.closedBeta.overviewUrl": "/features/",
   "impressum.hero.title": "Impressum",
   "impressum.hero.description": "Rechtliche Angaben und Kontaktinformationen zu ltth.app.",
   "features.a.1": "Zum Inhalt springen",
@@ -823,7 +825,7 @@
   "faq.a.65": "Plugin-Dokumentation",
   "faq.h3.66": "Funktioniert VRChat-Integration?",
   "faq.span.67": "🎮",
-  "faq.p.68": "Die OSC-Bridge kann TikTok-Ereignisse an kompatible OSC-Ziele wie VRChat weitergeben. Richte Aktionen und Grenzen zuerst in einem Testprofil ein und prüfe sie ohne LIVE-Auslösung. Details zur verfügbaren Konfiguration stehen im OSC-Bridge-Plugin.",
+  "faq.p.68": "Geschlossene Beta – noch nicht öffentlich verfügbar. Die OSC-Bridge kann TikTok-Ereignisse an kompatible OSC-Ziele wie VRChat weitergeben. Richte Aktionen und Grenzen zuerst in einem Testprofil ein und prüfe sie ohne LIVE-Auslösung. Details zur verfügbaren Konfiguration stehen im OSC-Bridge-Plugin.",
   "faq.h3.69": "Wie funktioniert das Flow-System?",
   "faq.span.70": "🎯",
   "faq.p.71": "Flows verbinden Auslöser, Bedingungen und Aktionen ohne eigenen Code. Beginne mit einer einzelnen Testregel und verwende keine Produktionsszenen oder externen Endpunkte, bevor das erwartete Ergebnis lokal bestätigt ist. Prüfe auch die Reihenfolge und Begrenzung von Aktionen.",
@@ -842,10 +844,10 @@
   "faq.h2.84": "KI & Daten",
   "faq.h3.85": "Was ist AnimazingPal?",
   "faq.span.86": "🤖",
-  "faq.p.87": "AnimazingPal ist ein KI-gestütztes Plugin für VTuber-Avatar-Workflows. Verfügbare Funktionen, Provider und Persönlichkeitsoptionen hängen von der installierten Version und dem konfigurierten Dienst ab. Prüfe Plugin-Dokumentation und Testprofil, bevor du es im LIVE-Ablauf aktivierst.",
-  "faq.h3.88": "Brauche ich einen OpenAI API-Key?",
+  "faq.p.87": "Geschlossene Beta · Demnächst verfügbar. AnimazingPal ist ein KI-gestütztes Plugin für VTuber-Avatare. Die finalen Funktionen und der Veröffentlichungstermin stehen noch nicht fest.",
+  "faq.h3.88": "Werde ich einen API-Key benötigen?",
   "faq.span.89": "🔑",
-  "faq.p.90": "Einige AnimazingPal-Funktionen benötigen einen API-Key für den konfigurierten Provider. Lege und speichere Keys nur über die Plugin-Einstellungen an, nie in Screenshots oder öffentlichen Konfigurationsdateien. Prüfe Provider, Modell und Kosten vor der Nutzung.",
+  "faq.p.90": "Die Anforderungen an externe Dienste und API-Keys stehen noch nicht fest. Verbindliche Informationen veröffentlichen wir zusammen mit der Freigabe.",
   "faq.h3.91": "Werden meine Daten beim Update überschrieben?",
   "faq.span.92": "💾",
   "faq.p.93": "Updates sind darauf ausgelegt, Einstellungen und Plugin-Daten zu erhalten. Lege vor jedem Update trotzdem eine eigene Sicherung an und prüfe Speicherort sowie Wiederherstellung für deine Installation.",
@@ -1042,16 +1044,19 @@
   },
   "homeV2": {
     "meta": {
-      "title": "ltth.app | TikTok LIVE Control Center"
+      "title": "LTTH – TikTok LIVE Tool für Alerts & OBS-Overlays",
+      "description": "Steuere Live-Events, Sounds und Plugins lokal. Verbinde deinen TikTok-LIVE-Stream und richte OBS-Overlays ein."
     },
     "skip": "Zum Inhalt springen",
     "hero": {
       "eyebrow": "DEIN TIKTOK LIVE CONTROL CENTER",
-      "titleFirst": "Dein Stream.",
-      "titleSecond": "Deine Kontrolle.",
-      "description": "Verbinde TikTok LIVE, Automationen, Plugins und OBS in einer lokalen Oberfläche, die mit deinem Stream mitdenkt.",
+      "titleFirst": "TikTok LIVE",
+      "titleSecond": "Alerts & OBS-Overlays",
+      "description": "Steuere Live-Events, Sounds und Plugins in einer lokalen Oberfläche. Verbinde deinen TikTok-LIVE-Stream und gestalte dein Setup mit OBS-Overlays.",
       "primaryCta": "Downloaden",
-      "secondaryCta": "Alle Apps ansehen",
+      "secondaryCta": "Plugins entdecken",
+      "scrollCta": "LTTH in Aktion ansehen",
+      "proofLabel": "Produktvorteile",
       "proof1": "Lokal auf deinem Rechner",
       "proof2": "Für Windows und OBS gemacht",
       "liveLabel": "LIVE"
@@ -1082,7 +1087,30 @@
       "eyebrow": "EIN WORKSPACE, KEIN CHAOS",
       "title": "Gebaut für den Moment, in dem dein Chat loslegt.",
       "description": "Vom Flow-Editor bis zum Browser-Overlay: LTTH hält die Werkzeuge nah an der Live-Situation und macht sie direkt nutzbar.",
-      "cta": "Entdecke die Apps"
+      "cta": "Plugins entdecken"
+    },
+    "scenes": {
+      "eyebrow": "LTTH IM EINSATZ",
+      "title": "Sieh dir LTTH in Aktion an.",
+      "description": "Von Live-Events bis zum OBS-Overlay: Ein Blick auf die Werkzeuge, die deinen Stream verbinden.",
+      "dashboard": {
+        "caption": "Dashboard mit Live-Verbindung und Schnellaktionen"
+      },
+      "flow": {
+        "alt": "LTTH Flow-Editor mit TikTok-Eventkomponenten und Flow-Einstellungen",
+        "title": "Events zu Aktionen verbinden",
+        "description": "Baue Abläufe aus Gifts, Chat, Bedingungen und deinen gewünschten Reaktionen."
+      },
+      "goals": {
+        "alt": "LTTH Live Goals mit Zielen und OBS-Overlay-Einstellungen",
+        "title": "Live-Ziele für OBS gestalten",
+        "description": "Richte Ziele ein und platziere die passende Browser-Quelle in deiner Szene."
+      },
+      "plugins": {
+        "alt": "LTTH Fireworks Plugin mit Live-Effekten",
+        "title": "Plugins passend zum Stream wählen",
+        "description": "Erweitere LTTH um Tools, die du für deinen eigenen Live-Auftritt brauchst."
+      }
     },
     "rotator": {
       "previous": "Vorheriges Plugin",
@@ -1095,6 +1123,25 @@
         "goals": "Aktuelle Live Goals Plugin-Ansicht",
         "advancedTimer": "Aktuelle Advanced Timer Plugin-Ansicht",
         "hybridshock": "Aktuelle Hybridshock Plugin-Ansicht"
+      }
+    },
+    "closedBeta": {
+      "eyebrow": "CLOSED BETA · KOMMT BALD",
+      "title": "11 Apps in geschlossener Beta",
+      "description": "Diese Apps werden weiterhin lokal entwickelt. Sie sind derzeit nicht öffentlich zum Download verfügbar.",
+      "listLabel": "Apps in geschlossener Beta",
+      "apps": {
+        "animazingPal": "AnimazingPal",
+        "interactiveStory": "Interactive Story Generator",
+        "musicBot": "Music Bot",
+        "oscBridge": "OSC Bridge",
+        "schnorrbecher": "Schnorrbecher",
+        "sidekick": "Sidekick",
+        "streamMonsters": "Stream Monsters",
+        "talkingHeads": "Talking Heads",
+        "visualFxFrame": "Visual FX Frame WebGPU",
+        "emojiRain": "WebGPU EmojiRain",
+        "weatherControl": "WebGPU Wetterkontrolle"
       }
     },
     "steps": {
@@ -1116,7 +1163,7 @@
     "finalCta": {
       "eyebrow": "DEIN NÄCHSTER STREAM",
       "title": "Mach aus Live-Events ein Erlebnis.",
-      "description": "Starte mit dem LTTH Windows Launcher und richte dein persönliches Live-Control-Center ein. Auch verfügbar für Apple & Linux.",
+      "description": "Starte mit dem LTTH Windows Launcher und richte dein persönliches Live-Control-Center ein. Auch für macOS und Linux verfügbar.",
       "cta": "Downloaden"
     },
     "images": {
@@ -1124,38 +1171,32 @@
       "mascotAlt": "Zwinkerndes PupCid-Maskottchen",
       "flowAlt": "LTTH Flow-Editor",
       "overlayAlt": "LTTH Overlay-Konfiguration"
-    },
-    "closedBeta": {
-      "eyebrow": "CLOSED BETA · KOMMT BALD",
-      "title": "11 Apps in geschlossener Beta",
-      "description": "Diese Apps werden weiterhin lokal entwickelt. Sie sind derzeit nicht öffentlich zum Download verfügbar.",
-      "listLabel": "Apps in geschlossener Beta"
     }
   },
   "webgpuLanding.eyebrow": "OBS + WebGPU",
   "webgpuLanding.title": "Mehr GPU. Mehr Live-Momente.",
   "webgpuLanding.subtitle": "Nutze LTTH-Plugins mit WebGPU-Unterstützung in einer speziell abgestimmten OBS-Version von Loggableim.",
-  "webgpuLanding.primaryCta": "OBS WebGPU herunterladen",
+  "webgpuLanding.primaryCta": "OBS WebGPU-Preview herunterladen",
   "webgpuLanding.secondaryCta": "Plugins ansehen",
-  "webgpuLanding.badge": "Offizielles OBS-WebGPU-Build",
+  "webgpuLanding.badge": "OBS WebGPU Windows-Preview",
   "webgpuLanding.sectionTitle": "Für GPU-Plugins gemacht",
   "webgpuLanding.sectionText": "WebGPU-Plugins entlasten die CPU und bringen flüssige Partikel, Effekte und Overlays direkt in deine Szene.",
   "webgpuLanding.cardRuntimeTitle": "Eigene OBS-Laufzeit",
   "webgpuLanding.cardRuntimeText": "Installiere das WebGPU-Build parallel zu deinem bestehenden OBS und wähle es gezielt für GPU-Overlays.",
   "webgpuLanding.cardPerformanceTitle": "Mehr Reserven für den Stream",
   "webgpuLanding.cardPerformanceText": "Instanziertes Rendering hält große Effektmengen flüssig, während dein Stream stabil bleibt.",
-  "webgpuLanding.cardReadyTitle": "Bereit für LTTH",
-  "webgpuLanding.cardReadyText": "WebGPU Emoji Rain, WebGPU Fireworks und weitere GPU-Effekte sind für diesen Workflow vorbereitet.",
-  "webgpuLanding.stepsTitle": "In drei Schritten startklar",
-  "webgpuLanding.step1Title": "OBS WebGPU installieren",
-  "webgpuLanding.step1Text": "Lade den aktuellen Build aus dem offiziellen GitHub-Repository herunter.",
-  "webgpuLanding.step2Title": "LTTH starten",
-  "webgpuLanding.step2Text": "Starte LTTH und aktiviere die Plugins, die du im Live-Setup brauchst.",
-  "webgpuLanding.step3Title": "Overlay in OBS einfügen",
-  "webgpuLanding.step3Text": "Kopiere die Overlay-URL aus LTTH in deine WebGPU-OBS-Szene.",
+  "webgpuLanding.cardReadyTitle": "Beta-Status",
+  "webgpuLanding.cardReadyText": "WebGPU Emoji Rain ist Closed Beta und nicht öffentlich verfügbar. Als öffentliche Alternative steht Emoji Rain (Canvas) bereit.",
+  "webgpuLanding.stepsTitle": "OBS WebGPU Preview und öffentliche LTTH-Alternative",
+  "webgpuLanding.step1Title": "OBS WebGPU Preview herunterladen (optional)",
+  "webgpuLanding.step1Text": "Das separate Windows-Preview-Build richtet sich an OBS-WebGPU-Experimente und ist kein LTTH-Plugin.",
+  "webgpuLanding.step2Title": "Öffentliches LTTH-Plugin wählen",
+  "webgpuLanding.step2Text": "WebGPU Emoji Rain ist Closed Beta. Emoji Rain (Canvas) ist die öffentliche Alternative.",
+  "webgpuLanding.step3Title": "Canvas-Overlay in OBS einfügen",
+  "webgpuLanding.step3Text": "Füge die Emoji Rain (Canvas)-Overlay-URL als Browserquelle in deine normale OBS-Szene ein; OBS WebGPU ist dafür nicht nötig.",
   "webgpuLanding.note": "Hinweis: Das Build ist ein separates OBS-Programm und wird vom LTTH-Team des Repositories gepflegt.",
   "webgpuLanding.repoCta": "Repository und Releases öffnen",
-  "webgpuLanding.pluginsCta": "WebGPU-Plugins in LTTH",
+  "webgpuLanding.pluginsCta": "Öffentliche LTTH-Plugins ansehen",
   "webgpuLanding.metaDescription": "OBS WebGPU für LTTH-Plugins",
   "install.tagline": "Direkter Windows-Download. macOS und Linux verwenden weiterhin die One-Line-Installer.",
   "install.quick.title": "Schnellstart für Einsteiger",
@@ -1256,7 +1297,6 @@
   "docs.plugin.back": "Alle Plugin-Tutorials",
   "docs.plugin.store-admin.title": "LTTH App Store Admin",
   "docs.plugin.advanced-timer.title": "Advanced Timer",
-  "docs.plugin.animazingpal.title": "AnimazingPal",
   "docs.plugin.api-bridge.title": "API Bridge",
   "docs.plugin.clarityhud.title": "ClarityHUD",
   "docs.plugin.coinbattle.title": "CoinBattle",
@@ -1266,19 +1306,14 @@
   "docs.plugin.fireworks.title": "Fireworks Superplugin (Stable)",
   "docs.plugin.gcce.title": "Global Chat Command Engine",
   "docs.plugin.openshock.title": "Hybridshock",
-  "docs.plugin.interactive-story.title": "Interactive Story Generator",
   "docs.plugin.goals.title": "Live Goals",
   "docs.plugin.game-engine.title": "LTTH Game Engine",
   "docs.plugin.minecraft-connect.title": "Minecraft Connect",
   "docs.plugin.multicam.title": "Multi-Cam Switcher",
-  "docs.plugin.music-bot.title": "Music Bot",
-  "docs.plugin.osc-bridge.title": "OSC-Bridge (VRChat)",
   "docs.plugin.quiz-show.title": "Pup Cid's Little Quiz Show Plugin",
   "docs.plugin.soundboard.title": "Soundboard",
   "docs.plugin.spotlight.title": "Spotlight",
-  "docs.plugin.stream-monsters.title": "Stream Monsters",
   "docs.plugin.stt-ticker.title": "STT Ticker",
-  "docs.plugin.talking-heads.title": "Talking Heads",
   "docs.plugin.tts.title": "Text-to-Speech System",
   "docs.plugin.thermal-printer.title": "Thermal Printer",
   "docs.plugin.toptier.title": "Top Tier",
@@ -1286,7 +1321,6 @@
   "docs.plugin.milestone-leaderboard.title": "Viewer XP",
   "docs.plugin.flame-overlay.title": "Visual FX Frame",
   "docs.plugin.weather-control.title": "Weather Control",
-  "docs.plugin.webgpu-emoji-rain.title": "WebGPU EmojiRain",
   "docs.plugin.webgpu-fireworks.title": "WebGPU Fireworks",
   "docs.hub.metaTitle": "LTTH Dokumentation und Plugin-Tutorials",
   "docs.plugin.contents": "Inhalt",
@@ -1305,7 +1339,6 @@
   "docs.hub.profileBody": "Aktiviere und konfiguriere Plugins zuerst mit Testwerten. Externe Geräte, Konten und LIVE-Ausgaben bleiben bis zur Abnahme deaktiviert.",
   "docs.hub.obsTitle": "3. In OBS übernehmen",
   "docs.hub.obsBody": "Übernimm eine Overlay-URL erst nach einer lokalen Vorschau. Prüfe Auflösung, Sichtbarkeit und Audio in einer Testszene.",
-  "docs.plugin.visual-fx-frame-webgpu.title": "Visual FX Frame WEBGPU",
   "website": {
     "partials": {
       "header": {
@@ -2579,9 +2612,9 @@
           "013": "6 Templates",
           "014": "8 Animationen",
           "015": "WebGPU Emoji Rain",
-          "016": "GPU-beschleunigtes Partikelsystem für Emoji-Regen. Tausende von Emojis fallen gleichzeitig ohne Performance-Einbußen. Trigger bei Gifts und Events.",
+          "016": "Geschlossene Beta – noch nicht öffentlich verfügbar. GPU-beschleunigtes Partikelsystem für Emoji-Regen. Tausende von Emojis fallen gleichzeitig ohne Performance-Einbußen. Trigger bei Gifts und Events.",
           "017": "Talking Heads",
-          "018": "Viewer Rotator mit Custom-Sprites. Zeige aktive Chat-Teilnehmer als animierte Charaktere im Stream. Sprite-Upload und Editor integriert.",
+          "018": "Geschlossene Beta · Noch nicht öffentlich verfügbar. Talking Heads soll aktive Chat-Teilnehmer als animierte Figuren im Stream zeigen. Funktionsumfang und Veröffentlichungstermin stehen noch nicht fest.",
           "019": "Fireworks Overlay",
           "020": "GPU-beschleunigtes Feuerwerk mit Gift-Triggern, Combo-Streaks, Eskalationssystem und WebGL/Canvas Fallback. Custom Shapes, Audio-Effekte, Goal-Finales und Follower-Fireworks.",
           "021": "Flame Overlay",
@@ -2601,12 +2634,12 @@
           "035": "Falling Leaves",
           "036": "Ocean Waves",
           "037": "🌧️ WebGPU Emoji Rain",
-          "038": "Der neue WebGPU Emoji Rain ersetzt das veraltete Emoji-Rain-Plugin durch eine GPU-beschleunigte Implementation mit massiv verbesserter Performance.",
-          "039": "WebGPU-basiertes Rendering für Emoji Rain. Hunderte von Emojis gleichzeitig ohne CPU-Last. Ersetzt das veraltete Canvas-basierte Emoji-Rain-Plugin.",
+          "038": "Geschlossene Beta – noch nicht öffentlich verfügbar. Der neue WebGPU Emoji Rain ersetzt das veraltete Emoji-Rain-Plugin durch eine GPU-beschleunigte Implementation mit massiv verbesserter Performance.",
+          "039": "Geschlossene Beta – noch nicht öffentlich verfügbar. WebGPU-basiertes Rendering für Emoji Rain. Hunderte von Emojis gleichzeitig ohne CPU-Last. Ersetzt das veraltete Canvas-basierte Emoji-Rain-Plugin.",
           "040": "Vollständig konfigurierbar",
-          "041": "Emoji-Auswahl, Fallgeschwindigkeit, Größe, Rotation und Dichte über das Dashboard konfigurierbar. Gift-Trigger für Emoji-Regen-Bursts.",
+          "041": "Geschlossene Beta – noch nicht öffentlich verfügbar. Emoji-Auswahl, Fallgeschwindigkeit, Größe, Rotation und Dichte über das Dashboard konfigurierbar. Gift-Trigger für Emoji-Regen-Bursts.",
           "042": "Event-basierte Trigger",
-          "043": "Starte Emoji Rain durch TikTok-Events: Gifts, Follows, Subscriber-Milestones oder Chat-Commands. Anpassbare Burst-Größe pro Event-Typ.",
+          "043": "Geschlossene Beta – noch nicht öffentlich verfügbar. Starte Emoji Rain durch TikTok-Events: Gifts, Follows, Subscriber-Milestones oder Chat-Commands. Anpassbare Burst-Größe pro Event-Typ.",
           "044": "📊 ClarityHUD & Goals Overlay",
           "045": "Transparentes HUD mit Echtzeit-Stream-Statistiken. Zeigt Viewer-Anzahl, Likes, Gifts, Chat-Aktivität und weitere Metriken direkt im Stream-Overlay.",
           "046": "Goals Overlay",
@@ -2617,7 +2650,9 @@
           "051": "Verbesserte Zahlen-Formatierung",
           "052": "Overlays aktivieren",
           "053": "Mach deinen Stream visuell unwiderstehlich – kostenlos und einfach.",
-          "054": "? Alle Features"
+          "054": "? Alle Features",
+          "055": "Geschlossene Beta · Demnächst",
+          "056": "Geschlossene Beta · Demnächst"
         }
       },
       "plugin-advanced-timer": {
@@ -3688,9 +3723,6 @@
       }
     }
   },
-  "docs.plugin.schnorrbecher.title": "Schnorrbecher",
-  "docs.plugin.webgpu-weather-control.title": "WebGPU Wetterkontrolle",
-  "docs.plugin.sidekick.title": "Sidekick",
   "docs.plugin.breadcrumb.docs": "Dokumentation",
   "docs.plugin.breadcrumb.label": "Brotkrümelnavigation",
   "docs.plugin.definition.purpose": "Zweck und Zielgruppe",

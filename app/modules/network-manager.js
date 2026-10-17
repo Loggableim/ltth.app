@@ -68,18 +68,21 @@ class NetworkManager {
   constructor(db, {
     spawnImpl = defaultSpawn,
     cloudflaredBinaryManager = null,
-    overlayTunnelTimeoutMs = 60_000
+    overlayTunnelTimeoutMs = 60_000,
+    overlayTunnelKillTimeoutMs = 5_000
   } = {}) {
     this.db = db;
     this.spawnImpl = spawnImpl;
     this.cloudflaredBinaryManager = cloudflaredBinaryManager;
     this.overlayTunnelTimeoutMs = overlayTunnelTimeoutMs;
+    this.overlayTunnelKillTimeoutMs = overlayTunnelKillTimeoutMs;
 
     // Runtime state
     this.tunnelProcess = null;
     this.tunnelURL = null;
     this.tunnelStarting = false;
     this.overlayTunnelProcess = null;
+    this.overlayTunnelKillTimers = new WeakMap();
     this.overlayTunnelURL = null;
     this.overlayTunnelStarting = null;
     this.overlayTunnelStartController = null;
@@ -405,6 +408,37 @@ class NetworkManager {
     });
   }
 
+  _terminateOverlayTunnelChild(child, { alreadyExited = false } = {}) {
+    if (!child || (typeof child !== 'object' && typeof child !== 'function') ||
+        alreadyExited || typeof child.kill !== 'function' ||
+        child.exitCode != null || child.signalCode != null ||
+        this.overlayTunnelKillTimers.has(child)) return;
+
+    const clearEscalation = () => {
+      const timer = this.overlayTunnelKillTimers.get(child);
+      if (timer) clearTimeout(timer);
+      this.overlayTunnelKillTimers.delete(child);
+      child.removeListener?.('exit', clearEscalation);
+      child.removeListener?.('close', clearEscalation);
+    };
+    const timer = setTimeout(() => {
+      this.overlayTunnelKillTimers.delete(child);
+      child.removeListener?.('exit', clearEscalation);
+      child.removeListener?.('close', clearEscalation);
+      if (child.exitCode != null || child.signalCode != null) return;
+      try {
+        child.kill('SIGKILL');
+      } catch (_) {}
+    }, this.overlayTunnelKillTimeoutMs);
+    timer.unref?.();
+    this.overlayTunnelKillTimers.set(child, timer);
+    child.once?.('exit', clearEscalation);
+    child.once?.('close', clearEscalation);
+    try {
+      child.kill('SIGTERM');
+    } catch (_) {}
+  }
+
   async _startOverlayQuickTunnel(port, options = {}) {
     const signal = options.signal;
     if (!this.cloudflaredBinaryManager) {
@@ -440,17 +474,13 @@ class NetworkManager {
       let completed = false;
       let output = '';
 
-      const finishError = (code, message) => {
+      const finishError = (code, message, { childExited = false } = {}) => {
         if (completed) return;
         completed = true;
         clearTimeout(timer);
         signal?.removeEventListener?.('abort', cancelStart);
         this.overlayTunnelLastError = message;
-        if (child && !child.killed) {
-          try {
-            child.kill('SIGTERM');
-          } catch (_) {}
-        }
+        this._terminateOverlayTunnelChild(child, { alreadyExited: childExited });
         if (this.overlayTunnelProcess === child) {
           this.overlayTunnelProcess = null;
           this.overlayTunnelURL = null;
@@ -532,7 +562,8 @@ class NetworkManager {
         if (!completed) {
           finishError(
             'OVERLAY_TUNNEL_START_FAILED',
-            'Quick Tunnel process exited before publishing a URL'
+            'Quick Tunnel process exited before publishing a URL',
+            { childExited: true }
           );
           return;
         }
@@ -560,9 +591,7 @@ class NetworkManager {
     this.overlayTunnelURL = null;
     this.overlayTunnelLastError = null;
     if (!child) return;
-    try {
-      child.kill('SIGTERM');
-    } catch (_) {}
+    this._terminateOverlayTunnelChild(child);
     logger.info('Overlay Quick Tunnel stopped.');
   }
 

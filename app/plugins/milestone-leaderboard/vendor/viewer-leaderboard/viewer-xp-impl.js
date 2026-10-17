@@ -87,9 +87,6 @@ function projectPublicLevelUp(username, oldLevel, newLevel, rewards) {
     if (typeof rewards.title === 'string') safeRewards.title = publicText(rewards.title, 80);
     const color = publicColor(rewards.name_color);
     if (color) safeRewards.name_color = color;
-    if (typeof rewards.announcement_message === 'string') safeRewards.announcement_message = publicText(rewards.announcement_message, 160);
-    const animation = rewards.special_effects?.animation;
-    if (['flash', 'gold'].includes(animation)) safeRewards.special_effects = { animation };
     if (Object.keys(safeRewards).length) result.rewards = safeRewards;
   }
   return result;

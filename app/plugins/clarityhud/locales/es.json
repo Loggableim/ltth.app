@@ -150,6 +150,8 @@
         "gift_sent_count": "envió {gift} x{count}",
         "multi_gift_sent": "🎁 Envió {gift} x{count}",
         "message_render_error": "Error al mostrar el mensaje: {message}",
+        "superfan_signal": "Posible señal de Super Fan",
+        "superfan_join_signal": "Posible señal de incorporación al club Super Fan",
         "event": {
           "chat": "Chat",
           "follow": "Siguió",
@@ -202,6 +204,7 @@
       },
       "empty": { "no_additional_streams": "No hay transmisiones adicionales configuradas", "unknown_tab": "Pestaña desconocida", "no_activity_title": "Aún no hay actividad", "no_activity_description": "Los eventos aparecerán aquí a medida que ocurran" },
       "stream": { "fallback": "Transmisión {number}" },
+      "fallback": { "confirm_button": "Confirmar clave API alternativa", "confirm_title": "¿Usar la clave API alternativa?", "confirm_prompt": "Esta transmisión adicional usará una clave API alternativa de LTTH. Continúa solo si estás de acuerdo.", "cancel": "Cancelar", "confirm": "Sí, continuar", "confirm_failed": "No se pudo confirmar la clave alternativa: {message}" },
       "dock": { "chat": "HUD de chat", "full": "HUD de actividad completa", "multi": "HUD multitransmisión", "stream": "Superposición de transmisión" },
       "preset": { "highContrast": "Alto contraste", "visionImpaired": "Discapacidad visual", "dyslexiaFriendly": "Apto para dislexia", "motionSensitive": "Sensible al movimiento" },
       "tab": { "stream_settings": "Configuración de transmisión", "streams": "Transmisiones", "appearance": "Apariencia", "events": "Eventos", "layout": "Diseño", "animation": "Animación", "styling": "Estilo", "accessibility": "Accesibilidad" },

@@ -253,6 +253,28 @@
         let goals = [];
         let socket = null;
         let pendingUtterances = [];
+        let voicesChangedHandler = null;
+        let disposed = false;
+        const socketHandlers = [];
+        const ownedTimeouts = new Set();
+
+        function scheduleOverlayTimeout(callback, delay) {
+            if (disposed) return null;
+            const timeout = setTimeout(() => {
+                ownedTimeouts.delete(timeout);
+                if (!disposed) callback();
+            }, delay);
+            ownedTimeouts.add(timeout);
+            return timeout;
+        }
+
+        function listenToSocket(eventName, handler) {
+            const guardedHandler = (...args) => {
+                if (!disposed) handler(...args);
+            };
+            socket.on(eventName, guardedHandler);
+            socketHandlers.push([eventName, guardedHandler]);
+        }
 
         function zappieOverlayText(key, fallback, params = {}) {
             const translationKey = `plugins.openshock.runtime.overlays.zappiehell.${key}`;
@@ -281,17 +303,20 @@
         }
 
         function triggerFlash(duration = 500) {
+            if (disposed) return;
             const flash = document.getElementById('completionFlash');
             if (!flash) return;
 
             flash.classList.add('active');
-            setTimeout(() => {
+            scheduleOverlayTimeout(() => {
                 flash.classList.remove('active');
             }, duration);
         }
 
         function handleOverlayAnimation(animation = {}) {
-            const duration = animation.duration ?? 500;
+            if (!animation || typeof animation !== 'object' || Array.isArray(animation)) return;
+            const duration = animation.duration === undefined ? 500 : animation.duration;
+            if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 100 || duration > 10000) return;
             triggerFlash(duration);
         }
 
@@ -319,15 +344,23 @@
                     if (pendingUtterances.length > 10) {
                         pendingUtterances.shift();
                     }
-                    if (!speechSynthesis.onvoiceschanged) {
-                        speechSynthesis.onvoiceschanged = () => {
+                    if (!voicesChangedHandler) {
+                        voicesChangedHandler = () => {
+                            if (disposed) {
+                                pendingUtterances = [];
+                                speechSynthesis.onvoiceschanged = null;
+                                voicesChangedHandler = null;
+                                return;
+                            }
                             pendingUtterances.forEach((pending) => {
                                 assignVoice(pending);
                                 speechSynthesis.speak(pending);
                             });
                             pendingUtterances = [];
                             speechSynthesis.onvoiceschanged = null;
+                            voicesChangedHandler = null;
                         };
+                        speechSynthesis.onvoiceschanged = voicesChangedHandler;
                     }
                     return;
                 }
@@ -341,42 +374,43 @@
 
         // Initialize Socket.io connection
         function initSocket() {
+            if (disposed || socket) return;
             socket = io();
 
-            socket.on('connect', () => {
+            listenToSocket('connect', () => {
                 console.log('[ZappieHell] Connected to server');
                 // Request initial state
                 socket.emit('zappiehell:request:state');
             });
 
-            socket.on('disconnect', () => {
+            listenToSocket('disconnect', () => {
                 console.log('[ZappieHell] Disconnected from server');
             });
 
             // Receive initial state
-            socket.on('zappiehell:goals:state', (data) => {
-                console.log('[ZappieHell] Received initial state:', data);
-                updateGoals(data.goals || []);
+            listenToSocket('zappiehell:goals:state', (data) => {
+                console.log('[ZappieHell] Initial goal state received');
+                updateGoals(Array.isArray(data?.goals) ? data.goals : []);
             });
 
             // Receive goal updates
-            socket.on('zappiehell:goals:update', (data) => {
-                console.log('[ZappieHell] Goals updated:', data);
-                updateGoals(data.goals || []);
+            listenToSocket('zappiehell:goals:update', (data) => {
+                console.log('[ZappieHell] Goal update received');
+                updateGoals(Array.isArray(data?.goals) ? data.goals : []);
             });
 
             // Receive goal completion
-            socket.on('zappiehell:goals:completed', (data) => {
-                console.log('[ZappieHell] Goal completed:', data);
-                handleGoalCompletion(data.goal);
+            listenToSocket('zappiehell:goals:completed', (data) => {
+                console.log('[ZappieHell] Goal completion received');
+                if (data?.goal && typeof data.goal === 'object') handleGoalCompletion(data.goal);
             });
 
-            socket.on('zappiehell:overlay:animate', (animation) => {
-                console.log('[ZappieHell] Overlay animation:', animation);
+            listenToSocket('zappiehell:overlay:animate', (animation) => {
+                console.log('[ZappieHell] Overlay animation received');
                 handleOverlayAnimation(animation);
             });
 
-            socket.on('zappiehell:audio:play', (payload) => {
+            listenToSocket('zappiehell:audio:play', (payload) => {
                 console.log('[ZappieHell] Audio step received');
                 handleAudioPlay(payload);
             });
@@ -408,14 +442,14 @@
 
             // Update or create goal cards
             goals.forEach((goal, index) => {
-                let card = document.getElementById(`goal-${goal.id}`);
+                let card = document.getElementById(`goal-${goal.displayToken}`);
 
                 if (!card) {
                     card = createGoalCard(goal);
                     container.appendChild(card);
 
                     // Trigger animation after a short delay
-                    setTimeout(() => {
+                    scheduleOverlayTimeout(() => {
                         card.classList.add('visible');
                     }, index * 100);
                 } else {
@@ -427,13 +461,13 @@
             Array.from(container.children).forEach(child => {
                 if (child.id === 'noGoals') return;
 
-                const goalId = child.id.replace('goal-', '');
-                const exists = goals.some(g => g.id === goalId);
+                const displayToken = child.id.replace('goal-', '');
+                const exists = goals.some(g => g.displayToken === displayToken);
 
                 if (!exists) {
                     child.style.opacity = '0';
                     child.style.transform = 'translateX(100px)';
-                    setTimeout(() => child.remove(), 500);
+                    scheduleOverlayTimeout(() => child.remove(), 500);
                 }
             });
         }
@@ -442,7 +476,7 @@
         function createGoalCard(goal) {
             const card = document.createElement('div');
             card.className = 'goal-card';
-            card.id = `goal-${goal.id}`;
+            card.id = `goal-${goal.displayToken}`;
 
             const { percentage, isCompleted, currentCoins, targetCoins, remainingCoins } = getGoalProgress(goal);
 
@@ -512,7 +546,7 @@
 
         // Handle goal completion
         function handleGoalCompletion(goal) {
-            console.log('[ZappieHell] Handling completion for:', goal.name);
+            console.log('[ZappieHell] Handling goal completion');
 
             // Flash effect
             triggerFlash();
@@ -521,7 +555,7 @@
             createParticles(goal);
 
             // Update the goal card if it exists
-            const card = document.getElementById(`goal-${goal.id}`);
+            const card = document.getElementById(`goal-${goal.displayToken}`);
             if (card) {
                 card.classList.add('completed');
             }
@@ -544,7 +578,7 @@
                 particlesContainer.appendChild(particle);
 
                 // Remove particle after animation
-                setTimeout(() => {
+                scheduleOverlayTimeout(() => {
                     particle.remove();
                 }, 2500);
             }
@@ -562,18 +596,51 @@
             return div.innerHTML;
         }
 
-        // Initialize on load
-        window.addEventListener('load', () => {
+        function initializeOnLoad() {
+            if (disposed) return;
             console.log('[ZappieHell] Overlay loaded');
             initSocket();
-        });
+        }
 
-        // Cleanup on unload
-        window.addEventListener('beforeunload', () => {
+        function cleanup() {
+            if (disposed) return;
+            disposed = true;
+            for (const timeout of ownedTimeouts) clearTimeout(timeout);
+            ownedTimeouts.clear();
+
             if (socket) {
+                for (const [eventName, handler] of socketHandlers) {
+                    if (typeof socket.off === 'function') socket.off(eventName, handler);
+                    else if (typeof socket.removeListener === 'function') socket.removeListener(eventName, handler);
+                }
+                socketHandlers.length = 0;
                 socket.disconnect();
+                socket = null;
             }
-        });
+
+            if (voicesChangedHandler && window.speechSynthesis?.onvoiceschanged === voicesChangedHandler) {
+                window.speechSynthesis.onvoiceschanged = null;
+            }
+            voicesChangedHandler = null;
+            pendingUtterances = [];
+            window.removeEventListener('load', initializeOnLoad);
+            window.removeEventListener('pagehide', handlePageHide);
+            window.removeEventListener('pageshow', handlePageShow);
+        }
+
+        function handlePageHide(event) {
+            if (event?.persisted) return;
+            cleanup();
+        }
+
+        function handlePageShow(event) {
+            if (disposed || !event?.persisted) return;
+            if (socket && !socket.connected) socket.connect();
+        }
+
+        window.addEventListener('load', initializeOnLoad);
+        window.addEventListener('pagehide', handlePageHide);
+        window.addEventListener('pageshow', handlePageShow);
     </script>
 </body>
 </html>

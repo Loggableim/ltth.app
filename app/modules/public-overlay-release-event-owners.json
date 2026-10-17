@@ -120,6 +120,10 @@
         "owner": "schnorrbecher",
         "ownership": "proven-static"
       },
+      "clarityhud.update.superfan-display": {
+        "owner": "clarityhud",
+        "ownership": "proven-static"
+      },
       "sidekick:public-status": {
         "owner": "sidekick",
         "ownership": "reserved-exclusive-namespace"
@@ -479,6 +483,22 @@
       "webgpu-weather:trigger": {
         "owner": "webgpu-weather-control",
         "ownership": "proven-static"
+      },
+      "viewer-xp:public-profile": {
+        "owner": "milestone-leaderboard",
+        "ownership": "proven-static"
+      },
+      "viewer-xp:public-update": {
+        "owner": "milestone-leaderboard",
+        "ownership": "proven-static"
+      },
+      "viewer-xp:public-level-up": {
+        "owner": "milestone-leaderboard",
+        "ownership": "proven-static"
+      },
+      "viewer-xp:public-leaderboard": {
+        "owner": "milestone-leaderboard",
+        "ownership": "proven-static"
       }
     },
     "incoming": {
@@ -516,6 +536,14 @@
       },
       "webgpu-weather:overlay-state": {
         "owner": "webgpu-weather-control",
+        "ownership": "proven-static"
+      },
+      "viewer-xp:public-profile:request": {
+        "owner": "milestone-leaderboard",
+        "ownership": "proven-static"
+      },
+      "viewer-xp:public-leaderboard:request": {
+        "owner": "milestone-leaderboard",
         "ownership": "proven-static"
       }
     }

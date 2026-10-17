@@ -10,25 +10,17 @@
 const fs = require('fs').promises;
 const fsSync = require('fs');
 const path = require('path');
-const axios = require('axios');
-const https = require('https');
 const crypto = require('crypto');
 
 class AudioCacheManager {
-    constructor(db, logger, cacheDir) {
+    constructor(db, logger, cacheDir, requestAudio = null) {
         this.db = db;
         this.logger = logger || console;
         this.cacheDir = cacheDir || path.join(__dirname, '../../data/soundboard-cache/sounds');
+        this.requestAudio = requestAudio;
         this.maxFileSize = 10 * 1024 * 1024; // 10MB
         this.maxCacheSize = 1024 * 1024 * 1024; // 1GB
         this.cleanupAge = 42 * 24 * 60 * 60 * 1000; // 42 days (6 weeks) in milliseconds
-        
-        // Create HTTPS agent for better compatibility with packaged Electron apps
-        this.httpsAgent = new https.Agent({
-            rejectUnauthorized: true,
-            keepAlive: true,
-            timeout: 30000
-        });
         
         this._ensureCacheDirectory();
         this._initDatabase();
@@ -136,14 +128,16 @@ class AudioCacheManager {
             const fileName = `${urlHash}.mp3`;
             const filePath = path.join(this.cacheDir, fileName);
 
-            this.logger.info(`[AudioCache] Downloading: ${url}`);
+            this.logger.info('[AudioCache] Downloading approved MyInstants audio');
 
-            // Download file with HTTPS agent for better Electron compatibility
-            const response = await axios.get(url, {
+            // The injected request handler validates the URL and each redirect.
+            if (typeof this.requestAudio !== 'function') {
+                throw new Error('A validated audio request handler is required');
+            }
+            const response = await this.requestAudio(url, {
                 responseType: 'arraybuffer',
                 timeout: 30000,
                 maxContentLength: this.maxFileSize,
-                httpsAgent: this.httpsAgent,
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                     'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.8'

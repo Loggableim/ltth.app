@@ -6,7 +6,7 @@ const request = require('supertest');
 
 const SchnorrbecherPlugin = require('../main');
 
-function createApi(dataDir) {
+function createApi(dataDir, legacyDir = dataDir) {
   const app = express();
   app.use(express.json());
   const routes = express.Router();
@@ -28,6 +28,7 @@ function createApi(dataDir) {
     getSocketIO: () => ({ emit: (event, payload) => emissions.push({ event, payload }) }),
     emit: (event, payload) => emissions.push({ event, payload }),
     getPluginDataDir: () => dataDir,
+    getConfigPathManager: () => ({ getPluginDataDir: () => legacyDir }),
     ensurePluginDataDir: () => {},
     getDatabase: () => ({
       getGift: id => id === 'rose' ? { id: 'rose', name: 'Rose', image_url: 'https://catalog.example/rose.png' } : null,
@@ -110,6 +111,49 @@ describe('Schnorrbecher plugin integration', () => {
           giftImage: 'https://catalog.example/rose.png'
         });
       });
+  });
+
+  test('previews and explicitly imports legacy config while preserving the shared original', async () => {
+    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'schnorrbecher-legacy-'));
+    const legacyConfig = path.join(legacyDir, 'coin-jar-config.json');
+    const legacyState = path.join(legacyDir, 'coin-jar-state.json');
+    fs.writeFileSync(legacyConfig, JSON.stringify({ jarLabel: 'Legacy retained', persistenceMode: 'session' }));
+    fs.writeFileSync(legacyState, JSON.stringify({ totalCoinValue: 987 }));
+    plugin.destroy();
+    api = createApi(dataDir, legacyDir);
+    plugin = new SchnorrbecherPlugin(api);
+    await plugin.init();
+
+    const preview = await request(api.app).get('/api/coin-jar/legacy-data/preview').expect(200);
+    expect(preview.body.config.canImport).toBe(true);
+    expect(preview.body.state.importAllowed).toBe(false);
+    await request(api.app).post('/api/coin-jar/legacy-data/import')
+      .send({ confirm: true, includeConfig: false, includePersistentState: true }).expect(409);
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'coin-jar-state.json'), 'utf8')).totalCoinValue).toBe(0);
+    await request(api.app).post('/api/coin-jar/legacy-data/import')
+      .send({ confirm: true, includeConfig: true, includePersistentState: false }).expect(200);
+    expect(JSON.parse(fs.readFileSync(path.join(dataDir, 'coin-jar-config.json'), 'utf8')).jarLabel).toBe('Legacy retained');
+    expect(fs.readFileSync(legacyConfig, 'utf8')).toContain('Legacy retained');
+    fs.rmSync(legacyDir, { recursive: true, force: true });
+  });
+
+  test('imports explicitly selected persistent state over only a verified empty initialization file', async () => {
+    const legacyDir = fs.mkdtempSync(path.join(os.tmpdir(), 'schnorrbecher-persistent-legacy-'));
+    fs.writeFileSync(path.join(legacyDir, 'coin-jar-config.json'), JSON.stringify({ jarLabel: 'Persistent legacy', persistenceMode: 'persistent' }));
+    fs.writeFileSync(path.join(legacyDir, 'coin-jar-state.json'), JSON.stringify({ totalCoinValue: 321, visualCoinCount: 4 }));
+    plugin.destroy();
+    api = createApi(dataDir, legacyDir);
+    plugin = new SchnorrbecherPlugin(api);
+    await plugin.init();
+
+    const preview = await request(api.app).get('/api/coin-jar/legacy-data/preview').expect(200);
+    expect(preview.body.state.importAllowed).toBe(true);
+    expect(preview.body.state.targetIsInitializedEmpty).toBe(true);
+    await request(api.app).post('/api/coin-jar/legacy-data/import')
+      .send({ confirm: true, includeConfig: true, includePersistentState: true }).expect(200);
+    expect(plugin.engine.state.totalCoinValue).toBe(321);
+    expect(JSON.parse(fs.readFileSync(path.join(legacyDir, 'coin-jar-state.json'), 'utf8')).totalCoinValue).toBe(321);
+    fs.rmSync(legacyDir, { recursive: true, force: true });
   });
 
   test('sends state to a reconnecting overlay and routes local socket commands through the engine', () => {

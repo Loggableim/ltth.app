@@ -1,7 +1,36 @@
 {
   "plugins": {
     "schnorrbecher": {
-      "title": "Schnorrbecher"
+      "title": "Schnorrbecher",
+      "legacy": {
+        "title": "Datos heredados compartidos",
+        "status": "Los datos compartidos nunca se asignan automáticamente a un perfil.",
+        "previewButton": "Revisar importación heredada",
+        "config": "Importar configuración",
+        "persistentState": "Importar estado persistente (solo en modo persistente)",
+        "importButton": "Importar datos seleccionados a este perfil",
+        "found": "Se encontraron datos heredados. Perfil de destino: {profile}. Archivos: configuración {config}, estado {state}. Se conserva el origen.",
+        "activeProfile": "perfil activo",
+        "yes": "sí",
+        "no": "no",
+        "available": "disponible",
+        "conflict": "el destino existe o el origen no es válido",
+        "missing": "no disponible",
+        "stateValue": "Valor de monedas: {value}. {note}",
+        "preview": "Configuración: {config}. Estado: {state}.",
+        "selectAtLeastOne": "Selecciona al menos una sección importable.",
+        "confirm": "¿Copiar los datos heredados seleccionados a este perfil? Se conservan los archivos existentes y el origen.",
+        "complete": "Datos heredados importados. Se conserva el origen."
+      },
+      "labels": {
+        "status": "Estado actual",
+        "subtitle": "Vaso de regalos de TikTok LIVE para fuentes de navegador OBS",
+        "connection": "Conexión",
+        "livestream": "Directo",
+        "totalValue": "Valor total",
+        "physicalIcons": "Iconos físicos",
+        "spawnQueue": "Cola de aparición"
+      }
     }
   }
 }

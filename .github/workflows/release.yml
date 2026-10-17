@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   validate_release:
@@ -15,12 +15,13 @@ jobs:
 
     steps:
       - name: Checkout full tag history
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
 
@@ -44,13 +45,21 @@ jobs:
             --validate-release-metadata
 
   build_windows_release_assets:
-    name: Validate Windows launcher asset
+    name: Build and validate Windows launcher
     runs-on: windows-latest
     needs: validate_release
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Go 1.24.10
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.24.10'
+          cache-dependency-path: build-src/go.sum
 
       - name: Extract version from tag
         id: version
@@ -59,48 +68,65 @@ jobs:
           VERSION="${GITHUB_REF#refs/tags/v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Verify signed launcher asset
+      - name: Build launcher from source
+        working-directory: build-src
+        shell: powershell
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOFLAGS: '-mod=readonly'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $goVersion = (go version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $goVersion -cne 'go version go1.24.10 windows/amd64') {
+            throw "Expected exact Go 1.24.10 windows/amd64, received: $goVersion"
+          }
+          $candidateDir = Join-Path $env:RUNNER_TEMP 'launcher-candidate'
+          New-Item -ItemType Directory -Force -Path $candidateDir | Out-Null
+          $candidatePath = Join-Path $candidateDir 'launcher.exe'
+          go build -trimpath -buildvcs=false -ldflags '-H windowsgui -s -w' -o $candidatePath .
+          if ($LASTEXITCODE -ne 0) { throw 'Source-built launcher candidate failed.' }
+
+      - name: Run launcher Go tests
+        working-directory: build-src
+        shell: powershell
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOFLAGS: '-mod=readonly'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go test ./...
+          if ($LASTEXITCODE -ne 0) { throw 'Launcher Go tests failed.' }
+
+      - name: Write unsigned source candidate manifest
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not (Test-Path launcher.exe)) {
-            throw 'Missing launcher.exe in repository root.'
-          }
-          $signature = Get-AuthenticodeSignature launcher.exe
-          if ($signature.Status -ne 'Valid') {
-            throw "launcher.exe is not signed correctly: $($signature.StatusMessage)"
-          }
+          $candidatePath = Join-Path $env:RUNNER_TEMP 'launcher-candidate\launcher.exe'
+          & "$env:GITHUB_WORKSPACE\scripts\write-launcher-candidate-manifest.ps1" `
+            -CandidatePath $candidatePath `
+            -ManifestPath (Join-Path $env:RUNNER_TEMP 'launcher-candidate\launcher-candidate.json') `
+            -Version '${{ steps.version.outputs.version }}' `
+            -Tag $env:GITHUB_REF_NAME `
+            -CommitSha $env:GITHUB_SHA `
+            -SourceRunId $env:GITHUB_RUN_ID `
+            -SourceWorkflow '.github/workflows/release.yml' `
+            -SourceEvent $env:GITHUB_EVENT_NAME `
+            -SourceRef $env:GITHUB_REF
+          if ($LASTEXITCODE -ne 0) { throw 'Unsigned launcher candidate manifest failed.' }
 
-      - name: Write launcher release metadata
-        shell: powershell
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $launcher = Get-Item -LiteralPath launcher.exe
-          $sha256 = (Get-FileHash -LiteralPath launcher.exe -Algorithm SHA256).Hash.ToLowerInvariant()
-          $manifest = @"
-          {
-            "schema": 1,
-            "component": "launcher.exe",
-            "version": "${{ steps.version.outputs.version }}",
-            "tag": "$env:GITHUB_REF_NAME",
-            "commitSha": "$env:GITHUB_SHA",
-            "bytes": $($launcher.Length),
-            "sha256": "$sha256"
-          }
-          "@
-          [System.IO.File]::WriteAllText(
-            (Join-Path $PWD 'launcher-release.json'),
-            ($manifest + [Environment]::NewLine),
-            (New-Object System.Text.UTF8Encoding($false))
-          )
-
-      - name: Upload release assets
-        uses: actions/upload-artifact@v4
+      - name: Preserve unsigned candidate for authorized local signing
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: release-assets
+          name: launcher-candidate
           path: |
-            launcher.exe
-            launcher-release.json
+            ${{ runner.temp }}/launcher-candidate/launcher.exe
+            ${{ runner.temp }}/launcher-candidate/launcher-candidate.json
+          if-no-files-found: error
+          retention-days: 90
 
   build_app_release_asset:
     name: Build immutable app release asset
@@ -109,10 +135,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: '3.11'
 
@@ -130,69 +158,32 @@ jobs:
             --commit-sha "$GITHUB_SHA"
 
       - name: Upload app release assets
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: app-release-assets
           path: |
             ${{ runner.temp }}/app-release-assets/ltth_latest.zip
             ${{ runner.temp }}/app-release-assets/ltth_latest.json
           compression-level: 0
+          if-no-files-found: error
+          retention-days: 90
 
-  publish_release:
-    name: Publish GitHub release
+
+  handoff_ready:
+    name: Await local launcher signing handoff
     runs-on: ubuntu-latest
     needs: [build_windows_release_assets, build_app_release_asset]
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Extract version from tag
-        id: version
+      - name: Report commit-bound local handoff
+        shell: bash
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Extract changelog for this version
-        run: |
-          VERSION=${{ steps.version.outputs.VERSION }}
-          CHANGELOG=$(awk "/## \[$VERSION\]/,/## \[/{if(/## \[/ && !/## \[$VERSION\]/)exit;print}" CHANGELOG.md | sed '1d')
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="See [CHANGELOG.md](CHANGELOG.md) for details."
-          fi
-          echo "$CHANGELOG" > release-notes.md
-
-      - name: Download built assets
-        uses: actions/download-artifact@v4
-        with:
-          name: release-assets
-          path: .
-
-      - name: Download app release assets
-        uses: actions/download-artifact@v4
-        with:
-          name: app-release-assets
-          path: .
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.VERSION }}
-          name: Stable release v${{ steps.version.outputs.VERSION }}
-          body_path: release-notes.md
-          files: |
-            launcher.exe
-            launcher-release.json
-            ltth_latest.zip
-            ltth_latest.json
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release created successfully
-        run: |
-          echo "Stable release v${{ steps.version.outputs.VERSION }} published with immutable launcher and app assets."
+          {
+            echo '## Launcher signing handoff required'
+            echo
+            echo "Unsigned candidate artifact: launcher-candidate (source run $GITHUB_RUN_ID, commit $GITHUB_SHA)."
+            echo 'Create the source receipt with: python scripts/verify_launcher_source_run.py --repository Loggableim/ltth.app --run-id <source-run-id> --commit-sha <source-commit> --receipt-output launcher-source-run-receipt.json (GH_TOKEN required).'
+            echo 'The local signing helper requires that receipt and a clean pinned Go 1.24.10 source rebuild before it can call SignTool.'
+            echo 'After local signing, commit the validated folder under launcher-release-handoff/<source-commit>/<tag> on a handoff ref.'
+            echo 'Then dispatch Publish Signed Launcher Handoff with this source run ID, source commit, handoff commit and tag.'
+            echo 'No release is published by this source-build workflow.'
+          } >> "$GITHUB_STEP_SUMMARY"

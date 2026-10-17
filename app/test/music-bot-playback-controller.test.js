@@ -820,13 +820,17 @@ describe('Music Bot lifecycle-safe playback controller', () => {
     await controller.play({ id: 'active', title: 'Active', url: 'active.mp3' });
 
     let settled = false;
-    const stop = controller.stop().then(() => { settled = true; });
+    const stop = controller.stop().then(
+      () => { settled = true; return null; },
+      (error) => { settled = true; return error; }
+    );
     await flushPromises();
     expect(settled).toBe(false);
 
     await jest.advanceTimersByTimeAsync(2000);
-    await stop;
+    const error = await stop;
     expect(settled).toBe(true);
+    expect(error).toMatchObject({ message: 'Playback slot cleanup timed out after 2000ms' });
     expect(controller.getSnapshot().slots).toEqual({ A: null, B: null });
   });
 
@@ -979,6 +983,64 @@ describe('Music Bot lifecycle-safe playback controller', () => {
 describe('Music Bot playback engine lifecycle hardening', () => {
   beforeEach(() => {
     spawn.mockReset();
+  });
+
+  test('getPosition resolves only its IPC response and removes its data listener', async () => {
+    jest.useFakeTimers();
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = new EventEmitter();
+    socket.destroyed = false;
+    socket.write = jest.fn((line, callback) => {
+      socket.request = JSON.parse(line);
+      callback();
+    });
+    engine.socket = socket;
+    engine.state = 'playing';
+    const baselineListeners = socket.listenerCount('data');
+
+    const position = engine.getPosition({ timeoutMs: 250 });
+    expect(socket.request.command).toEqual(['get_property', 'time-pos']);
+    socket.emit('data', Buffer.from(`${JSON.stringify({ request_id: socket.request.request_id + 1, data: 99 })}\n`));
+    expect(socket.listenerCount('data')).toBe(baselineListeners + 1);
+    socket.emit('data', Buffer.from(`${JSON.stringify({ request_id: socket.request.request_id, data: 23.5 })}\n`));
+
+    await expect(position).resolves.toBe(23.5);
+    expect(socket.listenerCount('data')).toBe(baselineListeners);
+    await jest.advanceTimersByTimeAsync(300);
+  });
+
+  test('getPosition removes its listener when IPC response times out', async () => {
+    jest.useFakeTimers();
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = new EventEmitter();
+    socket.destroyed = false;
+    socket.write = jest.fn((_line, callback) => callback());
+    engine.socket = socket;
+    engine.state = 'playing';
+    const baselineListeners = socket.listenerCount('data');
+
+    const position = engine.getPosition({ timeoutMs: 125 });
+    const assertion = expect(position).rejects.toThrow('mpv did not acknowledge command: get_property');
+    await jest.advanceTimersByTimeAsync(125);
+    await assertion;
+
+    expect(socket.listenerCount('data')).toBe(baselineListeners);
+  });
+
+  test('getPosition removes its listener when socket write fails', async () => {
+    jest.useFakeTimers();
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const socket = new EventEmitter();
+    socket.destroyed = false;
+    socket.write = jest.fn((_line, callback) => callback(new Error('write failed')));
+    engine.socket = socket;
+    engine.state = 'playing';
+    const baselineListeners = socket.listenerCount('data');
+
+    await expect(engine.getPosition({ timeoutMs: 125 })).rejects.toThrow('write failed');
+
+    expect(socket.listenerCount('data')).toBe(baselineListeners);
+    await jest.advanceTimersByTimeAsync(125);
   });
 
   test('counts the first heartbeat failure without restarting playback', async () => {
@@ -1334,7 +1396,9 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     engine._sendCommand = jest.fn();
     const terminate = jest.spyOn(engine, '_terminateProcess');
 
-    await engine.shutdown();
+    await expect(engine.shutdown()).rejects.toMatchObject({
+      code: 'MPV_SHUTDOWN_UNOWNED_PROCESS'
+    });
 
     expect(engine._sendCommand).not.toHaveBeenCalled();
     expect(terminate).not.toHaveBeenCalled();
@@ -1485,6 +1549,82 @@ describe('Music Bot playback engine lifecycle hardening', () => {
     child.emit('close', 0);
     await shutdown;
     expect(settled).toBe(true);
+  });
+
+  test.each([
+    ['reports an unconfirmed MPV close', async () => false, 'MPV_SHUTDOWN_TIMEOUT'],
+    ['propagates an MPV termination error', async () => {
+      throw Object.assign(new Error('termination failed'), { code: 'TASKKILL_FAILED' });
+    }, 'TASKKILL_FAILED']
+  ])('shutdown %s to its caller', async (_label, terminate, expectedCode) => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const child = Object.assign(new EventEmitter(), {
+      pid: 7474,
+      exitCode: null,
+      kill: jest.fn()
+    });
+    engine.process = child;
+    engine._ownedPids.add(child.pid);
+    engine._terminateProcess = jest.fn(terminate);
+
+    await expect(engine.shutdown()).rejects.toMatchObject({
+      code: expectedCode
+    });
+    expect(engine.process).toBe(child);
+    expect(engine._destroyed).toBe(false);
+  });
+
+  test('playback engine retries shutdown through the same owned child handle', async () => {
+    const engine = new PlaybackEngine({ defaultVolume: 50 }, { log: jest.fn() });
+    const child = Object.assign(new EventEmitter(), {
+      pid: 7575,
+      exitCode: null,
+      signalCode: null,
+      kill: jest.fn()
+    });
+    engine.process = child;
+    engine._ownedPids.add(child.pid);
+    engine._terminateProcess = jest.fn()
+      .mockResolvedValueOnce(false)
+      .mockImplementationOnce(async ownedChild => {
+        ownedChild.exitCode = 0;
+        ownedChild.emit('close', 0, null);
+        return true;
+      });
+
+    await expect(engine.shutdown()).rejects.toMatchObject({ code: 'MPV_SHUTDOWN_TIMEOUT' });
+    expect(engine.process).toBe(child);
+    expect(engine._destroyed).toBe(false);
+
+    await engine.shutdown();
+
+    expect(engine._terminateProcess).toHaveBeenCalledTimes(2);
+    expect(engine._terminateProcess.mock.calls[0][0]).toBe(child);
+    expect(engine._terminateProcess.mock.calls[1][0]).toBe(child);
+    expect(engine.process).toBeNull();
+    expect(engine._destroyed).toBe(true);
+  });
+
+  test('playback controller retries cleanup through the same owned slot', async () => {
+    let attempts = 0;
+    const engine = new FakeEngine('A', {
+      shutdown: async () => {
+        attempts += 1;
+        if (attempts === 1) throw new Error('MPV close timed out');
+      }
+    });
+    const { controller } = createHarness({ engines: [engine] });
+    await controller.play({ id: 'owned-track', localPath: 'fixture.wav' });
+
+    await expect(controller.shutdown()).rejects.toThrow('MPV close timed out');
+    expect(controller.lifecycle).toBe('destroying');
+    expect(controller._cleanupPendingSlots.get('A').engine).toBe(engine);
+
+    await controller.shutdown();
+
+    expect(attempts).toBe(2);
+    expect(controller._cleanupPendingSlots.size).toBe(0);
+    expect(controller.lifecycle).toBe('destroyed');
   });
 
   test('probes MPV diagnostics without exposing a media URL or IPC path', async () => {

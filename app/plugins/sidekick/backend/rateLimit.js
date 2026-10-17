@@ -241,7 +241,9 @@ class RateLimitManager {
     this.nextGlobalAllowed = 0;
     
     // Cleanup interval
-    this.cleanupInterval = setInterval(() => this.cooldowns.cleanup(), 60000);
+    this.cleanupInterval = this.api?.isDocsCapture === true
+      ? null
+      : setInterval(() => this.cooldowns.cleanup(), 60000);
   }
   
   /**

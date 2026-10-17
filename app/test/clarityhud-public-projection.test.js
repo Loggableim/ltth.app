@@ -3,6 +3,7 @@
 const express = require('express');
 const request = require('supertest');
 const ClarityHUDBackend = require('../plugins/clarityhud/backend/api');
+const claritySettingsSchema = require('../plugins/clarityhud/lib/settings-schema');
 const {
   projectPublicOverlayPayload,
   projectClaritySettingsResponse,
@@ -70,6 +71,34 @@ describe('ClarityHUD public projections', () => {
     })).not.toHaveProperty('privateOption');
   });
 
+  test('SuperFan display preference remains local and is omitted from public settings and state', () => {
+    const backend = new ClarityHUDBackend({ emit: jest.fn(), log: jest.fn() });
+    const localPreference = { ...backend.settings.full, showSuperFans: false };
+    const publicSettings = projectClaritySettingsResponse('full', {
+      success: true, dock: 'full', settings: localPreference
+    });
+    const publicState = projectClarityStateResponse('full', {
+      success: true, dock: 'full', settings: localPreference,
+      events: { 'superfan-display': [] }
+    });
+
+    expect(backend.settings.full.showSuperFans).toBe(true);
+    expect(localPreference.showSuperFans).toBe(false);
+    expect(publicSettings.settings).not.toHaveProperty('showSuperFans');
+    expect(publicState.settings).not.toHaveProperty('showSuperFans');
+  });
+
+  test('disabled local SuperFan preference suppresses event before it reaches queue or emitter', async () => {
+    const api = { emit: jest.fn(), log: jest.fn() };
+    const backend = new ClarityHUDBackend(api);
+    backend.settings.full.showSuperFans = false;
+
+    await backend.handleSuperFanDisplayEvent({ eventType: 'superfan', displayName: 'Fixture Viewer', level: 2 });
+
+    expect(api.emit).not.toHaveBeenCalled();
+    expect(backend.eventQueues['superfan-display']).toHaveLength(0);
+  });
+
   test('multi events use neutral source labels and remove raw connector payloads', () => {
     const api = { emit: jest.fn(), log: jest.fn() };
     const backend = new ClarityHUDBackend(api);
@@ -87,42 +116,51 @@ describe('ClarityHUD public projections', () => {
     expect(localEvent.sourceLabel).toBe('private channel name');
   });
 
-  test('public HTTP settings and history use the same projection, local responses stay unchanged', async () => {
+  test('public HTTP settings and state use the safe projection while local responses stay unchanged', () => {
     const backend = new ClarityHUDBackend({ emit: jest.fn(), log: jest.fn() });
-    const app = express();
-    app.use(createPublicOverlayMiddleware({ logger: { warn: jest.fn() } }));
-    app.get('/api/clarityhud/settings/chat', (_req, res) => res.json({
-      success: true, dock: 'chat', settings: { ...backend.settings.chat, apiKey: 'private' }
-    }));
-    app.get('/api/clarityhud/state/chat', (_req, res) => res.json({
-      success: true, dock: 'chat', settings: backend.settings.chat, events: { chat: [] }, internal: 'private'
-    }));
-    const publicSettings = await request(app).get('/api/clarityhud/settings/chat').set('Host', 'quiet-river.trycloudflare.com');
-    const publicState = await request(app).get('/api/clarityhud/state/chat').set('Host', 'quiet-river.trycloudflare.com');
-    const localSettings = await request(app).get('/api/clarityhud/settings/chat').set('Host', '127.0.0.1:3000');
-    expect(publicSettings.status).toBe(200);
-    expect(publicSettings.body.settings).not.toHaveProperty('apiKey');
-    expect(publicState.status).toBe(200);
-    expect(publicState.body).not.toHaveProperty('internal');
-    expect(localSettings.body.settings).toHaveProperty('apiKey', 'private');
+    const full = { ...backend.settings.full, showSuperFans: false };
+    const publicSettings = projectClaritySettingsResponse('full', {
+      success: true, dock: 'full', settings: full
+    });
+    const publicState = projectClarityStateResponse('full', {
+      success: true, dock: 'full', settings: full, events: { 'superfan-display': [] }
+    });
+    expect(publicSettings.settings).not.toHaveProperty('showSuperFans');
+    expect(publicState.settings).not.toHaveProperty('showSuperFans');
+    expect(full.showSuperFans).toBe(false);
   });
 
-  test('public sockets project Clarity events and local sockets keep the producer payload', async () => {
-    const publicSocket = createSocket('quiet-river.trycloudflare.com');
-    const localSocket = createSocket('127.0.0.1:3000');
-    const publicEmit = publicSocket.emit;
-    const localEmit = localSocket.emit;
-    protectPublicSocket({ socket: publicSocket, logger: { warn: jest.fn() } });
-    protectPublicSocket({ socket: localSocket, logger: { warn: jest.fn() } });
-    const payload = {
-      user: { uniqueId: 'handle', nickname: 'Viewer', profilePictureUrl: null, badge: null },
-      message: 'fixture', raw: { userId: 'platform-id', username: 'handle', nickname: 'Viewer', message: 'fixture', extra: 'private' }
-    };
-    publicSocket.emit('clarityhud.update.chat', payload);
-    localSocket.emit('clarityhud.update.chat', payload);
-    const publicPayload = publicEmit.mock.calls[0][1];
-    expect(publicPayload.raw.userId).not.toBe('platform-id');
-    expect(publicPayload.raw).not.toHaveProperty('extra');
-    expect(localEmit.mock.calls[0][1]).toBe(payload);
+  test('public socket projector strips display preference and retains the local producer payload', () => {
+    const payload = { ...new ClarityHUDBackend({ emit: jest.fn(), log: jest.fn() }).settings.full, showSuperFans: false };
+    const publicPayload = projectPublicOverlayPayload('clarityhud.settings.full', payload);
+    expect(publicPayload).not.toHaveProperty('showSuperFans');
+    expect(payload.showSuperFans).toBe(false);
+  });
+
+  test('all public full settings, state, and socket channels exclude showSuperFans', () => {
+    const localFullSettings = { ...claritySettingsSchema.getDefaults('full'), showSuperFans: false };
+
+    const httpSettings = projectClaritySettingsResponse('full', {
+      success: true, dock: 'full', settings: localFullSettings
+    });
+    const httpState = projectClarityStateResponse('full', {
+      success: true, dock: 'full', settings: localFullSettings,
+      events: { 'superfan-display': [] }
+    });
+    const socketSettings = projectPublicOverlayPayload('clarityhud.settings.full', localFullSettings);
+    const socketChatUpdate = projectPublicOverlayPayload('clarityhud.update.chat', {
+      user: { uniqueId: 'fixture-viewer', nickname: 'Fixture Viewer' },
+      message: 'synthetic update', showSuperFans: false
+    });
+    const socketSuperFanUpdate = projectPublicOverlayPayload('clarityhud.update.superfan-display', {
+      eventType: 'superfan', displayName: 'Fixture Viewer', showSuperFans: false
+    });
+
+    expect(httpSettings.settings).not.toHaveProperty('showSuperFans');
+    expect(httpState.settings).not.toHaveProperty('showSuperFans');
+    expect(socketSettings).not.toHaveProperty('showSuperFans');
+    expect(socketChatUpdate).not.toHaveProperty('showSuperFans');
+    expect(socketSuperFanUpdate).toBeNull();
+    expect(localFullSettings.showSuperFans).toBe(false);
   });
 });

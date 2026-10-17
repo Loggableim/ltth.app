@@ -85,7 +85,6 @@ This glossary ensures consistent terminology across:
 | English | Deutsch | Español | Français |
 |---------|---------|---------|----------|
 | Advanced Timer | Erweiterter Timer | Temporizador Avanzado | Minuteur Avancé |
-| Chatango | Chatango | Chatango | Chatango |
 | ClarityHUD | ClarityHUD | ClarityHUD | ClarityHUD |
 | Coin Battle | Münz-Schlacht | Batalla de Monedas | Bataille de Pièces |
 | GCCE (Global Chat Command Engine) | Globale Chat-Befehls-Engine | Motor de Comandos de Chat Global | Moteur de Commandes de Chat Global |

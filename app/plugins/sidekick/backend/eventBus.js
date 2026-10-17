@@ -92,7 +92,9 @@ class EventBus extends EventEmitter {
     };
     
     // Start cleanup interval
-    this.cleanupInterval = setInterval(() => this._cleanup(), 10000);
+    this.cleanupInterval = this.api?.isDocsCapture === true
+      ? null
+      : setInterval(() => this._cleanup(), 10000);
   }
   
   /**

@@ -1,0 +1,486 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-10-07T16:23:30.8354504Z",
+  "status": "READ_ONLY_COMMITTED_SOURCE_MAPPING_NO_SERVER_NO_OBS",
+  "head": "fde29a99d95222e8f441ffedc78df43e15ba0f06",
+  "checklist": "docs/coordination/obs-104-readiness-checklist-20261007.json",
+  "registry": "app/modules/public-overlay-registry.js",
+  "mapping": [
+    {
+      "plugin": "advanced-timer",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/advanced-timer/overlay/index.html",
+      "candidate": "/advanced-timer/overlay",
+      "handler": "app/plugins/advanced-timer/backend/api.js:87-94",
+      "producer": "app/plugins/advanced-timer/ui/ui.js:411,446-448",
+      "html": "app/plugins/advanced-timer/overlay.html",
+      "decision": "holdMismatch",
+      "equivalence": "Different renderer: matrix serves overlay/index.html (180 lines); registered route sends root overlay.html (537 lines). UI producer already uses registered route. Owner must choose intended Guide/104 renderer.",
+      "caseIds": [
+        "advanced-timer:de",
+        "advanced-timer:en",
+        "advanced-timer:es",
+        "advanced-timer:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/advanced-timer/backend/api.js",
+          "blob": "6da91b2a5adb3c4ab8b868c15dccfeec796a7d0f"
+        },
+        {
+          "path": "app/plugins/advanced-timer/ui/ui.js",
+          "blob": "c55b5b2d76630e2f2b5de9ed951540a84852a970"
+        },
+        {
+          "path": "app/plugins/advanced-timer/overlay.html",
+          "blob": "1c9e0e5ea89fe0c3809b3dada103f94a82c25e5c"
+        }
+      ]
+    },
+    {
+      "plugin": "coinbattle",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/coinbattle/overlay/overlay.html",
+      "candidate": "/plugins/coinbattle/overlay",
+      "handler": "app/plugins/coinbattle/main.js:1461-1475",
+      "producer": "app/plugins/coinbattle/ui.js:902,920+",
+      "html": "app/plugins/coinbattle/overlay/overlay.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target; preserve locale and query parameters.",
+      "caseIds": [
+        "coinbattle:de",
+        "coinbattle:en",
+        "coinbattle:es",
+        "coinbattle:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/coinbattle/main.js",
+          "blob": "47f518b94689f435d36c7bccf02a8e0c448d5666"
+        },
+        {
+          "path": "app/plugins/coinbattle/ui.js",
+          "blob": "ecba2b4d09f5e98392c870b7973c250dfac65441"
+        },
+        {
+          "path": "app/plugins/coinbattle/overlay/overlay.html",
+          "blob": "2754a814e4b1e137b56f858bc84bb91782da9599"
+        }
+      ]
+    },
+    {
+      "plugin": "fireworks",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/fireworks/overlay.html",
+      "candidate": "/fireworks/overlay",
+      "handler": "app/plugins/fireworks/main.js:460-463",
+      "producer": "app/plugins/fireworks/ui/settings.js:26; app/plugins/fireworks/ui/settings.js:922",
+      "html": "app/plugins/fireworks/overlay.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target; preserve locale and query parameters.",
+      "caseIds": [
+        "fireworks:de",
+        "fireworks:en",
+        "fireworks:es",
+        "fireworks:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/fireworks/main.js",
+          "blob": "31828f6d9dc3da2ce541e927fbfa8bdcebcea37a"
+        },
+        {
+          "path": "app/plugins/fireworks/ui/settings.js",
+          "blob": "6da5a796b0cf69a96566d0d573ce547d46b7a13a"
+        },
+        {
+          "path": "app/plugins/fireworks/overlay.html",
+          "blob": "5927d1044718a3e75c1b847cd474b6c8bbd7e03e"
+        }
+      ]
+    },
+    {
+      "plugin": "game-engine",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/game-engine/overlay/game-hud.html",
+      "candidate": "/overlay/game-engine/hud",
+      "handler": "app/plugins/game-engine/main.js:2367-2369",
+      "producer": "app/plugins/game-engine/ui.html:3837,7054",
+      "html": "app/plugins/game-engine/overlay/game-hud.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target; current worktree has unrelated route additions; committed handler used.",
+      "caseIds": [
+        "game-engine:de",
+        "game-engine:en",
+        "game-engine:es",
+        "game-engine:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/game-engine/main.js",
+          "blob": "d56add395f26ccdfdd1b03ecd2208d0d16b59934"
+        },
+        {
+          "path": "app/plugins/game-engine/ui.html",
+          "blob": "5031b0fbb985e80824b3112347a497d10fc737b4"
+        },
+        {
+          "path": "app/plugins/game-engine/overlay/game-hud.html",
+          "blob": "fb3f2e2891894e83b192e0a7df08983f534a98ab"
+        }
+      ]
+    },
+    {
+      "plugin": "interactive-story",
+      "scope": "LOCAL_CLOSED_BETA",
+      "matrixPath": "/plugins/interactive-story/overlay.html",
+      "candidate": "/interactive-story/overlay",
+      "handler": "app/plugins/interactive-story/main.js:1433-1435",
+      "producer": "app/plugins/interactive-story/ui.html:5882,6578,6652",
+      "html": "app/plugins/interactive-story/overlay.html",
+      "decision": "approvedLocalOnly",
+      "equivalence": "Exact same HTML target. Public mode excludes this closed-beta plugin; candidate is local OBS URL only.",
+      "caseIds": [
+        "interactive-story:de",
+        "interactive-story:en",
+        "interactive-story:es",
+        "interactive-story:fr"
+      ],
+      "matrixScope": "LOCAL_CLOSED_BETA_OVERLAY",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/interactive-story/main.js",
+          "blob": "3ae3844560b5ff5153b7f896081e310f14261637"
+        },
+        {
+          "path": "app/plugins/interactive-story/ui.html",
+          "blob": "23a6e158e9f2d1d7d8f770660d5bea25b56c7cd6"
+        },
+        {
+          "path": "app/plugins/interactive-story/overlay.html",
+          "blob": "c8e069556001550692430d96ab38acdf492cb7ca"
+        }
+      ]
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "candidate": "/overlay/viewer-xp/leaderboard",
+      "handler": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js:234-236",
+      "producer": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/ui/admin.html:1436; app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/ui/admin.js:2374",
+      "html": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target; Viewer-XP path.",
+      "caseIds": [
+        "milestone-leaderboard:de",
+        "milestone-leaderboard:en",
+        "milestone-leaderboard:es",
+        "milestone-leaderboard:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js",
+          "blob": "ff13462e235250ca4b690f785694d56511a5aef5"
+        },
+        {
+          "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/ui/admin.html",
+          "blob": "b10d8a57be5d36b437228d0dfdefb1297cb52020"
+        },
+        {
+          "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+          "blob": "0ee7c4d43b372c6e4db9808bc2527abf15587c49"
+        }
+      ]
+    },
+    {
+      "plugin": "minecraft-connect",
+      "scope": "PUBLIC_RUNTIME_GUIDE",
+      "matrixPath": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "candidate": null,
+      "handler": "app/server.js:4025 global /plugins static middleware; no plugin GET route",
+      "producer": "app/plugins/minecraft-connect/README.md:179; scripts/plugin-guides/minecraft-connect.js:559",
+      "html": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "decision": "noRegisteredRoute",
+      "equivalence": "Static local file only; no public registry path. Public runtime DTO is manifest/policy-derived and plugin is not closed beta; no Store ZIP and no registered tunnel path. Do not invent route or registry entry.",
+      "caseIds": [
+        "minecraft-connect:de",
+        "minecraft-connect:en",
+        "minecraft-connect:es",
+        "minecraft-connect:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": false,
+      "sourcePins": [
+        {
+          "path": "app/server.js",
+          "blob": "23c49ead02507c5435b67e3870d36fa8f9c1f91f"
+        },
+        {
+          "path": "app/plugins/minecraft-connect/README.md",
+          "blob": "428ea37deaef0558e312033bf7c17588d377d474"
+        },
+        {
+          "path": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+          "blob": "256e440ded5864a996270010bd6f5bf62ff8753b"
+        }
+      ]
+    },
+    {
+      "plugin": "openshock",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/openshock/overlay/openshock_overlay.html",
+      "candidate": "/openshock/zappiehell/overlay",
+      "handler": "app/plugins/openshock/main.js:643-646",
+      "producer": "app/plugins/openshock/ui.js:4389-4390",
+      "html": "app/plugins/openshock/overlay/zappiehell-overlay.html",
+      "decision": "holdMismatch",
+      "equivalence": "Different renderer: matrix generic OpenShock (650 lines) vs registered ZappieHell goal-progress (579 lines). Owner must choose intended public guide/104 case.",
+      "caseIds": [
+        "openshock:de",
+        "openshock:en",
+        "openshock:es",
+        "openshock:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/openshock/main.js",
+          "blob": "359899a00f402ba3ad8e14b3eee71d71763ecfec"
+        },
+        {
+          "path": "app/plugins/openshock/ui.js",
+          "blob": "5b4df007bde53c610897901094664643ec7bc9b3"
+        },
+        {
+          "path": "app/plugins/openshock/overlay/zappiehell-overlay.html",
+          "blob": "d7129d5a535bd3c9da94ed997fb31fd97ae18ba5"
+        }
+      ]
+    },
+    {
+      "plugin": "quiz-show",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/quiz-show/quiz_show_overlay.html",
+      "candidate": "/quiz-show/overlay",
+      "handler": "app/plugins/quiz-show/main.js:1519-1525",
+      "producer": "app/plugins/quiz-show/quiz_show.html:1165-1168; app/plugins/quiz-show/quiz_show.js:1428",
+      "html": "app/plugins/quiz-show/quiz_show_overlay.html",
+      "decision": "approvedProposal",
+      "equivalence": "Both /quiz-show/overlay and /quiz-show/overlay/splitscreen send the same HTML; canonical proposal is /quiz-show/overlay; preserve locale query.",
+      "caseIds": [
+        "quiz-show:de",
+        "quiz-show:en",
+        "quiz-show:es",
+        "quiz-show:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/quiz-show/main.js",
+          "blob": "50cd7f987bfdf37dfb11d0ac45201a1d061d7d8b"
+        },
+        {
+          "path": "app/plugins/quiz-show/quiz_show.html",
+          "blob": "cf2e42f0e1cb1d33b485366b8305c4bb14798c3d"
+        },
+        {
+          "path": "app/plugins/quiz-show/quiz_show_overlay.html",
+          "blob": "7ee5194ab3e11161889d8bd326c3aba859a7bd97"
+        }
+      ]
+    },
+    {
+      "plugin": "spotlight",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/spotlight/overlays/chatter.html",
+      "candidate": "/overlay/spotlight/chatter",
+      "handler": "app/plugins/spotlight/main.js:504-507",
+      "producer": "app/plugins/spotlight/ui/main.js:52,147,161",
+      "html": "app/plugins/spotlight/overlays/chatter.html",
+      "decision": "approvedProposal",
+      "equivalence": "Parameterized registered route maps type chatter to the exact same HTML.",
+      "caseIds": [
+        "spotlight:de",
+        "spotlight:en",
+        "spotlight:es",
+        "spotlight:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": false,
+      "sourcePins": [
+        {
+          "path": "app/plugins/spotlight/main.js",
+          "blob": "92cdf5d99859ad94538eae1ae46d19d649e1752f"
+        },
+        {
+          "path": "app/plugins/spotlight/ui/main.js",
+          "blob": "cfa1500e8446f9be68a18570fc8f6723065d9092"
+        },
+        {
+          "path": "app/plugins/spotlight/overlays/chatter.html",
+          "blob": "a579894fb4d58345cb11623da995c10343d547c4"
+        }
+      ]
+    },
+    {
+      "plugin": "stt-ticker",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/stt-ticker/overlay/ticker.html",
+      "candidate": "/overlay/stt-ticker",
+      "handler": "app/plugins/stt-ticker/main.js:141-143",
+      "producer": "app/plugins/stt-ticker/ui.html:2068+",
+      "html": "app/plugins/stt-ticker/overlay/ticker.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target; preserve safe query parameters from UI producer.",
+      "caseIds": [
+        "stt-ticker:de",
+        "stt-ticker:en",
+        "stt-ticker:es",
+        "stt-ticker:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/stt-ticker/main.js",
+          "blob": "2cfda4fc1bb90c70fbf30aa724fceface81338ed"
+        },
+        {
+          "path": "app/plugins/stt-ticker/ui.html",
+          "blob": "62b07c69806c3f2606c997c86c39fac7be48ac6b"
+        },
+        {
+          "path": "app/plugins/stt-ticker/overlay/ticker.html",
+          "blob": "aa536b6a41b4ca1ad852401cef0fe7de61c0d034"
+        }
+      ]
+    },
+    {
+      "plugin": "talking-heads",
+      "scope": "LOCAL_CLOSED_BETA",
+      "matrixPath": "/plugins/talking-heads/overlay.html",
+      "candidate": "/overlay/talking-heads",
+      "handler": "app/plugins/talking-heads/main.js:996-998",
+      "producer": "app/plugins/talking-heads/assets/ui.js:634",
+      "html": "app/plugins/talking-heads/overlay.html",
+      "decision": "approvedLocalOnly",
+      "equivalence": "Exact same HTML target. Public mode excludes this closed-beta plugin; candidate is local OBS URL only.",
+      "caseIds": [
+        "talking-heads:de",
+        "talking-heads:en",
+        "talking-heads:es",
+        "talking-heads:fr"
+      ],
+      "matrixScope": "LOCAL_CLOSED_BETA_OVERLAY",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/talking-heads/main.js",
+          "blob": "aa911c62d5d80479f01feafdb3e98ba849e775ce"
+        },
+        {
+          "path": "app/plugins/talking-heads/assets/ui.js",
+          "blob": "aee93f92f2db3dc92cbc2ec63788994e3b9cb2de"
+        },
+        {
+          "path": "app/plugins/talking-heads/overlay.html",
+          "blob": "f17961f5f9a5498ba0b315b4858f02e6270786d9"
+        }
+      ]
+    },
+    {
+      "plugin": "weather-control",
+      "scope": "PUBLIC",
+      "matrixPath": "/plugins/weather-control/overlay.html",
+      "candidate": "/weather-control/overlay",
+      "handler": "app/plugins/weather-control/main.js:458-461",
+      "producer": "app/plugins/weather-control/ui.html:3821-3822",
+      "html": "app/plugins/weather-control/overlay.html",
+      "decision": "approvedProposal",
+      "equivalence": "Exact same HTML target.",
+      "caseIds": [
+        "weather-control:de",
+        "weather-control:en",
+        "weather-control:es",
+        "weather-control:fr"
+      ],
+      "matrixScope": "CURRENT_PUBLIC_OVERLAY_GUIDE",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/weather-control/main.js",
+          "blob": "105e6671e2b3a976eeb62bd155e518f68ec13c3f"
+        },
+        {
+          "path": "app/plugins/weather-control/ui.html",
+          "blob": "68aa6bf608e5c5de79ce52cddb4b6708adca6e0d"
+        },
+        {
+          "path": "app/plugins/weather-control/overlay.html",
+          "blob": "df9c9a40c796cb48b63841f9e95f474ab1b22547"
+        }
+      ]
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "scope": "LOCAL_CLOSED_BETA",
+      "matrixPath": "/plugins/webgpu-emoji-rain/overlay.html",
+      "candidate": "/webgpu-emoji-rain/overlay",
+      "handler": "app/plugins/webgpu-emoji-rain/main.js:1689-1692",
+      "producer": "app/plugins/webgpu-emoji-rain/ui.html:1956-1966",
+      "html": "app/plugins/webgpu-emoji-rain/overlay.html",
+      "decision": "approvedLocalOnly",
+      "equivalence": "Exact same HTML target. UI exposes additional /obs-hud variants; this row maps the overlay case. Public mode excludes this closed-beta plugin; local OBS only.",
+      "caseIds": [
+        "webgpu-emoji-rain:de",
+        "webgpu-emoji-rain:en",
+        "webgpu-emoji-rain:es",
+        "webgpu-emoji-rain:fr"
+      ],
+      "matrixScope": "LOCAL_CLOSED_BETA_OVERLAY",
+      "matrixPathRegistered": false,
+      "registryCandidatePresent": true,
+      "sourcePins": [
+        {
+          "path": "app/plugins/webgpu-emoji-rain/main.js",
+          "blob": "cb405818909a32eeb439196039d9733c988f77dd"
+        },
+        {
+          "path": "app/plugins/webgpu-emoji-rain/ui.html",
+          "blob": "881144f029108b25388d5b33ebc25ad4c43edc1e"
+        },
+        {
+          "path": "app/plugins/webgpu-emoji-rain/overlay.html",
+          "blob": "329162f38bf05cfcd1162997c84e1dc56055231c"
+        }
+      ]
+    }
+  ]
+}

@@ -15,11 +15,20 @@ const EulerstreamAdapter = require('./adapters/EulerstreamAdapter');
  * @extends EventEmitter
  */
 class TikTokConnector extends EventEmitter {
-  constructor(io, db, logger = console) {
+  constructor(io, db, logger = console, context = {}) {
     super();
     this.io = io;
     this.db = this._withDbDefaults(db);
     this.logger = logger;
+    const mode = context.mode === undefined ? 'primary' : context.mode;
+    if (!['primary', 'secondary'].includes(mode)) {
+      throw new Error('TikTokConnector context mode must be primary or secondary');
+    }
+    const sourceId = context.sourceId === undefined ? null : String(context.sourceId);
+    if (mode === 'secondary' && (!sourceId || !/^[a-z0-9_-]{1,40}$/i.test(sourceId))) {
+      throw new Error('Secondary TikTokConnector context requires a valid sourceId');
+    }
+    this.context = Object.freeze({ mode, sourceId });
     this.setMaxListeners(50);
     this._adapter = null;
     this._currentSource = 'eulerstream';
@@ -53,6 +62,7 @@ class TikTokConnector extends EventEmitter {
   }
 
   _removeLegacyDataSourceSettings() {
+    if (this.context.mode === 'secondary') return;
     if (typeof this.db.deleteSetting !== 'function') return;
 
     for (const key of ['tiktok_data_source', 'tikfinity_ws_port']) {
@@ -66,7 +76,10 @@ class TikTokConnector extends EventEmitter {
 
   _bindAdapterEvents(adapter) {
     this._eventForwarders = {};
-    const events = ['gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan',
+    // EulerStream's WebcastBarrageMessage is reduced by the adapter to a provisional,
+    // display-only marker heuristic DTO. Its marker semantics are not a verified role
+    // contract; never use this event for access decisions or persistent roles.
+    const events = ['gift', 'chat', 'follow', 'like', 'share', 'subscribe', 'superfan-display',
       'join', 'emote', 'connected', 'disconnected', 'error', 'viewerChange',
       'streamChanged'];
     events.forEach((event) => {
@@ -87,7 +100,7 @@ class TikTokConnector extends EventEmitter {
     if (this._adapter) {
       this._unbindAdapterEvents(this._adapter);
     }
-    this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger);
+    this._adapter = new EulerstreamAdapter(this.io, this.db, this.logger, this.context);
     if (typeof this._adapter.setStreamSessionLifecycleHandler === 'function') {
       this._adapter.setStreamSessionLifecycleHandler(
         data => this._emitAsync('streamSessionStarted', data)

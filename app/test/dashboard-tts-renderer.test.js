@@ -95,4 +95,175 @@ describe('Dashboard TTS renderer acknowledgement', () => {
     expect(failures[0][1]).not.toHaveProperty('audioData');
     expect(failures[0][1]).not.toHaveProperty('text');
   });
+
+  describe('high-frequency metering & ticker lifecycle', () => {
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    test('defaults progress interval to 40ms and clamps to at least 20ms', () => {
+      const defaultRenderer = new DashboardTTSRenderer();
+      expect(defaultRenderer.progressIntervalMs).toBe(40);
+
+      const clampedLow = new DashboardTTSRenderer({ progressIntervalMs: 10 });
+      expect(clampedLow.progressIntervalMs).toBe(20);
+
+      const customInterval = new DashboardTTSRenderer({ progressIntervalMs: 35 });
+      expect(customInterval.progressIntervalMs).toBe(35);
+
+      const customFifty = new DashboardTTSRenderer({ progressIntervalMs: 50 });
+      expect(customFifty.progressIntervalMs).toBe(50);
+    });
+
+    test('drives progress emissions via active ticker at <= 50ms without timeupdate events', async () => {
+      jest.useFakeTimers();
+      const audio = new FakeAudio();
+      const socket = { emit: jest.fn() };
+      const renderer = new DashboardTTSRenderer({
+        audio,
+        socket,
+        progressIntervalMs: 40
+      });
+
+      await renderer.play({ playbackId: 'ticker-playback', source: 'chat' });
+      audio.dispatch('playing');
+
+      expect(socket.emit).toHaveBeenCalledWith('tts:renderer:started', expect.objectContaining({
+        playbackId: 'ticker-playback',
+        currentTimeMs: 0
+      }));
+
+      // Advance by 40ms: first progress tick occurs via interval timer
+      audio.currentTime = 0.04;
+      jest.advanceTimersByTime(40);
+
+      const progressCallsAfterFirstTick = socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:progress');
+      expect(progressCallsAfterFirstTick).toHaveLength(1);
+      expect(progressCallsAfterFirstTick[0][1]).toEqual(expect.objectContaining({
+        playbackId: 'ticker-playback',
+        currentTimeMs: 40
+      }));
+
+      // Advance by another 40ms: second progress tick occurs
+      audio.currentTime = 0.08;
+      jest.advanceTimersByTime(40);
+
+      const progressCallsAfterSecondTick = socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:progress');
+      expect(progressCallsAfterSecondTick).toHaveLength(2);
+      expect(progressCallsAfterSecondTick[1][1]).toEqual(expect.objectContaining({
+        playbackId: 'ticker-playback',
+        currentTimeMs: 80
+      }));
+
+      // End playback and ensure timer is cleaned up
+      audio.dispatch('ended');
+      expect(socket.emit).toHaveBeenCalledWith('tts:renderer:ended', expect.objectContaining({
+        playbackId: 'ticker-playback'
+      }));
+
+      // Further time advancement should not trigger any new progress ticks
+      jest.advanceTimersByTime(200);
+      const totalProgressCalls = socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:progress');
+      expect(totalProgressCalls).toHaveLength(2);
+    });
+
+    test('reads audio levels through analyser node without connecting captureStream to destination', async () => {
+      jest.useFakeTimers();
+      const audio = new FakeAudio();
+      const streamMock = {};
+      audio.captureStream = jest.fn(() => streamMock);
+
+      const mockAnalyser = {
+        fftSize: 512,
+        getByteTimeDomainData: jest.fn((buffer) => {
+          for (let i = 0; i < buffer.length; i++) {
+            buffer[i] = 128 + (i % 2 === 0 ? 40 : -40);
+          }
+        })
+      };
+
+      const mediaStreamSourceMock = {
+        connect: jest.fn()
+      };
+
+      const mockDestination = {};
+      class MockAudioContext {
+        constructor() {
+          this.state = 'running';
+          this.destination = mockDestination;
+        }
+        createAnalyser() {
+          return mockAnalyser;
+        }
+        createMediaStreamSource(stream) {
+          expect(stream).toBe(streamMock);
+          return mediaStreamSourceMock;
+        }
+      }
+
+      const socket = { emit: jest.fn() };
+      const renderer = new DashboardTTSRenderer({
+        audio,
+        socket,
+        progressIntervalMs: 35,
+        AudioContext: MockAudioContext
+      });
+
+      await renderer.play({ playbackId: 'analyser-audio', source: 'chat' });
+      audio.dispatch('playing');
+
+      // Verify analyser was wired to captureStream but NOT to audioContext.destination
+      expect(mediaStreamSourceMock.connect).toHaveBeenCalledWith(mockAnalyser);
+      // Analyser must not connect to destination when captureStream is used (prevents echo/doubling)
+      expect(mockAnalyser.connect).toBeUndefined();
+
+      audio.currentTime = 0.035;
+      jest.advanceTimersByTime(35);
+
+      const progressPayload = socket.emit.mock.calls.find(([event]) => event === 'tts:renderer:progress')[1];
+      expect(progressPayload.level).toBeGreaterThan(0);
+      expect(typeof progressPayload.level).toBe('number');
+    });
+
+    test('cleans up progress ticker on error, replacement, and dispose', async () => {
+      jest.useFakeTimers();
+      const audio = new FakeAudio();
+      const socket = { emit: jest.fn() };
+      const renderer = new DashboardTTSRenderer({
+        audio,
+        socket,
+        progressIntervalMs: 40
+      });
+
+      // 1. Cleanup on error
+      await renderer.play({ playbackId: 'error-cleanup' });
+      audio.dispatch('playing');
+      audio.dispatch('error');
+      jest.advanceTimersByTime(120);
+      expect(socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:progress')).toHaveLength(0);
+
+      // 2. Cleanup on playback replacement
+      await renderer.play({ playbackId: 'replaced-one' });
+      audio.dispatch('playing');
+      jest.advanceTimersByTime(40);
+      expect(socket.emit.mock.calls.filter(([event]) => event === 'tts:renderer:progress')).toHaveLength(1);
+
+      await renderer.play({ playbackId: 'replaced-two' });
+      // replaced-one timer was disposed
+      jest.advanceTimersByTime(40);
+      const replacedOneProgress = socket.emit.mock.calls.filter(
+        ([event, p]) => event === 'tts:renderer:progress' && p.playbackId === 'replaced-one'
+      );
+      expect(replacedOneProgress).toHaveLength(1);
+
+      // 3. Cleanup on renderer.dispose()
+      audio.dispatch('playing');
+      renderer.dispose();
+      jest.advanceTimersByTime(120);
+      const replacedTwoProgress = socket.emit.mock.calls.filter(
+        ([event, p]) => event === 'tts:renderer:progress' && p.playbackId === 'replaced-two'
+      );
+      expect(replacedTwoProgress).toHaveLength(0);
+    });
+  });
 });

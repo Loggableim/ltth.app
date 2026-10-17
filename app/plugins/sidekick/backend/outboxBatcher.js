@@ -95,6 +95,7 @@ class OutboxBatcher {
    * @private
    */
   _startCheckInterval() {
+    if (this.api?.isDocsCapture === true) return;
     if (this.checkInterval) {
       clearInterval(this.checkInterval);
     }

@@ -120,7 +120,7 @@ describe('GCCE plugin command cooldown contract', () => {
         success: false,
         handled: true,
         status: 'egg_not_ready',
-        pluginId: 'streamalchemy'
+        pluginId: 'stream-monsters'
       })
     );
     await expect(parser.parse('/throws', context('viewer-a'))).resolves.toEqual(
@@ -128,7 +128,7 @@ describe('GCCE plugin command cooldown contract', () => {
         success: false,
         handled: true,
         errorCode: 'EXECUTION_FAILED',
-        pluginId: 'streamalchemy'
+        pluginId: 'stream-monsters'
       })
     );
   });

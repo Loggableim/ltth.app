@@ -25,12 +25,28 @@ function set(db, key, value) {
 }
 
 async function zip(entries) {
+  const crypto = require('crypto');
   const file = path.join(os.tmpdir(), `stream-monsters-backup-${process.pid}-${Date.now()}-${Math.random()}.zip`);
   const output = fs.createWriteStream(file);
   const archive = archiver('zip');
   archive.pipe(output);
-  for (const [name, content] of Object.entries(entries)) {
-    archive.append(Buffer.isBuffer(content) ? content : JSON.stringify(content), { name });
+  const payloads = Object.fromEntries(Object.entries(entries).map(([name, content]) => [
+    name,
+    Buffer.isBuffer(content) ? content : Buffer.from(JSON.stringify(content))
+  ]));
+  if (payloads['manifest.json'] && !payloads['checksums.json']) {
+    const manifest = JSON.parse(payloads['manifest.json'].toString('utf8'));
+    const [major, minor] = String(manifest.formatVersion || '0.0.0').split('.').map(Number);
+    if (major > 1 || (major === 1 && minor >= 1)) {
+      const files = {};
+      for (const [name, content] of Object.entries(payloads)) {
+        files[name] = { sha256: crypto.createHash('sha256').update(content).digest('hex'), sizeBytes: content.length };
+      }
+      payloads['checksums.json'] = Buffer.from(JSON.stringify({ formatVersion: manifest.formatVersion, files }));
+    }
+  }
+  for (const [name, content] of Object.entries(payloads)) {
+    archive.append(content, { name });
   }
   await new Promise((resolve, reject) => {
     output.on('close', resolve);

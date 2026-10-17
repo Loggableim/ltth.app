@@ -150,6 +150,8 @@
         "gift_sent_count": "hat {gift} x{count} gesendet",
         "multi_gift_sent": "🎁 {gift} x{count} gesendet",
         "message_render_error": "Fehler beim Rendern der Nachricht: {message}",
+        "superfan_signal": "Mögliches Super-Fan-Signal",
+        "superfan_join_signal": "Möglicher Hinweis auf einen Super-Fan-Clubbeitritt",
         "event": {
           "chat": "Chat",
           "follow": "Gefolgt",
@@ -202,6 +204,7 @@
       },
       "empty": { "no_additional_streams": "Keine zusätzlichen Streams konfiguriert", "unknown_tab": "Unbekannter Tab", "no_activity_title": "Noch keine Aktivität", "no_activity_description": "Ereignisse erscheinen hier, sobald sie eintreten" },
       "stream": { "fallback": "Kanal {number}" },
+      "fallback": { "confirm_button": "Fallback-API-Schlüssel bestätigen", "confirm_title": "Fallback-API-Schlüssel verwenden?", "confirm_prompt": "Dieser zusätzliche Stream verwendet einen LTTH-Fallback-API-Schlüssel. Nur fortfahren, wenn du zustimmst.", "cancel": "Abbrechen", "confirm": "Ja, fortfahren", "confirm_failed": "Fallback-Schlüssel konnte nicht bestätigt werden: {message}" },
       "dock": { "chat": "Chat-HUD", "full": "Vollständiges Aktivitäts-HUD", "multi": "Multi-Stream-HUD", "stream": "Stream-Overlay" },
       "preset": { "highContrast": "Hoher Kontrast", "visionImpaired": "Sehbeeinträchtigung", "dyslexiaFriendly": "Legastheniefreundlich", "motionSensitive": "Bewegungssensibel" },
       "tab": { "stream_settings": "Stream-Einstellungen", "streams": "Kanäle", "appearance": "Erscheinungsbild", "events": "Ereignisse", "layout": "Anordnung", "animation": "Bewegung", "styling": "Stil", "accessibility": "Barrierefreiheit" },

@@ -126,6 +126,7 @@ class AnimazeClient {
    * @returns {Promise<boolean>} True if connected
    */
   async connect() {
+    if (this.api?.isDocsCapture === true) return false;
     if (this.isConnected) {
       return true;
     }
@@ -234,6 +235,7 @@ class AnimazeClient {
    * @private
    */
   _scheduleReconnect() {
+    if (this.api?.isDocsCapture === true) return;
     const maxAttempts = this.config.animaze?.maxReconnectAttempts || 10;
     
     if (this.reconnectAttempts >= maxAttempts) {
@@ -306,6 +308,7 @@ class AnimazeClient {
    * @returns {Promise<Object|boolean>} Response or success status
    */
   async sendCommand(command, waitForResponse = false) {
+    if (this.api?.isDocsCapture === true) return waitForResponse ? null : false;
     if (!this.isConnected || !this.ws) {
       this.api.log('Cannot send command: Not connected to Animaze', 'warn');
       return waitForResponse ? null : false;
@@ -350,6 +353,7 @@ class AnimazeClient {
    * @returns {Promise<boolean>} True if queued/sent
    */
   async sendMessage(text, useEcho = false, priority = 1) {
+    if (this.api?.isDocsCapture === true) return false;
     if (!text || !text.trim()) {
       return false;
     }

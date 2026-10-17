@@ -1,0 +1,148 @@
+{
+  "count": 288,
+  "errors": [],
+  "keyboard": [
+    {
+      "name": "01-cockpit",
+      "skip": true,
+      "themeEnter": true,
+      "actionSpace": true,
+      "languageArrow": true,
+      "profileArrow": true,
+      "stateArrow": true
+    },
+    {
+      "name": "02-studio",
+      "skip": true,
+      "themeEnter": true,
+      "actionSpace": true,
+      "languageArrow": true,
+      "profileArrow": true,
+      "stateArrow": true
+    },
+    {
+      "name": "03-creator",
+      "skip": true,
+      "themeEnter": true,
+      "actionSpace": true,
+      "languageArrow": true,
+      "profileArrow": true,
+      "stateArrow": true
+    }
+  ],
+  "primaryContrast": 7.13,
+  "contrasts": [
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "ink",
+      "bg": "card",
+      "ratio": 15.4,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "muted",
+      "bg": "card",
+      "ratio": 6.28,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "muted",
+      "bg": "bg",
+      "ratio": 5.81,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "green",
+      "bg": "card",
+      "ratio": 7.13,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "purple",
+      "bg": "soft",
+      "ratio": 6.27,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "purple",
+      "bg": "card",
+      "ratio": 7.1,
+      "min": 3
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "day",
+      "fg": "control",
+      "bg": "card",
+      "ratio": 3.86,
+      "min": 3
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "ink",
+      "bg": "card",
+      "ratio": 15.14,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "muted",
+      "bg": "card",
+      "ratio": 8.63,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "muted",
+      "bg": "bg",
+      "ratio": 10.03,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "green",
+      "bg": "card",
+      "ratio": 8.89,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "purple",
+      "bg": "soft",
+      "ratio": 5.5,
+      "min": 4.5
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "purple",
+      "bg": "card",
+      "ratio": 5.69,
+      "min": 3
+    },
+    {
+      "name": "01-cockpit",
+      "theme": "night",
+      "fg": "control",
+      "bg": "card",
+      "ratio": 4.87,
+      "min": 3
+    }
+  ]
+}

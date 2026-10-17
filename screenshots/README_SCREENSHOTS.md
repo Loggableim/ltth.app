@@ -116,7 +116,6 @@ The feature pages in `features/*.html` reference these via `<img src="/screensho
 | `features/plugin-advanced-timer.html` | `/screenshots/features/advanced-timer.png` | ✅ Real screenshot |
 | `features/plugin-clarity-hud.html` | `/screenshots/features/clarityhud.png` | ✅ Real screenshot |
 | `features/plugin-config-import.html` | `/screenshots/features/config-import.png` | ✅ Real screenshot |
-| `features/plugin-chatango.html` | `/screenshots/features/plugin-chatango-dashboard.png` | ✅ Real screenshot |
 | `features/plugin-gift-milestone.html` | `/screenshots/features/gift-milestone.png` | ✅ Real screenshot |
 | `features/plugin-lastevent-spotlight.html` | `/screenshots/features/lastevent.png` | ✅ Real screenshot |
 | `features/plugin-gcce.html` | `/screenshots/features/gcce.png` | ✅ Real screenshot |

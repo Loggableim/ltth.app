@@ -37,15 +37,14 @@ function createTestApp(pluginsDir, loadedPlugins = new Map()) {
         warn: jest.fn(),
         error: jest.fn()
     };
-    const pluginLoader = {
+    const pluginLoader = Object.create(PluginLoader.prototype);
+    Object.assign(pluginLoader, {
         pluginsDir,
         plugins: loadedPlugins,
         state: {},
         logger,
-        releasePolicy: { isClosedBetaId: () => false },
-        buildPluginInventory: PluginLoader.prototype.buildPluginInventory,
-        getLocalizedDescription: (manifest) => manifest.description
-    };
+        releasePolicy: { isClosedBetaId: () => false }
+    });
 
     setupPluginRoutes(app, pluginLoader, passThrough, passThrough, logger);
     return { app, logger };
@@ -188,8 +187,13 @@ describe('Plugin Manager listing', () => {
 
     it('keeps the featured store plugin list aligned with the preinstalled set', () => {
         const managerScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'plugin-manager.js'), 'utf8');
+        const dashboardHtml = fs.readFileSync(path.join(__dirname, '..', 'public', 'dashboard.html'), 'utf8');
+        const navigationScript = fs.readFileSync(path.join(__dirname, '..', 'public', 'js', 'navigation.js'), 'utf8');
 
         assert(managerScript.includes("['goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'emoji-rain']"));
+        assert(!managerScript.toLowerCase().includes('chatango'));
+        assert(!dashboardHtml.toLowerCase().includes('chatango'));
+        assert(!navigationScript.toLowerCase().includes('chatango'));
     });
 
     it('renders detail-drawer metadata and a contextual store action', () => {
@@ -201,6 +205,10 @@ describe('Plugin Manager listing', () => {
         assert(managerScript.includes("renderStoreDetailField('Compatibility'"));
         assert(managerScript.includes('data-store-drawer-action'));
         assert(managerScript.includes('No screenshots yet'));
+        assert(managerScript.includes('Screenshot unavailable'));
+        assert(managerScript.includes("!['audio', 'games', 'automation', 'integrations', 'overlays']"));
+        assert(!managerScript.includes("'overlays', 'open-beta']"));
+        assert(fs.existsSync(path.join(__dirname, '..', 'public', 'screenshots', 'features', 'advanced-timer.png')));
     });
 
     it('brands the appstore header with the dedicated AppStore logo asset', () => {

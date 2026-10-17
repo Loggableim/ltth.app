@@ -1,0 +1,201 @@
+{
+  "transport": {
+    "origin": "http://127.0.0.1:3000 as synthetic JSDOM URL only",
+    "producer": "excluded; Quiz Show backend, database and producer are not started; Audio constructor throws and play-sound event is never driven",
+    "socketHandling": "in-memory Socket.IO shim; real browser bundle pinned by SHA but not executed",
+    "requestHandling": "in-process JSDOM request interceptor and injected fetch; no TCP listener"
+  },
+  "coverage": {
+    "initial": "Exact local closure assets and synthetic HUD config/brand kit/state GETs load for all four locales; custom layout is disabled.",
+    "cleanup": "Non-persisted pagehide disconnects shim, removes handlers, cancels all tracked timeouts/intervals/animation frames and closes JSDOM.",
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "dynamic": "No brand logo, profile/voter/joker image, sound event or active layout is provided; no unlisted API/asset request is allowed.",
+    "trigger": "Synthetic quiz-show:state-update reveals a fixed synthetic question and four fixed answers."
+  },
+  "result": {
+    "recordedAt": "2026-10-07",
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 6,
+    "exitCode": 0
+  },
+  "testCommand": "cd app && node node_modules/jest/bin/jest.js --runInBand --no-cache --runTestsByPath test/obs-quiz-show-renderer-fixtures.test.js",
+  "manifest": {
+    "path": "docs/coordination/obs-104-quiz-show-fixture.json",
+    "bytes": 619570,
+    "localeFiles": 4,
+    "sha256": "923299d456f46701f0a0fcacbcf39bb21fcc911e6ba1e093c41b7e821f934fb6",
+    "files": 11
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-quiz-show-renderer-fixtures.test.js",
+      "sha256": "186ada7c73008c909eaf1ffee85cee52c8097ee5e2c56944027973a52cca3df6"
+    },
+    {
+      "path": "app/test/helpers/obs-quiz-show-jsdom-fixture.js",
+      "sha256": "1e78c6cbd1349fa5b3b45424e489c2ad82c1ef2ab176d93d17fd05bdfe4f2eb4"
+    },
+    {
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+    },
+    {
+      "path": "app/plugins/quiz-show/main.js",
+      "sha256": "c8aa91ba8334c3f04150335b3774e627fc10c31ba5b955228ee6883861d97857"
+    },
+    {
+      "path": "app/modules/public-overlay-registry.js",
+      "sha256": "70d3c6f123f237f70285027ca56f6ed27480325285ed7059f494a082236c894c"
+    }
+  ],
+  "notProven": [
+    "real Socket.IO/browser transport or product backend/producer",
+    "OBS Browser Source visual review",
+    "dynamic active-layout rendering, leaderboard producer, brand updates and logo/avatar/gift assets, and audio path",
+    "shared i18n /api/i18n/locales consumer (not invoked; fixture restricts translations to four locales)",
+    "side effects of the real /api/quiz-show/state route"
+  ],
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "schemaVersion": 1,
+  "sourceReview": {
+    "fixedFixtureReads": [
+      "/api/i18n/translations/{de|en|es|fr}",
+      "/api/quiz-show/hud-config",
+      "/api/quiz-show/brand-kit",
+      "/api/quiz-show/state"
+    ],
+    "socketRequester": {
+      "event": "quiz-show:get-public-state",
+      "argumentCount": 0,
+      "initialConnectedEmissions": 2,
+      "registry": "incoming-event allowlist and same-socket safe-state response via buildGameStatePayload"
+    },
+    "mainOwnerDelta": {
+      "path": "app/plugins/quiz-show/main.js",
+      "sha256": "c8aa91ba8334c3f04150335b3774e627fc10c31ba5b955228ee6883861d97857",
+      "ownerConfirmedStable": true,
+      "ownerFocusedTests": "6 suites / 366 tests passed; node --check passed",
+      "independentReview": false
+    },
+    "roundLeaderboardRoute": {
+      "path": "GET /api/quiz-show/leaderboard?type=round",
+      "producer": "main.js registers /api/quiz-show/leaderboard, requires the exact raw query type=round, and returns buildCurrentRoundLeaderboard() without mutating award state",
+      "publicRegistry": "GET/HEAD only with exactly type=round; malformed, duplicate, encoded, extra, absent, or alternate query values are denied",
+      "consumer": {
+        "path": "app/plugins/quiz-show/quiz_show_overlay.js",
+        "sha256": "372046c985e497c2533e2c4f8c5bf3ef978db5d3fb18e30d4927ef1f6882fd91",
+        "behavior": "empty or failed responses show an explicit empty-state message",
+        "ownerFocusedTests": "3 suites / 18 tests passed"
+      },
+      "ownerFocusedTests": "6 suites / 366 tests passed; node --check passed"
+    },
+    "dynamicDependenciesUnresolved": [
+      "Conditional GET /api/quiz-show/layouts/${activeLayoutId} and custom layout payload/rendering when active layout is enabled",
+      "The CPU renderer fixture does not invoke GET /api/quiz-show/leaderboard?type=round; its separate producer/registry/consumer contract is owner-tested and documented in sourceReview",
+      "Runtime brand-kit primary_color/secondary_color updates and logo_path, voter profilePictureUrl, and joker giftIcon image URLs",
+      "quiz-show:play-sound filePath and Audio playback",
+      "Shared i18n /api/i18n/locales consumer is not invoked by this fixture",
+      "Real /api/quiz-show/state producer calls checkSeasonAutomation(); backend side effects are not exercised"
+    ],
+    "sharedContractCompatibilityReview": {
+      "recordedAt": "2026-10-07T06:33:37.977Z",
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "previousSha256": "bc0aac61b8a698152260db04a4aab5d0a7e956ec83a440de2b3fd265e6ddf5cb",
+      "sha256": "4ca5b27c6a4ce2c73b74813a2b027a83ecc6407898394d5ebc10b91e10f1ee2f",
+      "sourceStableBeforeAfterTests": true,
+      "scope": "Quiz-only current manifest validation and four-locale original CPU/JSDOM renderer; no backend, browser, audio or OBS acceptance",
+      "independentReview": "Current Goals locale-changed driver and Timer rotator/threshold-effects read patterns verified; current Quiz contract matches manifest. Historical untracked contract bytes unavailable, so exact previous-version semantic diff is not independently proven",
+      "quizManifestValidation": {
+        "status": "PASS",
+        "files": 11,
+        "bytes": 618198,
+        "listenerStarted": false
+      },
+      "quizRendererRerun": {
+        "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-quiz-show-renderer-fixtures.test.js",
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 4,
+        "testsFailed": 0
+      },
+      "sharedContractTest": {
+        "command": "runtime/node/node.exe --experimental-test-isolation=none --test scripts/obs-pilot/test/renderer-fixture-contract.test.js",
+        "exitCode": 1,
+        "testsPassed": 6,
+        "testsFailed": 1,
+        "failure": "Aggregate nine-family test fails on Advanced Timer renderer manifest byte drift before reaching Quiz; other six shared contract tests pass"
+      },
+      "testSourceWitnesses": [
+        {
+          "path": "app/test/obs-quiz-show-renderer-fixtures.test.js",
+          "sha256": "275697bdf518ead127c04ba838aa0909d62d212a24f090fa4458bd86d5359eea"
+        },
+        {
+          "path": "scripts/obs-pilot/test/renderer-fixture-contract.test.js",
+          "sha256": "33c6799920b15543aa3f934df95b441cea9a8ece63bbf8ccad9b9df8c084b455"
+        }
+      ]
+    }
+  },
+  "sharedI18nCompatibilityReview": {
+    "recordedAt": "2026-10-07T06:39:57.552Z",
+    "source": {
+      "path": "app/public/js/i18n-client.js",
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "bytes": 24907
+    },
+    "previousPin": {
+      "bytes": 24765,
+      "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c"
+    },
+    "sourceStableBeforeAfterTests": true,
+    "scope": "Original CPU/JSDOM renderer only; no browser, backend, transport, audio or OBS acceptance",
+    "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-quiz-show-renderer-fixtures.test.js test/obs-stt-renderer-fixtures.test.js test/obs-spotlight-renderer-fixtures.test.js",
+    "familyResult": {
+      "testSuitesPassed": 1,
+      "testsPassed": 4,
+      "testsFailed": 0
+    },
+    "combinedRun": {
+      "exitCode": 1,
+      "testSuitesPassed": 2,
+      "testSuitesFailed": 1,
+      "testsPassed": 13,
+      "testsFailed": 5,
+      "note": "STT stale zero-pending-retry expectations fail separately; this receipt does not claim the combined run passed"
+    },
+    "testSource": {
+      "path": "app/test/obs-quiz-show-renderer-fixtures.test.js",
+      "sha256": "275697bdf518ead127c04ba838aa0909d62d212a24f090fa4458bd86d5359eea"
+    },
+    "contractSource": {
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "sha256": "4ca5b27c6a4ce2c73b74813a2b027a83ecc6407898394d5ebc10b91e10f1ee2f"
+    },
+    "manifestValidation": {
+      "status": "PASS",
+      "files": 11,
+      "bytes": 618340
+    }
+  },
+  "history": [
+    {
+      "kind": "previous-source-witnesses-before-public-overlay-hardening",
+      "recordedAt": "2026-10-07",
+      "note": "Prior focused renderer result retained; current registry/projector witnesses refreshed after owner-frozen privacy changes and focused regressions passed.",
+      "sourceWitnesses": [
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "sha256": "ce94de179543bc839b61bd91abb1b914ad1382a5f6274a0e97d24af3a82c2ef5"
+        }
+      ]
+    }
+  ]
+}

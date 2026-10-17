@@ -7,26 +7,23 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 describe('Profile Switch Socket Event', () => {
-  const TEST_DIR = '/tmp/test-profile-switch-socket';
-  const PROFILE1_PATH = path.join(TEST_DIR, 'profile1.db');
-  const PROFILE2_PATH = path.join(TEST_DIR, 'profile2.db');
-  const ACTIVE_PROFILE_PATH = path.join(TEST_DIR, '.active_profile');
+  let TEST_DIR;
+  let PROFILE1_PATH;
+  let PROFILE2_PATH;
+  let ACTIVE_PROFILE_PATH;
 
   beforeAll(() => {
-    // Clean up test directory
-    if (fs.existsSync(TEST_DIR)) {
-      fs.rmSync(TEST_DIR, { recursive: true, force: true });
-    }
-    fs.mkdirSync(TEST_DIR, { recursive: true });
+    TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-profile-switch-socket-'));
+    PROFILE1_PATH = path.join(TEST_DIR, 'profile1.db');
+    PROFILE2_PATH = path.join(TEST_DIR, 'profile2.db');
+    ACTIVE_PROFILE_PATH = path.join(TEST_DIR, '.active_profile');
   });
 
   afterAll(() => {
-    // Clean up
-    if (fs.existsSync(TEST_DIR)) {
-      fs.rmSync(TEST_DIR, { recursive: true, force: true });
-    }
+    fs.rmSync(TEST_DIR, { recursive: true, force: true });
   });
 
   test('socket event should be emitted with correct structure', () => {

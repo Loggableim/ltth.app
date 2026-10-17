@@ -417,4 +417,145 @@ describe('Talking Heads renderer lifecycle', () => {
       controller.clearAllTimeouts();
     }
   });
+
+  describe('mouth aperture hysteresis & frame deduplication', () => {
+    let io;
+    let logger;
+    let controller;
+    const sprites = {
+      idle_neutral: '/sprites/idle.png',
+      speak_closed: '/sprites/closed.png',
+      speak_mid: '/sprites/mid.png',
+      speak_open: '/sprites/open.png'
+    };
+
+    beforeEach(() => {
+      io = { emit: jest.fn() };
+      logger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+      controller = new AnimationController(io, logger, {
+        fadeInDuration: 0,
+        fadeOutDuration: 0,
+        blinkInterval: 1000,
+        obsEnabled: false
+      });
+    });
+
+    afterEach(() => {
+      controller.stopAllAnimations();
+      controller.clearAllTimeouts();
+    });
+
+    test('calibrates mouth intensity hysteresis thresholds and executes two-step 80ms pause decay', async () => {
+      await controller.startAnimation('v1', 'Viewer1', sprites, 1000, {
+        externalLifecycle: true,
+        playbackId: 'p-hysteresis'
+      });
+
+      // 1. Level 0.0 -> speak_closed
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.0);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_closed');
+
+      // 2. Below onset threshold (0.25 < 0.26) stays speak_closed
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.25);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_closed');
+
+      // 3. Onset threshold (0.26) opens to speak_mid
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.26);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_mid');
+
+      // 4. Below peak threshold (0.54 < 0.55) stays speak_mid
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.54);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_mid');
+
+      // 5. Peak threshold (0.55) opens to speak_open
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.55);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_open');
+
+      // 6. Falling from open: dips to 0.40 (above 0.38) stays speak_open (hysteresis)
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.40);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_open');
+
+      // 7. Falling below 0.38: dips to 0.35 drops to speak_mid
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.35);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_mid');
+
+      // 8. Falling from mid: dips to 0.20 (above 0.14) stays speak_mid (hysteresis)
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.20);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_mid');
+
+      // 9. Falling below 0.14: dips to 0.10 drops to speak_closed
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.10);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_closed');
+
+      // 10. Sudden silence decay test: from peak (0.7) to silence (0.0) produces two-step decay
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.70);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_open');
+
+      // Step 1: sudden drop to 0.0 decays open -> mid
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.0);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_mid');
+
+      // Step 2: next tick at 0.0 decays mid -> closed (completes 80ms decay at 40ms ticker rate)
+      controller.setMouthIntensity('v1', 'p-hysteresis', 0.0);
+      expect(controller.activeAnimations.get('v1').mouthFrame).toBe('speak_closed');
+    });
+
+    test('deduplicates socket frame emissions when mouth intensity does not change the mouth frame', async () => {
+      await controller.startAnimation('v2', 'Viewer2', sprites, 1000, {
+        externalLifecycle: true,
+        playbackId: 'p-dedup'
+      });
+
+      // Clear startup events
+      io.emit.mockClear();
+
+      // Initial level 0.6 -> transitions to speak_open (emits)
+      controller.setMouthIntensity('v2', 'p-dedup', 0.6);
+      expect(io.emit).toHaveBeenCalledTimes(1);
+      expect(io.emit).toHaveBeenCalledWith('talkingheads:animation:frame', {
+        userId: 'v2',
+        frame: 'speak_open',
+        playbackId: 'p-dedup'
+      });
+
+      // Subsequent levels that remain speak_open do NOT emit redundant socket frames
+      io.emit.mockClear();
+      controller.setMouthIntensity('v2', 'p-dedup', 0.7);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.8);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.55);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.45); // hysteresis band: still speak_open
+      expect(io.emit).not.toHaveBeenCalled();
+
+      // Transition to speak_mid -> emits once
+      controller.setMouthIntensity('v2', 'p-dedup', 0.30);
+      expect(io.emit).toHaveBeenCalledTimes(1);
+      expect(io.emit).toHaveBeenCalledWith('talkingheads:animation:frame', {
+        userId: 'v2',
+        frame: 'speak_mid',
+        playbackId: 'p-dedup'
+      });
+
+      // Subsequent levels that remain speak_mid do NOT emit
+      io.emit.mockClear();
+      controller.setMouthIntensity('v2', 'p-dedup', 0.30);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.28);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.20); // hysteresis band: still speak_mid
+      expect(io.emit).not.toHaveBeenCalled();
+
+      // Transition to speak_closed -> emits once
+      controller.setMouthIntensity('v2', 'p-dedup', 0.05);
+      expect(io.emit).toHaveBeenCalledTimes(1);
+      expect(io.emit).toHaveBeenCalledWith('talkingheads:animation:frame', {
+        userId: 'v2',
+        frame: 'speak_closed',
+        playbackId: 'p-dedup'
+      });
+
+      // Subsequent silence calls do NOT emit
+      io.emit.mockClear();
+      controller.setMouthIntensity('v2', 'p-dedup', 0.0);
+      controller.setMouthIntensity('v2', 'p-dedup', 0.0);
+      expect(io.emit).not.toHaveBeenCalled();
+    });
+  });
 });

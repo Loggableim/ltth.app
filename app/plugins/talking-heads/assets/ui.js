@@ -191,9 +191,9 @@
     if (!container || !pack) return;
     container.replaceChildren();
     Object.entries(pack.options || {}).forEach(([key, values]) => {
-      if (key === 'body' || key === 'head' || !Array.isArray(values)) return;
+      if (key !== 'expression' || !Array.isArray(values)) return;
       const label = document.createElement('label');
-      label.textContent = key === 'expression' ? directorText('expression') : key;
+      label.textContent = directorText('expression');
       const select = document.createElement('select');
       select.dataset.assetOption = key;
       values.forEach(value => select.append(option(value)));
@@ -292,7 +292,19 @@
       cacheDuration: Number(el('cacheDuration')?.value) || state.config.cacheDuration,
       spriteMode: el('spriteMode')?.value || state.config.spriteMode || 'asset-library',
       manualFallback: el('manualFallback')?.checked !== false,
-      debugLogging: Boolean(el('debugLogging')?.checked)
+      debugLogging: Boolean(el('debugLogging')?.checked),
+      nameplatePosition: el('nameplatePosition')?.value || 'below',
+      nameplateFontFamily: el('nameplateFontFamily')?.value || 'Inter, ui-sans-serif, system-ui, sans-serif',
+      nameplateFontSize: Number(el('nameplateFontSize')?.value) || 14,
+      nameplateFontColor: el('nameplateFontColor')?.value || '#ffffff',
+      nameplateBackgroundColor: el('nameplateBackgroundColor')?.value || '#060c1c',
+      nameplateBackgroundOpacity: Number(el('nameplateBackgroundOpacity')?.value ?? 0.75),
+      nameplateTextShadow: el('nameplateTextShadow')?.value || 'subtle',
+      nameplateTextStroke: el('nameplateTextStroke')?.value || 'none',
+      headEntranceAnimation: el('headEntranceAnimation')?.value || 'slide-up',
+      headExitAnimation: el('headExitAnimation')?.value || 'fade',
+      nameplateEntranceAnimation: el('nameplateEntranceAnimation')?.value || 'fade',
+      nameplateExitAnimation: el('nameplateExitAnimation')?.value || 'fade'
     };
   }
 
@@ -315,7 +327,72 @@
     bind('spriteMode', state.config.spriteMode || 'asset-library');
     check('manualFallback', state.config.manualFallback !== false);
     check('debugLogging', state.config.debugLogging);
+    bind('nameplatePosition', state.config.nameplatePosition || 'below');
+    bind('nameplateFontFamily', state.config.nameplateFontFamily || 'Inter, ui-sans-serif, system-ui, sans-serif');
+    bind('nameplateFontSize', state.config.nameplateFontSize ?? 14);
+    bind('nameplateFontColor', state.config.nameplateFontColor || '#ffffff');
+    bind('nameplateBackgroundColor', state.config.nameplateBackgroundColor || '#060c1c');
+    const nameplateOpacity = state.config.nameplateBackgroundOpacity ?? 0.75;
+    bind('nameplateBackgroundOpacity', nameplateOpacity);
+    if (el('opacityValue')) el('opacityValue').textContent = `${Math.round(nameplateOpacity * 100)}%`;
+    bind('nameplateTextShadow', state.config.nameplateTextShadow || 'subtle');
+    bind('nameplateTextStroke', state.config.nameplateTextStroke || 'none');
+    bind('headEntranceAnimation', state.config.headEntranceAnimation || 'slide-up');
+    bind('headExitAnimation', state.config.headExitAnimation || 'fade');
+    bind('nameplateEntranceAnimation', state.config.nameplateEntranceAnimation || 'fade');
+    bind('nameplateExitAnimation', state.config.nameplateExitAnimation || 'fade');
+    updateNameplatePreview();
     renderPacks();
+  }
+
+  function hexToRgba(hex, opacity = 1) {
+    if (!hex || typeof hex !== 'string') return `rgba(6, 12, 28, ${opacity})`;
+    let clean = hex.replace('#', '').trim();
+    if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+    if (clean.length !== 6) return `rgba(6, 12, 28, ${opacity})`;
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    const a = Math.max(0, Math.min(1, Number(opacity) ?? 1));
+    return `rgba(${r}, ${g}, ${b}, ${a})`;
+  }
+
+  function updateNameplatePreview() {
+    const avatar = el('nameplatePreviewAvatar');
+    const nameplate = el('nameplatePreviewName');
+    if (!avatar || !nameplate) return;
+
+    const position = el('nameplatePosition')?.value || 'below';
+    avatar.className = `avatar nameplate-${position}`;
+
+    const fontFamily = el('nameplateFontFamily')?.value || 'Inter, ui-sans-serif, system-ui, sans-serif';
+    const fontSize = Number(el('nameplateFontSize')?.value) || 14;
+    const fontColor = el('nameplateFontColor')?.value || '#ffffff';
+    const bgColor = el('nameplateBackgroundColor')?.value || '#060c1c';
+    const bgOpacity = Number(el('nameplateBackgroundOpacity')?.value ?? 0.75);
+    const textShadow = el('nameplateTextShadow')?.value || 'subtle';
+    const textStroke = el('nameplateTextStroke')?.value || 'none';
+
+    nameplate.style.fontFamily = fontFamily;
+    nameplate.style.fontSize = `${fontSize}px`;
+    nameplate.style.color = fontColor;
+    nameplate.style.backgroundColor = hexToRgba(bgColor, bgOpacity);
+
+    const shadowMap = {
+      'none': 'none',
+      'subtle': '0 1px 3px rgba(0, 0, 0, 0.8)',
+      'medium': '0 2px 8px rgba(0, 0, 0, 0.9)',
+      'glow': '0 0 8px rgba(101, 225, 255, 0.8), 0 0 14px rgba(101, 225, 255, 0.5)'
+    };
+    nameplate.style.textShadow = shadowMap[textShadow] || textShadow || 'none';
+
+    const strokeMap = {
+      'none': '0 transparent',
+      '1px black': '1px #000000',
+      '2px black': '2px #000000',
+      '1px white': '1px #ffffff'
+    };
+    nameplate.style.webkitTextStroke = strokeMap[textStroke] || textStroke || 'none';
   }
 
   function renderHealth(status = {}) {
@@ -667,6 +744,31 @@
     el('loadViewerBarBtn')?.addEventListener('click', loadViewerBar);
     el('saveViewerBarBtn')?.addEventListener('click', saveViewerBar);
     el('refreshLogsBtn')?.addEventListener('click', loadLogs);
+    el('saveNameplateSettingsBtn')?.addEventListener('click', () => saveConfig().catch(() => {}));
+    [
+      'nameplatePosition',
+      'nameplateFontFamily',
+      'nameplateFontSize',
+      'nameplateFontColor',
+      'nameplateBackgroundColor',
+      'nameplateBackgroundOpacity',
+      'nameplateTextShadow',
+      'nameplateTextStroke',
+      'headEntranceAnimation',
+      'headExitAnimation',
+      'nameplateEntranceAnimation',
+      'nameplateExitAnimation'
+    ].forEach(id => {
+      const input = el(id);
+      if (!input) return;
+      input.addEventListener('input', () => {
+        if (id === 'nameplateBackgroundOpacity' && el('opacityValue')) {
+          el('opacityValue').textContent = `${Math.round(Number(input.value) * 100)}%`;
+        }
+        updateNameplatePreview();
+      });
+      input.addEventListener('change', updateNameplatePreview);
+    });
     el('advancedSettings')?.addEventListener('toggle', event => {
       if (!event.target.open) return;
       loadManualSets();

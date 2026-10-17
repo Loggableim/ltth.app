@@ -45,6 +45,13 @@ describe('GCCE UI - All Commands Display Fix', () => {
         expect(uiHtmlContent).toMatch(/id="all-commands-container"/);
     });
 
+    test('populates exact filter values from registered commands and distinguishes empty matches', () => {
+        expect(uiHtmlContent).toContain('function populateCommandFilterOptions()');
+        expect(uiHtmlContent).toContain(".map(command => typeof command.category === 'string' ? command.category.trim() : '')");
+        expect(uiHtmlContent).toContain("vip: t('plugins.gcce.ui.permission_vip', 'VIP')");
+        expect(uiHtmlContent).toContain("'plugins.gcce.ui.no_matching_commands'");
+    });
+
     test('commands-container element should exist in HTML (default container)', () => {
         // Verify that the default container exists in the HTML
         expect(uiHtmlContent).toMatch(/id="commands-container"/);

@@ -119,22 +119,22 @@ describe('Talking Heads speaker-stage slot overlay', () => {
 
   test.each([
     [
-      'Boba',
+      'Boba Fox',
       { packId: 'boba', characterId: 'Fox', options: { expression: 'Happy' } },
       '/api/talkingheads/sprite/boba-Fox.png',
       'Fox · Happy'
     ],
     [
-      'Kenney',
-      { packId: 'kenney', characterId: 'body_blue', options: { eye: 'eye_human' } },
-      '/api/talkingheads/sprite/kenney-body_blue.png',
-      'Kenney · body_blue · eye_human'
+      'Boba Bear',
+      { packId: 'boba', characterId: 'Bear', options: { expression: 'Angry' } },
+      '/api/talkingheads/sprite/boba-Bear.png',
+      'Bear · Angry'
     ],
     [
-      'RGS',
-      { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } },
-      '/api/talkingheads/sprite/rgs-head1.png',
-      'RGS · head1 · hair1 · eyes1 · mouth1'
+      'Boba Bunny',
+      { packId: 'boba', characterId: 'Bunny', options: { expression: 'Scared' } },
+      '/api/talkingheads/sprite/boba-Bunny.png',
+      'Bunny · Scared'
     ]
   ])('labels a %s reel winner with its full pack options', (_packName, selection, spriteUrl, expectedLabel) => {
     const { dom, handlers } = bootOverlay();
@@ -286,5 +286,113 @@ describe('Talking Heads speaker-stage slot overlay', () => {
     const stageAvatar = dom.window.document.querySelector('#speakerStage .avatar img');
     expect(stageAvatar).not.toBeNull();
     expect(stageAvatar.getAttribute('src')).toBe('/api/talkingheads/sprite/Bear.png');
+  });
+
+  test('applies nameplate CSS variables on speakerStage and updates live upon talkingheads:config:update', () => {
+    const { dom, handlers } = bootOverlay();
+    const stage = dom.window.document.getElementById('speakerStage');
+    expect(stage).not.toBeNull();
+
+    // Verify initial default properties are set
+    expect(stage.style.getPropertyValue('--th-name-font')).toBe('Inter, ui-sans-serif, system-ui, sans-serif');
+    expect(stage.style.getPropertyValue('--th-name-size')).toBe('14px');
+    expect(stage.style.getPropertyValue('--th-name-color')).toBe('#ffffff');
+    expect(stage.style.getPropertyValue('--th-name-bg')).toBe('rgba(6, 12, 28, 0.75)');
+
+    // Trigger live config update
+    const configUpdate = handlers.get('talkingheads:config:update');
+    expect(configUpdate).toEqual(expect.any(Function));
+
+    configUpdate({
+      config: {
+        nameplateFontFamily: 'Roboto, sans-serif',
+        nameplateFontSize: 22,
+        nameplateFontColor: '#ff00aa',
+        nameplateBackgroundColor: '#102030',
+        nameplateBackgroundOpacity: 0.5,
+        nameplateTextShadow: 'glow',
+        nameplateTextStroke: '2px black'
+      }
+    });
+
+    expect(stage.style.getPropertyValue('--th-name-font')).toBe('Roboto, sans-serif');
+    expect(stage.style.getPropertyValue('--th-name-size')).toBe('22px');
+    expect(stage.style.getPropertyValue('--th-name-color')).toBe('#ff00aa');
+    expect(stage.style.getPropertyValue('--th-name-bg')).toBe('rgba(16, 32, 48, 0.5)');
+    expect(stage.style.getPropertyValue('--th-name-shadow')).toContain('rgba(101, 225, 255');
+    expect(stage.style.getPropertyValue('--th-name-stroke')).toBe('2px #000000');
+  });
+
+  test('renders nameplate position class, dynamic updates, and entrance/exit animation classes on avatar instance', () => {
+    const { dom, handlers } = bootOverlay();
+    const start = handlers.get('talkingheads:animation:start');
+    const configUpdate = handlers.get('talkingheads:config:update');
+    const end = handlers.get('talkingheads:animation:end');
+
+    expect(start).toEqual(expect.any(Function));
+    expect(configUpdate).toEqual(expect.any(Function));
+    expect(end).toEqual(expect.any(Function));
+
+    // Configure entrance/exit animations
+    configUpdate({
+      config: {
+        nameplatePosition: 'below',
+        headEntranceAnimation: 'bounce',
+        headExitAnimation: 'slide-down',
+        nameplateEntranceAnimation: 'pop',
+        nameplateExitAnimation: 'slide-up'
+      }
+    });
+
+    start({
+      playbackId: 'test-playback-1',
+      userId: 'streamer-1',
+      username: 'CoolStreamer',
+      sprites: { idle_neutral: '/api/talkingheads/sprite/Fox.png' }
+    });
+
+    const avatarElem = dom.window.document.querySelector('#speakerStage .avatar');
+    expect(avatarElem).not.toBeNull();
+    expect(avatarElem.classList.contains('nameplate-below')).toBe(true);
+
+    const headImg = avatarElem.querySelector('img');
+    const nameSpan = avatarElem.querySelector('.avatar-name');
+    expect(headImg).not.toBeNull();
+    expect(nameSpan).not.toBeNull();
+    expect(nameSpan.textContent).toBe('CoolStreamer');
+    expect(headImg.classList.contains('th-enter-bounce')).toBe(true);
+    expect(nameSpan.classList.contains('th-enter-pop')).toBe(true);
+
+    // Live update position to above without reload
+    configUpdate({
+      config: {
+        nameplatePosition: 'above'
+      }
+    });
+    expect(avatarElem.classList.contains('nameplate-above')).toBe(true);
+    expect(avatarElem.classList.contains('nameplate-below')).toBe(false);
+
+    // Live update position to hidden
+    configUpdate({
+      config: {
+        nameplatePosition: 'hidden'
+      }
+    });
+    expect(avatarElem.classList.contains('nameplate-hidden')).toBe(true);
+
+    // End animation with exit transition
+    end({
+      playbackId: 'test-playback-1',
+      userId: 'streamer-1',
+      fadeOutDuration: 400
+    });
+
+    expect(headImg.classList.contains('th-exit-slide-down')).toBe(true);
+    expect(nameSpan.classList.contains('th-exit-slide-up')).toBe(true);
+    expect(avatarElem.style.getPropertyValue('--th-exit-duration')).toBe('400ms');
+
+    // After animation duration finishes, avatar should be cleaned up
+    jest.advanceTimersByTime(400);
+    expect(dom.window.document.querySelector('#speakerStage .avatar')).toBeNull();
   });
 });

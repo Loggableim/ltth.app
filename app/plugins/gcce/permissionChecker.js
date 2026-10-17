@@ -26,7 +26,7 @@ class PermissionChecker {
     checkPermission(userRole, requiredPermission, userId = null) {
         // Check memoized result if userId provided
         if (userId) {
-            const cached = this.memoizer.get(userId, requiredPermission);
+            const cached = this.memoizer.get(userId, userRole, requiredPermission);
             if (cached !== null) {
                 return cached;
             }
@@ -47,7 +47,7 @@ class PermissionChecker {
             
             // Memoize result
             if (userId) {
-                this.memoizer.set(userId, requiredPermission, result);
+                this.memoizer.set(userId, role, required, result);
             }
             
             return result;
@@ -58,7 +58,7 @@ class PermissionChecker {
         
         // Memoize result
         if (userId) {
-            this.memoizer.set(userId, requiredPermission, result);
+            this.memoizer.set(userId, role, required, result);
         }
         
         return result;
@@ -76,7 +76,7 @@ class PermissionChecker {
         }
         
         // Check if moderator
-        if (userData.isModerator || userData.teamMemberLevel > 0) {
+        if (userData.isModerator === true) {
             return 'moderator';
         }
         

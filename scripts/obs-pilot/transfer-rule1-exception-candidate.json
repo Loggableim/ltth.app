@@ -1,0 +1,2045 @@
+{
+  "schemaVersion": 1,
+  "status": "proposed-inactive-review-only",
+  "sourceVersion": "OBS 32.1.0 installed tree",
+  "sourceManifest": "docs/coordination/obs-portable-transfer-manifest.json",
+  "candidateScope": "Exactly 176 manifest-pinned OBS locale INI target files with 258 current rule-1 lines; no ws candidate.",
+  "activation": "NOT ACTIVE: build-transfer-iso.ps1 and normalizer do not load this file.",
+  "evaluationOrder": [
+    "canonical relative target allowlist exact match",
+    "no-reparse chain",
+    "file size and SHA-256 match this policy and source manifest",
+    "run credential rules 2-7 normally",
+    "skip credential rule 1 only for exact policy entry"
+  ],
+  "neverBypass": [
+    "path safety",
+    "extension denylist",
+    "manifest byte/hash",
+    "reparse checks",
+    "hidden/system checks",
+    "text size limit",
+    "credential rules 2-7",
+    "aggregate and file-count limits"
+  ],
+  "files": [
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/af-ZA.ini",
+      "bytes": 2665,
+      "sha256": "3648a1c8ef3a82ee4c8e9919521b24d12e5dcd7d83e5168cc6b8ed980b99f8bf",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ar-SA.ini",
+      "bytes": 3815,
+      "sha256": "09a7e0b968081b1610202f4100eb4fcf4e1360a246788f96bf2190066d86b823",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/az-AZ.ini",
+      "bytes": 3488,
+      "sha256": "d0741d5d72b31cbb0f8c42f045796fae756aaca1383a6cfc85c63815b53d400e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/be-BY.ini",
+      "bytes": 4241,
+      "sha256": "c823d85671d1acdde6f91dff2aa8c157a4aecc2d6e01d3515383040b2468c628",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ca-ES.ini",
+      "bytes": 3446,
+      "sha256": "6515d0bc3a855013bd45cbff4b411b905593cc51a6195f524651fa631b1341db",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/cs-CZ.ini",
+      "bytes": 3305,
+      "sha256": "b6c373fe648651ac3c7f830e617ffc2e3a29463bd2ac8908660195b90f0ae46f",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/da-DK.ini",
+      "bytes": 3174,
+      "sha256": "6a1dabe45bc20587c4086bc1aedb4522303e122302ebb5e3c9ee22149e49f4cb",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/de-DE.ini",
+      "bytes": 3258,
+      "sha256": "6f76fdadadd5036699c3f5a9725c667b08d0705e0fe63fb836c83722375ad648",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/el-GR.ini",
+      "bytes": 4718,
+      "sha256": "1dd951d8aaf06a2d78528f912a584ffd315d263f04c8ddd72d4f09c5c4597425",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/en-US.ini",
+      "bytes": 3119,
+      "sha256": "6ddd43d387ccdf5afb519a949a80409cab9a79c9c289dc265023e95a4ffe0f37",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        13
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/es-ES.ini",
+      "bytes": 3398,
+      "sha256": "a9921b23de2c1ec1e75f0b72ac10375ca8a63921d1213c85ab71bc02eeada7d4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/et-EE.ini",
+      "bytes": 3172,
+      "sha256": "3f51ac9ff853eeefd15eb430a5b746f95b6697c18489f9cb381481863c18944d",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/eu-ES.ini",
+      "bytes": 3259,
+      "sha256": "0b4ff4615ac64d11446eca6ec86c32f5dacaf4749e2473db46b91d73e74f6037",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/fa-IR.ini",
+      "bytes": 4006,
+      "sha256": "26a77a82861613ea9e2de2b02d4617c80584a09bcc91a65de93670521f4ccc40",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/fi-FI.ini",
+      "bytes": 3308,
+      "sha256": "e35a5b5fb5cfd36e7cfbfc470c9986ef5e045da65de97cfa400b2f27b0c0b8ef",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/fil-PH.ini",
+      "bytes": 3150,
+      "sha256": "472c494d578ca72f4bda8c43e0bf601a4bc9379a5613067de69325cc085b92bc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/fr-FR.ini",
+      "bytes": 3477,
+      "sha256": "68ef3025c0295f7655bf3c5f6b4b6b45501d406347a4757dbe5d3531a8d25694",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/gl-ES.ini",
+      "bytes": 3406,
+      "sha256": "d1badc57afb637201a0553ae55f5e1859653ac04c6f258613cd5cfd05cf30e64",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/he-IL.ini",
+      "bytes": 3511,
+      "sha256": "0ab46440a203ce1b911f3a36fd219b57487eaa2a76e3de901ac4b7616f99e66d",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/hi-IN.ini",
+      "bytes": 5136,
+      "sha256": "ea40d9b6eac0fc4910c3d195a26e007ae6c916a8b59bbc2b7f3f93cf459dd6a5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/hr-HR.ini",
+      "bytes": 3345,
+      "sha256": "83134254d36083c412a91182308b15fee39d1d1e032c6a5b14261318eb4918d7",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/hu-HU.ini",
+      "bytes": 3527,
+      "sha256": "90923a6be0da8b8616dcdaaa4269ed712cf092542d4d9564ce6cce6caf9c6805",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/hy-AM.ini",
+      "bytes": 4335,
+      "sha256": "9aaa13a1eb066bf1939de19477ae8ef7ecf5302232f5013891c6e1988954a1e4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/id-ID.ini",
+      "bytes": 3236,
+      "sha256": "77948cecb219f632e8c318ec7dfdfff0f5d5d65727e220524ac501bf50ecb229",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/it-IT.ini",
+      "bytes": 3358,
+      "sha256": "8ed450d0da606be3670376334eae06160ba0ff6b35dee930a456d8cd53eed176",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ja-JP.ini",
+      "bytes": 3649,
+      "sha256": "b1c604c7f307fc15e167d5a877833b739938b9aa229cb7deefb2fcd310c9a325",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ka-GE.ini",
+      "bytes": 5135,
+      "sha256": "c9b7d53df9e5589665816a256a12cd7887d8dc0b9b6eed6669eca31515ed7fc0",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/kaa.ini",
+      "bytes": 2080,
+      "sha256": "cc4714683f1f2af6836aa63a73269953aa1b1a705c35adcae99ffd2b43d64429",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/kmr-TR.ini",
+      "bytes": 3424,
+      "sha256": "74a72ecfe0b529734883a5a9df303c431e1f1400b079a6fd63fbaf1586180b69",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ko-KR.ini",
+      "bytes": 3352,
+      "sha256": "0150c22f6e5bb47ac528b9347950afe38e96a264f449f6fa611b726797332dd5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/lo-LA.ini",
+      "bytes": 5230,
+      "sha256": "5279535ef19adcc31dcf43d9cc85b9ac418511552db49f6e5076c73defcd7f88",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ms-MY.ini",
+      "bytes": 3207,
+      "sha256": "bcd24ee1b789ef9d75b0ef74c591c200370a0abdb93d4d38dcf2b4a9345f3705",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/nb-NO.ini",
+      "bytes": 1713,
+      "sha256": "e8c52af945b8d7ac6dd4dfc7b3116057027dcbb8b3b1e425311061c9f4060724",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        5
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/nl-NL.ini",
+      "bytes": 3320,
+      "sha256": "b4fb4c73be9a4523b77dc108e4ace80cf6e37c8ab51f98f9b8d5dd6d6727a88d",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/pl-PL.ini",
+      "bytes": 3359,
+      "sha256": "501f3b4456a2284a4ff99b6cac0b050c5729589a6736d0c18c33defa164f5808",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/pt-BR.ini",
+      "bytes": 3335,
+      "sha256": "178fc075065755c84fa825c3b3ad03c63dbd4c797083740857f8779ac266ad2c",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/pt-PT.ini",
+      "bytes": 3351,
+      "sha256": "97fb53d7e779d677ba2a7ac9e138a596a15025ede6cfd4358f36a356fa4a15d9",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ro-RO.ini",
+      "bytes": 3424,
+      "sha256": "14f425a7234452fc5a7e0f36b4f851348775feaa618fdf85671f560332639d0b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ru-RU.ini",
+      "bytes": 4200,
+      "sha256": "0428bf101b1396b3f8a76a1b0d994004a61d77bcfb69178a721ca3dece16e63a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/si-LK.ini",
+      "bytes": 2102,
+      "sha256": "8799c427b1bdaebcbd7f44d92e7c3575aba64c6d2fc5ede68a2320894eb9bd6a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        5
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/sk-SK.ini",
+      "bytes": 3307,
+      "sha256": "edebcbef852f2cf63f7ef7f722d6e57b9076934b72dfb9aee3645734f03c1f83",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/sl-SI.ini",
+      "bytes": 3280,
+      "sha256": "15551daf2a904c380c2b02a7b4230c34b16c6bc16f7d442cdc18b70f03ac61c4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/sr-SP.ini",
+      "bytes": 4332,
+      "sha256": "5b582ce65800ce59ce5bf651a87375b91465d3ced4f981e03c08786b148877b2",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/sv-SE.ini",
+      "bytes": 3340,
+      "sha256": "5e04d14e64896b43c04fe1a343b9019537cd80a1d913c67ad60e2540fedc3a9a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/th-TH.ini",
+      "bytes": 5340,
+      "sha256": "d372f3a433061cfaef8f733271a4423336765e3bea72562f7f3c1eb695162ebb",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/tr-TR.ini",
+      "bytes": 3414,
+      "sha256": "b4acf21a7fec9e9bd52b9744675aa0021fa1a5fde204f6f739768eb64e5fd1eb",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/tt-RU.ini",
+      "bytes": 684,
+      "sha256": "ec45ae51948609a470085e349314b28cade3eb6f254e73bda31b0d0bb3ff5be5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        2
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/ug-CN.ini",
+      "bytes": 4331,
+      "sha256": "8301ff2e4b457bb4507116d6124973ae86db6d99194175d4362a0774de68205f",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/uk-UA.ini",
+      "bytes": 4394,
+      "sha256": "3cbc3fc50d0eac4bc3073279d4399aecf02db1347deb5eb9a0b910a3de09f34e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/obs-websocket/locale/vi-VN.ini",
+      "bytes": 3304,
+      "sha256": "7c66e12be03a699ebfa2f38a332a82a699f2919bd272bd38fd88617759ca00c3",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "OBSWebSocket.Settings.Password",
+      "category": "obs-websocket UI settings label",
+      "hitLines": [
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/af-ZA.ini",
+      "bytes": 265,
+      "sha256": "edcbc6c9f2a71f25fcda0abe19e081a68720860fe1036f533f86fb33416defea",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ar-SA.ini",
+      "bytes": 833,
+      "sha256": "970cf4d3e535feca9dcf1128081190afc39dcc53975ef2e82b94252806de92c5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/az-AZ.ini",
+      "bytes": 711,
+      "sha256": "622e1c64ab48dc8c4db5abf127db52c33a5af33da60bc58501db733117c24fab",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        7
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ba-RU.ini",
+      "bytes": 90,
+      "sha256": "adbdce156a9676d8c4ab302e268d588fc3bdc4e49c252cd52ac56bd0c5e9a03e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        3
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/be-BY.ini",
+      "bytes": 1022,
+      "sha256": "49c41e5c545ec252fa875c829dec95beb12f1dda469393bcfc89d5230d3f8100",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/bg-BG.ini",
+      "bytes": 370,
+      "sha256": "a872a47780306d2247067b1c9df6ea27aa0ccb7d8115ad797b98c8f57abca427",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        4,
+        7
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/bn-BD.ini",
+      "bytes": 585,
+      "sha256": "5c7bfdb6971647454498dac87ae521a459ab3885399bc7f79d33551dc78f4c52",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ca-ES.ini",
+      "bytes": 759,
+      "sha256": "88643c7bf187d5354519df2b91d05588e64ff9ce3c66731c46196f452af7be2b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/cs-CZ.ini",
+      "bytes": 678,
+      "sha256": "d60d132bc264c9c6c63cda63ea41b271df3268962356598cf4066d5f95b993bf",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        7
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/da-DK.ini",
+      "bytes": 599,
+      "sha256": "e63d2be6d1ee3f48cd8ffa8ad222b72f8b47ec711689fb5b69eea61f6bb8b250",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/de-DE.ini",
+      "bytes": 714,
+      "sha256": "6e9258e1d729d86d4d2e3fcbd9059b29518ca4d9c13ca5ac794a735c7e84df7c",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/el-GR.ini",
+      "bytes": 686,
+      "sha256": "0e4d8f534a112823d63c684bd01c8443098bdfdaa64854e4f8cb7da1d02e15e4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/en-US.ini",
+      "bytes": 632,
+      "sha256": "ca9c449d21341e801e88aa750d4666d5ef2b3bcac1a13f0e918275c4a42c6cd5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/es-ES.ini",
+      "bytes": 765,
+      "sha256": "0314991cf4911f5f120365006c065fb6932b8a02ceed1bec4d5a200b5f5754d4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/et-EE.ini",
+      "bytes": 656,
+      "sha256": "2c4fe6c4f75073ebe33d1a2835804ecc89e0a97b628b632d0d130a72b18b0a87",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/eu-ES.ini",
+      "bytes": 338,
+      "sha256": "7e3d5a8779f06bc331b19754e054cf5ba9e0c993818f2c0d5bebeb81eca61db5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/fa-IR.ini",
+      "bytes": 972,
+      "sha256": "5437a8e5650d5e6da056711d3acf98073589fd82089b4a2a2a70adab8f819c53",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/fi-FI.ini",
+      "bytes": 681,
+      "sha256": "7b336e7229d435a059895199057efd00130201e94389f9ff1023ff32c9221fdc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/fil-PH.ini",
+      "bytes": 310,
+      "sha256": "83ccf0cbb61590da5dbf3aff971da9668a52f0db5737ee169527d5ac4f6e23bd",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/fr-FR.ini",
+      "bytes": 672,
+      "sha256": "414e32d70da5dff79827bff3b72cad96cd6052376397cddfc7e70cbbe3f9f29b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/gd-GB.ini",
+      "bytes": 363,
+      "sha256": "aa6d97f1e3bc60db87d506d7a836d2e27eba9b37d8111914d7502a8ed2fdf45b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/gl-ES.ini",
+      "bytes": 701,
+      "sha256": "46d28371e52a399ca3f651abb499f40445c1cbbc74db7c949bddb0985ebb1c93",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/he-IL.ini",
+      "bytes": 831,
+      "sha256": "aa0377315a3e9dd5b5d39d55e0c1b6cc6f0e7e51232ea61045a10a5b9a7574e2",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/hi-IN.ini",
+      "bytes": 1254,
+      "sha256": "215e869d9ca974a9ff354e0b2dfea1b38c535802bed48b6fe5b59dd5ff699e47",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/hr-HR.ini",
+      "bytes": 667,
+      "sha256": "f8abeec15659a074ed6952b9e70679c9088e30572d9931d833a1d672b74e9613",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/hu-HU.ini",
+      "bytes": 805,
+      "sha256": "6ddb6a900f3147f2b1f5bcc7b1b11128483c85f56b08093a4fe12c2bdc0c394d",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/hy-AM.ini",
+      "bytes": 504,
+      "sha256": "1686142c08cb1ff1fe927caf2444cc77d38dc3a38aac9d9ab4acee6e52b78319",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/id-ID.ini",
+      "bytes": 696,
+      "sha256": "ebb38d81016b037fe7e62aef47da190f5ba3c7f3dd89c050005179fd53f01447",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/it-IT.ini",
+      "bytes": 723,
+      "sha256": "0c5e9064a7dc8c21292979c41b762833ec5a4fc97b73a725caa6f6f45bb869a5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        7
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ja-JP.ini",
+      "bytes": 798,
+      "sha256": "bc5ecbbc2b6f77c0a59c9cb1b57be809b270acc60166df9a6e48ce42aeb86dee",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ka-GE.ini",
+      "bytes": 1564,
+      "sha256": "5b1c54ed654a97d8e0b26a0ebcfd40071d2fdb2a8b8f76b5b96023b9df68e06e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/kaa.ini",
+      "bytes": 322,
+      "sha256": "1e4468dcca39569e88c64d5edf5e5fa89caf4e24b693727449f47769d63792d2",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        5
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/kab-KAB.ini",
+      "bytes": 311,
+      "sha256": "d52a7550a754e8555c2186dd89e4d842b6170cf675cd3b60b5693bc61a26357f",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/kmr-TR.ini",
+      "bytes": 493,
+      "sha256": "c2a87868b27fde85b2267cd58e8910576e19427d62c1fd20be11f0fa9416b7ee",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/lo-LA.ini",
+      "bytes": 1356,
+      "sha256": "7ff9a24c7af6c6833179a4c36191820312edb98c3b44bc971a151a5640e1d170",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/mn-MN.ini",
+      "bytes": 434,
+      "sha256": "6f191cfaf039449d589979573fb26c49c60f3519309026bc8ce1c88c77d95604",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ms-MY.ini",
+      "bytes": 656,
+      "sha256": "a1b733ab554d81d2eec6e8de3d3cc9db2904ba7e5dc45eda86e5b122efefd8be",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        7,
+        10
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/nb-NO.ini",
+      "bytes": 296,
+      "sha256": "737d95497f7b0d4276e890bfff8a44590a57490b05564d972ad1ba15fabc26ff",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/nl-NL.ini",
+      "bytes": 654,
+      "sha256": "4f5d78d4a63a8c355d29ccf9eb07dea97e8ba253e8e7c0c2b7ddd3d235209406",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/nn-NO.ini",
+      "bytes": 122,
+      "sha256": "7b00b969d952949e261530c6f47e71ab38aa77c283217ecae51bd1010b028ae5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        4
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/pl-PL.ini",
+      "bytes": 704,
+      "sha256": "b711b9b6fbbd8bd08c343bedc5abd0eab8f637deb5a78e8d940c5d193e2d7d22",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/pt-BR.ini",
+      "bytes": 744,
+      "sha256": "ca6ba666af2436affd94f98026a21a1649233cfb4217f004d43137e741ee9363",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/pt-PT.ini",
+      "bytes": 755,
+      "sha256": "2c4aca13d9a011a38506460cfaaacde0eecc236a016f8f5d943e29c415d849e7",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ro-RO.ini",
+      "bytes": 380,
+      "sha256": "0fbfddb37936914ab4e782634ac038a76c8e5de24b86706d4ed9e3ce0b4eb305",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        5,
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ru-RU.ini",
+      "bytes": 1106,
+      "sha256": "79d8bf1239ca33e8feb79610b9f24688fd58cbad87eeb7f712fbb3aba3b4a578",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/si-LK.ini",
+      "bytes": 537,
+      "sha256": "271944bc358b901d71a2b19fad7a531c5b799411e0251d3b7ab5f993969b12cc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sk-SK.ini",
+      "bytes": 685,
+      "sha256": "1eb44a4740bbeeb32e4b30f4486b271a97f198ab9b167bb5d3701e09655ed383",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        7
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sl-SI.ini",
+      "bytes": 578,
+      "sha256": "94d516166d6e9706067384cd21ffb7da774e287b85f8fcdb765d8e4e65d11b9e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sq-AL.ini",
+      "bytes": 64,
+      "sha256": "d19e21ac1c197c104ba7a5e479218911e4f395c26fde9c6aa0532ae90e656805",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        1
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sr-CS.ini",
+      "bytes": 295,
+      "sha256": "ada63851151c23f64e1893aeff151dc1cbf5cf3c33e9f87b1242bc5ac0297534",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        5,
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sr-SP.ini",
+      "bytes": 989,
+      "sha256": "9fce936fdd19714f037b1c511bcd856575afd72fdc623a232ddf46bfb2500170",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/sv-SE.ini",
+      "bytes": 621,
+      "sha256": "fd216de67d9bc28a2649c3b699782db78ebbb9ddce225755ca96b65e7acabfce",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        9
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/szl-PL.ini",
+      "bytes": 321,
+      "sha256": "273dfe4ec65cc207483543dbe1fa32236989c5ec089707b87bca24a10b65b60d",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ta-IN.ini",
+      "bytes": 446,
+      "sha256": "dcc5f716769f459a09ebde6e444a084a4de2fc953e4cb0927fe1a160a7ae13d8",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/th-TH.ini",
+      "bytes": 1379,
+      "sha256": "2813bc999e27907837f3e8990d2effc0d4e8566df0dc358e8814378253627ea2",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/tl-PH.ini",
+      "bytes": 282,
+      "sha256": "c2df651daec527c10a8e6d48013201cfb95ec947f8d3a073fe971ac9d55fbd34",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        6
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/tr-TR.ini",
+      "bytes": 746,
+      "sha256": "729071c64af6cc8e1fe46364c53673dce1b94785cd29c724fdc270a4aa63ff98",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/tt-RU.ini",
+      "bytes": 380,
+      "sha256": "661c83cb2d00d4a1b8d43320690a138f45ff3297c8d0fc98c5dce011f3b82811",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        6,
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/ug-CN.ini",
+      "bytes": 979,
+      "sha256": "56c8d031ff4fd6a4c56afeed5e922cd45dec1afa32bcbb34b95f42a3da38522b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        8
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/uk-UA.ini",
+      "bytes": 1100,
+      "sha256": "201c97d3029ddb057ee78a926f0f86d71f7a0a4cf279d03d599d3a184df4f69e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-plugins/rtmp-services/locale/vi-VN.ini",
+      "bytes": 782,
+      "sha256": "620cd9cbf306c2d00ddb7da62432167dd89afd1ed408542eae33986bc4f941fa",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Password,StreamKey",
+      "category": "rtmp-services UI authentication label",
+      "hitLines": [
+        8,
+        11
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/af-ZA.ini",
+      "bytes": 34813,
+      "sha256": "81897e7083be74eaf253f4b37c4a6db51b8b9ee2c7c57bfb201695bc1d383ad4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        188,
+        384
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/an-ES.ini",
+      "bytes": 61253,
+      "sha256": "86e7f86c8ba9ae939ebe46838226413b1ba09fb6c6cbc4c76dc6b2041d57b964",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        148
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ar-SA.ini",
+      "bytes": 114801,
+      "sha256": "6d07e6d10db58331d3574de0c0b068679d486895e276dfc05bd1db7d1344ab4f",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195,
+        793
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/az-AZ.ini",
+      "bytes": 100681,
+      "sha256": "040ffd316520ed0800c5ba50e28c97426a8ed463c4b6dddfb342c7837d650929",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ba-RU.ini",
+      "bytes": 10108,
+      "sha256": "1052a6a2189c7c0e6867725e3dc1c8220847798cd8b19f5b438fe2b78a11605a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        119
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/be-BY.ini",
+      "bytes": 127298,
+      "sha256": "970f2eb40b18fbfdf6af0803254caca596a2e2c9b8fd3e693e519d50dc0f9a0e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        194,
+        797
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/bg-BG.ini",
+      "bytes": 118788,
+      "sha256": "6f0a8355d7e493f27934467906421a687937e980f1b2ea93c9c1428ed07063ba",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        172,
+        737
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/bn-BD.ini",
+      "bytes": 94419,
+      "sha256": "11d38661bd3cf982b5398b66eb72f32f588b61914a1afb59864ebf9a8d7cdd36",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        166,
+        617
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ca-ES.ini",
+      "bytes": 98250,
+      "sha256": "5ccd215f2695b7b4beadfc638f079ee55f3e78fd70f5bfc4d22d8309136e0317",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192,
+        786
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/cs-CZ.ini",
+      "bytes": 95364,
+      "sha256": "5311d40a469e9dbd940335580b65c0c0be68e2898613de81dae273033eef2538",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        187
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/da-DK.ini",
+      "bytes": 85313,
+      "sha256": "d4a218b39c75ff7a58c8f99555e3216b037a2230a0e2523e56e41a6b4588c473",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        180,
+        750
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/de-DE.ini",
+      "bytes": 94679,
+      "sha256": "6ce084fa1298c855b2ff6620c09f34eb9e7b9c147775753a562bbf7df3f95571",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        187,
+        771
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/el-GR.ini",
+      "bytes": 123842,
+      "sha256": "510359c03265d5f34b38802a61ae60910a137107f627c6802cce66d35b7af2e0",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        190,
+        778
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/en-US.ini",
+      "bytes": 95853,
+      "sha256": "7ff98459be512ab44f490409210a1a791c714748ce46c65b4d05e10e453b0642",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        228,
+        993
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/eo-UY.ini",
+      "bytes": 20185,
+      "sha256": "25a4645ee2d2aa0aeaae4cd6708c0ca01630dd2319aefcb8a12e5be54e44b44a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        172,
+        336
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/es-ES.ini",
+      "bytes": 97096,
+      "sha256": "bd53fe1961c66cf7f751cbb2333093c438f2a95042c1743ff974e4f11af9f176",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        191,
+        786
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/et-EE.ini",
+      "bytes": 91954,
+      "sha256": "2b2cf9587703ec2601ee72cbd66cf53e3973631ef636d507707b7cf37ea670ac",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192,
+        794
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/eu-ES.ini",
+      "bytes": 94716,
+      "sha256": "a52493cde14bed3daf6ffe116888f45b12020b296837c3faeedf877832846dde",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        194,
+        796
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/fa-IR.ini",
+      "bytes": 120397,
+      "sha256": "831fe2c7d4578dedc4c8ffb88c83b0cdb9b58d2c69df807edd163ef6e69f83b4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195,
+        800
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/fi-FI.ini",
+      "bytes": 92853,
+      "sha256": "fec8ee81c566af7491484baefd806381e2d286930a60c76011732f98a0a1c7a9",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        191,
+        788
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/fr-FR.ini",
+      "bytes": 100864,
+      "sha256": "d7d3e526c8240d3ab9ab1234a6e1d3ea0763d7c4a71cb92e267adc09e5439aa9",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        189,
+        773
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/gd-GB.ini",
+      "bytes": 68917,
+      "sha256": "8137e07132c265909a07c53652ec13f41cc2615e7e2ccf39b65bae0e3feb2ce6",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        162,
+        619
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/gl-ES.ini",
+      "bytes": 96234,
+      "sha256": "5443e763795ce89a62504468914257a74631c752c50612507d32ff95e1dfe6a0",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        193,
+        790
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/he-IL.ini",
+      "bytes": 109174,
+      "sha256": "0cea6da5c3b4aa4e0777ae6e49bd6b335d5db396a9b6b794631d4013b16a4449",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/hi-IN.ini",
+      "bytes": 156418,
+      "sha256": "77562760b4939d7d31fa32148fd53a9b9cf509fd545313aeeb58d82212b4fd43",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195,
+        791
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/hr-HR.ini",
+      "bytes": 92307,
+      "sha256": "99de22c65e0fc649f4b823a616418abe8602165f7fe2ee60999a10ee165003af",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        187,
+        780
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/hu-HU.ini",
+      "bytes": 100673,
+      "sha256": "748725ba2e1ed48cb2cba7e693f1c7234f6751804db788a01c2e6aebd7162293",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        191,
+        792
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/hy-AM.ini",
+      "bytes": 112814,
+      "sha256": "9d7d1f9b38e857cf7a0c081ae0013ee338f1ab2e912c5ec60f88783f93e26d67",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        171,
+        723
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/id-ID.ini",
+      "bytes": 91687,
+      "sha256": "f50551fb6a294a64ef15bdbe38fa7b0b3fe9b2f74c532883aa05d9e7cf0b9bb5",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        189,
+        778
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/it-IT.ini",
+      "bytes": 97167,
+      "sha256": "986ee8e24d09e389a479db3807fbbecd6b1e2fad6f12abd175ca7bfb6d5b3529",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        188
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ja-JP.ini",
+      "bytes": 106052,
+      "sha256": "3ffb193e87d58ee722570ebf74cd50a0f4f057d75c817b9d53c0163eddc6ea3e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        193
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ka-GE.ini",
+      "bytes": 168923,
+      "sha256": "0dbd951090d2312bcf402574dfd1a227872b07fc022f6fcef8c68dc9bd316fba",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195,
+        796
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/kaa.ini",
+      "bytes": 49509,
+      "sha256": "a31499c0108ae7eedf6449b6e8e7b2c7f5f51a17650e833fb8cebd319c8860ca",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        165
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/kab-KAB.ini",
+      "bytes": 37309,
+      "sha256": "c188309fd28e6f8dd67d04ad4c0e713225cc71ebcbce40a10c61b5aa2d7ea951",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        143,
+        461
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/kmr-TR.ini",
+      "bytes": 86424,
+      "sha256": "f4671a501d6c451c1bcd226cc1990c2572347b22d4e566ada158f9e149d2dad0",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        186,
+        733
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/lo-LA.ini",
+      "bytes": 135934,
+      "sha256": "5db370837bd1e69284c1be5b3435184fa238d2255d2d419d32a1a10d290d1800",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        762
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/lt-LT.ini",
+      "bytes": 23894,
+      "sha256": "1a1e6cd202c7a5a0fc953c930052eabbf155f8b0ec893f5817bbd422b9901161",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        170
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/lv-LV.ini",
+      "bytes": 70369,
+      "sha256": "a611f01dea0d6fddd0d9c205a6a09558cf4e8ab02f37812c20c68244780cf5ea",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192,
+        703
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/mn-MN.ini",
+      "bytes": 24449,
+      "sha256": "9459cda28d2f6239a18d37c059ad742af62232a12f547615cb19b2489ae1df8e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        126,
+        316
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ms-MY.ini",
+      "bytes": 90293,
+      "sha256": "262a2b2325c6535256ec786b23c81ac83433410959e12c62d38292a55fad5814",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        187,
+        779
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/nb-NO.ini",
+      "bytes": 74755,
+      "sha256": "aa0a20ee14b21cead2a4907d2f89f1c9ecf8cce2ab20e89042214abb3dfc28ec",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        167,
+        727
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/nl-NL.ini",
+      "bytes": 89435,
+      "sha256": "3d061f69fb24b1b3b338b161e3fd0abcad7bee88b02ec0061cf9b743b7de85dd",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        185,
+        760
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/nn-NO.ini",
+      "bytes": 10333,
+      "sha256": "8c8241765ec7c939a1c1278432f515003c0eadd3fb1593df5d687e7c9fc788ab",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        83,
+        199
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/oc-FR.ini",
+      "bytes": 6367,
+      "sha256": "3e89707f98df64b8ee37a74678ca4efdfd43f444afc8f01f7a4458813b1f5578",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        135
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/pl-PL.ini",
+      "bytes": 96350,
+      "sha256": "51c41e60295dfcb50225e2de0f5715616863ff5d40fb7caca9b1a9614fa5fb32",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        190
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/pt-BR.ini",
+      "bytes": 96342,
+      "sha256": "444069afce7fdec71c6a5d0b728326b4b67baa3dbf637732afb70e0b30b68eb8",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/pt-PT.ini",
+      "bytes": 96050,
+      "sha256": "259431766c40d5d529455601ae446eaa99fe047d84b6787cf92596201357fb96",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        193
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ro-RO.ini",
+      "bytes": 89136,
+      "sha256": "aedb122c59e829ef6f5fa73712aacf3f5444906751fff8ad0c4648978eb4b794",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        175,
+        747
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ru-RU.ini",
+      "bytes": 133267,
+      "sha256": "b0369d0b69fdd5e2d1b16867982830eb6f0026daf42f2ae292cda995b4071e3e",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        194,
+        800
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/si-LK.ini",
+      "bytes": 96759,
+      "sha256": "0a3981bd2ee17b1427eb6cbd1763f8fddfcaaf3f738ca9b52ccb133619ad3230",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        167,
+        648
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sk-SK.ini",
+      "bytes": 95633,
+      "sha256": "c0335195aed7423db9617b3d991eadfc396ec104bec1cc562448401f12580898",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        187
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sl-SI.ini",
+      "bytes": 86996,
+      "sha256": "94970f283d80d432cbb06d0648caf5f05d075f029849f756cef0bc471e35379c",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        191
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sq-AL.ini",
+      "bytes": 11849,
+      "sha256": "59e9216b04b70d1c15c1c19b443d8d4a8c64a735da18c5037e17aa859c09ce65",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        158
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sr-CS.ini",
+      "bytes": 91743,
+      "sha256": "d90a4543132ac8dbe4e6d879983217e19070880be2786fd7ec9ffeb4fad02887",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        180
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sr-SP.ini",
+      "bytes": 127465,
+      "sha256": "c78c9274fd0b3b71d93456ea8d10d1ad3847e24193eb8a20cded26e42f6f67a3",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        189
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/sv-SE.ini",
+      "bytes": 92674,
+      "sha256": "d158b87035812ab26d6433dc8acfe935c0317efb0ede0e1dbef7c4022935e3cb",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        188,
+        783
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/szl-PL.ini",
+      "bytes": 41022,
+      "sha256": "b486498e1023bb56995c38ffd9a53ea1583c6643369171591af3b2df3f3b3710",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        141
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ta-IN.ini",
+      "bytes": 58939,
+      "sha256": "8b1347b091fe50daa2899677931ead72cf8c1d4bf398c70726337e76be7f8e96",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        160,
+        506
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/th-TH.ini",
+      "bytes": 153215,
+      "sha256": "19da670367936ef2d639cab2ef819f6c8b43c6e35ec838ce7d3a17ccb662c7dc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        193,
+        774
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/tr-TR.ini",
+      "bytes": 95161,
+      "sha256": "cfa032f77fa12f2eedd49afdbf66d91f1a6aca6eab7b329ffa892c836145ebf4",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        192
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/tt-RU.ini",
+      "bytes": 23431,
+      "sha256": "8508de9f62ecd0832dc3de5a5437d711f420c2e949fe0e4599c6bfe2bd25c4fc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        113,
+        285
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ug-CN.ini",
+      "bytes": 132263,
+      "sha256": "938f0200e6a3231baf0d93bd869cc07c7d48a1a80be4b15f5deb0f46fe04dedc",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/uk-UA.ini",
+      "bytes": 131197,
+      "sha256": "32451f985505e8df19f647d2d1626e0b2b9f212113258dea9d33f003a59f3854",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        195,
+        799
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/ur-PK.ini",
+      "bytes": 8992,
+      "sha256": "15e7efba344d3ee083994e5b1057fcbe67ab40e6b36a70b1fbc6c3843839f34a",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        148
+      ]
+    },
+    {
+      "path": "obs/data/obs-studio/locale/vi-VN.ini",
+      "bytes": 102465,
+      "sha256": "fa1c76ff1bfce49d35a25c764f02265d8dd891fb531b326de189c40496b8d27b",
+      "ruleException": "credential-regex-1-only",
+      "classifiedKeys": "Basic.AutoConfig.StreamPage.StreamKey,Basic.Settings.Stream.Custom.Password",
+      "category": "OBS translated UI/resource text",
+      "hitLines": [
+        191,
+        769
+      ]
+    }
+  ]
+}

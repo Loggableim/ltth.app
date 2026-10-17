@@ -150,6 +150,8 @@
         "gift_sent_count": "a envoyé {gift} x{count}",
         "multi_gift_sent": "🎁 A envoyé {gift} x{count}",
         "message_render_error": "Erreur lors de l’affichage du message : {message}",
+        "superfan_signal": "Signal possible de Super Fan",
+        "superfan_join_signal": "Signal possible d’adhésion au Fan Club Super",
         "event": {
           "chat": "Chat",
           "follow": "A suivi",
@@ -202,6 +204,7 @@
       },
       "empty": { "no_additional_streams": "Aucun flux supplémentaire configuré", "unknown_tab": "Onglet inconnu", "no_activity_title": "Aucune activité pour le moment", "no_activity_description": "Les événements apparaîtront ici lorsqu’ils se produiront" },
       "stream": { "fallback": "Flux {number}" },
+      "fallback": { "confirm_button": "Confirmer la clé API de secours", "confirm_title": "Utiliser la clé API de secours ?", "confirm_prompt": "Ce flux supplémentaire utilisera une clé API de secours LTTH. Continuez uniquement si vous acceptez.", "cancel": "Annuler", "confirm": "Oui, continuer", "confirm_failed": "Impossible de confirmer l’utilisation de la clé de secours : {message}" },
       "dock": { "chat": "HUD de discussion", "full": "HUD d'activité complet", "multi": "HUD multi-flux", "stream": "Superposition de flux" },
       "preset": { "highContrast": "Contraste élevé", "visionImpaired": "Déficience visuelle", "dyslexiaFriendly": "Adapté à la dyslexie", "motionSensitive": "Sensible aux mouvements" },
       "tab": { "stream_settings": "Paramètres du flux", "streams": "Flux", "appearance": "Apparence", "events": "Événements", "layout": "Mise en page", "animation": "Animation du HUD", "styling": "Style", "accessibility": "Accessibilité" },

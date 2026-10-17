@@ -2,7 +2,10 @@
 
 const fs = require('fs');
 const path = require('path');
-const { isHttpAllowed } = require('../modules/public-overlay-registry');
+const {
+  isHttpAllowed,
+  listPublicEntrypoints
+} = require('../modules/public-overlay-registry');
 const {
   collectStreamMonstersManifestDependencies
 } = require('./helpers/public-overlay-dependency-crawler');
@@ -24,6 +27,11 @@ const surfaceSources = [
   'plugins/coinbattle/overlay/overlay.html',
   'plugins/coinbattle/overlay/overlay.js',
   'plugins/emoji-rain/obs-hud.html',
+  'plugins/emoji-rain/overlay.html',
+  'plugins/webgpu-emoji-rain/obs-hud.html',
+  'plugins/webgpu-emoji-rain/overlay.html',
+  'plugins/visual-fx-frame-webgpu/renderer/index.html',
+  'plugins/stream-monsters/streammonsters-overlay.html',
   'public/js/emoji-rain-obs-hud.js',
   'plugins/fireworks/overlay.html',
   'plugins/flame-overlay/renderer/index.html',
@@ -36,6 +44,7 @@ const surfaceSources = [
   'plugins/game-engine/overlay/unified.html',
   'plugins/game-engine/overlay/wheel.html',
   'plugins/gcce/overlay-hud.html',
+  'plugins/gcce/overlay.html',
   'plugins/goals/overlay/index.html',
   'plugins/goals/overlay/overlay.js',
   'plugins/goals/overlay/multigoal.html',
@@ -48,11 +57,14 @@ const surfaceSources = [
   'plugins/quiz-show/quiz_show_leaderboard_overlay.html',
   'plugins/schnorrbecher/overlay/coincup.html',
   'plugins/schnorrbecher/overlay/coincup.js',
+  'plugins/sidekick/overlay/sidekick-hud.html',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html',
   'plugins/spotlight/overlays/gifter.html',
   'plugins/spotlight/overlays/single-overlay.js',
   'plugins/spotlight/overlays/multihud.html',
   'plugins/spotlight/overlays/multihud.js',
-  'plugins/stream-monsters/streammonsters-overlay.html',
   'plugins/stream-monsters/streammonsters-effects-renderer.js',
   'plugins/stream-monsters/streammonsters-overlay-runtime.js',
   'plugins/stream-monsters/streammonsters-arena-director.js',
@@ -64,7 +76,6 @@ const surfaceSources = [
   'plugins/talking-heads/assets/overlay.js',
   'plugins/toptier/overlay.html',
   'plugins/toptier/assets/overlay.js',
-  'plugins/visual-fx-frame-webgpu/renderer/index.html',
   'plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js',
   'plugins/weather-control/overlay.html',
   'plugins/webgpu-emoji-rain/obs-hud.html',
@@ -88,7 +99,7 @@ function collectAbsoluteDependencies(source) {
   }
 
   const fetchExpression =
-    /\bfetch\s*\(\s*["'](\/[^"'#?]+)(?:\?[^"']*)?["']\s*(?:,\s*\{([\s\S]{0,400}?)\})?\s*\)/g;
+    /\bfetch\s*\(\s*["'](\/[^"'#]+)["']\s*(?:,\s*\{([\s\S]{0,400}?)\})?\s*\)/g;
   for (const match of source.matchAll(fetchExpression)) {
     const methodMatch = (match[2] || '').match(/\bmethod\s*:\s*["']([A-Za-z]+)["']/);
     const method = methodMatch ? methodMatch[1].toUpperCase() : 'GET';
@@ -114,8 +125,7 @@ function collectTemplateFetchDependencies(source) {
         if (/(^|\W)type(\W|$)/i.test(expressionText)) return 'daily';
         if (/filename|imagePath/i.test(expressionText)) return 'fixture.png';
         return 'fixture';
-      })
-      .split('?')[0];
+      });
     dependencies.push({
       method: methodMatch ? methodMatch[1].toUpperCase() : 'GET',
       pathname
@@ -140,6 +150,37 @@ function describeDependency(source, dependency) {
 }
 
 describe('registered overlay dependency crawl', () => {
+  test('crawls dependencies from every shipped entrypoint HTML fixture', () => {
+    const matrixFile = path.join(__dirname, 'public-overlay-security-matrix.test.js');
+    const matrixSource = fs.readFileSync(matrixFile, 'utf8');
+    const fixtureBlock = matrixSource.match(/const entrypointFixtures = new Map\(\[([\s\S]*?)\]\);/);
+    if (!fixtureBlock) throw new Error('Could not locate the public entrypoint fixture map');
+    const fixtureSources = [...fixtureBlock[1].matchAll(/\[\s*'([^']+)'\s*,\s*'([^']+)'\s*\]/g)]
+      .map(([, , source]) => source);
+    const crawledSources = new Set(surfaceSources);
+
+    expect(fixtureSources.length).toBeGreaterThan(0);
+    for (const source of fixtureSources) {
+      expect(fs.existsSync(path.join(appRoot, source))).toBe(true);
+      expect(crawledSources.has(source)).toBe(true);
+    }
+    expect(listPublicEntrypoints()).toHaveLength(48);
+  });
+
+  test('preserves exact query strings when checking public dependencies', () => {
+    const [validDependency] = collectAbsoluteDependencies(
+      "fetch('/api/quiz-show/leaderboard?type=round')"
+    );
+    const [invalidDependency] = collectAbsoluteDependencies(
+      "fetch('/api/quiz-show/leaderboard?type=season')"
+    );
+
+    expect(validDependency.pathname).toBe('/api/quiz-show/leaderboard?type=round');
+    expect(isHttpAllowed(validDependency)).toBe(true);
+    expect(invalidDependency.pathname).toBe('/api/quiz-show/leaderboard?type=season');
+    expect(isHttpAllowed(invalidDependency)).toBe(false);
+  });
+
   test('allows render dependencies and keeps game test-control writes local-only', () => {
     const blocked = [];
     const allowedNonReads = [];
@@ -161,6 +202,11 @@ describe('registered overlay dependency crawl', () => {
     }
     expect(blocked).toEqual([
       {
+        source: 'plugins/clarityhud/overlays/multi.js',
+        method: 'GET',
+        pathname: '/api/clarityhud/state/multi'
+      },
+      {
         source: 'plugins/game-engine/overlay/connect4.html',
         method: 'POST',
         pathname: '/api/game-engine/manual/start'
@@ -179,13 +225,23 @@ describe('registered overlay dependency crawl', () => {
         source: 'plugins/game-engine/overlay/wheel.html',
         method: 'POST',
         pathname: '/api/game-engine/wheel/spin'
+      },
+      {
+        source: 'plugins/interactive-story/overlay.html',
+        method: 'GET',
+        pathname: '/api/interactive-story/participants'
+      },
+      {
+        source: 'plugins/talking-heads/assets/overlay.js',
+        method: 'GET',
+        pathname: '/api/talkingheads/config'
       }
     ]);
     expect(allowedNonReads).toEqual([
       {
         source: 'plugins/stream-monsters/streammonsters-overlay.html',
         method: 'POST',
-        pathname: '/api/streammonsters/overlay/heartbeat'
+        pathname: '/api/stream-monsters/overlay/heartbeat'
       }
     ]);
   });

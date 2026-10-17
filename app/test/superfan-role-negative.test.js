@@ -49,18 +49,16 @@ describe('SuperFan and role boundaries (isolated HEAD fixture)', () => {
     expect(adapter._mapEulerStreamEventType('WebcastBarrageMessage')).toBeNull();
   });
 
-  test('the connector forwards an already-normalized SuperFan event', () => {
+  test('the connector does not expose the unprojected EulerStream SuperFan envelope', () => {
     const connector = Object.create(TikTokConnector.prototype);
     connector.emit = jest.fn();
     const handlers = new Map();
     const adapter = {
       on: jest.fn((event, handler) => handlers.set(event, handler))
     };
-    const payload = { uniqueId: 'offline-fixture', isSuperFan: true };
-
     connector._bindAdapterEvents(adapter);
-    handlers.get('superfan')(payload);
 
-    expect(connector.emit).toHaveBeenCalledWith('superfan', payload);
+    expect(handlers.has('superfan')).toBe(false);
+    expect(connector.emit).not.toHaveBeenCalledWith('superfan', expect.anything());
   });
 });

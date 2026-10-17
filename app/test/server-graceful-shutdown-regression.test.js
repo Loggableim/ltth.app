@@ -6,6 +6,8 @@ const path = require('node:path');
 const vm = require('node:vm');
 const SQLite = require('better-sqlite3');
 const DatabaseManager = require('../modules/database');
+const { unloadPluginsForShutdown } = require('../modules/plugin-shutdown');
+const { runBoundedShutdownStage } = require('../modules/launcher-shutdown-stage');
 
 test('original server shutdown aborts failed persistence, cancels force exit and permits recovery', async () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-server-shutdown-test-'));
@@ -26,6 +28,8 @@ test('original server shutdown aborts failed persistence, cancels force exit and
   const context = vm.createContext({
     logger, process: processDouble, db, server,
     stableOverlayRoutingLifecycle: { shutdown: jest.fn(async () => {}) },
+    runBoundedShutdownStage,
+    unloadPluginsForShutdown,
     pluginLoader: { plugins: new Map(), unloadPlugin: jest.fn() },
     tiktok: { isActive: () => false }, obs: { isConnected: () => false },
     cloudSync: { shutdown: jest.fn(async () => {}) }, io: { disconnectSockets: jest.fn() },

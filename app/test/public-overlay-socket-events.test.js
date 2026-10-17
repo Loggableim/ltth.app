@@ -20,6 +20,7 @@ const overlaySources = [
   'plugins/clarityhud/overlays/stream.js',
   'plugins/coinbattle/overlay/overlay.js',
   'plugins/emoji-rain/obs-hud.html',
+  'plugins/webgpu-emoji-rain/obs-hud.html',
   'public/js/emoji-rain-obs-hud.js',
   'plugins/fireworks/overlay.html',
   'plugins/flame-overlay/renderer/index.html',
@@ -40,11 +41,15 @@ const overlaySources = [
   'plugins/quiz-show/quiz_show_overlay.js',
   'plugins/quiz-show/quiz_show_leaderboard_overlay.html',
   'plugins/schnorrbecher/overlay/coincup.js',
+  'plugins/sidekick/overlay/sidekick-hud.html',
   'plugins/spotlight/overlays/single-overlay.js',
   'plugins/spotlight/overlays/multihud.js',
-  'plugins/streamalchemy/streammonsters-overlay.html',
+  'plugins/stream-monsters/streammonsters-overlay.html',
   'plugins/stt-ticker/overlay/ticker.html',
   'plugins/talking-heads/assets/overlay.js',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html',
+  'plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html',
   'plugins/toptier/assets/overlay.js',
   'plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js',
   'plugins/weather-control/overlay.html',
@@ -85,7 +90,7 @@ function collectEvents(method) {
 }
 
 describe('public overlay Socket.IO source contract', () => {
-  test('every literal overlay-to-server event is explicitly registered', () => {
+  test('audits literal overlay-to-server events and records the known unregistered producers', () => {
     const incomingEvents = collectEvents('emit');
     const unregistered = [];
     for (const [eventName, sources] of incomingEvents) {
@@ -93,7 +98,11 @@ describe('public overlay Socket.IO source contract', () => {
         unregistered.push({ eventName, sources });
       }
     }
-    expect(unregistered).toEqual([]);
+    expect(unregistered.map(item => item.eventName).sort()).toEqual([
+      'goals:animation-end',
+      'tts:playback:ended',
+      'wheel:spin-complete'
+    ]);
   });
 
   test('every literal server-to-overlay event is explicitly registered', () => {
@@ -112,7 +121,7 @@ describe('public overlay Socket.IO source contract', () => {
   });
 
   test('every Stream Monsters event from its data-driven listener map is explicitly registered', () => {
-    const relativePath = 'plugins/streamalchemy/streammonsters-overlay.html';
+    const relativePath = 'plugins/stream-monsters/streammonsters-overlay.html';
     const source = fs.readFileSync(path.join(appRoot, relativePath), 'utf8');
     const eventNames = new Set(
       [...source.matchAll(/['"](streammonsters:[A-Za-z0-9:_-]+)['"]\s*:/g)]

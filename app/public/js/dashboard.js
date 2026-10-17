@@ -80,6 +80,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Initialize profile auto-restart toggle
     initializeProfileAutoRestartToggle();
+    initializeActiveProfileRetry();
 
     // Wait for server to be fully initialized (prevents race conditions)
     if (window.initHelper) {
@@ -99,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadSettings(),
             loadFlows(),
             loadActiveProfile(),
+            loadEventHistory(),
             loadConfigPathInfo(),
             loadSessionStatus(), // Load TikTok SessionID status
             loadUsernameAliases()
@@ -159,12 +161,12 @@ function initializeButtons() {
     // Clear Events
     const clearEventsBtn = document.getElementById('clear-events-btn');
     if (clearEventsBtn) {
-        clearEventsBtn.addEventListener('click', () => {
-            const eventLog = document.getElementById('event-log');
-            if (eventLog) {
-                eventLog.innerHTML = '';
-            }
-        });
+        clearEventsBtn.addEventListener('click', clearEventHistory);
+    }
+
+    const eventLogRetryBtn = document.getElementById('event-log-retry-btn');
+    if (eventLogRetryBtn) {
+        eventLogRetryBtn.addEventListener('click', loadEventHistory);
     }
 
     // TTS Voice Buttons (nur wenn Elemente existieren - Plugin könnte diese zur Verfügung stellen)
@@ -592,16 +594,19 @@ function initializeSocketListeners() {
 
     // Event
     socket.on('tiktok:event', (event) => {
-        addEventToLog(event.type, event.data);
+        handleLiveEvent(event);
     });
 
     // Socket Connection
     socket.on('connect', () => {
         console.log('✅ Connected to server');
+        setDashboardTransportStatus('reconnected');
     });
 
     socket.on('disconnect', () => {
         console.log('❌ Disconnected from server');
+        setDashboardTransportStatus('disconnected');
+        updateConnectionStatus('disconnected');
     });
 
     // Fallback API Key Warning
@@ -818,7 +823,44 @@ async function disconnect() {
     }
 }
 
+function setDashboardTransportStatus(status) {
+    const statusEl = document.getElementById('transport-status');
+    if (!statusEl) return;
+
+    const translate = (key, fallback) => {
+        const translated = window.i18n?.t(key);
+        return translated && translated !== key ? translated : fallback;
+    };
+    const messages = {
+        disconnected: translate('dashboard.transport_disconnected', 'Dashboard connection lost. Reconnecting; showing the last received stats and chat.'),
+        reconnected: translate('dashboard.transport_reconnected', 'Dashboard reconnected. Waiting for live TikTok status and data.')
+    };
+    statusEl.textContent = messages[status] || '';
+    statusEl.hidden = !messages[status];
+    statusEl.classList.toggle('status-error', status === 'disconnected');
+    statusEl.classList.toggle('status-connected', status === 'reconnected');
+    statusEl.dataset.state = status;
+
+    const stats = document.querySelectorAll('#stat-viewers, #stat-likes, #stat-coins, #stat-followers, #stat-gifts, #stat-runtime, #chat-list');
+    stats.forEach(element => {
+        element.dataset.live = status === 'disconnected' ? 'false' : 'pending';
+        if (!element.dataset.baseAriaLabel) {
+            element.dataset.baseAriaLabelPresent = element.hasAttribute('aria-label') ? 'true' : 'false';
+            element.dataset.baseAriaLabel = element.getAttribute('aria-label') || element.textContent.trim();
+        }
+        element.setAttribute('aria-label', `${element.dataset.baseAriaLabel} (${status === 'disconnected'
+            ? 'last received snapshot; not live'
+            : 'waiting for live update'})`);
+    });
+}
+
 function updateConnectionStatus(status, data = {}) {
+    const transportStatus = document.getElementById('transport-status');
+    if (transportStatus?.dataset.state === 'reconnected') {
+        transportStatus.hidden = true;
+        delete transportStatus.dataset.state;
+    }
+
     const infoEl = document.getElementById('connection-info');
     const connectBtn = document.getElementById('connect-btn');
     const disconnectBtn = document.getElementById('disconnect-btn');
@@ -994,6 +1036,20 @@ function updateStats(stats) {
     const coinsEl = document.getElementById('stat-coins');
     const followersEl = document.getElementById('stat-followers');
     const runtimeEl = document.getElementById('stat-runtime');
+    [viewersEl, likesEl, coinsEl, followersEl, runtimeEl, document.getElementById('stat-gifts')]
+        .filter(Boolean)
+        .forEach(element => {
+            element.dataset.live = 'true';
+            if (element.dataset.baseAriaLabel) {
+                if (element.dataset.baseAriaLabelPresent === 'true') {
+                    element.setAttribute('aria-label', element.dataset.baseAriaLabel);
+                } else {
+                    element.removeAttribute('aria-label');
+                }
+                delete element.dataset.baseAriaLabel;
+                delete element.dataset.baseAriaLabelPresent;
+            }
+        });
 
     if (viewersEl) viewersEl.textContent = stats.viewers.toLocaleString();
     if (likesEl) likesEl.textContent = stats.likes.toLocaleString();
@@ -1095,17 +1151,199 @@ function updateStreamTimeDebug(info) {
 }
 
 // ========== EVENT LOG ==========
-function addEventToLog(type, data) {
-    const logTable = document.getElementById('event-log');
-    const row = document.createElement('tr');
-    row.className = 'event-row border-b border-gray-700';
+const MAX_EVENT_LOG_ROWS = 100;
+let eventHistoryLoading = false;
+let eventHistoryRequestId = 0;
+let eventHistoryClearing = false;
+let liveEventsDuringHistoryLoad = [];
 
-    const time = new Date().toLocaleTimeString();
+function setEventLogStatus(message, { showRetry = false } = {}) {
+    const status = document.getElementById('event-log-status');
+    if (status) {
+        if (message) {
+            status.dataset.i18n = `events.${message}`;
+            status.textContent = getEventLogMessage(message);
+        } else {
+            delete status.dataset.i18n;
+            status.textContent = '';
+        }
+        status.hidden = !message;
+    }
+
+    const retryButton = document.getElementById('event-log-retry-btn');
+    if (retryButton) retryButton.hidden = !showRetry;
+}
+
+const EVENT_LOG_MESSAGE_FALLBACKS = {
+    history_loading: 'Loading saved event history…',
+    history_load_error: 'Could not load event history. Check the connection and retry.',
+    history_clear_error: 'Could not clear saved event history. Please try again.',
+    history_retry: 'Retry',
+    no_events: 'No saved events yet. New events will appear here.'
+};
+
+function getEventLogMessage(message) {
+    const key = `events.${message}`;
+    const translated = window.i18n?.t(key);
+    return translated && translated !== key ? translated : EVENT_LOG_MESSAGE_FALLBACKS[message];
+}
+
+if (typeof window.i18n?.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(() => {
+        const status = document.getElementById('event-log-status');
+        const retryButton = document.getElementById('event-log-retry-btn');
+        const message = status?.dataset.i18n?.replace(/^events\./, '');
+        if (message) setEventLogStatus(message, { showRetry: Boolean(retryButton && !retryButton.hidden) });
+        if (retryButton && !retryButton.hidden) retryButton.textContent = getEventLogMessage('history_retry');
+    });
+}
+
+function eventHistoryFingerprint(type, data) {
+    const normalize = value => {
+        if (Array.isArray(value)) return value.map(normalize);
+        if (!value || typeof value !== 'object') return value;
+        return Object.keys(value).sort().reduce((result, key) => {
+            result[key] = normalize(value[key]);
+            return result;
+        }, {});
+    };
+
+    return JSON.stringify([type, normalize(data || {})]);
+}
+
+function handleLiveEvent(event) {
+    if (!event || typeof event.type !== 'string') return;
+    if (event.type === 'chat') {
+        const chatList = document.getElementById('chat-list');
+        if (chatList) {
+            chatList.dataset.live = 'true';
+            if (chatList.dataset.baseAriaLabel) {
+                if (chatList.dataset.baseAriaLabelPresent === 'true') {
+                    chatList.setAttribute('aria-label', chatList.dataset.baseAriaLabel);
+                } else {
+                    chatList.removeAttribute('aria-label');
+                }
+                delete chatList.dataset.baseAriaLabel;
+                delete chatList.dataset.baseAriaLabelPresent;
+            }
+        }
+    }
+    const data = event.data && typeof event.data === 'object' ? event.data : {};
+    const logTable = document.getElementById('event-log');
+    const status = document.getElementById('event-log-status');
+    const emptyMessage = getEventLogMessage('no_events');
+    if (logTable?.children.length === 0 && status?.textContent === emptyMessage) setEventLogStatus('');
+    if (eventHistoryLoading) liveEventsDuringHistoryLoad.push({ type: event.type, data });
+    addEventToLog(event.type, data);
+}
+
+async function loadEventHistory() {
+    const logTable = document.getElementById('event-log');
+    if (!logTable || eventHistoryClearing) return false;
+
+    const requestId = ++eventHistoryRequestId;
+    eventHistoryLoading = true;
+    liveEventsDuringHistoryLoad = [];
+    setEventLogStatus('history_loading');
+
+    try {
+        const response = await fetch('/api/event-logs?limit=100', { cache: 'no-store' });
+        const result = await response.json();
+        if (requestId !== eventHistoryRequestId) return false;
+        if (!response.ok || !result?.success || !Array.isArray(result.logs)) {
+            throw new Error('The event history request was unsuccessful.');
+        }
+
+        const eventsDuringLoad = liveEventsDuringHistoryLoad;
+        const seenCounts = new Map();
+        logTable.replaceChildren();
+
+        // API rows are newest first; addEventToLog inserts each row at the top.
+        for (const entry of result.logs.slice(0, MAX_EVENT_LOG_ROWS).reverse()) {
+            const type = entry?.event_type || entry?.eventType;
+            if (typeof type !== 'string') continue;
+            const data = entry.data && typeof entry.data === 'object' ? entry.data : {};
+            const fingerprint = eventHistoryFingerprint(type, data);
+            seenCounts.set(fingerprint, (seenCounts.get(fingerprint) || 0) + 1);
+            addEventToLog(type, data, entry.timestamp, false);
+        }
+
+        for (const event of eventsDuringLoad) {
+            const fingerprint = eventHistoryFingerprint(event.type, event.data);
+            const matchingSavedCount = seenCounts.get(fingerprint) || 0;
+            if (matchingSavedCount > 0) {
+                seenCounts.set(fingerprint, matchingSavedCount - 1);
+                continue;
+            }
+            addEventToLog(event.type, event.data, undefined, false);
+        }
+
+        eventHistoryLoading = false;
+        liveEventsDuringHistoryLoad = [];
+        setEventLogStatus(logTable.children.length ? '' : 'no_events');
+        return true;
+    } catch (error) {
+        if (requestId !== eventHistoryRequestId) return false;
+        eventHistoryLoading = false;
+        liveEventsDuringHistoryLoad = [];
+        setEventLogStatus('history_load_error', { showRetry: true });
+        console.error('[Dashboard] Failed to load event history:', error);
+        return false;
+    }
+}
+
+async function clearEventHistory() {
+    if (eventHistoryClearing) return false;
+    eventHistoryRequestId += 1;
+    eventHistoryLoading = false;
+    eventHistoryClearing = true;
+    liveEventsDuringHistoryLoad = [];
+    const clearButton = document.getElementById('clear-events-btn');
+    const retryButton = document.getElementById('event-log-retry-btn');
+    const logTable = document.getElementById('event-log');
+    if (clearButton) clearButton.disabled = true;
+    if (retryButton) retryButton.disabled = true;
+
+    try {
+        const response = await fetch('/api/event-logs/clear', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const result = await response.json();
+        if (!response.ok || !result?.success) throw new Error('The server could not clear the event history.');
+
+        if (logTable) logTable.replaceChildren();
+        liveEventsDuringHistoryLoad = [];
+        setEventLogStatus('no_events');
+        return true;
+    } catch (error) {
+        setEventLogStatus('history_clear_error');
+        console.error('[Dashboard] Failed to clear event history:', error);
+        return false;
+    } finally {
+        eventHistoryClearing = false;
+        if (clearButton) clearButton.disabled = false;
+        if (retryButton) retryButton.disabled = false;
+    }
+}
+
+function translateEventLog(key, params, fallback) {
+    const translationKey = `events.${key}`;
+    const translated = window.i18n?.t(translationKey, params);
+    return translated && translated !== translationKey ? translated : fallback;
+}
+
+function renderEventLogRow(row, type, data, timestamp, locale) {
+    const eventDate = timestamp ? new Date(timestamp) : new Date();
+    const time = Number.isNaN(eventDate.getTime())
+        ? new Date().toLocaleTimeString(locale)
+        : eventDate.toLocaleTimeString(locale);
     const username = data.username || data.uniqueId || data.nickname || 'Viewer';
 
     // Build team level badge - always show
-    const rawTeamLevel = Number(data.teamMemberLevel);
-    const teamLevel = Number.isSafeInteger(rawTeamLevel) && rawTeamLevel > 0 ? rawTeamLevel : 0;
+    let teamLevelBadge = '';
+    const teamLevel = data.teamMemberLevel || 0;
 
     // Define colors for different team levels:
     // White for level 0
@@ -1135,76 +1373,85 @@ function addEventToLog(type, data) {
         textColor = 'text-white';
     }
 
-    const teamLevelBadge = document.createElement('span');
-    teamLevelBadge.className = `inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badgeColor} ${textColor} ml-1`;
-    teamLevelBadge.title = `Team Level ${teamLevel}`;
-    teamLevelBadge.textContent = `${badgeIcon}${teamLevel}`;
+    teamLevelBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badgeColor} ${textColor} ml-1" title="Team Level ${escapeHtml(teamLevel)}">${badgeIcon}${escapeHtml(teamLevel)}</span>`;
 
     let details = '';
     let typeIcon = '';
 
     switch (type) {
         case 'chat':
-            typeIcon = '💬 Chat';
+            typeIcon = `💬 ${translateEventLog('log_type_chat', {}, 'Chat')}`;
             details = data.message;
             break;
         case 'gift':
-            typeIcon = '🎁 Gift';
+            typeIcon = `🎁 ${translateEventLog('log_type_gift', {}, 'Gift')}`;
             const giftName = data.giftName || (data.giftId ? `Gift #${data.giftId}` : 'Unknown Gift');
-            details = `${giftName} x${data.repeatCount} (${data.coins} coins)`;
+            details = `${giftName} ${translateEventLog('log_detail_gift', {
+                repeatCount: data.repeatCount ?? 1,
+                coins: data.coins ?? 0
+            }, `x${data.repeatCount ?? 1} (${data.coins ?? 0} coins)`)}`;
             break;
         case 'follow':
-            typeIcon = '⭐ Follow';
-            details = 'New follower!';
+            typeIcon = `⭐ ${translateEventLog('log_type_follow', {}, 'Follow')}`;
+            details = translateEventLog('log_detail_follow', {}, 'New follower!');
             break;
         case 'share':
-            typeIcon = '🔄 Share';
-            details = 'Shared the stream';
+            typeIcon = `🔄 ${translateEventLog('log_type_share', {}, 'Share')}`;
+            details = translateEventLog('log_detail_share', {}, 'Shared the stream');
             break;
         case 'like':
-            typeIcon = '❤️ Like';
-            details = `+${data.likeCount || 1} (Total: ${data.totalLikes || 0})`;
+            typeIcon = `❤️ ${translateEventLog('log_type_like', {}, 'Like')}`;
+            details = translateEventLog('log_detail_like', {
+                likeCount: data.likeCount || 1,
+                totalLikes: data.totalLikes || 0
+            }, `+${data.likeCount || 1} (Total: ${data.totalLikes || 0})`);
             break;
-        case 'superfan': {
-            const label = (key, fallback) => {
-                const translated = window.i18n && window.i18n.t(key);
-                return translated && translated !== key ? translated : fallback;
-            };
-            typeIcon = '⭐ ' + label('events.superfan_label', 'SuperFan');
-            details = data.superFanEventType === 'join'
-                ? label('events.superfan_join', 'SuperFan joined the LIVE')
-                : label('events.superfan_event', 'SuperFan event received');
-            break;
-        }
         case 'subscribe':
-            typeIcon = '🌟 Subscribe';
-            details = 'New subscriber!';
+            typeIcon = `🌟 ${translateEventLog('log_type_subscribe', {}, 'Subscribe')}`;
+            details = translateEventLog('log_detail_subscribe', {}, 'New subscriber!');
             break;
         default:
             typeIcon = '📌 ' + type;
             details = JSON.stringify(data);
     }
 
-    const values = [time, typeIcon, username, details];
-    const cellClasses = ['py-2 pr-4 text-gray-400', 'py-2 pr-4', 'py-2 pr-4 font-semibold', 'py-2'];
-    values.forEach((value, index) => {
-        const cell = document.createElement('td');
-        cell.className = cellClasses[index];
-        cell.textContent = value == null ? '' : String(value);
-        if (index === 2) cell.appendChild(teamLevelBadge);
-        row.appendChild(cell);
+    row.innerHTML = `
+        <td class="py-2 pr-4 text-gray-400">${time}</td>
+        <td class="py-2 pr-4">${escapeHtml(typeIcon)}</td>
+        <td class="py-2 pr-4 font-semibold">${escapeHtml(username)}${teamLevelBadge}</td>
+        <td class="py-2">${escapeHtml(details ?? '')}</td>
+    `;
+}
+
+function rerenderEventLogRows(locale = window.i18n?.getLocale?.() || document.documentElement.lang) {
+    document.querySelectorAll('#event-log .event-row').forEach(row => {
+        const entry = row.eventLogEntry;
+        if (entry) renderEventLogRow(row, entry.type, entry.data, entry.timestamp, locale);
     });
+}
+
+if (typeof window.i18n?.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(locale => rerenderEventLogRows(locale));
+}
+
+function addEventToLog(type, data, timestamp, trackStats = true) {
+    const logTable = document.getElementById('event-log');
+    if (!logTable) return;
+    const row = document.createElement('tr');
+    row.className = 'event-row border-b border-gray-700';
+    row.eventLogEntry = { type, data, timestamp };
+    renderEventLogRow(row, type, data, timestamp);
 
     // Am Anfang einfügen (neueste oben)
     logTable.insertBefore(row, logTable.firstChild);
 
     // Maximal 100 Einträge behalten
-    while (logTable.children.length > 100) {
+    while (logTable.children.length > MAX_EVENT_LOG_ROWS) {
         logTable.removeChild(logTable.lastChild);
     }
 
     // ========== Update Stats Menu Data ==========
-    trackEventForStatsMenu(type, data);
+    if (trackStats) trackEventForStatsMenu(type, data);
 }
 
 // ========== STATS MENU NAVIGATION ==========
@@ -1474,7 +1721,7 @@ function refreshStatsPanelContent(panelName) {
             if (countEl) countEl.textContent = viewerCount.toLocaleString();
 
             if (viewerCount === 0) {
-                html = '<p class="stats-panel-empty">No viewers tracked yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_viewers') || 'No viewers tracked yet')}</p>`;
             } else {
                 const viewers = Array.from(statsMenuData.viewers.values())
                     .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
@@ -1502,7 +1749,7 @@ function refreshStatsPanelContent(panelName) {
             if (chatCountEl) chatCountEl.textContent = statsMenuData.counts.chat.toLocaleString();
 
             if (statsMenuData.chat.length === 0) {
-                html = '<p class="stats-panel-empty">No chat messages yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_messages') || 'No chat messages yet')}</p>`;
             } else {
                 html = statsMenuData.chat.map(c => `
                     <div class="stats-panel-item chat-item">
@@ -1530,7 +1777,7 @@ function refreshStatsPanelContent(panelName) {
             if (likesCountEl) likesCountEl.textContent = totalLikes.toLocaleString();
 
             if (statsMenuData.likes.length === 0) {
-                html = '<p class="stats-panel-empty">No likes yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_likes') || 'No likes yet')}</p>`;
             } else {
                 html = statsMenuData.likes.map(l => `
                     <div class="stats-panel-item">
@@ -1556,7 +1803,7 @@ function refreshStatsPanelContent(panelName) {
             if (coinsCountEl) coinsCountEl.textContent = totalCoins.toLocaleString();
 
             if (statsMenuData.coins.length === 0) {
-                html = '<p class="stats-panel-empty">No coin gifts yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_coins') || 'No coin gifts yet')}</p>`;
             } else {
                 html = statsMenuData.coins.map(c => `
                     <div class="stats-panel-item">
@@ -1582,7 +1829,7 @@ function refreshStatsPanelContent(panelName) {
             if (followersCountEl) followersCountEl.textContent = statsMenuData.counts.followers.toLocaleString();
 
             if (statsMenuData.followers.length === 0) {
-                html = '<p class="stats-panel-empty">No followers yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_followers') || 'No followers yet')}</p>`;
             } else {
                 html = statsMenuData.followers.map(f => `
                     <div class="stats-panel-item">
@@ -1607,7 +1854,7 @@ function refreshStatsPanelContent(panelName) {
             if (subscribersCountEl) subscribersCountEl.textContent = statsMenuData.counts.subscribers.toLocaleString();
 
             if (statsMenuData.subscribers.length === 0) {
-                html = '<p class="stats-panel-empty">No subscribers yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_subscribers') || 'No subscribers yet')}</p>`;
             } else {
                 html = statsMenuData.subscribers.map(s => `
                     <div class="stats-panel-item subscriber-item">
@@ -1632,7 +1879,7 @@ function refreshStatsPanelContent(panelName) {
             if (giftsCountEl) giftsCountEl.textContent = statsMenuData.counts.gifts.toLocaleString();
 
             if (statsMenuData.gifts.length === 0) {
-                html = '<p class="stats-panel-empty">No gifts yet</p>';
+                html = `<p class="stats-panel-empty">${escapeHtml(window.i18n?.t('dashboard.no_gifts') || 'No gifts yet')}</p>`;
             } else {
                 html = statsMenuData.gifts.map(g => `
                     <div class="stats-panel-item gift-item">
@@ -1660,6 +1907,12 @@ function refreshStatsPanelContent(panelName) {
     if (window.lucide) {
         window.lucide.createIcons();
     }
+}
+
+if (typeof window.i18n?.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(() => {
+        if (activeStatsPanel) refreshStatsPanelContent(activeStatsPanel);
+    });
 }
 
 /**
@@ -3007,19 +3260,79 @@ async function testTTS() {
 // Profile filter state
 let profileFilter = 'all'; // 'all' or 'recent'
 let profileSearchQuery = '';
+let profileListEntries = null;
+let profileListLoadState = null;
+let profileListRequestId = 0;
+
+function translateProfileList(key, fallback) {
+    const translationKey = `profile.${key}`;
+    const translated = window.i18n?.t(translationKey);
+    return translated && translated !== translationKey ? translated : fallback;
+}
+
+function initializeActiveProfileRetry() {
+    const retryButton = document.getElementById('active-profile-retry-btn');
+    if (retryButton && retryButton.dataset.bound !== 'true') {
+        retryButton.addEventListener('click', loadActiveProfile);
+        retryButton.dataset.bound = 'true';
+    }
+}
 
 // Lädt das aktive Profil und zeigt es an
 async function loadActiveProfile() {
+    const status = document.getElementById('active-profile-status');
+    const retryButton = document.getElementById('active-profile-retry-btn');
+    const translateProfile = (key, fallback) => {
+        const translated = window.i18n?.t(key);
+        return translated && translated !== key ? translated : fallback;
+    };
+    if (retryButton) retryButton.disabled = true;
+    if (status) {
+        status.textContent = translateProfile('profile.active_profile_loading', 'Loading active profile…');
+        status.setAttribute('data-i18n', 'profile.active_profile_loading');
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+        status.hidden = false;
+    }
+
     try {
         const response = await fetch('/api/profiles/active');
+        if (!response.ok) throw new Error('Active profile request failed');
         const data = await response.json();
 
-        if (data.activeProfile) {
-            document.getElementById('current-profile-name').textContent = data.activeProfile;
-            document.getElementById('active-profile-display').textContent = data.activeProfile;
+        if (!data || data.success === false || typeof data.activeProfile !== 'string' || !data.activeProfile.trim()) {
+            throw new Error('Active profile response was invalid');
         }
+
+        for (const id of ['current-profile-name', 'active-profile-display']) {
+            const profileName = document.getElementById(id);
+            if (profileName) {
+                profileName.textContent = data.activeProfile;
+                profileName.removeAttribute('data-i18n');
+            }
+        }
+        if (status) {
+            status.hidden = true;
+            status.removeAttribute('data-i18n');
+        }
+        if (retryButton) retryButton.hidden = true;
+        return true;
     } catch (error) {
-        console.error('Error loading active profile:', error);
+        console.error('Failed to load active profile status.');
+        if (status) {
+            status.textContent = translateProfile('profile.active_profile_load_error', 'Active profile status is unavailable. Please retry.');
+            status.setAttribute('data-i18n', 'profile.active_profile_load_error');
+            status.setAttribute('role', 'alert');
+            status.setAttribute('aria-live', 'assertive');
+            status.hidden = false;
+        }
+        if (retryButton) {
+            retryButton.textContent = translateProfile('profile.retry', 'Retry');
+            retryButton.hidden = false;
+        }
+        return false;
+    } finally {
+        if (retryButton) retryButton.disabled = false;
     }
 }
 
@@ -3034,102 +3347,164 @@ function initializeProfileAutoRestartToggle() {
 }
 
 // Lädt alle verfügbaren Profile mit Filter- und Suchunterstützung
+function setProfileListStatus(profileList, state) {
+    profileListLoadState = state === 'clear' ? null : state;
+    let status = document.getElementById('profile-list-status');
+    if (state === 'clear') {
+        status?.remove();
+        return;
+    }
+
+    if (!status) {
+        status = document.createElement('div');
+        status.id = 'profile-list-status';
+        status.className = 'text-sm text-gray-400 py-2';
+        profileList.prepend(status);
+    }
+
+    if (state === 'loading') {
+        status.textContent = window.i18n?.t('common.loading') || 'Loading profiles...';
+        status.setAttribute('role', 'status');
+        status.replaceChildren(document.createTextNode(status.textContent));
+        return;
+    }
+
+    status.className = 'text-sm text-red-400 py-2';
+    status.setAttribute('role', 'alert');
+    const message = document.createElement('span');
+    message.textContent = translateProfileList('list_load_error', 'Could not load profiles. Try again.');
+    const retry = document.createElement('button');
+    retry.type = 'button';
+    retry.className = 'btn btn-ghost btn-sm ml-2';
+    retry.textContent = translateProfileList('retry', 'Retry');
+    retry.addEventListener('click', () => loadProfiles());
+    status.replaceChildren(message, retry);
+}
+
+function renderProfileList(profiles) {
+    const profileList = document.getElementById('profile-list');
+    if (!profileList) return;
+    profileList.replaceChildren();
+
+    let visibleProfiles = profiles;
+    if (profileSearchQuery && profileSearchQuery.trim() !== '') {
+        const query = profileSearchQuery.toLowerCase().trim();
+        visibleProfiles = visibleProfiles.filter(profile => profile.username.toLowerCase().includes(query));
+    }
+    if (profileFilter === 'recent') visibleProfiles = visibleProfiles.slice(0, 10);
+
+    if (visibleProfiles.length === 0) {
+        const emptyMessage = document.createElement('div');
+        emptyMessage.className = 'text-gray-400 text-center py-4';
+        emptyMessage.textContent = profileSearchQuery
+            ? translateProfileList('no_profiles_matching_search', 'No profiles found matching your search')
+            : translateProfileList('no_profiles', 'No profiles found');
+        profileList.appendChild(emptyMessage);
+        return;
+    }
+
+    const locale = window.i18n?.getLocale?.() || document.documentElement.lang || 'en';
+    visibleProfiles.forEach(profile => {
+        const profileCard = document.createElement('div');
+        profileCard.className = `bg-gray-700 rounded-lg p-4 flex items-center justify-between ${
+            profile.isActive ? 'border-2 border-blue-500' : ''
+        }`;
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'flex-1';
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'font-semibold flex items-center gap-2';
+        const profileName = document.createElement('span');
+        profileName.textContent = profile.username;
+        nameDiv.appendChild(profileName);
+        if (profile.isActive) {
+            const activeLabel = document.createElement('span');
+            activeLabel.className = 'text-xs bg-blue-600 px-2 py-1 rounded';
+            activeLabel.textContent = translateProfileList('active_badge', 'ACTIVE');
+            nameDiv.appendChild(activeLabel);
+        }
+
+        const detailsDiv = document.createElement('div');
+        detailsDiv.className = 'text-xs text-gray-400 mt-1';
+        const modifiedDate = new Date(profile.modified).toLocaleString(locale);
+        const sizeKB = (profile.size / 1024).toFixed(2);
+        detailsDiv.textContent = `${translateProfileList('modified', 'Last modified')}: ${modifiedDate} | ${translateProfileList('size', 'Size')}: ${sizeKB} KB`;
+        infoDiv.append(nameDiv, detailsDiv);
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'flex gap-2';
+        if (!profile.isActive) {
+            const switchBtn = document.createElement('button');
+            switchBtn.className = 'bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 text-sm';
+            switchBtn.textContent = `🔄 ${translateProfileList('switch_action', 'Switch')}`;
+            switchBtn.onclick = () => switchProfile(profile.username);
+            buttonsDiv.appendChild(switchBtn);
+        }
+
+        const backupBtn = document.createElement('button');
+        backupBtn.className = 'bg-gray-600 px-3 py-1 rounded hover:bg-gray-500 text-sm';
+        backupBtn.textContent = '💾';
+        backupBtn.title = translateProfileList('backup_action', 'Create backup');
+        backupBtn.onclick = () => backupProfile(profile.username);
+        buttonsDiv.appendChild(backupBtn);
+
+        if (!profile.isActive) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-sm';
+            deleteBtn.textContent = '🗑️';
+            deleteBtn.title = translateProfileList('delete_action', 'Delete profile');
+            deleteBtn.onclick = () => deleteProfile(profile.username);
+            buttonsDiv.appendChild(deleteBtn);
+        }
+
+        profileCard.append(infoDiv, buttonsDiv);
+        profileList.appendChild(profileCard);
+    });
+}
+
+if (typeof window.i18n?.onLanguageChange === 'function') {
+    window.i18n.onLanguageChange(() => {
+        if (profileListEntries) {
+            renderProfileList(profileListEntries);
+            if (profileListLoadState) {
+                const profileList = document.getElementById('profile-list');
+                if (profileList) setProfileListStatus(profileList, profileListLoadState);
+            }
+        } else if (profileListLoadState) {
+            const profileList = document.getElementById('profile-list');
+            if (profileList) setProfileListStatus(profileList, profileListLoadState);
+        }
+    });
+}
+
 async function loadProfiles() {
+    const profileList = document.getElementById('profile-list');
+    if (!profileList) return false;
+    const requestId = ++profileListRequestId;
+    setProfileListStatus(profileList, 'loading');
+
     try {
-        const response = await fetch('/api/profiles');
+        const response = await fetch('/api/profiles', { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const data = await response.json();
-
-        const profileList = document.getElementById('profile-list');
-        profileList.innerHTML = '';
-
-        let profiles = data.profiles || [];
-
-        // Apply search filter
-        if (profileSearchQuery && profileSearchQuery.trim() !== '') {
-            const query = profileSearchQuery.toLowerCase().trim();
-            profiles = profiles.filter(p =>
-                p.username.toLowerCase().includes(query)
-            );
-        }
-
-        // Apply filter: 'recent' shows last 10 recently modified profiles
-        if (profileFilter === 'recent') {
-            // Profiles are already sorted by modified date (newest first) from API
-            profiles = profiles.slice(0, 10);
-        }
-
-        if (profiles.length === 0) {
-            if (profileSearchQuery) {
-                profileList.innerHTML = '<div class="text-gray-400 text-center py-4">No profiles found matching your search</div>';
-            } else {
-                profileList.innerHTML = '<div class="text-gray-400 text-center py-4">Keine Profile gefunden</div>';
-            }
-            return;
-        }
-
-        profiles.forEach(profile => {
-            const profileCard = document.createElement('div');
-            profileCard.className = `bg-gray-700 rounded-lg p-4 flex items-center justify-between ${
-                profile.isActive ? 'border-2 border-blue-500' : ''
-            }`;
-
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'flex-1';
-
-            const nameDiv = document.createElement('div');
-            nameDiv.className = 'font-semibold flex items-center gap-2';
-            nameDiv.innerHTML = `
-                <span>${escapeHtml(profile.username)}</span>
-                ${profile.isActive ? '<span class="text-xs bg-blue-600 px-2 py-1 rounded">AKTIV</span>' : ''}
-            `;
-
-            const detailsDiv = document.createElement('div');
-            detailsDiv.className = 'text-xs text-gray-400 mt-1';
-            const modifiedDate = new Date(profile.modified).toLocaleString('de-DE');
-            const sizeKB = (profile.size / 1024).toFixed(2);
-            detailsDiv.textContent = `Zuletzt geändert: ${modifiedDate} | Größe: ${sizeKB} KB`;
-
-            infoDiv.appendChild(nameDiv);
-            infoDiv.appendChild(detailsDiv);
-
-            const buttonsDiv = document.createElement('div');
-            buttonsDiv.className = 'flex gap-2';
-
-            // Switch Button (nur wenn nicht aktiv)
-            if (!profile.isActive) {
-                const switchBtn = document.createElement('button');
-                switchBtn.className = 'bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 text-sm';
-                switchBtn.textContent = '🔄 Wechseln';
-                switchBtn.onclick = () => switchProfile(profile.username);
-                buttonsDiv.appendChild(switchBtn);
-            }
-
-            // Backup Button
-            const backupBtn = document.createElement('button');
-            backupBtn.className = 'bg-gray-600 px-3 py-1 rounded hover:bg-gray-500 text-sm';
-            backupBtn.textContent = '💾';
-            backupBtn.title = 'Backup erstellen';
-            backupBtn.onclick = () => backupProfile(profile.username);
-            buttonsDiv.appendChild(backupBtn);
-
-            // Delete Button (nicht für aktives Profil)
-            if (!profile.isActive) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'bg-red-600 px-3 py-1 rounded hover:bg-red-700 text-sm';
-                deleteBtn.textContent = '🗑️';
-                deleteBtn.title = 'Profil löschen';
-                deleteBtn.onclick = () => deleteProfile(profile.username);
-                buttonsDiv.appendChild(deleteBtn);
-            }
-
-            profileCard.appendChild(infoDiv);
-            profileCard.appendChild(buttonsDiv);
-            profileList.appendChild(profileCard);
-        });
+        if (requestId !== profileListRequestId) return false;
+        if (!data || !Array.isArray(data.profiles)) throw new Error('Invalid profile list response');
+        profileListEntries = data.profiles;
+        setProfileListStatus(profileList, 'clear');
+        renderProfileList(profileListEntries);
+        return true;
     } catch (error) {
+        if (requestId !== profileListRequestId) return false;
         console.error('Error loading profiles:', error);
+        setProfileListStatus(profileList, 'error');
+        return false;
     }
 }
+
+window.addEventListener('ltth:view-changed', event => {
+    if (event.detail?.view === 'settings' && profileListLoadState !== 'loading') {
+        void loadProfiles();
+    }
+});
 
 // Initialize profile search and filter functionality
 function initProfileSearchFilter() {
@@ -3170,12 +3545,13 @@ async function showProfileModal() {
     if (window.NavigationManager) {
         window.NavigationManager.switchView('settings');
     }
+    if (profileListLoadState !== 'loading') void loadProfiles();
     await loadUsernameAliases();
 }
 
 // Versteckt das Profile Modal
 function hideProfileModal() {
-    document.getElementById('profile-modal').classList.remove('active');
+    document.getElementById('profile-modal')?.classList.remove('active');
 }
 
 // Erstellt ein neues Profil
@@ -3212,10 +3588,15 @@ async function createProfile() {
 
 // Wechselt zu einem anderen Profil
 async function switchProfile(username) {
-    const confirmSwitch = confirm(
-        `Möchtest du zu Profil "${username}" wechseln?\n\n` +
-        `⚠️ Der Server wird danach automatisch neu gestartet.`
-    );
+    const translate = (key, params, fallback) => {
+        const translation = window.i18n?.t(key, params);
+        return translation && translation !== key ? translation : fallback;
+    };
+    const confirmation = [
+        translate('profile.switch_confirm', { username }, `Möchtest du zu Profil "${username}" wechseln?`),
+        translate('profile.switch_restart_warning', {}, '⚠️ Der Server wird danach automatisch neu gestartet.')
+    ].join('\n\n');
+    const confirmSwitch = confirm(confirmation);
 
     if (!confirmSwitch) return;
 
@@ -3244,11 +3625,19 @@ async function switchProfile(username) {
                 setTimeout(() => window.location.reload(), 5000);
             }
         } else {
-            alert('❌ Fehler beim Wechseln des Profils: ' + (result.error || 'Unknown error'));
+            alert(translate(
+                'profile.switch_error',
+                { error: result.error || 'Unknown error' },
+                `❌ Fehler beim Wechseln des Profils: ${result.error || 'Unknown error'}`
+            ));
         }
     } catch (error) {
         console.error('Error switching profile:', error);
-        alert('❌ Netzwerkfehler: ' + error.message);
+        alert(translate(
+            'profile.switch_network_error',
+            { error: error.message },
+            `❌ Netzwerkfehler: ${error.message}`
+        ));
     }
 }
 
@@ -4558,10 +4947,10 @@ document.getElementById('run-diagnostics-btn')?.addEventListener('click', async 
         // Euler API Key Status
         html += '<div style="margin-bottom: 1rem;"><strong>🔑 Euler API Key:</strong><br>';
         const keyInfo = diagnostics.eulerApiKey || {};
-        if (keyInfo.activeKey) {
+        if (keyInfo.configured) {
             const keyMode = keyInfo.usingFallback ? 'Fallback wird verwendet' : 'Eigener Key wird verwendet';
             html += `Quelle: ${keyMode}<br>`;
-            html += `✅ Aktiv (${keyInfo.activeSource}): ${keyInfo.activeKey}<br>`;
+            html += `✅ Aktiv (${keyInfo.activeSource || 'Konfiguration'})<br>`;
         } else {
             html += '❌ Nicht konfiguriert<br>';
         }

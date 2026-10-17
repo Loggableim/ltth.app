@@ -153,13 +153,11 @@ class CommandParser {
     if (requiredLevel === 'streamer') return false;
 
     if (requiredLevel === 'mod') {
-      return chatData?.isModerator === true
-        || (chatData?.teamMemberLevel >= 1);
+      return chatData?.isModerator === true;
     }
 
     if (requiredLevel === 'subscriber') {
-      return chatData?.isSubscriber === true
-        || (chatData?.teamMemberLevel >= 1);
+      return chatData?.isSubscriber === true;
     }
 
     if (requiredLevel === 'follower') {

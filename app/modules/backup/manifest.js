@@ -7,7 +7,7 @@
  * The manifest is always stored as `manifest.json` at the root of the backup ZIP.
  */
 
-const FORMAT_VERSION = '1.0.0';
+const FORMAT_VERSION = '1.1.0';
 const APP_NAME = 'pupcids-little-tiktool-helper';
 const { normalizeScopedPluginIds } = require('./profile-scoped-data');
 
@@ -22,7 +22,7 @@ const { normalizeScopedPluginIds } = require('./profile-scoped-data');
  * @param {Array}  [opts.warnings] - Non-fatal warnings generated during export
  * @returns {object} manifest object
  */
-function createManifest({ appVersion, profile, options, plugins, warnings, profileScopedDataPlugins } = {}) {
+function createManifest({ appVersion, profile, options, plugins, warnings, profileScopedDataPlugins, dataSelection } = {}) {
     const manifest = {
         formatVersion: FORMAT_VERSION,
         app: {
@@ -37,6 +37,13 @@ function createManifest({ appVersion, profile, options, plugins, warnings, profi
     };
     if (Array.isArray(profileScopedDataPlugins) && profileScopedDataPlugins.length) {
         manifest.profileScopedDataPlugins = profileScopedDataPlugins;
+    }
+    if (dataSelection && typeof dataSelection === 'object') {
+        manifest.dataSelection = {
+            categories: Array.isArray(dataSelection.categories) ? [...dataSelection.categories] : [],
+            partial: dataSelection.partial === true,
+            sensitiveDataIncluded: dataSelection.sensitiveDataIncluded === true
+        };
     }
     return manifest;
 }
@@ -83,6 +90,15 @@ function validateManifest(manifest) {
         if (!Array.isArray(manifest.profileScopedDataPlugins) ||
             normalizeScopedPluginIds(manifest.profileScopedDataPlugins).length !== manifest.profileScopedDataPlugins.length) {
             errors.push('profileScopedDataPlugins contains unsupported plugin IDs');
+        }
+    }
+
+    if (manifest.dataSelection !== undefined) {
+        const selection = manifest.dataSelection;
+        if (!selection || typeof selection !== 'object' || Array.isArray(selection) ||
+            !Array.isArray(selection.categories) || selection.categories.some(category => typeof category !== 'string') ||
+            typeof selection.partial !== 'boolean' || typeof selection.sensitiveDataIncluded !== 'boolean') {
+            errors.push('dataSelection has an invalid format');
         }
     }
 

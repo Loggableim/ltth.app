@@ -9,9 +9,19 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const crypto = require('crypto');
 const https = require('https');
+const net = require('net');
+
+const MYINSTANTS_HOSTS = new Set(['www.myinstants.com', 'myinstants.com']);
+const MAX_MYINSTANTS_REDIRECTS = 5;
+
+function urlSecurityError(message, code = 'ERR_MYINSTANTS_URL_REJECTED') {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
 
 class MyInstantsAPI {
-    constructor(logger) {
+    constructor(logger, axiosInstance = null) {
         this.logger = logger || console;
         this.baseUrl = 'https://www.myinstants.com';
         this.userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -25,7 +35,7 @@ class MyInstantsAPI {
         });
         
         // Create axios instance with default configuration
-        this.axiosInstance = axios.create({
+        this.axiosInstance = axiosInstance || axios.create({
             httpsAgent: this.httpsAgent,
             timeout: this.timeout,
             headers: {
@@ -35,6 +45,65 @@ class MyInstantsAPI {
                 'Accept-Encoding': 'gzip, deflate, br'
             }
         });
+    }
+
+    validateMyInstantsUrl(value) {
+        if (typeof value !== 'string' || !value || value.trim() !== value) {
+            throw urlSecurityError('Invalid MyInstants URL');
+        }
+
+        let parsed;
+        try {
+            parsed = new URL(value);
+        } catch (error) {
+            throw urlSecurityError('Invalid MyInstants URL');
+        }
+
+        const hostname = parsed.hostname.toLowerCase();
+        if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.port ||
+            net.isIP(hostname) || !MYINSTANTS_HOSTS.has(hostname)) {
+            throw urlSecurityError('MyInstants URL must use HTTPS on an approved host and standard port');
+        }
+
+        return parsed.href;
+    }
+
+    async requestMyInstantsUrl(value, options = {}) {
+        let currentUrl = this.validateMyInstantsUrl(value);
+
+        for (let redirects = 0; redirects <= MAX_MYINSTANTS_REDIRECTS; redirects += 1) {
+            const response = await this.axiosInstance.get(currentUrl, {
+                ...options,
+                maxRedirects: 0,
+                validateStatus: status => status >= 200 && status < 400
+            });
+
+            if ([301, 302, 303, 307, 308].includes(response.status)) {
+                const location = response.headers?.location;
+                if (response.data && typeof response.data.destroy === 'function') {
+                    response.data.destroy();
+                }
+                if (!location || redirects === MAX_MYINSTANTS_REDIRECTS) {
+                    throw urlSecurityError('MyInstants redirect limit or target is invalid', 'ERR_MYINSTANTS_REDIRECT_REJECTED');
+                }
+                let redirectUrl;
+                try {
+                    redirectUrl = new URL(location, currentUrl).href;
+                } catch (error) {
+                    throw urlSecurityError('MyInstants redirect target is invalid', 'ERR_MYINSTANTS_REDIRECT_REJECTED');
+                }
+                currentUrl = this.validateMyInstantsUrl(redirectUrl);
+                continue;
+            }
+
+            if (response.status < 200 || response.status >= 300) {
+                throw new Error('MyInstants request failed');
+            }
+
+            return { ...response, finalUrl: currentUrl };
+        }
+
+        throw urlSecurityError('MyInstants redirect limit exceeded', 'ERR_MYINSTANTS_REDIRECT_REJECTED');
     }
 
     /**
@@ -271,9 +340,10 @@ class MyInstantsAPI {
      */
     async resolvePageUrl(pageUrl) {
         try {
-            this.logger.info(`[MyInstants] Resolving page URL: ${pageUrl}`);
-            
-            const response = await this.axiosInstance.get(pageUrl);
+            const validatedPageUrl = this.validateMyInstantsUrl(pageUrl);
+            this.logger.info('[MyInstants] Resolving approved page URL');
+
+            const response = await this.requestMyInstantsUrl(validatedPageUrl);
 
             const $ = cheerio.load(response.data);
             
@@ -285,25 +355,28 @@ class MyInstantsAPI {
                 const soundMatch = onclickAttr.match(/play\('([^']+)'/);
                 if (soundMatch && soundMatch[1]) {
                     let soundPath = soundMatch[1];
-                    const mp3Url = soundPath.startsWith('http') ? soundPath : `${this.baseUrl}${soundPath}`;
+                    const mp3Url = new URL(soundPath, this.baseUrl).href;
+                    const validatedMp3Url = this.validateMyInstantsUrl(mp3Url);
                     this.logger.info(`[MyInstants] Resolved to: ${mp3Url}`);
-                    return mp3Url;
+                    return validatedMp3Url;
                 }
             }
 
             // Method 2: Look for direct .mp3 links
             const mp3Match = response.data.match(/https?:\/\/[^\s"'<>]+?\.mp3[^\s"'<>]*/i);
             if (mp3Match) {
-                this.logger.info(`[MyInstants] Found direct MP3: ${mp3Match[0]}`);
-                return mp3Match[0];
+                const validatedMp3Url = this.validateMyInstantsUrl(mp3Match[0]);
+                this.logger.info('[MyInstants] Found approved direct MP3 URL');
+                return validatedMp3Url;
             }
 
             // Method 3: Look in media directory
             const mediaMatch = response.data.match(/\/media\/sounds\/[^\s"'<>]+\.mp3/i);
             if (mediaMatch) {
-                const mp3Url = `${this.baseUrl}${mediaMatch[0]}`;
-                this.logger.info(`[MyInstants] Found media path: ${mp3Url}`);
-                return mp3Url;
+                const mp3Url = new URL(mediaMatch[0], this.baseUrl).href;
+                const validatedMp3Url = this.validateMyInstantsUrl(mp3Url);
+                this.logger.info('[MyInstants] Found approved media path');
+                return validatedMp3Url;
             }
 
             throw new Error('Could not find MP3 URL in page');
@@ -409,9 +482,8 @@ class MyInstantsAPI {
      */
     isValidMyInstantsUrl(url) {
         try {
-            const parsedUrl = new URL(url);
-            return parsedUrl.hostname === 'www.myinstants.com' || 
-                   parsedUrl.hostname === 'myinstants.com';
+            this.validateMyInstantsUrl(url);
+            return true;
         } catch (error) {
             return false;
         }

@@ -5,7 +5,7 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/advanced-timer/timer-card.png",
       "en": "/screenshots/docs/plugins/advanced-timer/timer-card.png",
@@ -36,48 +36,12 @@
     }
   },
   {
-    "id": "animazingpal",
-    "name": "AnimazingPal",
-    "category": "plugin",
-    "access": "working-beta",
-    "devStatus": "working-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/animazingpal/avatar-card.png",
-      "en": "/screenshots/docs/plugins/animazingpal/avatar-card.png",
-      "es": "/screenshots/es/docs/plugins/animazingpal/avatar-card.png",
-      "fr": "/screenshots/fr/docs/plugins/animazingpal/avatar-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "AnimazingPal",
-        "summary": "AnimazingPal richtet Avatar- und Ereigniszuordnung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Zuordnung wird gespeichert, ohne einen externen Dienst zu kontaktieren"
-      },
-      "en": {
-        "title": "AnimazingPal",
-        "summary": "AnimazingPal configures avatar and event mapping with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the mapping is saved without contacting an external service"
-      },
-      "es": {
-        "title": "AnimazingPal",
-        "summary": "AnimazingPal configura asignación de avatar y eventos mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la asignación se guarda sin contactar un servicio externo"
-      },
-      "fr": {
-        "title": "AnimazingPal",
-        "summary": "AnimazingPal configure mappage d’avatar et d’événements avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le mappage est enregistré sans contacter de service externe"
-      }
-    }
-  },
-  {
     "id": "api-bridge",
     "name": "API Bridge",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/api-bridge/bridge-info.png",
       "en": "/screenshots/docs/plugins/api-bridge/bridge-info.png",
@@ -113,7 +77,7 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/clarityhud/hud-card.png",
       "en": "/screenshots/docs/plugins/clarityhud/hud-card.png",
@@ -149,7 +113,7 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/coinbattle/coinbattle-card.png",
       "en": "/screenshots/docs/plugins/coinbattle/coinbattle-card.png",
@@ -185,7 +149,7 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/config-import/backup-card.png",
       "en": "/screenshots/docs/plugins/config-import/backup-card.png",
@@ -257,7 +221,7 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/emoji-rain/enable-emoji-rain.png",
       "en": "/screenshots/docs/plugins/emoji-rain/enable-emoji-rain.png",
@@ -293,7 +257,7 @@
     "category": "plugin",
     "access": "stable",
     "devStatus": "stable",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/fireworks/fireworks-card.png",
       "en": "/screenshots/docs/plugins/fireworks/fireworks-card.png",
@@ -329,7 +293,7 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/gcce/command-card.png",
       "en": "/screenshots/docs/plugins/gcce/command-card.png",
@@ -365,7 +329,7 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/openshock/safety-card.png",
       "en": "/screenshots/docs/plugins/openshock/safety-card.png",
@@ -396,48 +360,12 @@
     }
   },
   {
-    "id": "interactive-story",
-    "name": "Interactive Story Generator",
-    "category": "plugin",
-    "access": "early-version",
-    "devStatus": "early-version",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/interactive-story/story-card.png",
-      "en": "/screenshots/docs/plugins/interactive-story/story-card.png",
-      "es": "/screenshots/es/docs/plugins/interactive-story/story-card.png",
-      "fr": "/screenshots/fr/docs/plugins/interactive-story/story-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator richtet Geschichtenmodus, Abstimmung und Modelloption ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Abstimmungsoberfläche reagiert, ohne einen externen Modellaufruf auszuführen"
-      },
-      "en": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configures story mode, voting, and model option with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the voting UI responds without an external model request"
-      },
-      "es": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configura modo de historia, votación y opción de modelo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la interfaz de votación responde sin solicitar un modelo externo"
-      },
-      "fr": {
-        "title": "Interactive Story Generator",
-        "summary": "Interactive Story Generator configure mode histoire, vote et option de modèle avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’interface de vote répond sans appel de modèle externe"
-      }
-    }
-  },
-  {
     "id": "goals",
     "name": "Live Goals",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/goals/goals-card.png",
       "en": "/screenshots/docs/plugins/goals/goals-card.png",
@@ -509,7 +437,7 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/game-engine/engine-card.png",
       "en": "/screenshots/docs/plugins/game-engine/engine-card.png",
@@ -581,7 +509,7 @@
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/multicam/multicam-card.png",
       "en": "/screenshots/docs/plugins/multicam/multicam-card.png",
@@ -612,84 +540,12 @@
     }
   },
   {
-    "id": "music-bot",
-    "name": "Music Bot",
-    "category": "plugin",
-    "access": "available",
-    "devStatus": "available",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/music-bot/music-card.png",
-      "en": "/screenshots/docs/plugins/music-bot/music-card.png",
-      "es": "/screenshots/es/docs/plugins/music-bot/music-card.png",
-      "fr": "/screenshots/fr/docs/plugins/music-bot/music-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Music Bot",
-        "summary": "Music Bot richtet MPV-Pfad, Anfragequeue und Moderationsregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Queue zeigt den Eintrag; es startet keine externe Suche und keine Wiedergabe"
-      },
-      "en": {
-        "title": "Music Bot",
-        "summary": "Music Bot configures MPV path, request queue, and moderation rule with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the queue shows the entry; no external search or playback starts"
-      },
-      "es": {
-        "title": "Music Bot",
-        "summary": "Music Bot configura ruta de MPV, cola de solicitudes y regla de moderación mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la cola muestra la entrada; no inicia búsqueda externa ni reproducción"
-      },
-      "fr": {
-        "title": "Music Bot",
-        "summary": "Music Bot configure chemin MPV, file de demandes et règle de modération avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "la file affiche l’entrée ; aucune recherche externe ni lecture ne démarre"
-      }
-    }
-  },
-  {
-    "id": "osc-bridge",
-    "name": "OSC-Bridge (VRChat)",
-    "category": "plugin",
-    "access": "stable",
-    "devStatus": "stable",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/osc-bridge/osc-card.png",
-      "en": "/screenshots/docs/plugins/osc-bridge/osc-card.png",
-      "es": "/screenshots/es/docs/plugins/osc-bridge/osc-card.png",
-      "fr": "/screenshots/fr/docs/plugins/osc-bridge/osc-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) richtet Loopback-Adresse, UDP-Port und Nachrichtentyp ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die Eingaben bleiben auf 127.0.0.1 und es wird kein VRChat-Client gesteuert"
-      },
-      "en": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configures loopback address, UDP port, and message type with a safe local check instead of a LIVE trigger.",
-        "firstResult": "inputs remain on 127.0.0.1 and no VRChat client is controlled"
-      },
-      "es": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configura dirección loopback, puerto UDP y tipo de mensaje mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "las entradas permanecen en 127.0.0.1 y no se controla ningún cliente VRChat"
-      },
-      "fr": {
-        "title": "OSC-Bridge (VRChat)",
-        "summary": "OSC-Bridge (VRChat) configure adresse loopback, port UDP et type de message avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "les entrées restent sur 127.0.0.1 et aucun client VRChat n’est contrôlé"
-      }
-    }
-  },
-  {
     "id": "quiz-show",
     "name": "Pup Cid's Little Quiz Show Plugin",
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/quiz-show/quiz-card.png",
       "en": "/screenshots/docs/plugins/quiz-show/quiz-card.png",
@@ -720,48 +576,12 @@
     }
   },
   {
-    "id": "schnorrbecher",
-    "name": "Schnorrbecher",
-    "category": "plugin",
-    "access": "working-beta",
-    "devStatus": "working-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/schnorrbecher/coin-jar-config.png",
-      "en": "/screenshots/docs/plugins/schnorrbecher/coin-jar-config.png",
-      "es": "/screenshots/es/docs/plugins/schnorrbecher/coin-jar-config.png",
-      "fr": "/screenshots/fr/docs/plugins/schnorrbecher/coin-jar-config.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Schnorrbecher",
-        "summary": "Schnorrbecher richtet Geschenkeglas, lokale Testwerte und OBS-Overlay ein, ohne eine LIVE-Szene zu verändern.",
-        "firstResult": "der Testwert erscheint im isolierten Becher, ohne eine LIVE-Szene zu verändern"
-      },
-      "en": {
-        "title": "Schnorrbecher",
-        "summary": "Schnorrbecher configures the gift jar, local test values, and OBS overlay without changing a LIVE scene.",
-        "firstResult": "the test value appears in the isolated jar without changing a LIVE scene"
-      },
-      "es": {
-        "title": "Schnorrbecher",
-        "summary": "Schnorrbecher configura el tarro de regalos, los valores de prueba locales y el overlay de OBS sin cambiar una escena LIVE.",
-        "firstResult": "el valor de prueba aparece en el tarro aislado sin cambiar una escena LIVE"
-      },
-      "fr": {
-        "title": "Schnorrbecher",
-        "summary": "Schnorrbecher configure le bocal de cadeaux, les valeurs de test locales et l’overlay OBS sans modifier une scène LIVE.",
-        "firstResult": "la valeur de test apparaît dans le bocal isolé sans modifier une scène LIVE"
-      }
-    }
-  },
-  {
     "id": "soundboard",
     "name": "Soundboard",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/soundboard/soundboard-card.png",
       "en": "/screenshots/docs/plugins/soundboard/soundboard-card.png",
@@ -797,7 +617,7 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/spotlight/spotlight-card.png",
       "en": "/screenshots/docs/plugins/spotlight/spotlight-card.png",
@@ -828,48 +648,12 @@
     }
   },
   {
-    "id": "stream-monsters",
-    "name": "Stream Monsters",
-    "category": "plugin",
-    "access": "stable",
-    "devStatus": "stable",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/stream-monsters/alchemy-card.png",
-      "en": "/screenshots/docs/plugins/stream-monsters/alchemy-card.png",
-      "es": "/screenshots/es/docs/plugins/stream-monsters/alchemy-card.png",
-      "fr": "/screenshots/fr/docs/plugins/stream-monsters/alchemy-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.12 verbindet Gift- und optionale Gratis-Eier, 72 gebündelte Furry-Formen, zweisprachige Overlay-Führung und K.-o.-Duelle nach Rules v8 in einer TikTok-sicheren 74/26-Portrait-Arena.",
-        "firstResult": "Der Creator zeigt Live-Bereitschaft, Gift- und Gratis-Eier, alle 72 Formen, die verdeckte A/B/C-Arena und die OBS-Browserquelle, ohne eine LIVE-Aktion auszulösen."
-      },
-      "en": {
-        "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.12 combines gift and optional free eggs, 72 bundled Furry forms, bilingual overlay guidance, and sealed Rules v8 K.O. battles in a TikTok-safe 74/26 portrait arena.",
-        "firstResult": "The Creator shows live readiness, gift and free eggs, all 72 forms, the sealed A/B/C arena, and the OBS browser source without triggering a LIVE action."
-      },
-      "es": {
-        "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.12 combina huevos por regalos y gratis opcionales, 72 formas Furry, guía bilingüe y combates Rules v8 hasta K.O. en una arena vertical 74/26 segura para TikTok.",
-        "firstResult": "Creator muestra la preparación, los huevos por regalos y gratis, las 72 formas, la arena A/B/C sellada y la fuente de navegador de OBS sin activar ninguna acción LIVE."
-      },
-      "fr": {
-        "title": "Stream Monsters",
-        "summary": "Stream Monsters 1.12 réunit les œufs-cadeaux et gratuits facultatifs, 72 formes Furry, un guide bilingue et des combats Rules v8 jusqu’au K.-O. dans une arène portrait TikTok 74/26.",
-        "firstResult": "Le Creator affiche la préparation, les œufs par cadeaux et gratuits, les 72 formes, l’arène A/B/C scellée et la source navigateur OBS sans déclencher d’action LIVE."
-      }
-    }
-  },
-  {
     "id": "stt-ticker",
     "name": "STT Ticker",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/stt-ticker/ticker-card.png",
       "en": "/screenshots/docs/plugins/stt-ticker/ticker-card.png",
@@ -900,48 +684,12 @@
     }
   },
   {
-    "id": "talking-heads",
-    "name": "Talking Heads",
-    "category": "plugin",
-    "access": "stable",
-    "devStatus": "stable",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/talking-heads/heads-card.png",
-      "en": "/screenshots/docs/plugins/talking-heads/heads-card.png",
-      "es": "/screenshots/es/docs/plugins/talking-heads/heads-card.png",
-      "fr": "/screenshots/fr/docs/plugins/talking-heads/heads-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads richtet Charakter, Sprachereignis und Lippenbewegung ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Charakter reagiert in der Vorschau ohne TTS-Provider"
-      },
-      "en": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configures character, speech event, and lip movement with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the character reacts in preview without a TTS provider"
-      },
-      "es": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configura personaje, evento de voz y movimiento de labios mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el personaje reacciona en la vista previa sin proveedor TTS"
-      },
-      "fr": {
-        "title": "Talking Heads",
-        "summary": "Talking Heads configure personnage, événement vocal et mouvement des lèvres avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le personnage réagit dans l’aperçu sans fournisseur TTS"
-      }
-    }
-  },
-  {
     "id": "tts",
     "name": "Text-to-Speech System",
     "category": "plugin",
     "access": "working-beta",
     "devStatus": "working-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/tts/tts-card.png",
       "en": "/screenshots/docs/plugins/tts/tts-card.png",
@@ -977,7 +725,7 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/thermal-printer/printer-card.png",
       "en": "/screenshots/docs/plugins/thermal-printer/printer-card.png",
@@ -1013,7 +761,7 @@
     "category": "plugin",
     "access": "available",
     "devStatus": "available",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/toptier/tier-card.png",
       "en": "/screenshots/docs/plugins/toptier/tier-card.png",
@@ -1049,7 +797,7 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/vdoninja/ninja-card.png",
       "en": "/screenshots/docs/plugins/vdoninja/ninja-card.png",
@@ -1085,7 +833,7 @@
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/milestone-leaderboard/xp-card.png",
       "en": "/screenshots/docs/plugins/milestone-leaderboard/xp-card.png",
@@ -1121,7 +869,7 @@
     "category": "plugin",
     "access": "early-version",
     "devStatus": "early-version",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/flame-overlay/frame-card.png",
       "en": "/screenshots/docs/plugins/flame-overlay/frame-card.png",
@@ -1152,48 +900,12 @@
     }
   },
   {
-    "id": "visual-fx-frame-webgpu",
-    "name": "Visual FX Frame WEBGPU",
-    "category": "plugin",
-    "access": "working-beta",
-    "devStatus": "working-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "en": "/screenshots/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "es": "/screenshots/es/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png",
-      "fr": "/screenshots/fr/docs/plugins/visual-fx-frame-webgpu/webgpu-frame-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU richtet WebGPU-Rahmen, Premium-Stile und Qualitätsprofil ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "der Rahmen wird gerendert und die Qualitätsanzeige bleibt im Testprofil"
-      },
-      "en": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configures WebGPU frame, premium styles, and quality profile with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the frame is rendered and the quality indicator stays in the test profile"
-      },
-      "es": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configura marco WebGPU, estilos premium y perfil de calidad mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "el marco se renderiza y el indicador de calidad permanece en el perfil de prueba"
-      },
-      "fr": {
-        "title": "Visual FX Frame WEBGPU",
-        "summary": "Visual FX Frame WEBGPU configure cadre WebGPU, styles premium et profil de qualité avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "le cadre est rendu et l’indicateur de qualité reste dans le profil de test"
-      }
-    }
-  },
-  {
     "id": "weather-control",
     "name": "Weather Control",
     "category": "plugin",
     "access": "development-beta",
     "devStatus": "development-beta",
-    "storeAvailable": false,
+    "storeAvailable": true,
     "image": {
       "de": "/screenshots/de/docs/plugins/weather-control/weather-card.png",
       "en": "/screenshots/docs/plugins/weather-control/weather-card.png",
@@ -1220,42 +932,6 @@
         "title": "Weather Control",
         "summary": "Weather Control configure effet météo, intensité et cycle de vie avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
         "firstResult": "l’effet commence et finit dans l’aperçu sans scène LIVE"
-      }
-    }
-  },
-  {
-    "id": "webgpu-emoji-rain",
-    "name": "WebGPU EmojiRain",
-    "category": "plugin",
-    "access": "development-beta",
-    "devStatus": "development-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "en": "/screenshots/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-emoji-rain/gpu-rain-card.png"
-    },
-    "translations": {
-      "de": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain richtet WebGPU-Preset, Assets und Geschenkregel ein – mit einer sicheren lokalen Kontrolle statt einer LIVE-Auslösung.",
-        "firstResult": "die GPU-Vorschau zeigt Emojis und meldet keinen LIVE-Kontakt"
-      },
-      "en": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configures WebGPU preset, assets, and gift rule with a safe local check instead of a LIVE trigger.",
-        "firstResult": "the GPU preview shows emojis and reports no LIVE connection"
-      },
-      "es": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configura preajuste WebGPU, recursos y regla de regalo mediante una comprobación local segura, no un disparador LIVE.",
-        "firstResult": "la vista previa GPU muestra emojis y no informa conexión LIVE"
-      },
-      "fr": {
-        "title": "WebGPU EmojiRain",
-        "summary": "WebGPU EmojiRain configure préréglage WebGPU, assets et règle de cadeau avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
-        "firstResult": "l’aperçu GPU montre des emojis et n’indique aucune connexion LIVE"
       }
     }
   },
@@ -1292,42 +968,6 @@
         "title": "WebGPU Fireworks",
         "summary": "WebGPU Fireworks configure qualité WebGPU, déclencheur et limite de performance avec un contrôle local sûr plutôt qu’un déclencheur LIVE.",
         "firstResult": "les feux WebGPU sont rendus sans connecter TikTok LIVE"
-      }
-    }
-  },
-  {
-    "id": "webgpu-weather-control",
-    "name": "WebGPU Weather Control",
-    "category": "plugin",
-    "access": "working-beta",
-    "devStatus": "working-beta",
-    "storeAvailable": false,
-    "image": {
-      "de": "/screenshots/de/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
-      "en": "/screenshots/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
-      "es": "/screenshots/es/docs/plugins/webgpu-weather-control/webgpu-weather-status.png",
-      "fr": "/screenshots/fr/docs/plugins/webgpu-weather-control/webgpu-weather-status.png"
-    },
-    "translations": {
-      "de": {
-        "title": "WebGPU Wetterkontrolle",
-        "summary": "WebGPU Wetterkontrolle richtet cineastische WebGPU-Wettereffekte und adaptive 1080p60-Qualität in einer isolierten Vorschau ein.",
-        "firstResult": "die 1080p-Vorschau zeigt den Effekt ohne LIVE-Ausgabe"
-      },
-      "en": {
-        "title": "WebGPU Weather Control",
-        "summary": "WebGPU Weather Control configures cinematic WebGPU weather effects and adaptive 1080p60 quality in an isolated preview.",
-        "firstResult": "the 1080p preview shows the effect without LIVE output"
-      },
-      "es": {
-        "title": "Control meteorológico WebGPU",
-        "summary": "Control meteorológico WebGPU configura efectos cinematográficos WebGPU y calidad adaptativa 1080p60 en una vista previa aislada.",
-        "firstResult": "la vista previa a 1080p muestra el efecto sin salida LIVE"
-      },
-      "fr": {
-        "title": "Contrôle météo WebGPU",
-        "summary": "Contrôle météo WebGPU configure des effets météo WebGPU cinématographiques et une qualité adaptative 1080p60 dans un aperçu isolé.",
-        "firstResult": "l’aperçu 1080p affiche l’effet sans sortie LIVE"
       }
     }
   }

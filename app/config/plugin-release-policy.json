@@ -13,6 +13,9 @@
     "webgpu-emoji-rain",
     "webgpu-weather-control"
   ],
+  "publicRuntimeExcluded": [
+    "gift-catalog"
+  ],
   "aliases": {
     "streamalchemy": "stream-monsters"
   },

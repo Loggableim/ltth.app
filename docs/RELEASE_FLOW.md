@@ -1,17 +1,21 @@
-﻿# LTTH Release Flow Documentation
+﻿# LTTH Legacy Release Flow Documentation
 
-This document describes the complete release workflow for PupCid's Little TikTool Helper (LTTH), including how to prepare, execute, and verify releases using the automated release system.
+> **Scope: manual legacy developer path only.** The helper described below changes local files; running it does not publish a signed GitHub Release or deploy the website.
+>
+> Current public process: `.github/workflows/release.yml` validates the exact tag and builds release assets, then ends by providing the local launcher-signing handoff instructions. After local signing and validation, the separately dispatched `.github/workflows/publish-launcher-handoff.yml` publishes the signed GitHub Release. `.github/workflows/pages.yml` separately verifies a run-bound runtime asset and deploys Pages. These are distinct steps; this document is not their runbook.
+
+This document preserves the manual legacy developer procedure for staging a package and running `scripts/release_from_new_patch.py`. It does not describe the current official public release/Pages publishing flow.
 
 Canonical repository identity: `Loggableim/ltth.app` at `https://github.com/Loggableim/ltth.app`. Do not use older repository names from archived reports for release work.
 
 ## Overview
 
-The LTTH release system automates the process of staging built LTTH payloads inside the canonical `Loggableim/ltth.app` repository, where the same repository hosts the runtime release files and the public `ltth.app` website assets. This ensures that:
+The legacy helper automates only the following local repository operations; it does not upload artifacts or publish a release:
 
-- The Cloud-Installer always downloads the latest version from a fixed URL
-- Old versions are properly archived
-- Release metadata is automatically updated
-- The download page shows current version information
+- Copies the selected patch ZIP to the local `app/ltth_latest.zip` path
+- Archives the prior local bundle when the current-version file and bundle are available
+- Writes local `app/CURRENT_VERSION.txt` and `app/CURRENT_RELEASE.json` metadata
+- Processes the staging directory; it does not deploy Pages
 
 ## Architecture
 
@@ -38,20 +42,20 @@ ltth.app/
 ├── downloads/
 │   └── index.html               # Download page (reads CURRENT_RELEASE.json)
 ├── scripts/
-│   └── release_from_new_patch.py # Automated release script
+│   └── release_from_new_patch.py # Manual legacy local-file helper
 └── docs/
     └── RELEASE_FLOW.md          # This document
 ```
 
 ### Key Files
 
-- **`app/ltth_latest.zip`**: Fixed URL for Cloud-Installer downloads. Always points to the latest stable build.
+- **`app/ltth_latest.zip`**: Local output path written by this legacy helper; it is not by itself the official release artifact.
 - **`app/CURRENT_VERSION.txt`**: Plain text file containing only the version number (e.g., `1.2.3`)
 - **`app/CURRENT_RELEASE.json`**: JSON file with release metadata consumed by the download page
-- **`new_patch/ltth_X.Y.Z/`**: Staging area for new releases before deployment
+- **`new_patch/ltth_X.Y.Z/`**: Input staging area for this manual helper.
 - **`released_patches/`**: Archive of successfully released patches
 
-## Release Process
+## Manual legacy helper process
 
 ### Step 1: Prepare Build
 
@@ -101,9 +105,9 @@ new_patch/
     └── changelog.txt        # Release notes
 ```
 
-### Step 3: Run the Release Script
+### Legacy helper step 3: Run the release script
 
-The release script (`scripts/release_from_new_patch.py`) automates the entire deployment process.
+The script (`scripts/release_from_new_patch.py`) performs the listed local file operations; it does not publish the GitHub Release or deploy Pages.
 
 **Execute the script:**
 
@@ -116,7 +120,7 @@ chmod +x scripts/release_from_new_patch.py
 ./scripts/release_from_new_patch.py
 ```
 
-**What the script does:**
+**What this legacy helper does locally:**
 
 1. **Find Highest Version**: Scans `new_patch/` for all `ltth_X.Y.Z/` directories and selects the highest version using proper SemVer comparison (not lexicographic sorting)
 
@@ -130,7 +134,7 @@ chmod +x scripts/release_from_new_patch.py
    - Copies `app/ltth_latest.zip` to `app/archive/ltth_<CURRENT_VERSION>.zip`
    - Verifies file sizes if archive already exists (prevents inconsistent duplicates)
 
-5. **Deploy New Version**: Copies `new_patch/ltth_X.Y.Z/ltth_X.Y.Z.zip` to `app/ltth_latest.zip`
+5. **Copy selected ZIP locally**: Copies `new_patch/ltth_X.Y.Z/ltth_X.Y.Z.zip` to `app/ltth_latest.zip`
 
 6. **Update Metadata**:
    - Writes new version to `app/CURRENT_VERSION.txt` (plain text: `1.2.3`)
@@ -143,9 +147,11 @@ chmod +x scripts/release_from_new_patch.py
      }
      ```
 
-7. **Cleanup**: Moves the processed patch from `new_patch/ltth_X.Y.Z/` to `released_patches/ltth_X.Y.Z/`
+7. **Cleanup**: Moves the patch to `released_patches/ltth_X.Y.Z/` if that destination is absent; if it already exists, the current script deletes the selected `new_patch/ltth_X.Y.Z/` directory.
 
-**Example output:**
+**Illustrative legacy-script output (local helper success only, not a publication receipt):**
+
+The messages and suggested follow-up below reproduce the legacy helper; they do not publish a GitHub Release or deploy Pages.
 ```
 ======================================================================
 LTTH Release Automation
@@ -188,9 +194,9 @@ Next steps:
   5. Check https://ltth.app/downloads/ for updated info
 ```
 
-### Step 4: Commit and Push Changes
+### Legacy follow-up example: commit and push local helper changes
 
-After the script successfully completes:
+The old manual push instructions below are retained for internal/history context only. They are not the current public release instructions: a main push is not a signed GitHub Release and does not replace the publisher workflow.
 
 ```bash
 # Check what changed
@@ -215,11 +221,11 @@ git commit -m "Release LTTH v1.2.3
 git push origin main
 ```
 
-GitHub Pages will automatically deploy the changes within 1-2 minutes.
+A `main` push may trigger the independent Pages workflow, but that is not proof that a signed GitHub Release was published.
 
-### Step 5: Verify Deployment
+### Legacy route verification example
 
-After GitHub Pages deployment completes, verify:
+The URLs below describe the former raw-file publishing route, not current release acceptance. For a public release, verify the separate release-build, signed-publisher, and Pages workflow runs and their artifacts.
 
 1. **Latest ZIP**: https://ltth.app/app/ltth_latest.zip
    - Should download the new version
@@ -254,7 +260,7 @@ LTTH uses Semantic Versioning (SemVer) with the format `MAJOR.MINOR.PATCH`:
 - `1.2.3` → `1.3.0`: New features added
 - `1.2.3` → `2.0.0`: Major overhaul or breaking changes
 
-### Multiple Versions in new_patch/
+### Multiple Versions in new_patch/ (legacy helper)
 
 If multiple version directories exist in `new_patch/`, the script will:
 - Parse all versions correctly (not lexicographically)
@@ -276,7 +282,10 @@ To release multiple versions sequentially:
 3. Run the script again (processes next highest)
 4. Repeat until all versions are released
 
-## Cloud-Installer Integration
+## Legacy Cloud-Installer integration notes
+
+This section records the older fixed-URL contract; it is not the current public installer/release contract. Current one-line installer sources are under `install/` and consume validated release artifacts.
+
 
 The external Rust Cloud-Installer will interact with the release system as follows:
 
@@ -320,7 +329,10 @@ extract_to_installation_directory();
 launch("PupCidLTTH.exe");
 ```
 
-## Download Page Integration
+## Download page metadata behavior
+
+This section describes what the page JavaScript reads; it is not a deployment step. Website deployment is managed independently by `.github/workflows/pages.yml`.
+
 
 The download page (`downloads/index.html`) automatically fetches and displays release information.
 
@@ -363,9 +375,12 @@ The script performs extensive validation:
 - ✅ File existence (ZIP and changelog must exist)
 - ✅ Archive consistency (prevents duplicate versions with different content)
 
-## Advanced Usage
+## Advanced legacy helper usage
 
-### Multiple Releases
+### Multiple staged versions in the legacy helper
+
+The commands here describe the old manual processing sequence only; use the distinct workflows at the top for public releases.
+
 
 To prepare multiple versions for sequential release:
 
@@ -378,17 +393,17 @@ mkdir -p new_patch/ltth_1.3.0/
 # Add files to each...
 
 # Run script three times (highest to lowest)
-python3 scripts/release_from_new_patch.py  # Releases 1.3.0
+python3 scripts/release_from_new_patch.py  # Processes staged version 1.3.0 locally
 git add . && git commit -m "Release 1.3.0" && git push
 
-python3 scripts/release_from_new_patch.py  # Releases 1.2.4
+python3 scripts/release_from_new_patch.py  # Processes staged version 1.2.4 locally
 git add . && git commit -m "Release 1.2.4" && git push
 
-python3 scripts/release_from_new_patch.py  # Releases 1.2.3
+python3 scripts/release_from_new_patch.py  # Processes staged version 1.2.3 locally
 git add . && git commit -m "Release 1.2.3" && git push
 ```
 
-### Manual Release (Not Recommended)
+### Direct local file edits (legacy manual example; not the public release route)
 
 If you need to release manually without the script:
 
@@ -400,7 +415,7 @@ If you need to release manually without the script:
 
 **Warning**: Manual releases are error-prone. Use the script whenever possible.
 
-### Rollback to Previous Version
+### Rollback to a Previous Local Bundle (legacy manual example)
 
 To rollback to a previous version:
 
@@ -452,9 +467,9 @@ python3 --version
 - **Check**: Files were committed and pushed
 - **Check**: app/archive/ directory structure
 
-## Best Practices
+## Legacy helper notes
 
-1. **Always use the script**: Don't manually update files unless absolutely necessary
+1. Use this helper only for controlled internal/local staging; for public releases follow the current workflows at the top.
 2. **Test locally first**: Run the script locally before pushing to production
 3. **One version at a time**: Release versions sequentially, not all at once
 4. **Verify deployment**: Always check the live URLs after deployment

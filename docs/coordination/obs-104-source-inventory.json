@@ -1,0 +1,1061 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-06T22:41:21.601Z",
+  "status": "source-derived-plan-only-no-obs-execution",
+  "sourceOfExpectedCount": "docs/plugin-docs-qa/report.json",
+  "sourceOfRecords": "scripts/lib/obs-docs-capture-inventory.js plus current plugin-guide overlay definitions",
+  "qaReport": {
+    "expected": 104,
+    "records": 0,
+    "reportPath": null
+  },
+  "overlayCount": 26,
+  "locales": [
+    "de",
+    "en",
+    "es",
+    "fr"
+  ],
+  "items": [
+    {
+      "plugin": "advanced-timer",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/advanced-timer/overlay/index.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "advanced-timer",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/advanced-timer/overlay/index.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "advanced-timer",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/advanced-timer/overlay/index.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "advanced-timer",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/advanced-timer/overlay/index.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "chatango",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/chatango/ui.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "chatango",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/chatango/ui.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "chatango",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/chatango/ui.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "chatango",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/chatango/ui.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "clarityhud",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/clarity/full",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/clarity/full?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "clarityhud",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/clarity/full",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/clarity/full?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "clarityhud",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/clarity/full",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/clarity/full?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "clarityhud",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/clarity/full",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/clarity/full?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "coinbattle",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/coinbattle/overlay/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "coinbattle",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/coinbattle/overlay/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "coinbattle",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/coinbattle/overlay/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "coinbattle",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/coinbattle/overlay/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "emoji-rain",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/emoji-rain/obs-hud",
+      "overlayUrl": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "emoji-rain",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/emoji-rain/obs-hud",
+      "overlayUrl": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "emoji-rain",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/emoji-rain/obs-hud",
+      "overlayUrl": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "emoji-rain",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/emoji-rain/obs-hud",
+      "overlayUrl": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "fireworks",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/fireworks/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "fireworks",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/fireworks/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "fireworks",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/fireworks/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "fireworks",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/fireworks/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "flame-overlay",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/flame-overlay/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/flame-overlay/overlay?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "flame-overlay",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/flame-overlay/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/flame-overlay/overlay?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "flame-overlay",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/flame-overlay/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/flame-overlay/overlay?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "flame-overlay",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/flame-overlay/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/flame-overlay/overlay?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "game-engine",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/game-engine/overlay/game-hud.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "game-engine",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/game-engine/overlay/game-hud.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "game-engine",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/game-engine/overlay/game-hud.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "game-engine",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/game-engine/overlay/game-hud.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "goals",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/goals/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/goals/overlay?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "goals",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/goals/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/goals/overlay?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "goals",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/goals/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/goals/overlay?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "goals",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/goals/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/goals/overlay?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "interactive-story",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/interactive-story/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "interactive-story",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/interactive-story/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "interactive-story",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/interactive-story/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "interactive-story",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/interactive-story/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "minecraft-connect",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "minecraft-connect",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "minecraft-connect",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "minecraft-connect",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "music-bot",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/music-bot/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "music-bot",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/music-bot/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "music-bot",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/music-bot/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "music-bot",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/music-bot/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "openshock",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/openshock/overlay/openshock_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "openshock",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/openshock/overlay/openshock_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "openshock",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/openshock/overlay/openshock_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "openshock",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/openshock/overlay/openshock_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "quiz-show",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/quiz-show/quiz_show_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "quiz-show",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/quiz-show/quiz_show_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "quiz-show",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/quiz-show/quiz_show_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "quiz-show",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/quiz-show/quiz_show_overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "schnorrbecher",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/coincup?transparent=1",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "schnorrbecher",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/coincup?transparent=1",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "schnorrbecher",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/coincup?transparent=1",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "schnorrbecher",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/overlay/coincup?transparent=1",
+      "overlayUrl": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "spotlight",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/spotlight/overlays/chatter.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "spotlight",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/spotlight/overlays/chatter.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "spotlight",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/spotlight/overlays/chatter.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "spotlight",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/spotlight/overlays/chatter.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stream-monsters",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/stream-monsters/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/stream-monsters/overlay?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stream-monsters",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/stream-monsters/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/stream-monsters/overlay?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stream-monsters",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/stream-monsters/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/stream-monsters/overlay?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stream-monsters",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/stream-monsters/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/stream-monsters/overlay?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stt-ticker",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/stt-ticker/overlay/ticker.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stt-ticker",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/stt-ticker/overlay/ticker.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stt-ticker",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/stt-ticker/overlay/ticker.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "stt-ticker",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/stt-ticker/overlay/ticker.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "talking-heads",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/talking-heads/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "talking-heads",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/talking-heads/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "talking-heads",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/talking-heads/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "talking-heads",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/talking-heads/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "toptier",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/toptier/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "toptier",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/toptier/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "toptier",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/toptier/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "toptier",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/toptier/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/visual-fx-frame-webgpu/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/visual-fx-frame-webgpu/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/visual-fx-frame-webgpu/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/visual-fx-frame-webgpu/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "weather-control",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/weather-control/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "weather-control",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/weather-control/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "weather-control",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/weather-control/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "weather-control",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/weather-control/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/webgpu-emoji-rain/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/webgpu-emoji-rain/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/webgpu-emoji-rain/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/plugins/webgpu-emoji-rain/overlay.html",
+      "overlayUrl": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-fireworks/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=de",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-fireworks/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=en",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-fireworks/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=es",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-fireworks/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=fr",
+      "width": 1280,
+      "height": 720
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "locale": "de",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-weather-control/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=de",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "locale": "en",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-weather-control/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=en",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "locale": "es",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-weather-control/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=es",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "locale": "fr",
+      "sceneName": "tutorial",
+      "sourceName": "LTTH Docs Capture",
+      "overlayPath": "/webgpu-weather-control/overlay",
+      "overlayUrl": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=fr",
+      "width": 1920,
+      "height": 1080
+    }
+  ]
+}

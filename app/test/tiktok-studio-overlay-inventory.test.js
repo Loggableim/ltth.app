@@ -56,7 +56,7 @@ const STRAIGHTFORWARD_SURFACES = [
     existingCopyToken: 'id="copy-overlay-url"'
   },
   {
-    html: 'plugins/streamalchemy/streammonsters-ui.html',
+    html: 'plugins/stream-monsters/streammonsters-ui.html',
     selectors: ['#overlayUrl'],
     existingCopyToken: 'id="overlayUrl"'
   },

@@ -151,9 +151,9 @@ describe('TTS renderer lifecycle', () => {
 
   test('uses the Talking Heads preparation gate when it is available', async () => {
     const plugin = createPlugin();
-    const prepareAvatarForPlayback = jest.fn().mockResolvedValue({
-      created: true,
-      spinStatus: 'complete'
+    const prepareAvatarForPlayback = jest.fn((meta, options) => {
+      options.onPhase('spin-started');
+      return Promise.resolve({ created: true, spinStatus: 'complete' });
     });
     plugin.api.getPlugin.mockReturnValue({ prepareAvatarForPlayback });
 
@@ -169,7 +169,7 @@ describe('TTS renderer lifecycle', () => {
     expect(prepareAvatarForPlayback).toHaveBeenCalledWith(expect.objectContaining({
       playbackId: 'gate-success',
       userId: 'viewer'
-    }));
+    }), expect.objectContaining({ onPhase: expect.any(Function) }));
   });
 
   test('continues without an avatar gate when Talking Heads is absent', async () => {
@@ -182,10 +182,11 @@ describe('TTS renderer lifecycle', () => {
   test('does not dispatch native audio before cold frame composition and a full maximum spin gate finish', async () => {
     jest.useFakeTimers();
     const plugin = createPlugin();
-    plugin.config.avatarPreparationTimeoutMs = 10500;
+    plugin.config.avatarSetupTimeoutMs = 10500;
     plugin._resolvePlaybackDuration = jest.fn(() => ({ durationMs: 10, source: 'test', format: 'wav' }));
     plugin.api.getPlugin.mockReturnValue({
-      prepareAvatarForPlayback: jest.fn(() => new Promise((resolve) => {
+      prepareAvatarForPlayback: jest.fn((meta, options) => new Promise((resolve) => {
+        options.onPhase('spin-started');
         // 500ms cold asset composition + a 10s configured spin gate + 500ms fallback.
         setTimeout(() => resolve({ created: true, spinStatus: 'timeout' }), 11000);
       }))
@@ -445,5 +446,57 @@ describe('TTS renderer lifecycle', () => {
     expect(handlers.has('tts:renderer:progress')).toBe(true);
     expect(handlers.has('tts:renderer:ended')).toBe(true);
     expect(handlers.has('tts:renderer:failed')).toBe(true);
+  });
+
+  test('relays high-frequency tts:renderer:progress events and rearms the watchdog', async () => {
+    jest.useFakeTimers();
+    const plugin = createPlugin();
+    plugin.config.rendererPlaybackWatchdogMs = 50;
+    plugin.config.rendererPlaybackMaxMs = 200;
+
+    const completion = plugin._beginRendererPlayback({
+      id: 'high-freq-relay',
+      playbackId: 'high-freq-relay',
+      userId: 'streamer-fan',
+      username: 'Streamer Fan'
+    }, { durationMs: 100 });
+
+    plugin._handleRendererLifecycle('tts:renderer:started', {
+      playbackId: 'high-freq-relay',
+      currentTimeMs: 0
+    });
+
+    // Advance 40ms (< 50ms watchdog) and report progress
+    await jest.advanceTimersByTimeAsync(40);
+    expect(plugin._handleRendererLifecycle('tts:renderer:progress', {
+      playbackId: 'high-freq-relay',
+      currentTimeMs: 40,
+      level: 0.65
+    })).toBe(true);
+
+    const progressEvents = lifecycleEvents(plugin.api, 'tts:renderer:progress');
+    expect(progressEvents).toHaveLength(1);
+    expect(progressEvents[0]).toEqual(expect.objectContaining({
+      playbackId: 'high-freq-relay',
+      userId: 'streamer-fan',
+      username: 'Streamer Fan',
+      currentTimeMs: 40,
+      level: 0.65
+    }));
+
+    // Advance another 40ms: watchdog was rearmed, so playback must NOT have failed
+    await jest.advanceTimersByTimeAsync(40);
+    expect(plugin._activeRendererPlaybacks.get('high-freq-relay').settled).toBe(false);
+
+    // End playback
+    plugin._handleRendererLifecycle('tts:renderer:ended', {
+      playbackId: 'high-freq-relay',
+      currentTimeMs: 100
+    });
+
+    await expect(completion).resolves.toMatchObject({
+      outcome: 'ended',
+      playbackId: 'high-freq-relay'
+    });
   });
 });

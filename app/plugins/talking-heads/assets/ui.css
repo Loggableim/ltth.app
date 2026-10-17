@@ -319,9 +319,104 @@ input[type="file"] { padding: 7px; }
 }
 .director-toast.error { border-color: rgba(255, 135, 158, .62); color: #ffdbe4; }
 
+.director-card--nameplate {
+  grid-column: span 2;
+}
+
+.nameplate-lab-grid {
+  display: flex;
+  gap: 24px;
+}
+
+.nameplate-controls-col {
+  flex: 1 1 60%;
+  min-width: 0;
+}
+
+.nameplate-preview-panel {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nameplate-preview-box {
+  position: relative;
+  width: 100%;
+  min-height: 260px;
+  margin-top: 10px;
+  border: 1px solid rgba(158, 211, 255, .2);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at center, rgba(29, 78, 216, .2), transparent 70%),
+    rgba(3, 8, 21, .68);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.nameplate-preview-box .avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  bottom: auto;
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.nameplate-preview-box .avatar.nameplate-above .avatar-name {
+  order: -1;
+}
+
+.nameplate-preview-box .avatar.nameplate-below .avatar-name {
+  order: 1;
+}
+
+.nameplate-preview-box .avatar.nameplate-hidden .avatar-name {
+  display: none !important;
+}
+
+.nameplate-preview-box .avatar img {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, .5));
+}
+
+.nameplate-preview-box .avatar .avatar-name {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}
+
+input[type="range"] {
+  height: 6px;
+  padding: 0;
+  border: none;
+  background: rgba(158, 211, 255, .25);
+  border-radius: 999px;
+  cursor: pointer;
+  accent-color: var(--th-cyan);
+}
+
+input[type="color"] {
+  height: 42px;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
 @media (max-width: 960px) {
   .director-grid { grid-template-columns: 1fr; }
-  .director-card--lab { grid-column: auto; }
+  .director-card--lab,
+  .director-card--nameplate { grid-column: auto; }
+  .nameplate-lab-grid { flex-direction: column; }
+  .nameplate-preview-panel { flex-basis: auto; width: 100%; min-height: 235px; }
   .lab-layout { flex-direction: column; }
   .lab-preview { flex-basis: auto; min-height: 235px; }
 }

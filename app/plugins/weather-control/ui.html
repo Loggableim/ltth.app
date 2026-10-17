@@ -933,7 +933,7 @@
                             <button type="button" class="btn btn-primary"
                                     data-copy-tiktok-studio-url
                                     data-overlay-url-source="#overlayUrl"
-                                    data-i18n-key="common.tiktok_studio.copy_url">
+                                    data-i18n="common.tiktok_studio.copy_url">
                                 TikTok-Studio-URL kopieren
                             </button>
                         </div>
@@ -2590,7 +2590,16 @@
         function populatePresetSelect(config = {}) {
             const presetSelect = document.getElementById('presetSelect');
             if (!presetSelect) return;
-            const presets = [...builtInPresets, ...((config.presets || []).filter(p => p && p.name))];
+            const builtInNames = new Set(builtInPresets.map(preset => String(preset.name).trim().toLowerCase()));
+            const seenNames = new Set(builtInNames);
+            const customPresets = (config.presets || []).filter(preset => {
+                if (!preset || typeof preset.name !== 'string' || !preset.name.trim()) return false;
+                const name = preset.name.trim().toLowerCase();
+                if (seenNames.has(name)) return false;
+                seenNames.add(name);
+                return true;
+            });
+            const presets = [...builtInPresets, ...customPresets];
             presetSelect.innerHTML = '';
             presets.forEach((preset, index) => {
                 const option = document.createElement('option');

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-08",
+  "scope": "Five unchanged synthetic renderer cases: Weather Control EN/ES/FR and EmojiRain ES/FR",
+  "runtimeProcessesStarted": false,
+  "sourceFreeze": [
+    {
+      "path": "app/plugins/weather-control/overlay.html",
+      "sha256": "9fb3b6603e3b332ac66750090cef9b8490fe26f565671dbac67c7e4087336a32",
+      "pre": "PASS",
+      "post": "PASS"
+    },
+    {
+      "path": "app/plugins/weather-control/weather-engine.js",
+      "sha256": "4c23a24e93472197d17c33a3c2a82b5b55315d67decea27efbfb60d166291df8",
+      "pre": "PASS",
+      "post": "PASS"
+    },
+    {
+      "path": "app/plugins/emoji-rain/obs-hud.html",
+      "sha256": "cfed7bb03c6390876633c6b02aac1acfda470ece46bd0364d63d59bc34f7e249",
+      "pre": "PASS",
+      "post": "PASS"
+    },
+    {
+      "path": "app/public/js/emoji-rain-obs-hud.js",
+      "sha256": "6d762d931240944014c5e4375610cc4e38817e6a20ee7a46e81ed873daf220b8",
+      "pre": "PASS",
+      "post": "PASS"
+    }
+  ],
+  "testFreeze": [
+    {
+      "case": "weather-control-en",
+      "path": "app/test/weather-control-en-renderer-effect-fixture.test.js",
+      "sha256": "6c6a9744a65f0c5becb2280f83014988e8124d9bb74724a5b528f3618da254ca",
+      "prePost": "IDENTICAL",
+      "historicalSingleSuite": "PASS 1/1",
+      "combinedRun": "PASS_1_TEST",
+      "evidence": "Synthetic original renderer; pagehide removes effect/particles and RAF/intervals; disconnect once; late trigger ignored; repeat cleanup idempotent."
+    },
+    {
+      "case": "weather-control-es",
+      "path": "app/test/weather-control-es-renderer-effect-fixture.test.js",
+      "sha256": "481207a1d78d581a8bdb0be7b526fef781f82335a6fae2d92fab816704652435",
+      "prePost": "IDENTICAL",
+      "historicalSingleSuite": "PASS 1/1",
+      "combinedRun": "PASS_1_TEST",
+      "evidence": "Synthetic original renderer and pagehide disposal are in the fixture; no late-event assertion found."
+    },
+    {
+      "case": "weather-control-fr",
+      "path": "app/test/weather-control-fr-renderer-effect-fixture.test.js",
+      "sha256": "53d602b2fe92d23ec3c2497df5532ea4b286da2f2529e1d993bd8f827d2b6de1",
+      "prePost": "IDENTICAL",
+      "historicalSingleSuite": "PASS 1/1",
+      "combinedRun": "PASS_1_TEST",
+      "evidence": "Synthetic original renderer; pagehide disposal; late trigger ignored; repeated cleanup idempotent."
+    },
+    {
+      "case": "emoji-rain-es",
+      "path": "app/test/emoji-rain-es-followthrough-fixture.test.js",
+      "sha256": "70115534a39c735d4309f1ba1f066e02595f9f908390c000a5117101e76501f1",
+      "prePost": "IDENTICAL",
+      "historicalSingleSuite": "PASS 1/1",
+      "combinedRun": "PASS_1_TEST",
+      "evidence": "Synthetic spawn reaches original HUD DOM; pagehide removes sprite/timers and disconnects once; no late-event assertion found."
+    },
+    {
+      "case": "emoji-rain-fr",
+      "path": "app/test/emoji-rain-fr-followthrough-fixture.test.js",
+      "sha256": "3e11ff857df7495708165fd6a2ea89cfc788c67216a44d047c1ba220b62e52d7",
+      "prePost": "IDENTICAL",
+      "historicalSingleSuite": "PASS 1/1",
+      "combinedRun": "PASS_1_TEST",
+      "evidence": "Synthetic spawn reaches original HUD DOM; pagehide removes sprite/timers/handler and disconnects once; late delivery and saved queued callback ignored; cleanup idempotent."
+    }
+  ],
+  "commands": [
+    "runtime/node/node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --runTestsByPath test/weather-control-en-renderer-effect-fixture.test.js test/weather-control-es-renderer-effect-fixture.test.js test/weather-control-fr-renderer-effect-fixture.test.js test/emoji-rain-es-followthrough-fixture.test.js test/emoji-rain-fr-followthrough-fixture.test.js"
+  ],
+  "attempts": [
+    {
+      "result": "BLOCKED",
+      "detail": "Jest failed before suite load with EPERM from fs.realpathSync.native on system TEMP.",
+      "classification": "historical_failed_attempt"
+    },
+    {
+      "result": "BLOCKED",
+      "detail": "Retry with TEMP/TMP/TMPDIR set to a newly created workspace-local directory failed before suite load with EPERM from fs.realpathSync.native on that path; owned temp directory removed.",
+      "classification": "historical_failed_attempt"
+    }
+  ],
+  "limitations": [
+    "The coherent 5-suite result is a local synthetic renderer regression only; it does not prove actual browser pixels, translated backend responses, live Socket.IO transport, OBS, or TikTok LIVE acceptance.",
+    "OBS remains 0/104 per existing handoff; no aggregate OBS/live count was changed."
+  ],
+  "latestCoherentRun": {
+    "result": "PASS",
+    "suites": 5,
+    "tests": 5,
+    "exitCode": 0,
+    "executionReportedBy": "CEO independent run",
+    "executionReproducedInThisAgentTurn": false,
+    "workingDirectory": "app",
+    "command": "runtime/node/node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --runTestsByPath test/weather-control-en-renderer-effect-fixture.test.js test/weather-control-es-renderer-effect-fixture.test.js test/weather-control-fr-renderer-effect-fixture.test.js test/emoji-rain-es-followthrough-fixture.test.js test/emoji-rain-fr-followthrough-fixture.test.js",
+    "runtime": "runtime/node/node.exe v22.14.0",
+    "currentHashVerification": "9/9 PASS",
+    "hashVerificationCommand": "PowerShell Get-FileHash -Algorithm SHA256 over all sourceFreeze and testFreeze paths",
+    "noSourceOrTestChanges": true
+  }
+}

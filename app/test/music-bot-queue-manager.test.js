@@ -7,15 +7,99 @@ function createMockApi() {
     get: jest.fn(() => null),
     all: jest.fn(() => [])
   };
+  const databaseManager = {
+    prepare: jest.fn(() => stmt),
+    // DatabaseManager exposes better-sqlite3 on .db; QueueManager must use its atomic transaction.
+    db: { transaction: (work) => (...args) => work(...args) }
+  };
   return {
-    getDatabase: () => ({
-      prepare: jest.fn(() => stmt)
-    }),
+    getDatabase: () => databaseManager,
     log: jest.fn()
   };
 }
 
 describe('music-bot queue manager', () => {
+  it('synthetic ban-check failure keeps persisted and pending rows guarded until a safe retry', () => {
+    const persistedSong = {
+      id: 'persisted-banned',
+      title: 'Persisted banned song',
+      artist: 'Artist',
+      duration: 90,
+      url: 'https://youtu.be/ban12345678',
+      youtubeId: 'ban12345678',
+      provider: 'youtube',
+      providerId: 'ban12345678',
+      trackKey: 'youtube:ban12345678',
+      requestedBy: 'old-viewer',
+      source: 'youtube',
+      addedAt: 1
+    };
+    const pendingSong = {
+      id: 'pending-safe',
+      title: 'Pending safe song',
+      artist: 'Safe Artist',
+      duration: 90,
+      url: 'https://soundcloud.com/safe/pending',
+      provider: 'soundcloud',
+      providerId: 'soundcloud.com/safe/pending',
+      trackKey: 'soundcloud:soundcloud.com/safe/pending',
+      requestedBy: 'new-viewer',
+      requesterKey: 'new-viewer',
+      source: 'soundcloud',
+      addedAt: 2
+    };
+    const state = { rows: [{ ...persistedSong }] };
+    const db = {
+      prepare: (sql) => {
+        if (String(sql).startsWith('SELECT * FROM plugin_music_bot_queue')) {
+          return { all: () => state.rows.map((row) => ({ ...row })) };
+        }
+        if (String(sql).startsWith('DELETE FROM plugin_music_bot_queue')) {
+          return { run: () => { state.rows = []; } };
+        }
+        if (String(sql).startsWith('INSERT INTO plugin_music_bot_queue')) {
+          return { run: (row) => { state.rows.push({ ...row }); } };
+        }
+        return { run: jest.fn(), all: () => [] };
+      },
+      transaction: (work) => (...args) => work(...args)
+    };
+    const manager = Object.create(QueueManager.prototype);
+    manager.db = db;
+    manager.api = { log: jest.fn() };
+    manager.queueConfig = { duplicateDetection: 'strict', allowDuplicates: false };
+    manager.queue = [pendingSong];
+    manager.userLastRequest = new Map();
+    manager._persistenceGuard = { blocked: false, reason: null, blockedAt: null, lastError: null };
+
+    const failedRestore = manager.restoreQueue({
+      isAllowed: () => { throw new Error('ban database temporarily unavailable'); }
+    });
+    expect(failedRestore).toMatchObject({ error: 'ban-check-failed', persistenceBlocked: true });
+    expect(manager.getQueue().map((song) => song.id)).toEqual(['pending-safe']);
+    expect(manager.getPersistenceStatus()).toMatchObject({
+      blocked: true,
+      reason: 'ban-check-failed',
+      lastError: 'ban database temporarily unavailable',
+      pendingCount: 1
+    });
+    expect(manager.persistQueue()).toMatchObject({ success: false, blocked: true });
+    expect(state.rows.map((song) => song.id)).toEqual(['persisted-banned']);
+
+    const checkedIds = [];
+    const recovered = manager.restoreQueue({
+      isAllowed: (song) => {
+        checkedIds.push(song.id);
+        return song.id !== 'persisted-banned';
+      }
+    });
+    expect(recovered).toMatchObject({ restored: 1, deduped: 0, banned: 1, persisted: true });
+    expect(checkedIds).toEqual(['pending-safe', 'persisted-banned']);
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false, pendingCount: 1 });
+    expect(manager.getQueue().map((song) => song.id)).toEqual(['pending-safe']);
+    expect(state.rows.map((song) => song.id)).toEqual(['pending-safe']);
+  });
+
   it('persists requester avatar on queue entries', () => {
     const api = createMockApi();
     const manager = new QueueManager({
@@ -293,7 +377,7 @@ describe('music-bot queue manager', () => {
       }
     });
 
-    expect(result).toEqual({ restored: 2, deduped: 1, banned: 1 });
+    expect(result).toEqual({ restored: 2, deduped: 1, banned: 1, persisted: true });
     expect(manager.getQueue().map((track) => track.id)).toEqual(['first', 'last']);
     expect(manager.getQueue().map((track) => track.trackKey)).toEqual([
       'youtube:abc123DEF45',
@@ -328,7 +412,7 @@ describe('music-bot queue manager', () => {
     db.close();
   });
 
-  it('keeps persisted rows recoverable when the ban check throws and a new request is added', () => {
+  it('keeps memory unchanged after ban-check failure and rechecks persisted plus pending entries', () => {
     const { db, manager, api } = createRealManager();
     manager.addSong({
       title: 'Persisted',
@@ -338,7 +422,13 @@ describe('music-bot queue manager', () => {
     const persistedBefore = db.prepare(
       'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
     ).all();
-    const sentinel = { id: 'existing-memory', title: 'Existing memory' };
+    const sentinel = {
+      id: 'existing-memory',
+      title: 'Existing memory',
+      url: 'https://soundcloud.com/pending/memory',
+      requestedBy: 'pending-viewer',
+      trackKey: 'soundcloud:soundcloud.com/pending/memory'
+    };
     manager.queue = [sentinel];
     const persist = jest.spyOn(manager, 'persistQueue');
 
@@ -352,17 +442,22 @@ describe('music-bot queue manager', () => {
       restored: 1,
       deduped: 0,
       banned: 0,
-      error: 'ban-check-failed'
+      error: 'ban-check-failed',
+      persistenceBlocked: true
     });
-    expect(manager.getQueue()).toEqual([
-      sentinel,
-      expect.objectContaining({
-        id: persistedBefore[0].id,
-        title: 'Persisted',
-        trackKey: 'youtube:abc123DEF45'
-      })
-    ]);
+    // Fail closed: a row whose ban check failed must not be exposed as playable in memory.
+    expect(manager.getQueue()).toEqual([sentinel]);
     expect(persist).not.toHaveBeenCalled();
+    expect(manager.getPersistenceStatus()).toMatchObject({
+      blocked: true,
+      reason: 'ban-check-failed',
+      lastError: 'ban storage unavailable'
+    });
+    expect(manager.persistQueue()).toEqual({
+      success: false,
+      blocked: true,
+      reason: 'ban-check-failed'
+    });
     expect(db.prepare(
       'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
     ).all()).toEqual(persistedBefore);
@@ -377,24 +472,34 @@ describe('music-bot queue manager', () => {
       requestedBy: 'new-viewer'
     });
 
-    expect(added.success).toBe(true);
-    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false });
-    expect(manager.getQueue().map((entry) => entry.id)).toEqual([
-      'existing-memory',
-      persistedBefore[0].id,
-      added.song.id
-    ]);
+    // The persistence guard rejects new mutations; the prior test accepted these in RAM.
+    expect(added).toMatchObject({ success: false, blocked: true, errorCode: 'QUEUE_PERSISTENCE_BLOCKED' });
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: true, pendingCount: 1 });
+    expect(manager.getQueue().map((entry) => entry.id)).toEqual(['existing-memory']);
+    expect(db.prepare(
+      'SELECT id, title, trackKey FROM plugin_music_bot_queue ORDER BY position'
+    ).all()).toEqual(persistedBefore);
+
+    const checked = [];
+    const recovered = manager.restoreQueue({
+      isAllowed: (entry) => {
+        checked.push(entry.id);
+        return entry.id !== persistedBefore[0].id;
+      }
+    });
+    expect(recovered).toMatchObject({ restored: 1, deduped: 0, banned: 1, persisted: true });
+    expect(checked).toEqual(['existing-memory', persistedBefore[0].id]);
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false, pendingCount: 1 });
+    expect(manager.getQueue().map((entry) => entry.id)).toEqual(['existing-memory']);
     expect(db.prepare(
       'SELECT id FROM plugin_music_bot_queue ORDER BY position'
     ).all().map((entry) => entry.id)).toEqual([
-      'existing-memory',
-      persistedBefore[0].id,
-      added.song.id
+      'existing-memory'
     ]);
     db.close();
   });
 
-  it('blocks destructive persistence after a restore SELECT failure until recovery hydrates old and new rows', () => {
+  it('rejects queue mutations after a restore SELECT failure until recovery restores existing rows', () => {
     const { db, manager } = createRealManager();
     const persisted = manager.addSong({
       title: 'Persisted before failure',
@@ -431,30 +536,30 @@ describe('music-bot queue manager', () => {
     });
 
     const added = manager.addSong({
-      title: 'Accepted while guarded',
+      title: 'Rejected while guarded',
       url: 'https://soundcloud.com/new/guarded-request',
       requestedBy: 'new-viewer'
     });
 
-    expect(added.success).toBe(true);
+    expect(added).toMatchObject({ success: false, blocked: true, errorCode: 'QUEUE_PERSISTENCE_BLOCKED' });
     expect(manager.persistQueue()).toMatchObject({
       success: false,
       blocked: true,
       reason: 'restore-read-failed'
     });
-    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: true, pendingCount: 1 });
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: true, pendingCount: 0 });
     expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
       .toEqual([{ id: persisted.id }]);
 
     failRestoreRead = false;
-    expect(manager.restoreQueue()).toMatchObject({ restored: 2, deduped: 0, banned: 0 });
-    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false, pendingCount: 2 });
+    expect(manager.restoreQueue()).toMatchObject({ restored: 1, deduped: 0, banned: 0, persisted: true });
+    expect(manager.getPersistenceStatus()).toMatchObject({ blocked: false, pendingCount: 1 });
     expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
-      .toEqual([{ id: persisted.id }, { id: added.song.id }]);
+      .toEqual([{ id: persisted.id }]);
     db.close();
   });
 
-  it('keeps the oldest canonical track when guarded requests duplicate persisted rows', () => {
+  it('does not accept duplicate requests while guarded and restores the persisted canonical track', () => {
     const { db, manager } = createRealManager();
     const persisted = manager.addSong({
       title: 'Persisted original',
@@ -485,10 +590,10 @@ describe('music-bot queue manager', () => {
       url: 'https://www.youtube.com/watch?v=AbC123xYz_-',
       requestedBy: 'new-viewer'
     });
-    expect(duplicate.success).toBe(true);
+    expect(duplicate).toMatchObject({ success: false, blocked: true, errorCode: 'QUEUE_PERSISTENCE_BLOCKED' });
 
     failRestoreRead = false;
-    expect(manager.restoreQueue()).toMatchObject({ restored: 1, deduped: 1, banned: 0 });
+    expect(manager.restoreQueue()).toMatchObject({ restored: 1, deduped: 0, banned: 0, persisted: true });
     expect(manager.getQueue()).toEqual([
       expect.objectContaining({
         id: persisted.id,
@@ -527,9 +632,9 @@ describe('music-bot queue manager', () => {
     });
 
     expect(manager.addSong({
-      title: 'Accepted after decode failure',
+      title: 'Rejected after decode failure',
       url: 'https://soundcloud.com/new/decode-failure'
-    }).success).toBe(true);
+    })).toMatchObject({ success: false, blocked: true, errorCode: 'QUEUE_PERSISTENCE_BLOCKED' });
     expect(manager.persistQueue()).toMatchObject({ success: false, blocked: true });
     expect(db.prepare('SELECT id FROM plugin_music_bot_queue ORDER BY position').all())
       .toEqual([{ id: persisted.id }]);

@@ -290,6 +290,7 @@ class TTSPlugin {
         this.permissionManager = new PermissionManager(this.api.getDatabase(), this.logger);
         this.queueManager = new QueueManager(this.config, this.logger);
         this._activeRendererPlaybacks = new Map();
+        this._pendingAvatarPreparations = new Map();
 
         // Set profanity filter mode
         this.profanityFilter.setMode(this.config.profanityFilter);
@@ -753,6 +754,57 @@ class TTSPlugin {
         return this._activeStreamingTransports;
     }
 
+    _ensurePendingAvatarPreparations() {
+        if (!(this._pendingAvatarPreparations instanceof Map)) {
+            this._pendingAvatarPreparations = new Map();
+        }
+        return this._pendingAvatarPreparations;
+    }
+
+    _awaitWithAbort(promise, signal) {
+        if (!signal) return Promise.resolve(promise);
+        if (signal.aborted) {
+            const error = new Error(String(signal.reason || 'Playback aborted'));
+            error.name = 'AbortError';
+            return Promise.reject(error);
+        }
+        return new Promise((resolve, reject) => {
+            const onAbort = () => {
+                cleanup();
+                const error = new Error(String(signal.reason || 'Playback aborted'));
+                error.name = 'AbortError';
+                reject(error);
+            };
+            const cleanup = () => signal.removeEventListener('abort', onAbort);
+            signal.addEventListener('abort', onAbort, { once: true });
+            Promise.resolve(promise).then((value) => {
+                cleanup();
+                resolve(value);
+            }, (error) => {
+                cleanup();
+                reject(error);
+            });
+        });
+    }
+
+    _destroyUnconsumedStream(stream, error) {
+        if (!stream || typeof stream.destroy !== 'function' || stream.destroyed) return false;
+        const releaseErrorSink = () => {
+            stream.removeListener('error', swallowDestroyError);
+            stream.removeListener('close', releaseErrorSink);
+        };
+        const swallowDestroyError = () => {};
+        stream.on('error', swallowDestroyError);
+        stream.once('close', releaseErrorSink);
+        try {
+            stream.destroy(error);
+        } catch (destroyError) {
+            releaseErrorSink();
+            this.logger?.warn?.(`Failed to destroy unconsumed TTS stream: ${destroyError.message}`);
+        }
+        return true;
+    }
+
     _getRendererPlaybackId(meta = {}) {
         return String(meta.playbackId || meta.id || '').trim();
     }
@@ -1029,8 +1081,10 @@ class TTSPlugin {
         });
     }
 
-    async _prepareAvatarForPlayback(meta = {}) {
+    async _prepareAvatarForPlayback(meta = {}, control = {}) {
         let talkingHeads = null;
+        let timer = null;
+        let abortListener = null;
         try {
             talkingHeads = this.api.getPlugin?.('talking-heads')
                 || this.api.pluginLoader?.getPluginInstance?.('talking-heads')
@@ -1048,7 +1102,33 @@ class TTSPlugin {
             // spin frames are ready and the overlay event has been emitted.
             // Racing here would begin the cap during cold asset composition and
             // could dispatch native audio before a maximum-length reveal ends.
-            const result = await Promise.resolve().then(() => talkingHeads.prepareAvatarForPlayback(meta));
+            const configuredTimeout = Number(this.config?.avatarSetupTimeoutMs);
+            const timeoutMs = Math.max(1, Math.round(Number.isFinite(configuredTimeout) ? configuredTimeout : 10000));
+            let spinStarted = false;
+            const signal = control.signal;
+            const operation = Promise.resolve().then(() => talkingHeads.prepareAvatarForPlayback(meta, {
+                signal,
+                onPhase: (phase) => {
+                    if (phase === 'spin-started') {
+                        spinStarted = true;
+                        if (timer) clearTimeout(timer);
+                        timer = null;
+                    }
+                }
+            }));
+            const interrupted = new Promise((resolve) => {
+                abortListener = () => resolve({
+                    state: signal?.reason === 'avatar-setup-timeout' ? 'setup-timeout' : 'aborted'
+                });
+                if (signal?.aborted) abortListener();
+                else signal?.addEventListener('abort', abortListener, { once: true });
+                timer = setTimeout(() => {
+                    if (spinStarted || signal?.aborted) return;
+                    control.abort?.('avatar-setup-timeout');
+                }, timeoutMs);
+            });
+            const result = await Promise.race([operation, interrupted]);
+            if (result?.state === 'setup-timeout' || result?.state === 'aborted') return result;
             return {
                 state: result?.spinStatus || result?.reason || 'ready',
                 created: result?.created === true
@@ -1056,6 +1136,11 @@ class TTSPlugin {
         } catch (error) {
             this.logger.warn(`TTS: Talking Heads avatar preparation failed: ${error.message}`);
             return { state: 'error' };
+        } finally {
+            // The spin-start phase disables the setup timer. The normal spin
+            // completion/grace remains owned by Talking Heads.
+            if (timer) clearTimeout(timer);
+            if (abortListener && control.signal) control.signal.removeEventListener('abort', abortListener);
         }
     }
 
@@ -1271,6 +1356,7 @@ class TTSPlugin {
             rendererPlaybackWatchdogMs: 15000, // Release queue when no dashboard renderer acknowledges playback
             rendererPlaybackMaxMs: 120000, // Hard cap remains bounded even if a renderer keeps reporting progress
             streamEofWatchdogMs: 120000, // Absolute bound for a streaming response that never reaches transport EOF
+            avatarSetupTimeoutMs: 10000,
             enableEngineCircuitBreaker: true, // Temporarily skip engines with repeated failures
             engineCircuitBreakerFailureThreshold: 3,
             engineCircuitBreakerCooldownMs: 30000,
@@ -3990,7 +4076,23 @@ class TTSPlugin {
             source: item.source || 'unknown',
             isStreaming: item.isStreaming === true
         };
-        const avatarGatePromise = this._prepareAvatarForPlayback(playbackMeta);
+        const avatarController = new AbortController();
+        const avatarPreparation = {
+            controller: avatarController,
+            meta: playbackMeta
+        };
+        const pendingPreparations = this._ensurePendingAvatarPreparations();
+        pendingPreparations.set(playbackMeta.playbackId, avatarPreparation);
+        const removePendingOnAbort = () => {
+            if (pendingPreparations.get(playbackMeta.playbackId) === avatarPreparation) {
+                pendingPreparations.delete(playbackMeta.playbackId);
+            }
+        };
+        avatarController.signal.addEventListener('abort', removePendingOnAbort, { once: true });
+        const avatarGatePromise = this._prepareAvatarForPlayback(playbackMeta, {
+            signal: avatarController.signal,
+            abort: (reason) => avatarController.abort(reason)
+        });
 
         try {
             this._logDebug('PLAYBACK', 'Preparing renderer-synchronised playback', {
@@ -4001,7 +4103,7 @@ class TTSPlugin {
             });
 
             if (item.isStreaming) {
-                await this._playStreamingWithRenderer(item, playbackMeta, avatarGatePromise);
+                await this._playStreamingWithRenderer(item, playbackMeta, avatarGatePromise, avatarController.signal);
                 return;
             }
 
@@ -4009,21 +4111,30 @@ class TTSPlugin {
                 if (!this.engines[item.engine]) {
                     throw new Error(`Engine not available: ${item.engine}`);
                 }
-                item.audioData = await this._synthesizeWithCircuit(
+                item.audioData = await this._awaitWithAbort(this._synthesizeWithCircuit(
                     item.engine,
                     item.text,
                     item.voice,
                     item.speed,
                     item.synthesisOptions || {}
-                );
+                ), avatarController.signal);
             }
 
             const avatarGate = await avatarGatePromise;
+            if (avatarController.signal.aborted || avatarGate.state === 'aborted' || avatarGate.state === 'setup-timeout') {
+                const error = new Error(`Talking Heads avatar setup ${avatarGate.state}`);
+                error.code = 'AVATAR_SETUP_ABORTED';
+                throw error;
+            }
             await this._dispatchRendererAudio(item, playbackMeta, item.audioData, avatarGate);
         } catch (error) {
-            this._settleRendererPlayback(playbackMeta.playbackId, 'failed', {
-                reason: 'server-playback-error'
-            }, playbackMeta);
+            const reason = avatarController.signal.aborted
+                ? (typeof avatarController.signal.reason === 'string' ? avatarController.signal.reason : 'playback-aborted')
+                : 'server-playback-error';
+            const settled = this._settleRendererPlayback(playbackMeta.playbackId, 'failed', { reason }, playbackMeta);
+            if (settled && item.isStreaming && avatarController.signal.aborted && reason !== 'plugin-destroyed') {
+                this.api.emit('tts:stream:abort', { playbackId: playbackMeta.playbackId, reason });
+            }
             this._logDebug('PLAYBACK', 'Renderer-synchronised playback failed', {
                 id: playbackMeta.playbackId,
                 error: error.message,
@@ -4036,6 +4147,11 @@ class TTSPlugin {
                 error: error.message,
                 source: playbackMeta.source
             });
+        } finally {
+            if (pendingPreparations.get(playbackMeta.playbackId) === avatarPreparation) {
+                pendingPreparations.delete(playbackMeta.playbackId);
+            }
+            avatarController.signal.removeEventListener('abort', removePendingOnAbort);
         }
     }
 
@@ -4069,33 +4185,49 @@ class TTSPlugin {
         return completion;
     }
 
-    async _playStreamingWithRenderer(item, playbackMeta, avatarGatePromise) {
+    async _playStreamingWithRenderer(item, playbackMeta, avatarGatePromise, signal = null) {
         const ttsEngine = this.engines[item.engine];
         let streamResult;
+        let streamOperation = null;
         try {
             if (!ttsEngine || typeof ttsEngine.synthesizeStream !== 'function') {
                 throw new Error(`Streaming not supported for engine: ${item.engine}`);
             }
             this._assertEngineCircuitAllows(item.engine);
-            streamResult = await ttsEngine.synthesizeStream(
+            streamOperation = Promise.resolve().then(() => ttsEngine.synthesizeStream(
                 item.text,
                 item.voice,
                 item.speed,
                 item.synthesisOptions || {}
-            );
+            ));
+            streamResult = await this._awaitWithAbort(streamOperation, signal);
             this._recordEngineSuccess(item.engine);
         } catch (streamError) {
+            if (signal?.aborted) {
+                streamOperation?.then((lateResult) => {
+                    this._destroyUnconsumedStream(
+                        lateResult?.stream,
+                        new Error(String(signal.reason || 'Playback aborted'))
+                    );
+                }, () => {});
+                throw streamError;
+            }
             this._recordEngineFailure(item.engine, streamError);
             if (!ttsEngine || typeof ttsEngine.synthesize !== 'function') throw streamError;
             // fallback to regular synthesis when the streaming setup cannot start
-            const fallbackAudio = await this._synthesizeWithCircuit(
+            const fallbackAudio = await this._awaitWithAbort(this._synthesizeWithCircuit(
                 item.engine,
                 item.text,
                 item.voice,
                 item.speed,
                 item.synthesisOptions || {}
-            );
+            ), signal);
             const avatarGate = await avatarGatePromise;
+            if (signal?.aborted || avatarGate.state === 'aborted' || avatarGate.state === 'setup-timeout') {
+                const error = new Error(`Talking Heads avatar setup ${avatarGate.state || 'aborted'}`);
+                error.code = 'AVATAR_SETUP_ABORTED';
+                throw error;
+            }
             return this._dispatchRendererAudio(
                 { ...item, isStreaming: false },
                 { ...playbackMeta, isStreaming: false },
@@ -4105,6 +4237,13 @@ class TTSPlugin {
         }
 
         const avatarGate = await avatarGatePromise;
+        if (signal?.aborted || avatarGate.state === 'aborted' || avatarGate.state === 'setup-timeout') {
+            const stream = streamResult?.stream;
+            this._destroyUnconsumedStream(stream, new Error(`Talking Heads avatar setup ${avatarGate.state || 'aborted'}`));
+            const error = new Error(`Talking Heads avatar setup ${avatarGate.state}`);
+            error.code = 'AVATAR_SETUP_ABORTED';
+            throw error;
+        }
         const stream = streamResult?.stream;
         if (!stream || typeof stream.on !== 'function') {
             throw new Error('Streaming response did not contain a readable stream');
@@ -4238,7 +4377,17 @@ class TTSPlugin {
                 ...(Array.isArray(this.queueManager?.queue) ? this.queueManager.queue : [])
             ].filter(item => item && this._getRendererPlaybackId(item));
 
+            const activeStreamingPlaybackIds = new Set(this._ensureActiveStreamingTransports().keys());
             this._abortAllStreamingTransports('plugin-destroyed');
+            const pendingPreparations = this._ensurePendingAvatarPreparations();
+            const pendingAvatarPreparations = Array.from(pendingPreparations.entries());
+            pendingAvatarPreparations.forEach(([playbackId, preparation]) => {
+                preparation.controller.abort('plugin-destroyed');
+                if (preparation.meta.isStreaming && !activeStreamingPlaybackIds.has(playbackId)) {
+                    this.api.emit('tts:stream:abort', { playbackId, reason: 'plugin-destroyed' });
+                }
+                this._settleRendererPlayback(playbackId, 'failed', { reason: 'plugin-destroyed' }, preparation.meta);
+            });
             this._settleAllRendererPlaybacks('plugin-destroyed');
 
             for (const item of pendingItems) {

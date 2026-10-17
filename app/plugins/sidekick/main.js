@@ -24,6 +24,12 @@ const { VNyanClient } = require('./backend/vnyanClient');
 const { ResponseEngine } = require('./backend/responseEngine');
 const OutboxBatcher = require('./backend/outboxBatcher');
 const Metrics = require('./backend/metrics');
+const { projectAnonymousOverlayStatus, projectPublicOverlayEvent } = require('./backend/public-status');
+const { PUBLIC_QUICK_TUNNEL_ROOM } = require('../../modules/public-overlay-socket-adapter');
+const {
+  createDocsCaptureSafeConfig,
+  createDocsCaptureVisibleConfig
+} = require('./backend/docs-capture-safety');
 
 /**
  * Sidekick Plugin Class
@@ -31,6 +37,7 @@ const Metrics = require('./backend/metrics');
 class SidekickPlugin {
   constructor(api) {
     this.api = api;
+    this.isDocsCapture = api.isDocsCapture === true;
     this.io = api.getSocketIO();
     this.db = api.getDatabase();
     
@@ -79,6 +86,9 @@ class SidekickPlugin {
       // Initialize configuration
       this.configManager = new ConfigManager(this.api);
       this.config = this.configManager.load();
+      if (this.isDocsCapture) {
+        this.config = createDocsCaptureSafeConfig(this.config);
+      }
       
       // Initialize memory store
       this.memoryStore = new MemoryStore(this.api, this.config);
@@ -87,7 +97,9 @@ class SidekickPlugin {
       this.eventBus = new EventBus(this.api);
       
       // Initialize deduper
-      this.deduper = new EventDeduper(this.config.dedupeTtl || 600);
+      this.deduper = new EventDeduper(this.config.dedupeTtl || 600, {
+        disableCleanupTimer: this.isDocsCapture
+      });
       
       // Initialize rate limiter
       this.rateLimiter = new RateLimitManager(this.api, this.config);
@@ -112,21 +124,23 @@ class SidekickPlugin {
       this._registerRoutes();
       
       // Register socket events
-      this._registerSocketEvents();
-      
-      // Register TikTok events
-      this._registerTikTokEvents();
-      
-      // Register GCCE commands
-      this._registerGCCECommands();
-      
-      // Start cleanup timer
-      this.cleanupInterval = setInterval(() => {
-        this.memoryStore.cleanupDecayed();
-      }, 3600000); // Every hour
-      
-      // Start join announcer
-      this._startJoinAnnouncer();
+      if (!this.isDocsCapture) {
+        this._registerSocketEvents();
+
+        // Register TikTok events
+        this._registerTikTokEvents();
+
+        // Register GCCE commands
+        this._registerGCCECommands();
+
+        // Start cleanup timer
+        this.cleanupInterval = setInterval(() => {
+          this.memoryStore.cleanupDecayed();
+        }, 3600000); // Every hour
+
+        // Start join announcer
+        this._startJoinAnnouncer();
+      }
       
       // Auto-connect avatar driver if enabled
       await this._autoConnectAvatarDriver();
@@ -204,6 +218,11 @@ class SidekickPlugin {
   // ==================== Routes ====================
   
   _registerRoutes() {
+    if (this.isDocsCapture) {
+      this._registerDocsCaptureRoutes();
+      return;
+    }
+
     // Serve UI page
     this.api.registerRoute('get', '/sidekick/ui', (req, res) => {
       res.sendFile(path.join(__dirname, 'ui.html'));
@@ -220,6 +239,24 @@ class SidekickPlugin {
         success: true,
         status: this._getStatus()
       });
+    });
+
+    // Anonymous bounded status and event contracts for public overlay consumers.
+    this.api.registerRoute('get', '/api/sidekick/public-status', (req, res) => {
+      res.json({
+        success: true,
+        status: projectAnonymousOverlayStatus(this._getStatus())
+      });
+    });
+
+    this.api.registerRoute('get', '/api/sidekick/public-events', (req, res) => {
+      const parsedLimit = Number.parseInt(req.query.limit, 10);
+      const limit = Number.isInteger(parsedLimit) ? Math.max(1, Math.min(10, parsedLimit)) : 5;
+      const events = this.eventBus.getRecentEvents(null, Math.min(1000, limit * 4))
+        .map(projectPublicOverlayEvent)
+        .filter(Boolean)
+        .slice(-limit);
+      res.json({ success: true, events });
     });
     
     // Get configuration
@@ -552,6 +589,32 @@ class SidekickPlugin {
       res.json({ success: true, message: 'Session reset' });
     });
   }
+
+  _registerDocsCaptureRoutes() {
+    // Guide capture only needs display reads. Do not register any mutating or
+    // avatar-control endpoint in this mode, even if a browser script is changed.
+    this.api.registerRoute('get', '/api/sidekick/status', (req, res) => {
+      res.json({ success: true, status: this._getStatus() });
+    });
+    this.api.registerRoute('get', '/api/sidekick/config', (req, res) => {
+      res.json({ success: true, config: createDocsCaptureVisibleConfig() });
+    });
+    this.api.registerRoute('get', '/api/sidekick/avatar/rules', (req, res) => {
+      res.json({ success: true, giftRules: [], emotions: {}, itemDrop: { enabled: false } });
+    });
+    this.api.registerRoute('get', '/api/sidekick/memory/stats', (req, res) => {
+      res.json({ success: true, stats: this.memoryStore.getStats() });
+    });
+    this.api.registerRoute('get', '/api/sidekick/memory/top', (_req, res) => {
+      res.json({ success: true, users: [] });
+    });
+    this.api.registerRoute('get', '/api/sidekick/events', (_req, res) => {
+      res.json({ success: true, events: [] });
+    });
+    this.api.registerRoute('get', '/api/sidekick/metrics', (req, res) => {
+      res.json({ success: true, metrics: this.metrics.getSummary() });
+    });
+  }
   
   // ==================== Socket Events ====================
   
@@ -559,6 +622,10 @@ class SidekickPlugin {
     // Client requests status
     this.api.registerSocket('sidekick:get-status', () => {
       this._emitStatus();
+    });
+
+    this.api.registerSocket('sidekick:public-status:request', (socket) => {
+      socket.emit('sidekick:public-status', projectAnonymousOverlayStatus(this._getStatus()));
     });
     
     // Client requests metrics
@@ -1147,6 +1214,7 @@ class SidekickPlugin {
   }
 
   async _autoConnectAvatarDriver() {
+    if (this.isDocsCapture) return false;
     const driverType = this.config.avatar?.driver || (this.config.animaze?.enabled ? 'animaze' : 'vnyan');
     if (driverType === 'vnyan' && this.config.avatar?.vnyan?.autoConnect !== false) {
       await this.vnyanClient.connect();
@@ -1240,6 +1308,10 @@ class SidekickPlugin {
   _emitStatus() {
     const status = this._getStatus();
     this.io.emit('sidekick:status', status);
+    this.io.to(PUBLIC_QUICK_TUNNEL_ROOM).emit(
+      'sidekick:public-status',
+      projectAnonymousOverlayStatus(status)
+    );
   }
 }
 

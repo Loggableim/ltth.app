@@ -29,6 +29,10 @@ const {
     canonicalizePluginId,
     getIdentityCandidateIds
 } = require('../modules/plugin-identities');
+const {
+    assertPluginManifestNotRetired,
+    assertPluginNotRetired
+} = require('../modules/plugin-retirement');
 
 function getRequestCookie(req, cookieName) {
     const cookie = String(req.headers?.cookie || '')
@@ -254,6 +258,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.post('/api/plugin-store/:sourceId/:pluginId/install', limiter, storeAuth, async (req, res) => {
         try {
+            assertPluginNotRetired(req.params.pluginId);
             if (!hasActiveStoreLicense(req.storeAccount)) {
                 return res.status(402).json({
                     success: false,
@@ -316,8 +321,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             });
         } catch (error) {
             logger.error(`Failed to install plugin from store: ${error.message}`);
-            res.status(400).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 400).json({
                 success: false,
+                ...(error.code ? { code: error.code } : {}),
                 error: error.message
             });
         }
@@ -328,6 +334,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.post('/api/plugin-store/:sourceId/:pluginId/rollback', limiter, storeAuth, async (req, res) => {
         try {
+            assertPluginNotRetired(req.params.pluginId);
             if (!hasActiveStoreLicense(req.storeAccount)) {
                 return res.status(402).json({
                     success: false,
@@ -358,7 +365,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             });
         } catch (error) {
             logger.error(`Failed to roll back plugin from store: ${error.message}`);
-            return res.status(400).json({ success: false, error: error.message, code: error.code });
+            return res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 400).json({ success: false, error: error.message, code: error.code });
         }
     });
 
@@ -445,6 +452,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.get('/api/plugins/:id', limiter, (req, res) => {
         try {
+            assertPluginNotRetired(req.params.id);
             const id = assertPluginId(req.params.id);
             const locale = req.query.locale || 'en';
             const plugin = pluginLoader.getPlugin(id);
@@ -482,8 +490,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             });
         } catch (error) {
             logger.error(`Failed to get plugin details: ${error.message}`);
-            res.status(500).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 404 : 500).json({
                 success: false,
+                ...(error.code === 'PLUGIN_RETIRED' ? { code: error.code } : {}),
                 error: error.message
             });
         }
@@ -567,6 +576,8 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             let safePluginId;
             let entryPath;
             try {
+                assertPluginManifestNotRetired(manifest);
+                assertPluginNotRetired(manifest.id);
                 const runtimeManifestId = assertPluginId(manifest.id);
                 assertReservedPluginClaim({
                     manifestId: runtimeManifestId,
@@ -581,8 +592,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                 fs.rmSync(tempDir, { recursive: true, force: true });
                 fs.unlinkSync(zipPath);
 
-                return res.status(400).json({
+                return res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 400).json({
                     success: false,
+                    ...(error.code ? { code: error.code } : {}),
                     error: error.message
                 });
             }
@@ -603,7 +615,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             // Falls Plugin bereits existiert, löschen
             if (fs.existsSync(targetDir)) {
                 logger.warn(`Plugin ${manifest.id} already exists, replacing...`);
-                await pluginLoader.unloadPlugin(manifest.id);
+                if (pluginLoader.plugins?.has(safePluginId) && !await pluginLoader.unloadPlugin(safePluginId)) {
+                    throw new Error(`Failed to unload existing plugin ${safePluginId}`);
+                }
                 fs.rmSync(targetDir, { recursive: true, force: true });
             }
 
@@ -666,6 +680,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.post('/api/plugins/:id/enable', limiter, async (req, res) => {
         try {
             const requestedPluginId = req.params.id;
+            assertPluginNotRetired(requestedPluginId);
             const id = canonicalizePluginId(requestedPluginId);
             const disabledPlugins = typeof pluginLoader.getMutuallyExclusivePluginIds === 'function'
                 ? pluginLoader.getMutuallyExclusivePluginIds(id)
@@ -694,10 +709,10 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             const conflictWith = typeof error.message === 'string' && error.message.includes('stable fireworks')
                 ? 'fireworks'
                 : null;
-            res.status(conflictWith ? 409 : 500).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 410 : conflictWith ? 409 : 500).json({
                 success: false,
                 error: error.message,
-                code: conflictWith ? 'PLUGIN_CONFLICT' : 'PLUGIN_ENABLE_FAILED',
+                code: error.code === 'PLUGIN_RETIRED' ? error.code : conflictWith ? 'PLUGIN_CONFLICT' : 'PLUGIN_ENABLE_FAILED',
                 conflictWith
             });
         }
@@ -709,6 +724,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.post('/api/plugins/:id/disable', limiter, async (req, res) => {
         try {
             const requestedPluginId = req.params.id;
+            assertPluginNotRetired(requestedPluginId);
             const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.disablePlugin(id);
 
@@ -732,8 +748,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             }
         } catch (error) {
             logger.error(`Failed to disable plugin: ${error.message}`);
-            res.status(500).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 500).json({
                 success: false,
+                ...(error.code === 'PLUGIN_RETIRED' ? { code: error.code } : {}),
                 error: error.message
             });
         }
@@ -745,6 +762,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.post('/api/plugins/:id/reload', limiter, async (req, res) => {
         try {
             const requestedPluginId = req.params.id;
+            assertPluginNotRetired(requestedPluginId);
             const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.reloadPlugin(id);
 
@@ -768,8 +786,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             }
         } catch (error) {
             logger.error(`Failed to reload plugin: ${error.message}`);
-            res.status(500).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 500).json({
                 success: false,
+                ...(error.code === 'PLUGIN_RETIRED' ? { code: error.code } : {}),
                 error: error.message
             });
         }
@@ -815,6 +834,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     app.delete('/api/plugins/:id', limiter, async (req, res) => {
         try {
             const requestedPluginId = req.params.id;
+            assertPluginNotRetired(requestedPluginId);
             const id = canonicalizePluginId(requestedPluginId);
             const success = await pluginLoader.deletePlugin(id);
 
@@ -838,8 +858,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             }
         } catch (error) {
             logger.error(`Failed to delete plugin: ${error.message}`);
-            res.status(500).json({
+            res.status(error.code === 'PLUGIN_RETIRED' ? 410 : 500).json({
                 success: false,
+                ...(error.code === 'PLUGIN_RETIRED' ? { code: error.code } : {}),
                 error: error.message
             });
         }
@@ -850,6 +871,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
      */
     app.get('/api/plugins/:id/log', limiter, (req, res) => {
         try {
+            assertPluginNotRetired(req.params.id);
             const requestedPluginId = assertPluginId(req.params.id);
             const id = canonicalizePluginId(requestedPluginId);
             const logPath = getIdentityCandidateIds(id)
@@ -874,9 +896,10 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
             });
         } catch (error) {
             logger.error(`Failed to get plugin log: ${error.message}`);
-            const status = error.message && error.message.includes('Invalid plugin id') ? 400 : 500;
+            const status = error.code === 'PLUGIN_RETIRED' ? 404 : error.message && error.message.includes('Invalid plugin id') ? 400 : 500;
             res.status(status).json({
                 success: false,
+                ...(error.code === 'PLUGIN_RETIRED' ? { code: error.code } : {}),
                 error: error.message
             });
         }

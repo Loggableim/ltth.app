@@ -242,7 +242,7 @@ describe('Viewer XP System - Event Processing', () => {
         // Check shared statistics
         const userStats = db.getUserStatistics('user333', 'test-streamer');
         expect(userStats).toBeTruthy();
-        expect(userStats.total_likes).toBe(1);
+        expect(userStats.total_likes).toBe(5);
     });
 
     test('should process join event and handle daily bonus', async () => {

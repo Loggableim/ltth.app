@@ -1,0 +1,138 @@
+{
+  "files": [
+    {
+      "role": "browser-socket-client-source",
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "bytes": 155836,
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js"
+    },
+    {
+      "role": "renderer-stylesheet",
+      "sha256": "01b136f8be116fb07049e160d168c7fd41c8144a38c337ad78ac01c23e25ab9e",
+      "bytes": 5246,
+      "path": "app/plugins/toptier/assets/animations.css"
+    },
+    {
+      "role": "renderer-stylesheet",
+      "sha256": "5929dc8b8bbe7112b70bf063a88a19ded30e6d5b4f27a10beb1969511ce96c28",
+      "bytes": 29357,
+      "path": "app/plugins/toptier/assets/overlay.css"
+    },
+    {
+      "role": "renderer-script",
+      "sha256": "1fd08125a8c4a8048b6055f42513f74795e2891dabd39b2aa30924b30cac14e1",
+      "bytes": 25410,
+      "path": "app/plugins/toptier/assets/overlay.js"
+    },
+    {
+      "role": "dynamic-avatar-fallback",
+      "sha256": "f42bc2127c7ac40ca82eb7d4ea2017ec102920dbfe57ab75c741e8181b9db900",
+      "bytes": 249,
+      "path": "app/plugins/toptier/assets/avatar-placeholder.svg"
+    },
+    {
+      "role": "renderer-entry",
+      "sha256": "0077612a1633fcc19c3d4089ca610a6727323f2263e69f79f5c682a23d9795ef",
+      "bytes": 702,
+      "path": "app/plugins/toptier/overlay.html"
+    },
+    {
+      "role": "shared-i18n-client",
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "bytes": 24907,
+      "path": "app/public/js/i18n-client.js"
+    },
+    {
+      "role": "plugin-locale",
+      "sha256": "db0c608e304762694595d869ac6a81da040d3b3a3e598746c065da599e1dd7d2",
+      "bytes": 14543,
+      "path": "app/plugins/toptier/locales/de.json"
+    },
+    {
+      "role": "plugin-locale",
+      "sha256": "a8b9e82ab6efb97ac284520ba6203fb421b0784c2f14cba0ee56c4d5c5617fd9",
+      "bytes": 13463,
+      "path": "app/plugins/toptier/locales/en.json"
+    },
+    {
+      "role": "plugin-locale",
+      "sha256": "4a55b95ec7d3bb2d2a3853781f79d6b6d55acb576b9bad2792fefcdc07db3367",
+      "bytes": 15205,
+      "path": "app/plugins/toptier/locales/es.json"
+    },
+    {
+      "role": "plugin-locale",
+      "sha256": "68486298f1f44e7e9bb31116720b94faaffbf4e241e9e3ec7b504b00d4eab41d",
+      "bytes": 15335,
+      "path": "app/plugins/toptier/locales/fr.json"
+    }
+  ],
+  "caseCount": 4,
+  "schemaVersion": 1,
+  "fixtureId": "toptier-source-fixture-v1",
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "runnerContract": {
+    "assetGetRoutes": [
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/plugins/toptier/assets/animations.css",
+        "source": "app/plugins/toptier/assets/animations.css"
+      },
+      {
+        "path": "/plugins/toptier/assets/overlay.css",
+        "source": "app/plugins/toptier/assets/overlay.css"
+      },
+      {
+        "path": "/plugins/toptier/assets/overlay.js",
+        "source": "app/plugins/toptier/assets/overlay.js"
+      },
+      {
+        "path": "/plugins/toptier/assets/avatar-placeholder.svg",
+        "source": "app/plugins/toptier/assets/avatar-placeholder.svg; only the fixed no-profile fallback is used"
+      },
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      }
+    ],
+    "driverEvents": [
+      {
+        "event": "toptier:update",
+        "payload": {
+          "entries": [
+            {
+              "rank": 1,
+              "nickname": "Fixture Liker",
+              "username": "fixture-liker",
+              "profile_picture_url": "",
+              "score": 42
+            }
+          ],
+          "sessionId": "fixture-session-a",
+          "board": "likes"
+        },
+        "negativeCase": "invalid board and malformed entries are ignored; the synthetic profile URL is empty and only the fixed local placeholder is pinned"
+      }
+    ],
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "listenerStarted": false,
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)"
+    ],
+    "pluginControlProducer": "excluded; fixed synthetic in-memory toptier:update event and Socket.IO shim only; no TopTier backend/database/producer; profile_picture_url is empty and only the fixed local placeholder is referenced",
+    "socketEventsConsumed": [
+      "connect",
+      "toptier:update",
+      "toptier:rank-change",
+      "toptier:new-leader",
+      "toptier:decay"
+    ],
+    "productProfileOrCredentialData": "excluded",
+    "externalNetwork": "blocked",
+    "cleanup": "dispatch non-persisted pagehide, assert renderer disconnects shim and clears scoped timers, then close JSDOM"
+  }
+}

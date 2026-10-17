@@ -32,6 +32,7 @@ const STATE = {
     like: [],
     gift: [],
     sub: [],
+    superfanDisplay: [],
     treasure: [],
     join: []
   },
@@ -48,9 +49,81 @@ const STATE = {
   messageParser: null,
   virtualScroller: null,
   socket: null,
+  ownsWindowSocket: false,
   container: null,
-  isInitialized: false
+  isInitialized: false,
+  isDestroyed: false,
+  socketHandlers: [],
+  ownedTimeouts: new Set(),
+  ownedAnimationFrames: new Set(),
+  settingsRequestRevision: 0,
+  stateRequestRevision: 0,
+  refreshRevision: 0
 };
+
+function scheduleOwnedTimeout(callback, delay) {
+  let timerId;
+  timerId = window.setTimeout(() => {
+    STATE.ownedTimeouts.delete(timerId);
+    if (!STATE.isDestroyed) callback();
+  }, delay);
+  STATE.ownedTimeouts.add(timerId);
+  return timerId;
+}
+
+function requestOwnedAnimationFrame(callback) {
+  let frameId;
+  frameId = window.requestAnimationFrame(timestamp => {
+    STATE.ownedAnimationFrames.delete(frameId);
+    if (!STATE.isDestroyed) callback(timestamp);
+  });
+  STATE.ownedAnimationFrames.add(frameId);
+  return frameId;
+}
+
+function registerOverlaySocketHandler(eventName, handler) {
+  if (!STATE.socket) return;
+  const guardedHandler = (...args) => {
+    if (!STATE.isDestroyed) handler(...args);
+  };
+  STATE.socket.on(eventName, guardedHandler);
+  STATE.socketHandlers.push({ eventName, handler: guardedHandler });
+}
+
+function disposeOverlay() {
+  if (STATE.isDestroyed) return;
+  STATE.isDestroyed = true;
+  STATE.refreshRevision += 1;
+  STATE.settingsRequestRevision += 1;
+  STATE.stateRequestRevision += 1;
+  STATE.ownedTimeouts.forEach(timerId => window.clearTimeout(timerId));
+  STATE.ownedAnimationFrames.forEach(frameId => window.cancelAnimationFrame(frameId));
+  STATE.ownedTimeouts.clear();
+  STATE.ownedAnimationFrames.clear();
+  if (STATE.virtualScroller) {
+    STATE.virtualScroller.destroy();
+    STATE.virtualScroller = null;
+  }
+  STATE.accessibilityManager?.destroy?.();
+  if (STATE.socket && typeof STATE.socket.off === 'function') {
+    STATE.socketHandlers.forEach(({ eventName, handler }) => STATE.socket.off(eventName, handler));
+  }
+  STATE.socketHandlers.length = 0;
+  STATE.socket?.disconnect?.();
+  if (STATE.ownsWindowSocket && window.socket === STATE.socket) {
+    delete window.socket;
+  }
+  STATE.ownsWindowSocket = false;
+  STATE.container?.replaceChildren();
+}
+
+window.addEventListener('pagehide', event => {
+  if (!event.persisted) disposeOverlay();
+});
+
+window.addEventListener('pageshow', event => {
+  if (event.persisted && STATE.isInitialized && STATE.socket?.connected) refreshPublicState();
+});
 
 // Event type configuration
 const EVENT_TYPES = {
@@ -60,6 +133,7 @@ const EVENT_TYPES = {
   like: { icon: '👍', label: 'Liked', colorClass: 'event-follow' },
   gift: { icon: '🎁', label: 'Gift', colorClass: 'event-gift' },
   sub: { icon: '⭐', label: 'Subscribed', colorClass: 'event-sub' },
+  superfanDisplay: { icon: '✨', label: 'Super Fan', colorClass: 'event-sub' },
   treasure: { icon: '💎', label: 'Treasure', colorClass: 'event-treasure' },
   join: { icon: '👋', label: 'Joined', colorClass: 'event-join' }
 };
@@ -69,6 +143,20 @@ function eventLabel(type) {
   return ClarityHUDI18n.text(`overlay.event.${type}`, eventType?.label || type);
 }
 
+function isNewestAtTop() {
+  return ['newestTop', 'top'].includes(STATE.settings.feedDirection);
+}
+
+function selectFeedEvents(events, feedDirection, maxLines, useVirtualScrolling = false) {
+  const newestFirst = [...events].sort((a, b) => b.timestamp - a.timestamp);
+  const selected = newestFirst.slice(0, maxLines);
+  return isDirectionNewestAtTop(feedDirection) && useVirtualScrolling ? selected : selected.reverse();
+}
+
+function isDirectionNewestAtTop(feedDirection) {
+  return ['newestTop', 'top'].includes(feedDirection);
+}
+
 // ==================== INITIALIZATION ====================
 // P6: Retry wrapper – up to 3 attempts with 2-second delays.
 async function init() {
@@ -76,6 +164,7 @@ async function init() {
   const RETRY_DELAY_MS = 2000;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    if (STATE.isDestroyed) return;
     try {
       await _initOnce();
       return; // success
@@ -95,14 +184,21 @@ async function init() {
       }
 
       if (attempt < MAX_RETRIES) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+        await new Promise(resolve => scheduleOwnedTimeout(resolve, RETRY_DELAY_MS));
       }
     }
   }
 }
 
 async function _initOnce() {
+  if (STATE.isDestroyed) return;
   HUD_LOG.debug('Initializing ClarityHUD Full Overlay...');
+
+  // Event labels are rendered from the active locale. Re-render retained events
+  // when the shared i18n client adopts a server-origin locale broadcast.
+  window.i18n?.onLanguageChange?.(() => {
+    if (STATE.isInitialized && !STATE.isDestroyed) render();
+  });
 
   STATE.container = document.getElementById('overlay-container');
 
@@ -130,7 +226,9 @@ async function _initOnce() {
 
   // Load settings and initial state
   await loadSettings();
+  if (STATE.isDestroyed) return;
   await loadInitialState();
+  if (STATE.isDestroyed) return;
 
   // Disable buffering and flush any events that arrived during the REST call
   STATE._buffering = false;
@@ -151,9 +249,11 @@ async function _initOnce() {
 
 // ==================== SETTINGS ====================
 async function loadSettings() {
+  const requestRevision = ++STATE.settingsRequestRevision;
   try {
     const response = await fetch('/api/clarityhud/settings/full');
     const data = await response.json();
+    if (STATE.isDestroyed || requestRevision !== STATE.settingsRequestRevision) return;
 
     if (data.success && data.settings) {
       STATE.settings = data.settings;
@@ -164,6 +264,7 @@ async function loadSettings() {
       applySettings();
     }
   } catch (error) {
+    if (STATE.isDestroyed || requestRevision !== STATE.settingsRequestRevision) return;
     HUD_LOG.error('Error loading settings:', error);
     STATE.settings = getDefaultSettings();
     applySettings();
@@ -171,31 +272,36 @@ async function loadSettings() {
 }
 
 async function loadInitialState() {
+  const requestRevision = ++STATE.stateRequestRevision;
   try {
     const response = await fetch('/api/clarityhud/state/full');
     const data = await response.json();
+    if (STATE.isDestroyed || requestRevision !== STATE.stateRequestRevision) return;
 
     if (data.success && data.events) {
       // Load existing events from backend
       // Transform backend format to match overlay format
       const transformedEvents = {};
       for (const [eventType, eventList] of Object.entries(data.events)) {
-        transformedEvents[eventType] = eventList.map(event => {
+        const overlayType = eventType === 'superfan-display' ? 'superfanDisplay' : eventType;
+        transformedEvents[overlayType] = eventList.map((event, index) => {
           // Extract the type and timestamp
           const { type, timestamp, ...eventData } = event;
+          const eventTimestamp = Number.isFinite(timestamp) ? timestamp : Date.now() - index;
           // Return in the format expected by overlay
           return {
-            type: eventType,
+            type: overlayType,
             data: eventData,
-            timestamp: timestamp,
-            id: `${eventType}_${timestamp}_${++_eventCounter}`
+            timestamp: eventTimestamp,
+            id: `${eventType}_${eventTimestamp}_${++_eventCounter}`
           };
         });
       }
       STATE.events = transformedEvents;
-      HUD_LOG.debug('Initial state loaded:', STATE.events);
+      HUD_LOG.debug('Initial state loaded');
     }
   } catch (error) {
+    if (STATE.isDestroyed || requestRevision !== STATE.stateRequestRevision) return;
     HUD_LOG.error('Error loading initial state:', error);
     // Continue with empty events
   }
@@ -210,6 +316,7 @@ function getDefaultSettings() {
     showLikes: true,
     showGifts: true,
     showSubs: true,
+    showSuperFans: true,
     showTreasureChests: true,
     showJoins: true,
 
@@ -257,6 +364,8 @@ function getVisibilitySettingKey(type) {
       return 'showChat';
     case 'sub':
       return 'showSubs';
+    case 'superfanDisplay':
+      return 'showSuperFans';
     case 'treasure':
       return 'showTreasureChests';
     case 'like':
@@ -392,18 +501,26 @@ function bufferOrAddEvent(type, data) {
 
 function connectSocket() {
   STATE.socket = io();
+  // The shared i18n client listens on an existing app-owned window.socket.
+  // Reuse this renderer socket when no other component already published one.
+  if (!window.socket) {
+    window.socket = STATE.socket;
+    STATE.ownsWindowSocket = true;
+  }
 
-  STATE.socket.on('connect', () => {
+  registerOverlaySocketHandler('connect', () => {
     HUD_LOG.debug('Connected to server');
+    if (STATE.isInitialized) refreshPublicState();
   });
 
-  STATE.socket.on('disconnect', () => {
+  registerOverlaySocketHandler('disconnect', () => {
     HUD_LOG.debug('Disconnected from server');
   });
 
   // Listen for settings updates
-  STATE.socket.on('clarityhud.settings.full', (newSettings) => {
+  registerOverlaySocketHandler('clarityhud.settings.full', (newSettings) => {
     HUD_LOG.debug('Received settings update:', newSettings);
+    STATE.settingsRequestRevision += 1;
     STATE.settings = newSettings;
     applySettings();
     if (STATE.layoutEngine) {
@@ -413,53 +530,76 @@ function connectSocket() {
   });
 
   // Listen for event updates
-  STATE.socket.on('clarityhud.update.chat', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.chat', (data) => {
     if (STATE.settings.showChat !== false) {
       bufferOrAddEvent('chat', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.follow', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.follow', (data) => {
     if (STATE.settings.showFollows !== false) {
       bufferOrAddEvent('follow', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.share', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.share', (data) => {
     if (STATE.settings.showShares !== false) {
       bufferOrAddEvent('share', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.like', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.like', (data) => {
     if (STATE.settings.showLikes !== false) {
       bufferOrAddEvent('like', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.gift', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.gift', (data) => {
     if (STATE.settings.showGifts !== false) {
       bufferOrAddEvent('gift', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.subscribe', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.subscribe', (data) => {
     if (STATE.settings.showSubs !== false) {
       bufferOrAddEvent('sub', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.treasure', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.superfan-display', (data) => {
+    if (STATE.settings.showSuperFans !== false) {
+      bufferOrAddEvent('superfanDisplay', data);
+    }
+  });
+
+  registerOverlaySocketHandler('clarityhud.update.treasure', (data) => {
     if (STATE.settings.showTreasureChests !== false) {
       bufferOrAddEvent('treasure', data);
     }
   });
 
-  STATE.socket.on('clarityhud.update.join', (data) => {
+  registerOverlaySocketHandler('clarityhud.update.join', (data) => {
     if (STATE.settings.showJoins !== false) {
       bufferOrAddEvent('join', data);
     }
   });
+
+  if (STATE.socket.connected && STATE.isInitialized) refreshPublicState();
+}
+
+async function refreshPublicState() {
+  if (STATE.isDestroyed || !STATE.isInitialized) return;
+  const refreshRevision = ++STATE.refreshRevision;
+  if (!STATE._buffering) STATE._eventBuffer = [];
+  STATE._buffering = true;
+  await Promise.all([loadSettings(), loadInitialState()]);
+  if (STATE.isDestroyed || refreshRevision !== STATE.refreshRevision) return;
+
+  STATE._buffering = false;
+  for (const { type, data } of STATE._eventBuffer) addEvent(type, data);
+  STATE._eventBuffer = [];
+  if (STATE.layoutEngine) STATE.layoutEngine.updateSettings(STATE.settings);
+  render();
 }
 
 // ==================== EVENT MANAGEMENT ====================
@@ -493,7 +633,10 @@ function addEvent(type, data) {
     uniqueIdentifier = type;
   }
   
-  const duplicateKey = `${type}_${data.user?.uniqueId || data.uniqueId}_${uniqueIdentifier}_${roundedTime}`;
+  if (type === 'superfanDisplay') {
+    uniqueIdentifier = `${data.eventType}_${data.displayName}_${data.level ?? ''}`;
+  }
+  const duplicateKey = `${type}_${data.user?.uniqueId || data.uniqueId || data.displayName}_${uniqueIdentifier}_${roundedTime}`;
   
   // Prevent duplicates within a 2 second window
   if (STATE.eventIds.has(duplicateKey)) {
@@ -503,7 +646,7 @@ function addEvent(type, data) {
   
   // Add to event ID set with automatic cleanup after 2 seconds
   STATE.eventIds.add(duplicateKey);
-  setTimeout(() => STATE.eventIds.delete(duplicateKey), 2000);
+  scheduleOwnedTimeout(() => STATE.eventIds.delete(duplicateKey), 2000);
 
   STATE.events[type].unshift(event);
 
@@ -530,7 +673,7 @@ function render() {
   STATE.container.innerHTML = '';
   STATE.container.className = `layout-${mode}`;
 
-  if (STATE.settings.feedDirection === 'top') {
+  if (isNewestAtTop()) {
     STATE.container.classList.add('feed-direction-top');
   }
 
@@ -557,19 +700,20 @@ function renderSingleStream() {
   }
 
   // Sort by timestamp (newest first or last based on feedDirection)
-  allEvents.sort((a, b) => {
-    return STATE.settings.feedDirection === 'top' ?
-      b.timestamp - a.timestamp :
-      a.timestamp - b.timestamp;
-  });
+  const visibleEvents = selectFeedEvents(
+    allEvents,
+    STATE.settings.feedDirection,
+    STATE.settings.maxLines || 50,
+    STATE.settings.useVirtualScrolling && typeof VirtualScroller !== 'undefined'
+  );
 
   // Render events
   if (STATE.settings.useVirtualScrolling && typeof VirtualScroller !== 'undefined') {
-    initializeFullVirtualScrolling(feedContainer, allEvents.slice(0, STATE.settings.maxLines || 50));
+    initializeFullVirtualScrolling(feedContainer, visibleEvents);
     return;
   }
 
-  allEvents.slice(0, STATE.settings.maxLines || 50).forEach(event => {
+  visibleEvents.forEach(event => {
     const element = createEventElement(event, 'singleStream');
     feedContainer.appendChild(element);
     animateElement(element, 'in', true);
@@ -588,10 +732,11 @@ function initializeFullVirtualScrolling(container, events) {
     renderCallback: (event) => createEventElement(event, 'singleStream')
   });
   STATE.virtualScroller.setItems(events);
+  if (!isNewestAtTop()) STATE.virtualScroller.scrollToBottom('auto');
 }
 
 function renderStructured() {
-  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'treasure', 'join'];
+  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'superfanDisplay', 'treasure', 'join'];
 
   eventTypes.forEach(type => {
     const settingKey = getVisibilitySettingKey(type);
@@ -623,7 +768,7 @@ function renderStructured() {
 }
 
 function renderAdaptive() {
-  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'treasure', 'join'];
+  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'superfanDisplay', 'treasure', 'join'];
   
   // Get enabled types (not filtered by events length - show blocks even if empty)
   const enabledTypes = eventTypes.filter(type => {
@@ -678,11 +823,7 @@ function renderEvent(event) {
     if (feedContainer) {
       const element = createEventElement(event, mode);
 
-      if (STATE.settings.feedDirection === 'top') {
-        feedContainer.insertBefore(element, feedContainer.firstChild);
-      } else {
-        feedContainer.appendChild(element);
-      }
+      feedContainer.appendChild(element);
 
       animateElement(element, 'in');
 
@@ -692,7 +833,7 @@ function renderEvent(event) {
       // Remove old events if exceeding max
       const allItems = feedContainer.querySelectorAll('.event-item');
       if (allItems.length > (STATE.settings.maxLines || 50)) {
-        const toRemove = allItems[STATE.settings.feedDirection === 'top' ? allItems.length - 1 : 0];
+        const toRemove = allItems[0];
         animateElement(toRemove, 'out').then(() => {
           toRemove.remove();
         });
@@ -733,7 +874,7 @@ function autoScrollToElement(element, container) {
   if (!element || !container) return;
 
   // Use requestAnimationFrame to ensure DOM is updated
-  requestAnimationFrame(() => {
+  requestOwnedAnimationFrame(() => {
     try {
       if (STATE.settings.feedDirection === 'top') {
         // For top direction, scroll to top to show newest
@@ -882,6 +1023,39 @@ function createEventElement(event, layoutMode) {
       likeInfo.textContent = `x${event.data.likeCount}`;
       element.appendChild(likeInfo);
     }
+  } else if (event.type === 'superfanDisplay') {
+    if (event.data.profilePictureUrl) {
+      const avatar = document.createElement('img');
+      avatar.className = 'superfan-avatar';
+      avatar.src = event.data.profilePictureUrl;
+      avatar.alt = '';
+      avatar.loading = 'lazy';
+      avatar.referrerPolicy = 'no-referrer';
+      element.appendChild(avatar);
+    }
+
+    const username = document.createElement('span');
+    username.className = 'event-username';
+    username.textContent = event.data.displayName;
+    element.appendChild(username);
+
+    const label = document.createElement('span');
+    label.className = 'event-type';
+    label.textContent = event.data.eventType === 'superfan-join'
+      ? ClarityHUDI18n.text('overlay.superfan_join_signal', 'possible Super Fan club join signal')
+      : ClarityHUDI18n.text('overlay.superfan_signal', 'possible Super Fan signal');
+    element.appendChild(label);
+
+    if (Number.isInteger(event.data.level)) {
+      const level = document.createElement('span');
+      level.className = 'event-gift-info';
+      level.textContent = ClarityHUDI18n.text(
+        'badge.fan_club_level',
+        'Fan club level {level}',
+        { level: event.data.level }
+      );
+      element.appendChild(level);
+    }
   } else {
     // Standard event (follow, share, sub, treasure, join)
     const username = document.createElement('span');
@@ -929,9 +1103,11 @@ function capitalize(str) {
 }
 
 function getActiveTypeCount() {
-  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'treasure', 'join'];
+  const eventTypes = ['chat', 'follow', 'share', 'like', 'gift', 'sub', 'superfanDisplay', 'treasure', 'join'];
   return eventTypes.filter(type => {
-    const settingKey = `show${capitalize(type === 'sub' ? 'subs' : type === 'treasure' ? 'treasureChests' : type === 'like' ? 'likes' : type + 's')}`;
+    const settingKey = type === 'superfanDisplay'
+      ? 'showSuperFans'
+      : `show${capitalize(type === 'sub' ? 'subs' : type === 'treasure' ? 'treasureChests' : type === 'like' ? 'likes' : type + 's')}`;
     return STATE.settings[settingKey] && STATE.events[type].length > 0;
   }).length;
 }
@@ -954,3 +1130,7 @@ window.addEventListener('message', (event) => {
   }
   render();
 });
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { selectFeedEvents, createEventElement };
+}

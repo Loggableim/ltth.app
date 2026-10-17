@@ -873,6 +873,50 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io();
+    const socketHandlers = new Map();
+    let overlayActive = true;
+    const overlayTimeouts = new Set();
+    if (!window.socket) window.socket = socket;
+
+    function bindSocket(eventName, handler) {
+      const guardedHandler = (...args) => {
+        if (!overlayActive) return undefined;
+        return handler(...args);
+      };
+      const handlers = socketHandlers.get(eventName) || [];
+      handlers.push(guardedHandler);
+      socketHandlers.set(eventName, handlers);
+      socket.on(eventName, guardedHandler);
+    }
+
+    function cleanupOverlay(event) {
+      if (event?.persisted || !overlayActive) return;
+      overlayActive = false;
+      if (voteTimer) window.clearInterval(voteTimer);
+      if (sentenceTimer) window.clearInterval(sentenceTimer);
+      voteTimer = null;
+      sentenceTimer = null;
+      for (const timer of overlayTimeouts) window.clearTimeout(timer);
+      overlayTimeouts.clear();
+      window.removeEventListener('pagehide', cleanupOverlay);
+      for (const [eventName, handlers] of socketHandlers) {
+        for (const handler of handlers) socket.off?.(eventName, handler);
+      }
+      socketHandlers.clear();
+      if (window.socket === socket) window.socket = null;
+      socket.disconnect?.();
+    }
+
+    window.addEventListener('pagehide', cleanupOverlay);
+
+    function scheduleOverlayTimeout(callback, delay) {
+      const timer = window.setTimeout(() => {
+        overlayTimeouts.delete(timer);
+        if (overlayActive) callback();
+      }, delay);
+      overlayTimeouts.add(timer);
+      return timer;
+    }
 
     let currentChapter = null;
     let votingActive = false;
@@ -905,10 +949,13 @@
     async function loadConfiguration() {
       try {
         const response = await fetch('/api/interactive-story/config');
+        if (!overlayActive) return;
         config = await response.json();
+        if (!overlayActive) return;
         applyConfiguration(config);
         await loadParticipantRoster();
       } catch (error) {
+        if (!overlayActive) return;
         console.error('Failed to load configuration:', error);
         // Use defaults if config fails
         config = {
@@ -1022,12 +1069,19 @@
       updateParticipantRosterVisibility();
     }
 
+    window.i18n?.onLanguageChange?.(() => {
+      if (!overlayActive || config?.storyMode !== 'dnd') return;
+      renderDndParticipantRoster(dndParticipants);
+    });
+
     async function loadParticipantRoster() {
       if (publicRenderMode || config?.storyMode !== 'dnd') return;
       try {
         const response = await fetch('/api/interactive-story/participants');
+        if (!overlayActive) return;
         if (!response.ok) return;
         const snapshot = await response.json();
+        if (!overlayActive) return;
         const activeParticipants = Array.isArray(snapshot.activeParticipants)
           ? snapshot.activeParticipants
           : [];
@@ -1036,6 +1090,7 @@
           : [];
         renderDndParticipantRoster([...activeParticipants, ...eliminatedParticipants]);
       } catch (error) {
+        if (!overlayActive) return;
         console.warn('Failed to load D&D participant roster:', error);
       }
     }
@@ -1201,10 +1256,12 @@
     async function loadOverlayPositions() {
       try {
         const response = await fetch('/api/interactive-story/overlay-positions');
+        if (!overlayActive) return;
         if (!response.ok) return;
         overlayConfig = normalizeOverlayLayout(await response.json());
+        if (!overlayActive) return;
         applyOverlayPositions();
-      } catch (error) { console.error('Error loading overlay positions:', error); }
+      } catch (error) { if (overlayActive) console.error('Error loading overlay positions:', error); }
     }
 
     async function saveOverlayPositions() {
@@ -1226,7 +1283,7 @@
     }
 
     // Handle chapter ready - show title first
-    socket.on('story:chapter-ready', (chapter) => {
+    bindSocket('story:chapter-ready', (chapter) => {
       currentChapter = chapter;
       scrollingInProgress = false;
       sentences = [];
@@ -1266,7 +1323,7 @@
     });
 
     // Title display phase after image preview
-    socket.on('story:chapter-title-phase', (data) => {
+    bindSocket('story:chapter-title-phase', (data) => {
       const overlay = document.getElementById('storyOverlay');
       overlay.classList.add('active');
 
@@ -1283,7 +1340,7 @@
 
     // Handle progressive TTS sentence display
     // Handle TTS start - prepare for progressive sentence display
-    socket.on('story:chapter-tts-start', (data) => {
+    bindSocket('story:chapter-tts-start', (data) => {
       console.log('TTS started - preparing for progressive sentence display', data);
 
       scrollingInProgress = true;
@@ -1296,7 +1353,7 @@
 
       // Darken image and make it background
       const imageContainer = document.getElementById('imageContainer');
-      setTimeout(() => {
+      scheduleOverlayTimeout(() => {
         imageContainer.classList.remove('title-mode');
         imageContainer.classList.add('darkened');
 
@@ -1312,7 +1369,7 @@
     });
 
     // Handle individual sentences arriving during TTS playback (Star Wars scroll effect)
-    socket.on('story:chapter-sentence', (data) => {
+    bindSocket('story:chapter-sentence', (data) => {
       console.log(`Sentence ${data.index + 1}/${data.total}:`, data.sentence);
 
       if (!scrollingInProgress) return;
@@ -1329,7 +1386,7 @@
       sentences.push(sentenceEl);
 
       // Animate entrance after brief delay
-      setTimeout(() => {
+      scheduleOverlayTimeout(() => {
         updateSentenceStates(data.index);
       }, SENTENCE_ANIMATION_DELAY_MS);
     });
@@ -1362,7 +1419,7 @@
     }
 
     // Handle TTS complete (ready for voting)
-    socket.on('story:chapter-tts-complete', (data) => {
+    bindSocket('story:chapter-tts-complete', (data) => {
       console.log('TTS complete for chapter', data.chapterNumber);
       scrollingInProgress = false;
 
@@ -1375,7 +1432,7 @@
     });
 
     // Handle immediate chapter display (fallback when TTS disabled)
-    socket.on('story:chapter-display', (data) => {
+    bindSocket('story:chapter-display', (data) => {
       console.log('📖 Chapter display event received:', data.mode, data.chapter?.title);
 
       if (data.mode === 'immediate' && data.chapter) {
@@ -1398,7 +1455,7 @@
     });
 
     // Handle voting started
-    socket.on('story:voting-started', (data) => {
+    bindSocket('story:voting-started', (data) => {
       votingActive = true;
 
       // STEP 1: Hide text overlay first
@@ -1409,32 +1466,32 @@
         voteCounts = new Array(data.choices.length).fill(0);
 
         // STEP 2: Wait for text overlay fade-out transition to complete before showing voting
-        setTimeout(() => {
+        scheduleOverlayTimeout(() => {
           displayVoting(data.choices, data.duration, data.voteKeywordPattern || '!letter');
         }, VOTING_DISPLAY_DELAY_MS);
       }
     });
 
     // Handle vote updates
-    socket.on('story:vote-update', (data) => {
+    bindSocket('story:vote-update', (data) => {
       voteCounts = data.voteCounts;
       updateVoteDisplay();
     });
 
     // Handle voting ended
-    socket.on('story:voting-ended', (results) => {
+    bindSocket('story:voting-ended', (results) => {
       votingActive = false;
       showResults(results);
 
       // Hide voting after 3 seconds
-      setTimeout(() => {
+      scheduleOverlayTimeout(() => {
         document.getElementById('votingOverlay').classList.remove('active');
         document.getElementById('resultsOverlay').classList.remove('active');
       }, 3000);
     });
 
     // Handle generation started
-    socket.on('story:generation-started', () => {
+    bindSocket('story:generation-started', () => {
       if (config) {
         applyGeneratingAnimation(config);
         restartGeneratingAnimationPlayback();
@@ -1447,7 +1504,7 @@
     });
 
     // Handle image updated
-    socket.on('story:image-updated', (data) => {
+    bindSocket('story:image-updated', (data) => {
       if (currentChapter && data.imagePath) {
         // imagePath now contains just the filename (not full path)
         document.getElementById('storyImage').src = `/api/interactive-story/image/${data.imagePath}`;
@@ -1455,13 +1512,13 @@
     });
 
     // Handle image generation failed
-    socket.on('story:image-generation-failed', (data) => {
+    bindSocket('story:image-generation-failed', (data) => {
       console.warn('⚠️ Image generation failed:', data.message);
       // Story continues without image - no action needed on overlay
     });
 
     // Handle story ended - hide all overlays
-    socket.on('story:ended', (data) => {
+    bindSocket('story:ended', (data) => {
       console.log('Story ended, hiding overlay:', data);
 
       // Hide all overlays with fade out
@@ -1559,7 +1616,7 @@
 
       // Reset animation by removing and re-adding the class
       contentEl.style.animation = 'none';
-      setTimeout(() => {
+      scheduleOverlayTimeout(() => {
         contentEl.style.animation = '';
         contentEl.textContent = content;
       }, 10);
@@ -1623,9 +1680,10 @@
         imageContainer.classList.add('darkened');
         imageContainer.classList.remove('title-mode');
       } else {
-        imageContainer.classList.add('visible');
-        imageContainer.classList.add('darkened');
+        imageContainer.classList.remove('visible');
+        imageContainer.classList.remove('darkened');
         imageContainer.classList.remove('title-mode');
+        storyImage.removeAttribute('src');
       }
 
       // Clear any sentence timer
@@ -1776,27 +1834,27 @@
     // Relay TTS playback ended event back to server
     // This is needed because plugin-to-plugin communication requires
     // client relay: TTS plugin → client → back to server → interactive-story plugin
-    socket.on('tts:playback:ended', (data) => {
+    bindSocket('tts:playback:ended', (data) => {
       console.log('TTS playback ended, relaying to server:', data);
       // Re-emit the event to the server so other plugins can receive it
       socket.emit('tts:playback:ended', data);
     });
 
     // Socket connection monitoring
-    socket.on('connect', () => {
+    bindSocket('connect', () => {
       console.log('✅ Socket.io connected to server');
     });
 
-    socket.on('disconnect', (reason) => {
+    bindSocket('disconnect', (reason) => {
       console.warn('⚠️ Socket.io disconnected:', reason);
     });
 
-    socket.on('connect_error', (error) => {
+    bindSocket('connect_error', (error) => {
       console.error('❌ Socket.io connection error:', error);
     });
 
     // Listen for real-time configuration updates
-    socket.on('story:config-updated', (updatedConfig) => {
+    bindSocket('story:config-updated', (updatedConfig) => {
       console.log('📡 Configuration updated, applying changes...', updatedConfig);
       // Merge with current config and reapply
       if (config) {
@@ -1806,19 +1864,20 @@
       }
     });
 
-    socket.on('story:dnd-participants-updated', (participants) => {
+    bindSocket('story:dnd-participants-updated', (participants) => {
       renderDndParticipantRoster(participants);
     });
 
     // Initialize
     loadConfiguration().then(() => {
+      if (!overlayActive) return;
       console.log('✅ Interactive Story Overlay loaded and configured successfully');
       console.log('📺 Overlay ready - waiting for story to start...');
 
       // Initialize draggable elements
       initDraggableElements();
     }).catch((error) => {
-      console.error('❌ Failed to initialize overlay:', error);
+      if (overlayActive) console.error('❌ Failed to initialize overlay:', error);
     });
   </script>
 </body>

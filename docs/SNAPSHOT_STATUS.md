@@ -1,5 +1,7 @@
 # Snapshot Status
 
+> **Closed Beta — local development only:** These apps are not publicly downloadable. Current closed-beta apps: `animazingpal`, `interactive-story`, `music-bot`, `osc-bridge`, `schnorrbecher`, `sidekick`, `stream-monsters`, `talking-heads`, `visual-fx-frame-webgpu`, `webgpu-emoji-rain`, `webgpu-weather-control`.
+
 Last reviewed: 2026-09-28
 
 ## Scope
@@ -78,14 +80,14 @@ The root package has no dependency tree on purpose. It only forwards commands in
 
 The plugin store was introduced in v1.3.9 and remains part of the current snapshot:
 
-- **Registry:** `plugin-store.json` (root) — 35 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
-- **Packages:** `plugin-store/packages/` — 35 pre-packaged `.zip` files, one per plugin.
+- **Registry:** `plugin-store.json` (root) — 24 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
+- **Packages:** `plugin-store/packages/` — 24 pre-packaged `.zip` files, one per plugin.
 - **Backend:** `app/modules/plugin-store.js` (563 lines) — `PluginStore` class with HTTPS URL validation, SHA-256 checksum verification, safe ZIP extraction, community-source opt-in.
 - **Routes:** `app/routes/plugin-routes.js` — 6 store-specific API endpoints under `/api/plugin-store`.
 - **Frontend:** `app/public/js/plugin-manager.js` (1590 lines) — `PluginManager` class with `store` and `installed` tabs, category filters, dev-status filters, badges, and one-click install flow.
 - **Tests:** `plugin-store.test.js`, `plugin-store-registry.test.js`, `plugin-store-routes.test.js`.
 - **Design docs:** `docs/superpowers/plans/2026-07-04-plugin-store*.md` + `docs/superpowers/specs/2026-07-04-plugin-store-appstore-ui-design.md`.
-- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `lastevent-spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`.
+- **Preinstalled plugins** (enabled by default in store): `goals`, `lastevent-spotlight`, `soundboard`, `toptier`, `tts`.
 
 Community plugin repositories are supported behind explicit user opt-in (`POST /api/plugin-store/community/enable`).
 
@@ -192,12 +194,11 @@ LTTH can now turn local overlay URLs into random HTTPS `trycloudflare.com` URLs 
 
 ## Plugin Inventory
 
-The workspace currently contains 37 plugin manifests in `app/plugins/`:
+The workspace currently contains 36 plugin manifests in `app/plugins/`:
 
 - advanced-timer
-- animazingpal
+- animazingpal — Closed Beta; local development only; not publicly downloadable
 - api-bridge
-- chatango
 - clarityhud
 - coinbattle
 - config-import
@@ -208,29 +209,29 @@ The workspace currently contains 37 plugin manifests in `app/plugins/`:
 - gcce
 - gift-catalog
 - goals
-- interactive-story (v1.0.0, enabled by default)
+- interactive-story (v1.0.0; Closed Beta; local development only; not publicly downloadable)
 - milestone-leaderboard
 - minecraft-connect
 - multicam
-- music-bot
+- music-bot — Closed Beta; local development only; not publicly downloadable
 - openshock
-- osc-bridge
+- osc-bridge — Closed Beta; local development only; not publicly downloadable
 - quiz-show
-- schnorrbecher
+- schnorrbecher — Closed Beta; local development only; not publicly downloadable
 - soundboard
 - spotlight
-- stream-monsters (Stream Monsters 1.12.0, Stable)
+- stream-monsters (Stream Monsters 1.12.0; Closed Beta; local development only; not publicly downloadable)
 - stt-ticker
-- talking-heads
+- talking-heads — Closed Beta; local development only; not publicly downloadable
 - thermal-printer
 - toptier
 - tts
 - vdoninja
-- visual-fx-frame-webgpu
+- visual-fx-frame-webgpu — Closed Beta; local development only; not publicly downloadable
 - weather-control
-- webgpu-emoji-rain
+- webgpu-emoji-rain — Closed Beta; local development only; not publicly downloadable
 - webgpu-fireworks
-- webgpu-weather-control (1.0.0 open beta)
+- webgpu-weather-control (1.0.0; Closed Beta; local development only; not publicly downloadable)
 
 `fireworks-dev/` was deleted and consolidated into `fireworks/` (v2.0.1, `devStatus: stable`). Its stale package archive has also been removed from the plugin store.
 

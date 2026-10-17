@@ -684,6 +684,31 @@ describe('Music Bot runtime and UI regressions', () => {
     }
   });
 
+  test('replaces and clears the periodic playback heartbeat timer on stop', () => {
+    const { plugin } = createPluginWithQueue([]);
+    let nextTimer = 100;
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(() => nextTimer++);
+    const clearIntervalSpy = jest.spyOn(global, 'clearInterval').mockImplementation(() => {});
+
+    try {
+      plugin._startPlaybackSync();
+      expect(plugin.playbackSyncTimer).toBe(100);
+      plugin._startPlaybackSync();
+      expect(clearIntervalSpy).toHaveBeenCalledWith(100);
+      expect(plugin.playbackSyncTimer).toBe(101);
+
+      plugin._stopPlaybackSync();
+      expect(clearIntervalSpy).toHaveBeenCalledWith(101);
+      expect(plugin.playbackSyncTimer).toBeNull();
+      plugin._stopPlaybackSync();
+      expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
+    } finally {
+      plugin._stopPlaybackSync();
+      setIntervalSpy.mockRestore();
+      clearIntervalSpy.mockRestore();
+    }
+  });
+
   test('keeps an Auto-DJ stream playing when the controller heartbeat confirms playback', async () => {
     const { EventEmitter } = require('events');
     const current = {
@@ -1708,6 +1733,576 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(dom.window.document.getElementById('request-feedback').textContent).not.toContain('Dieser Song ist gesperrt.');
   });
 
+  test('exposes search and request feedback as polite atomic status regions', async () => {
+    const { dom } = bootMusicBotUi();
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    for (const id of ['search-feedback', 'request-feedback']) {
+      const feedback = dom.window.document.getElementById(id);
+      expect(feedback.getAttribute('role')).toBe('status');
+      expect(feedback.getAttribute('aria-live')).toBe('polite');
+      expect(feedback.getAttribute('aria-atomic')).toBe('true');
+    }
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('reports an empty dashboard request in %s without posting', async (locale) => {
+    const catalog = productionI18n.getAllTranslations(locale);
+    const { dom, fetchMock } = bootMusicBotUi({
+      translations: { [locale]: catalog },
+      productionLocale: locale
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    dom.window.document.getElementById('request-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(dom.window.document.getElementById('request-feedback').textContent).toContain(
+      catalog.plugins['music-bot'].music_bot.ui.player.requestRequired
+    );
+    expect(fetchMock.mock.calls.some(([url, options = {}]) =>
+      String(url).endsWith('/request') && options.method === 'POST'
+    )).toBe(false);
+  });
+
+  test.each([
+    ['success', { success: true, song: { title: 'Announced title' } }],
+    ['rejection', { success: false, error: 'Request rejected.' }]
+  ])('keeps dashboard request toast visual-only after its inline status is announced (%s)', async (_name, response) => {
+    const { dom } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse(response)
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('search-input').value = 'announce request outcome';
+    document.getElementById('request-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('request-feedback').textContent).not.toContain('Wird zur Queue hinzugefügt…');
+    const toast = document.querySelector('#musicbot-toast-container .musicbot-toast');
+    expect(toast).not.toBeNull();
+    expect(toast.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('keeps resolve network toast visual-only when the live search status reports failure', async () => {
+    const catalog = productionI18n.getAllTranslations('de');
+    const { dom } = bootMusicBotUi({
+      translations: { de: catalog },
+      productionLocale: 'de',
+      fetchHandler: (target) => target.includes('/resolve?')
+        ? Promise.reject(new Error('offline'))
+        : undefined
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('search-input').value = 'network error';
+    document.getElementById('search-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const toast = document.querySelector('#musicbot-toast-container .musicbot-toast');
+    expect(document.getElementById('search-feedback').textContent).toContain(
+      catalog.plugins['music-bot'].music_bot.ui.catalog.getFailed
+    );
+    expect(toast).not.toBeNull();
+    expect(toast.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test('clears a rendered text-query preview when the user enters another query', async () => {
+    const { dom } = bootMusicBotUi({
+      fetchHandler: (target) => target.includes('/resolve?')
+        ? createJsonResponse({
+          success: true,
+          song: { title: 'Previous result', artist: 'Fixture artist', duration: 120, source: 'youtube', youtubeId: 'PREV123' }
+        })
+        : undefined
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const input = document.getElementById('search-input');
+    const preview = document.getElementById('preview-frame');
+    input.value = 'previous text query';
+    document.getElementById('search-btn').click();
+    for (let attempt = 0; attempt < 20 && !document.getElementById('search-feedback').textContent.includes('Previous result'); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(document.getElementById('search-feedback').textContent).toContain('Previous result');
+    expect(preview.src).toContain('PREV123');
+
+    input.value = 'new free-text query';
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(document.getElementById('search-feedback').textContent).toBe('');
+    expect(preview.getAttribute('src')).toBe('');
+  });
+
+  test('keeps an empty preview iframe out of tab order and restores it for a valid video', async () => {
+    const { dom } = bootMusicBotUi();
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const input = document.getElementById('search-input');
+    const preview = document.getElementById('preview-frame');
+    expect(preview.getAttribute('tabindex')).toBe('-1');
+
+    input.value = 'https://www.youtube.com/watch?v=VIDEO12345';
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(preview.getAttribute('tabindex')).toBe('0');
+    expect(preview.src).toContain('VIDEO12345');
+
+    input.value = 'new text query';
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(preview.getAttribute('tabindex')).toBe('-1');
+    expect(preview.getAttribute('src')).toBe('');
+  });
+
+  test('shows a localized fallback when a successful resolve response omits its song', async () => {
+    const catalog = productionI18n.getAllTranslations('de');
+    const { dom } = bootMusicBotUi({
+      translations: { de: catalog },
+      productionLocale: 'de',
+      fetchHandler: (target) => target.includes('/resolve?')
+        ? { status: 200, json: async () => ({ success: true }) }
+        : undefined
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('search-input').value = 'malformed success';
+    document.getElementById('search-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('search-feedback').textContent).toContain(
+      catalog.plugins['music-bot'].music_bot.ui.player.noResult
+    );
+    expect(document.getElementById('search-feedback').textContent).not.toContain('Suche…');
+  });
+
+  test('shows a localized fallback and unlocks request after a successful response omits its song', async () => {
+    const catalog = productionI18n.getAllTranslations('de');
+    const { dom } = bootMusicBotUi({
+      translations: { de: catalog },
+      productionLocale: 'de',
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({ success: true })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const button = document.getElementById('request-btn');
+    document.getElementById('search-input').value = 'malformed success';
+    button.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('request-feedback').textContent).toContain(
+      catalog.plugins['music-bot'].music_bot.ui.player.requestFailed
+    );
+    expect(button.disabled).toBe(false);
+    expect(button.getAttribute('aria-busy')).toBeNull();
+  });
+
+  test('shows only one toast for a dashboard request network failure', async () => {
+    const { dom } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/request')
+        ? Promise.reject(new Error('offline'))
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('search-input').value = 'network failure';
+    document.getElementById('request-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const toasts = document.querySelectorAll('#musicbot-toast-container .musicbot-toast');
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0].getAttribute('aria-hidden')).toBe('true');
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('uses localized fallbacks when error fields are missing in %s', async (locale) => {
+    const catalog = productionI18n.getAllTranslations(locale);
+    const { dom } = bootMusicBotUi({
+      translations: { [locale]: catalog },
+      productionLocale: locale,
+      fetchHandler: (target) => target.includes('/resolve?')
+        ? { status: 503, json: async () => ({ success: false }) }
+        : undefined,
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({ success: false })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const ui = catalog.plugins['music-bot'].music_bot.ui.player;
+    document.getElementById('search-input').value = 'missing error fields';
+    document.getElementById('search-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.getElementById('search-feedback').textContent).toContain(ui.noResult);
+
+    document.getElementById('request-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(document.getElementById('request-feedback').textContent).toContain(ui.requestFailed);
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('localizes rate-limited resolve preview in %s', async (locale) => {
+    const catalog = productionI18n.getAllTranslations(locale);
+    const catalogs = { [locale]: catalog };
+    const expectedMessage = catalog.plugins['music-bot'].music_bot.ui.player.requestRateLimited;
+    const { dom, fetchMock } = bootMusicBotUi({
+      translations: catalogs,
+      productionLocale: locale,
+      fetchHandler: async (target) => {
+        if (!target.includes('/resolve?')) return undefined;
+        return {
+          status: 429,
+          headers: { get: (name) => name.toLowerCase() === 'retry-after' ? '60' : null },
+          json: async () => ({
+            success: false,
+            code: 'MUSIC_BOT_RATE_LIMITED',
+            error: 'Too many requests. Please try again after a minute.'
+          })
+        };
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    dom.window.document.getElementById('search-input').value = 'fixture track';
+    dom.window.document.getElementById('search-btn').click();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (dom.window.document.getElementById('search-feedback').textContent.includes(expectedMessage)) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const feedback = dom.window.document.getElementById('search-feedback').textContent;
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/resolve?'))).toBe(true);
+    expect(feedback).toContain(expectedMessage);
+    expect(feedback).not.toContain('MUSIC_BOT_RATE_LIMITED');
+    expect(feedback).not.toContain('Too many requests. Please try again after a minute.');
+    expect(feedback).not.toContain('60');
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('localizes rate-limited dashboard request in %s', async (locale) => {
+    const catalog = productionI18n.getAllTranslations(locale);
+    const catalogs = { [locale]: catalog };
+    const expectedMessage = catalog.plugins['music-bot'].music_bot.ui.player.requestRateLimited;
+    const { dom, fetchMock } = bootMusicBotUi({
+      translations: catalogs,
+      productionLocale: locale,
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({
+          success: false,
+          code: 'MUSIC_BOT_RATE_LIMITED',
+          error: 'Too many requests. Please try again after a minute.'
+        })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    dom.window.document.getElementById('search-input').value = 'fixture track';
+    dom.window.document.getElementById('request-btn').click();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (dom.window.document.getElementById('request-feedback').textContent.includes(expectedMessage)) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const feedback = dom.window.document.getElementById('request-feedback').textContent;
+    const toast = dom.window.document.getElementById('musicbot-toast-container').textContent;
+    expect(fetchMock.mock.calls.some(([url, options = {}]) =>
+      String(url).endsWith('/request') && options.method === 'POST'
+    )).toBe(true);
+    expect(feedback).toContain(expectedMessage);
+    expect(toast).toContain(expectedMessage);
+    expect(feedback).not.toContain('MUSIC_BOT_RATE_LIMITED');
+    expect(feedback).not.toContain('Too many requests. Please try again after a minute.');
+  });
+
+  test('applies only the newest result when resolve previews finish out of order', async () => {
+    const pendingResponses = new Map();
+    const { dom, fetchMock } = bootMusicBotUi({
+      fetchHandler: (target) => {
+        if (!String(target).includes('/resolve?')) return undefined;
+        const query = new URL(target, 'http://localhost').searchParams.get('q');
+        let resolveJson;
+        const json = new Promise((resolve) => { resolveJson = resolve; });
+        pendingResponses.set(query, resolveJson);
+        return { status: 200, json: () => json };
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const searchInput = document.getElementById('search-input');
+    const searchButton = document.getElementById('search-btn');
+    searchInput.value = 'older search';
+    searchButton.click();
+    for (let attempt = 0; attempt < 20 && !pendingResponses.has('older search'); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    searchInput.value = 'latest search';
+    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    searchButton.click();
+    for (let attempt = 0; attempt < 20 && !pendingResponses.has('latest search'); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/resolve?'))).toHaveLength(2);
+
+    pendingResponses.get('latest search')({
+      success: true,
+      song: { title: 'Newest result', artist: 'New artist', duration: 180, source: 'youtube', youtubeId: 'NEWEST123' }
+    });
+    for (let attempt = 0; attempt < 20 && !document.getElementById('search-feedback').textContent.includes('Newest result'); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const latestPreviewUrl = document.getElementById('preview-frame').src;
+    expect(document.getElementById('search-feedback').textContent).toContain('Newest result');
+    expect(latestPreviewUrl).toContain('NEWEST123');
+
+    pendingResponses.get('older search')({
+      success: true,
+      song: { title: 'Older result', artist: 'Old artist', duration: 180, source: 'youtube', youtubeId: 'OLDER123' }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('search-feedback').textContent).toContain('Newest result');
+    expect(document.getElementById('search-feedback').textContent).not.toContain('Older result');
+    expect(document.getElementById('preview-frame').src).toBe(latestPreviewUrl);
+  });
+
+  test('does not let a stale resolve failure clear a preview for newly typed text', async () => {
+    let resolveOldJson;
+    const { dom, fetchMock } = bootMusicBotUi({
+      fetchHandler: (target) => {
+        if (!String(target).includes('/resolve?')) return undefined;
+        const json = new Promise((resolve) => { resolveOldJson = resolve; });
+        return { status: 200, json: () => json };
+      }
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const searchInput = document.getElementById('search-input');
+    searchInput.value = 'older text query';
+    document.getElementById('search-btn').click();
+    for (let attempt = 0; attempt < 20 && !resolveOldJson; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    searchInput.value = 'https://www.youtube.com/watch?v=NEWID77';
+    searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    const currentPreviewUrl = document.getElementById('preview-frame').src;
+    expect(currentPreviewUrl).toContain('NEWID77');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/resolve?'))).toHaveLength(1);
+
+    resolveOldJson({ success: false, error: 'Old query no longer applies.' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('preview-frame').src).toBe(currentPreviewUrl);
+    expect(document.getElementById('search-feedback').textContent).toBe('');
+  });
+
+  test('keeps request feedback when a pending resolve completes during the request', async () => {
+    let resolvePreviewResponse;
+    const { dom } = bootMusicBotUi({
+      fetchHandler: (target) => {
+        if (!String(target).includes('/resolve?')) return undefined;
+        return { status: 200, json: () => new Promise((resolve) => { resolvePreviewResponse = resolve; }) };
+      },
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({ success: true, song: { title: 'Requested title' } })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    document.getElementById('search-input').value = 'overlapping preview and request';
+    document.getElementById('search-btn').click();
+    for (let attempt = 0; attempt < 20 && !resolvePreviewResponse; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(resolvePreviewResponse).toEqual(expect.any(Function));
+
+    document.getElementById('request-btn').click();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.getElementById('request-feedback').textContent.includes('Requested title')) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    expect(document.getElementById('request-feedback').textContent).toContain('Requested title');
+
+    resolvePreviewResponse({
+      success: true,
+      song: { title: 'Preview title', artist: 'Preview artist', duration: 120, source: 'youtube', youtubeId: 'PREVIEW123' }
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(document.getElementById('search-feedback').textContent).toContain('Preview title');
+    expect(document.getElementById('request-feedback').textContent).toContain('Requested title');
+  });
+
+  test.each(['de', 'en', 'es', 'fr'])('localizes fail-closed resolver errors in GET preview and POST request in %s', async (locale) => {
+    const catalog = productionI18n.getAllTranslations(locale);
+    const catalogs = { [locale]: catalog };
+    const failureCases = [
+      {
+        code: 'MUSIC_BOT_RATE_LIMIT_CAPACITY',
+        status: 429,
+        error: 'Too many requests. Please try again later.',
+        messageKey: 'requestRateLimited'
+      },
+      {
+        code: 'MUSIC_BOT_RATE_LIMIT_IP_UNAVAILABLE',
+        status: 503,
+        error: 'Request could not be rate limited safely.',
+        messageKey: 'requestTemporarilyUnavailable'
+      }
+    ];
+    let activeFailure = failureCases[0];
+    const { dom, fetchMock } = bootMusicBotUi({
+      translations: catalogs,
+      productionLocale: locale,
+      fetchHandler: async (target) => {
+        if (!target.includes('/resolve?')) return undefined;
+        return {
+          status: activeFailure.status,
+          json: async () => ({ success: false, code: activeFailure.code, error: activeFailure.error })
+        };
+      },
+      postHandler: (target) => target.endsWith('/request')
+        ? createJsonResponse({ success: false, code: activeFailure.code, error: activeFailure.error })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    for (const failure of failureCases) {
+      activeFailure = failure;
+      const expectedMessage = catalog.plugins['music-bot'].music_bot.ui.player[failure.messageKey];
+      const query = `fixture ${failure.code}`;
+      document.getElementById('search-input').value = query;
+      document.getElementById('search-btn').click();
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (document.getElementById('search-feedback').textContent.includes(expectedMessage)) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      const previewFeedback = document.getElementById('search-feedback').textContent;
+      expect(previewFeedback).toContain(expectedMessage);
+      expect(previewFeedback).not.toContain(failure.code);
+      expect(previewFeedback).not.toContain(failure.error);
+      expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/resolve?'))).toBe(true);
+
+      document.getElementById('musicbot-toast-container').replaceChildren();
+      document.getElementById('search-input').value = query;
+      document.getElementById('request-btn').click();
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (document.getElementById('request-feedback').textContent.includes(expectedMessage)) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+
+      const requestFeedback = document.getElementById('request-feedback').textContent;
+      const toast = document.getElementById('musicbot-toast-container').textContent;
+      expect(requestFeedback).toContain(expectedMessage);
+      expect(toast).toContain(expectedMessage);
+      expect(requestFeedback).not.toContain(failure.code);
+      expect(requestFeedback).not.toContain(failure.error);
+      expect(fetchMock.mock.calls.some(([url, options = {}]) =>
+        String(url).endsWith('/request') && options.method === 'POST'
+      )).toBe(true);
+    }
+  });
+
+  test.each(['success', 'api-error', 'rate-limit', 'network-error'])(
+    'keeps dashboard request single-flight and releases it after %s',
+    async (outcome) => {
+      let resolveFirstPost;
+      let rejectFirstPost;
+      const firstPost = new Promise((resolve, reject) => {
+        resolveFirstPost = resolve;
+        rejectFirstPost = reject;
+      });
+      let postCount = 0;
+      const responseForOutcome = () => {
+        if (outcome === 'network-error') return Promise.reject(new Error('offline'));
+        if (outcome === 'api-error') {
+          return createJsonResponse({ success: false, error: 'Request rejected by fixture.' });
+        }
+        if (outcome === 'rate-limit') {
+          return createJsonResponse({
+            success: false,
+            code: 'MUSIC_BOT_RATE_LIMITED',
+            error: 'Too many requests. Please try again after a minute.'
+          });
+        }
+        return createJsonResponse({ success: true, song: { title: 'Fixture accepted song' } });
+      };
+      const { dom, fetchMock } = bootMusicBotUi({
+        postHandler: (target) => {
+          if (!target.endsWith('/request')) return createJsonResponse({ success: true });
+          postCount += 1;
+          return postCount === 1 ? firstPost : responseForOutcome();
+        }
+      });
+      doms.push(dom);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+
+      const document = dom.window.document;
+      const requestButton = document.getElementById('request-btn');
+      document.getElementById('search-input').value = 'fixture song';
+      requestButton.click();
+
+      expect(requestButton.disabled).toBe(true);
+      expect(requestButton.getAttribute('aria-busy')).toBe('true');
+      expect(postCount).toBe(1);
+      requestButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
+      expect(postCount).toBe(1);
+      expect(fetchMock.mock.calls.filter(([url, options = {}]) =>
+        String(url).endsWith('/request') && options.method === 'POST'
+      )).toHaveLength(1);
+
+      if (outcome === 'network-error') rejectFirstPost(new Error('offline'));
+      else resolveFirstPost(responseForOutcome());
+
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        if (!requestButton.disabled && requestButton.getAttribute('aria-busy') === null) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(requestButton.disabled).toBe(false);
+      expect(requestButton.getAttribute('aria-busy')).toBeNull();
+
+      requestButton.click();
+      expect(postCount).toBe(2);
+      for (let attempt = 0; attempt < 30; attempt += 1) {
+        if (!requestButton.disabled && requestButton.getAttribute('aria-busy') === null) break;
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+      expect(requestButton.disabled).toBe(false);
+      expect(requestButton.getAttribute('aria-busy')).toBeNull();
+      expect(fetchMock.mock.calls.filter(([url, options = {}]) =>
+        String(url).endsWith('/request') && options.method === 'POST'
+      )).toHaveLength(2);
+    }
+  );
+
   test('emits semantic setup issue and MPV status codes instead of German UI text', () => {
     const { plugin } = createPluginWithQueue([]);
     plugin._ytdlpAvailable = false;
@@ -1916,11 +2511,16 @@ describe('Music Bot runtime and UI regressions', () => {
     socketHandlers['musicbot:playback-sync']({ playbackId: 'p1', position: 20, duration: 120, state: 'playing' });
     const seek = dom.window.document.getElementById('np-seek-input');
     seek.value = '55';
+    seek.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(seek.getAttribute('aria-valuetext')).toContain('0:55');
     seek.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(seek.value).toBe('20');
     expect(dom.window.document.getElementById('musicbot-toast-container').textContent).toContain('Cannot seek now');
-    expect(fetchMock.mock.calls.filter(([url, options]) => String(url).endsWith('/seek') && options?.method === 'POST')).toHaveLength(1);
+    const seekRequests = fetchMock.mock.calls.filter(([url, options]) => String(url).endsWith('/seek') && options?.method === 'POST');
+    expect(seekRequests).toHaveLength(1);
+    expect(seekRequests[0][0]).toBe('/api/plugins/music-bot/seek');
+    expect(JSON.parse(seekRequests[0][1].body)).toEqual({ playbackId: 'p1', positionSeconds: 55 });
   });
 
   test('minimal overlay ignores a stale playback sync from a different title', () => {
@@ -2044,7 +2644,7 @@ describe('Music Bot runtime and UI regressions', () => {
     const { plugin } = createPluginWithQueue([]);
     plugin.queueManager = {
       clear: jest.fn(),
-      persistQueue: jest.fn()
+      persistQueue: jest.fn(() => ({ success: true, blocked: false, count: 0 }))
     };
     plugin.playbackEngine = { shutdown: jest.fn(async () => {}) };
 
@@ -2505,21 +3105,106 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(queueInfoRule?.[1]).not.toMatch(/cursor:\s*pointer/);
   });
 
-  test('updates the visible player state after a successful pause action', async () => {
-    const { dom } = bootMusicBotUi({
-      postHandler: () => createJsonResponse({ success: true })
+  test('posts pause then resume from real player clicks and renders the resumed track state', async () => {
+    const postCalls = [];
+    const { dom, fetchMock } = bootMusicBotUi({
+      postHandler: (target, options) => {
+        postCalls.push([target, options]);
+        if (target.endsWith('/resume')) {
+          return createJsonResponse({
+            success: true,
+            resumed: true,
+            track: {
+              id: 'resume-track',
+              playbackId: 'resume-playback',
+              title: 'DOM resumed track',
+              artist: 'Fixture artist',
+              duration: 120,
+              state: 'playing'
+            }
+          });
+        }
+        return createJsonResponse({ success: true });
+      }
     });
     doms.push(dom);
-    const pauseButton = dom.window.document.getElementById('pause-btn');
-    const state = dom.window.document.getElementById('playback-state');
-
     await new Promise((resolve) => setTimeout(resolve, 0));
-    pauseButton.dispatchEvent(new dom.window.Event('click', { bubbles: true }));
-    await Promise.resolve();
-    await Promise.resolve();
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    const document = dom.window.document;
+    const state = document.getElementById('playback-state');
 
+    document.getElementById('pause-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(state.textContent).toBe('Pausiert');
+
+    document.getElementById('resume-btn').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(postCalls.map(([target]) => target)).toEqual([
+      '/api/plugins/music-bot/pause',
+      '/api/plugins/music-bot/resume'
+    ]);
+    expect(postCalls.map(([, options]) => ({ method: options.method, body: options.body }))).toEqual([
+      { method: 'POST', body: undefined },
+      { method: 'POST', body: undefined }
+    ]);
+    expect(fetchMock.mock.calls.filter(([, options = {}]) => options.method === 'POST')).toHaveLength(2);
+    expect(state.textContent).toBe('Wiedergabe');
+    expect(document.getElementById('now-playing').textContent).toContain('DOM resumed track');
+    expect(document.getElementById('musicbot-toast-container').textContent).toContain('Wiedergabe fortgesetzt');
+  });
+
+  test.each([
+    ['pause', 'pause-btn', 'Pause', 'Pause fixture rejected'],
+    ['resume', 'resume-btn', 'Fortsetzen', 'Resume fixture rejected']
+  ])('shows visible %s failure feedback for a rejected player action', async (endpoint, buttonId, title, error) => {
+    const { dom, fetchMock } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith(`/${endpoint}`)
+        ? createJsonResponse({ success: false, error })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    dom.window.document.getElementById(buttonId).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const actionRequest = fetchMock.mock.calls.find(([url, options = {}]) =>
+      String(url).endsWith(`/${endpoint}`) && options.method === 'POST'
+    );
+    expect(actionRequest?.[0]).toBe(`/api/plugins/music-bot/${endpoint}`);
+    expect(actionRequest?.[1].body).toBeUndefined();
+    const toast = dom.window.document.querySelector('#musicbot-toast-container .musicbot-toast');
+    expect(toast?.textContent).toContain(title);
+    expect(toast?.textContent).toContain(error);
+  });
+
+  test('sends the selected seek position and displays the server-confirmed playback position', async () => {
+    const { dom, fetchMock, socketHandlers } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/seek')
+        ? createJsonResponse({ success: true, playbackId: 'p1', position: 55, duration: 120 })
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    socketHandlers['musicbot:now-playing']({ id: 'track', playbackId: 'p1', title: 'Seekable', duration: 120, startedAt: Date.now(), state: 'playing', seekable: true });
+    socketHandlers['musicbot:runtime']({ activePlaybackId: 'p1', transportState: 'playing', safetyLock: false });
+    socketHandlers['musicbot:playback-sync']({ playbackId: 'p1', position: 20, duration: 120, state: 'playing' });
+
+    const document = dom.window.document;
+    const seek = document.getElementById('np-seek-input');
+    seek.value = '55';
+    seek.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(seek.getAttribute('aria-valuetext')).toContain('0:55');
+    seek.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const seekRequests = fetchMock.mock.calls.filter(([url, options]) => String(url).endsWith('/seek') && options?.method === 'POST');
+    expect(seekRequests).toHaveLength(1);
+    expect(seekRequests[0][0]).toBe('/api/plugins/music-bot/seek');
+    expect(JSON.parse(seekRequests[0][1].body)).toEqual({ playbackId: 'p1', positionSeconds: 55 });
+    expect(seek.value).toBe('55');
+    expect(seek.getAttribute('aria-valuetext')).toContain('0:55');
+    expect(document.getElementById('playback-state').textContent).toBe('Wiedergabe');
   });
 
   test('identifies both songs when moving a queue item', async () => {
@@ -2585,6 +3270,54 @@ describe('Music Bot runtime and UI regressions', () => {
     searchInput.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
     expect(previewFrame.src).toContain('controls=0');
     expect(previewFrame.src).toContain('enablejsapi=1');
+  });
+
+  test.each([
+    ['master-volume-input', 'master-volume-value', 'masterVolume', 'Master-Lautstärke'],
+    ['volume-input', 'volume-value', 'sourceVolume', 'Quell-Lautstärke']
+  ])('persists user changes from %s and shows a rejected-save toast', async (inputId, valueId, payloadKey, toastTitle) => {
+    let volumeResponse = { success: true };
+    const { dom, fetchMock } = bootMusicBotUi({
+      postHandler: (target) => target.endsWith('/volume')
+        ? createJsonResponse(volumeResponse)
+        : createJsonResponse({ success: true })
+    });
+    doms.push(dom);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+
+    const document = dom.window.document;
+    const slider = document.getElementById(inputId);
+    const valueLabel = document.getElementById(valueId);
+    slider.value = '37';
+    slider.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+
+    expect(valueLabel.textContent).toBe('37');
+    expect(fetchMock.mock.calls.some(([url, options = {}]) =>
+      url === '/api/plugins/music-bot/volume' && options.method === 'POST'
+    )).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 225));
+
+    let volumePosts = fetchMock.mock.calls.filter(([url, options = {}]) =>
+      url === '/api/plugins/music-bot/volume' && options.method === 'POST'
+    );
+    expect(volumePosts).toHaveLength(1);
+    expect(JSON.parse(volumePosts[0][1].body)).toEqual({ [payloadKey]: 37 });
+
+    volumeResponse = { success: false, error: 'Volume fixture rejected' };
+    slider.value = '42';
+    slider.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    expect(valueLabel.textContent).toBe('42');
+    await new Promise((resolve) => setTimeout(resolve, 225));
+
+    volumePosts = fetchMock.mock.calls.filter(([url, options = {}]) =>
+      url === '/api/plugins/music-bot/volume' && options.method === 'POST'
+    );
+    expect(volumePosts).toHaveLength(2);
+    expect(JSON.parse(volumePosts[1][1].body)).toEqual({ [payloadKey]: 42 });
+    const toast = document.querySelector('#musicbot-toast-container .musicbot-toast');
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toContain(toastTitle);
+    expect(toast.textContent).toContain('Volume fixture rejected');
   });
 
   test('curates only the Streamer Playlist from the player and renders five projected DJ titles', async () => {
@@ -2821,7 +3554,7 @@ describe('Music Bot runtime and UI regressions', () => {
     expect(candidates[0]).toBe('C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe');
   });
 
-  windowsTest('uses mpvio.install for the Chocolatey mpv installer command', async () => {
+  windowsTest('does not elevate a discoverable Chocolatey executable', async () => {
     const { plugin } = createPluginWithQueue([]);
     plugin._resolveExecutable = jest.fn(async (name) => {
       if (name === 'winget' || name === 'scoop') return null;
@@ -2831,11 +3564,11 @@ describe('Music Bot runtime and UI regressions', () => {
 
     const installCommand = await plugin._getMpvInstallCommand();
 
-    expect(installCommand?.label).toBe('choco install mpvio.install (Administrator)');
-    expect(installCommand?.args.join(' ')).toContain('mpvio.install');
+    expect(installCommand).toBeNull();
+    expect(plugin._resolveExecutable).not.toHaveBeenCalledWith('choco');
   });
 
-  windowsTest('keeps the elevated installer window open for mpv install logs', async () => {
+  windowsTest('reports manual setup when Chocolatey is the only installer candidate', async () => {
     const { plugin } = createPluginWithQueue([]);
     plugin._resolveExecutable = jest.fn(async (name) => {
       if (name === 'winget' || name === 'scoop') return null;
@@ -2843,12 +3576,109 @@ describe('Music Bot runtime and UI regressions', () => {
       return null;
     });
 
-    const installCommand = await plugin._getMpvInstallCommand();
-    const commandText = installCommand?.args.join(' ');
+    const status = await plugin._startMpvInstall();
 
-    expect(commandText).toContain('cmd.exe');
-    expect(commandText).toContain('timeout /t 30');
-    expect(installCommand?.windowsHide).toBe(true);
+    expect(status).toEqual(expect.objectContaining({
+      state: 'unavailable',
+      messageKey: 'mpvPackageManagerUnavailable',
+      command: null
+    }));
+    expect(plugin._mpvInstallChild).toBeNull();
+    expect(plugin._resolveExecutable).not.toHaveBeenCalledWith('choco');
+  });
+
+  test('keeps manual mpv setup visible and re-enables install after automatic methods are unavailable', async () => {
+    const idleStatus = { state: 'idle', messageKey: 'mpvInstallIdle' };
+    const unavailableStatus = { state: 'unavailable', messageKey: 'mpvPackageManagerUnavailable', command: null };
+    const makeMpvIssue = (installStatus) => ({
+      id: 'mpv-missing',
+      severity: 'error',
+      titleKey: 'setupMpvMissingTitle',
+      descriptionKey: 'setupMpvMissingDescription',
+      oneClickInstall: true,
+      installAction: 'mpv',
+      installButtonKey: 'installMpv',
+      installInstructionKeys: ['setupMpvInstallWindows', 'setupMpvConfigurePath'],
+      installStatus
+    });
+    const { dom, fetchMock } = bootMusicBotUi({
+      translations: productionCatalogs,
+      productionLocale: 'en',
+      setupIssues: [makeMpvIssue(idleStatus)],
+      postHandler: async (target) => {
+        if (target !== '/api/plugins/music-bot/install/mpv') return createJsonResponse({ success: true });
+        return createJsonResponse({
+          success: false,
+          pending: false,
+          mpvAvailable: false,
+          installStatus: unavailableStatus,
+          issues: [makeMpvIssue(unavailableStatus)]
+        });
+      }
+    });
+    doms.push(dom);
+
+    const document = dom.window.document;
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (document.querySelector('[data-setup-action="install-mpv"]')) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const manualInstallUrl = 'https://mpv.io/installation/';
+    const initialButton = document.querySelector('[data-setup-action="install-mpv"]');
+    expect(document.getElementById('setup-issues-list').textContent).toContain(manualInstallUrl);
+    const manualInstallLink = document.querySelector('#setup-issues-list a[href="https://mpv.io/installation/"]');
+    expect(manualInstallLink).not.toBeNull();
+    expect(manualInstallLink.target).toBe('_blank');
+    expect(manualInstallLink.rel).toBe('noopener noreferrer');
+    expect(manualInstallLink.getAttribute('referrerpolicy')).toBe('no-referrer');
+    expect(initialButton).not.toBeNull();
+    expect(initialButton.disabled).toBe(false);
+
+    initialButton.click();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const installPost = fetchMock.mock.calls.find(([url, options = {}]) =>
+        url === '/api/plugins/music-bot/install/mpv' && options.method === 'POST'
+      );
+      if (installPost && document.getElementById('setup-issues-list').textContent.includes('No supported automatic install method')) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    const setupText = document.getElementById('setup-issues-list').textContent;
+    const installPost = fetchMock.mock.calls.find(([url, options = {}]) =>
+      url === '/api/plugins/music-bot/install/mpv' && options.method === 'POST'
+    );
+    const buttonAfterUnavailable = document.querySelector('[data-setup-action="install-mpv"]');
+    expect(installPost).toBeTruthy();
+    expect(setupText).toContain('No supported automatic install method');
+    expect(setupText).toContain(manualInstallUrl);
+    expect(setupText).toContain('Settings > Playback');
+    expect(buttonAfterUnavailable).not.toBeNull();
+    expect(buttonAfterUnavailable.disabled).toBe(false);
+  });
+
+  test('escapes setup instruction HTML and only links the fixed HTTPS MPV documentation URL', async () => {
+    const hostileInstruction = '</code><img src=x onerror=alert(1)> https://evil.example/path';
+    const { dom } = bootMusicBotUi({
+      setupIssues: [{
+        id: 'mpv-missing',
+        severity: 'error',
+        title: 'MPV setup',
+        description: 'Manual setup',
+        installInstructions: [hostileInstruction]
+      }]
+    });
+    doms.push(dom);
+
+    const list = dom.window.document.getElementById('setup-issues-list');
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      if (list.textContent.includes('evil.example')) break;
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+
+    expect(list.querySelector('img')).toBeNull();
+    expect(list.querySelector('a')).toBeNull();
+    expect(list.innerHTML).toContain('&lt;img src=x onerror=alert(1)&gt;');
   });
 
   test('UI shows the first-run assistant until the setup is completed', async () => {

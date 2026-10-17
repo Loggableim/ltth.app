@@ -1,10 +1,14 @@
 'use strict';
 
+const { unloadPluginsForShutdown } = require('./plugin-shutdown');
+
 function createServerRestartCoordinator({
   stableLifecycle,
+  pluginLoader,
   io,
   db,
   server,
+  onRestartAborted,
   logger = console,
   processExit = code => process.exit(code),
   timers = {
@@ -13,6 +17,8 @@ function createServerRestartCoordinator({
   },
   delayMs = 250,
   stableShutdownTimeoutMs = 2000,
+  pluginShutdownTimeoutMs = 1500,
+  databaseFlushTimeoutMs = 2000,
   forceExitTimeoutMs = 3000
 } = {}) {
   if (!stableLifecycle ||
@@ -32,8 +38,15 @@ function createServerRestartCoordinator({
   if (!server || typeof server.close !== 'function') {
     throw new TypeError('An HTTP server is required');
   }
+  if (!pluginLoader || !(pluginLoader.plugins instanceof Map) ||
+      typeof pluginLoader.unloadPlugin !== 'function') {
+    throw new TypeError('A plugin loader is required');
+  }
   if (typeof processExit !== 'function') {
     throw new TypeError('A process exit function is required');
+  }
+  if (onRestartAborted !== undefined && typeof onRestartAborted !== 'function') {
+    throw new TypeError('onRestartAborted must be a function');
   }
   if (!timers ||
       typeof timers.setTimeout !== 'function' ||
@@ -43,11 +56,16 @@ function createServerRestartCoordinator({
   for (const [name, value] of [
     ['delayMs', delayMs],
     ['stableShutdownTimeoutMs', stableShutdownTimeoutMs],
+    ['pluginShutdownTimeoutMs', pluginShutdownTimeoutMs],
+    ['databaseFlushTimeoutMs', databaseFlushTimeoutMs],
     ['forceExitTimeoutMs', forceExitTimeoutMs]
   ]) {
     if (!Number.isSafeInteger(value) || value < 1) {
       throw new TypeError(`${name} must be a positive safe integer`);
     }
+  }
+  if (forceExitTimeoutMs <= databaseFlushTimeoutMs) {
+    throw new TypeError('forceExitTimeoutMs must exceed databaseFlushTimeoutMs');
   }
 
   let scheduled = false;
@@ -89,20 +107,72 @@ function createServerRestartCoordinator({
     }
   }
 
+  function abortRestart(reason, stage, error, forceTimer) {
+    if (forceTimer) timers.clearTimeout(forceTimer);
+    if (['plugin cleanup', 'database-event-flush', 'database-close'].includes(stage)) scheduled = false;
+    const errorName = typeof error?.name === 'string' && /^[A-Za-z][A-Za-z0-9]{0,39}$/.test(error.name)
+      ? error.name
+      : 'Error';
+    const errorCode = typeof error?.code === 'string' && /^[A-Z0-9_-]{1,40}$/.test(error.code)
+      ? error.code
+      : null;
+    const message = `Server restart aborted because ${stage} failed; HTTP server remains open.`;
+    logger.error?.(message);
+    try {
+      onRestartAborted?.({
+        reason,
+        message,
+        stage,
+        error: { name: errorName, code: errorCode }
+      });
+    } catch (notifyError) {
+      logger.warn?.('Restart abort notification failed.');
+    }
+  }
+
   async function restart(reason) {
     logger.info?.(`Server restart starting (${reason})`);
+    await boundedStableShutdown();
+
+    const pluginShutdown = await unloadPluginsForShutdown({
+      pluginLoader,
+      timeoutMs: pluginShutdownTimeoutMs,
+      logger,
+      setTimeoutImpl: timers.setTimeout,
+      clearTimeoutImpl: timers.clearTimeout
+    });
+    if (!pluginShutdown.success) {
+      abortRestart(reason, 'plugin cleanup', new Error('cleanup failed'));
+      return;
+    }
+
     const forceTimer = timers.setTimeout(() => {
       logger.warn?.('Force exiting with restart code 75.');
       processExit(75);
     }, forceExitTimeoutMs);
     unref(forceTimer);
 
-    await boundedStableShutdown();
-
     try {
-      db.flushEventBatch();
+      let timeoutHandle;
+      const timeout = new Promise((_, reject) => {
+        timeoutHandle = timers.setTimeout(() => {
+          const error = new Error('database event flush timed out');
+          error.code = 'DATABASE_FLUSH_TIMEOUT';
+          reject(error);
+        }, databaseFlushTimeoutMs);
+        unref(timeoutHandle);
+      });
+      try {
+        await Promise.race([
+          Promise.resolve().then(() => db.flushEventBatch()),
+          timeout
+        ]);
+      } finally {
+        timers.clearTimeout(timeoutHandle);
+      }
     } catch (error) {
-      debugFailure('flushEventBatch', error);
+      abortRestart(reason, 'database-event-flush', error, forceTimer);
+      return;
     }
     try {
       io.emit('server:restarting', { reason });
@@ -117,19 +187,25 @@ function createServerRestartCoordinator({
     try {
       db.close();
     } catch (error) {
-      debugFailure('db.close', error);
+      abortRestart(reason, 'database-close', error, forceTimer);
+      return;
     }
 
     try {
-      server.close(() => {
+      server.close(error => {
         timers.clearTimeout(forceTimer);
+        if (error) {
+          logger.error?.(`HTTP server close failed during restart: ${error.message}`);
+          processExit(1);
+          return;
+        }
         logger.info?.('Exiting with restart code 75.');
         processExit(75);
       });
     } catch (error) {
-      debugFailure('server.close', error);
+      logger.error?.(`HTTP server close failed during restart: ${error.message}`);
       timers.clearTimeout(forceTimer);
-      processExit(75);
+      processExit(1);
     }
   }
 

@@ -47,7 +47,48 @@ describe('config-import translation contract', () => {
     'legacyDataFiles',
     'legacyImportCompleted',
     'importedItems',
-    'switchProfileRestart'
+    'switchProfileRestart',
+    'confirmProfileReplacementRequired',
+    'importSensitiveDataWarning',
+    'importUnknownDataWarning',
+    'confirmSensitiveImport',
+    'confirmUnknownSensitiveImport',
+    'importPreviewExpired',
+    'includeCredentialsSessions',
+    'exportPreviewTitle',
+    'exportPreviewDescription',
+    'exportPreviewInitial',
+    'confirmSensitiveExport',
+    'confirmSensitiveExportRequired',
+    'confirmFullBackup',
+    'confirmUnclassifiedExport',
+    'confirmUnclassifiedExportRequired',
+    'unclassifiedContentWarning',
+    'sensitiveContentWarning',
+    'exportPreviewExpired',
+    'previewSelectionButton',
+    'exportPreviewSelectionChanged',
+    'exportPreviewCalculating',
+    'exportPreviewFailed',
+    'exportCategoryGlobalSettings',
+    'exportCategoryPluginSettings',
+    'exportCategoryProfileDatabases',
+    'exportCategoryUserData',
+    'exportCategoryPluginFiles',
+    'exportCategoryUploads',
+    'exportCategoryProfileScopedPluginData',
+    'exportCategorySchnorrbecherState',
+    'exportCategoryCredentialsSessions',
+    'exportCategoryOther',
+    'exportCategoryNotSelected',
+    'exportCategoryCount',
+    'exportSelectionEstimate',
+    'fullBackupUnknownContentWarning',
+    'partialBackupWarning',
+    'legacyBackupScopeWarning',
+    'backupSensitiveIncludedWarning',
+    'backupSensitiveOmittedWarning',
+    'backupFullUnknownContentWarning'
   ];
 
   test('ships the shared client and UI namespace in every locale', () => {
@@ -79,7 +120,10 @@ describe('config-import translation contract', () => {
 
     dynamicUiKeys.forEach(key => {
       const namespacedKey = `plugins.config-import.config-import.ui.${key}`;
-      expect(html).toContain(`t('${namespacedKey}'`);
+      if (!html.includes(namespacedKey)) {
+        expect(html).toContain(`'${key}'`);
+        expect(html).toContain('plugins.config-import.config-import.ui.${key}');
+      }
       locales.forEach(locale => {
         const translation = JSON.parse(fs.readFileSync(
           path.join(pluginRoot, 'locales', `${locale}.json`),

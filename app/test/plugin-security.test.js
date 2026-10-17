@@ -57,6 +57,7 @@ describe('plugin path security', () => {
     const pluginsDir = path.join(base, 'plugins');
     const pluginDir = path.join(pluginsDir, 'sample-plugin');
     fs.mkdirSync(pluginDir, { recursive: true });
+    fs.writeFileSync(path.join(pluginDir, 'plugin.json'), JSON.stringify({ id: 'sample-plugin' }));
 
     const loader = new PluginLoader(
       pluginsDir,

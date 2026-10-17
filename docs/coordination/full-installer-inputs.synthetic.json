@@ -1,0 +1,206 @@
+{
+  "name": "FULL_INSTALLER_INPUTS",
+  "schemaVersion": 1,
+  "sourceCommit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "toolchain": {
+    "nsisVersion": "synthetic-not-executed",
+    "pythonVersion": "synthetic-label",
+    "nodeVersion": "synthetic-label",
+    "windowsTarget": "synthetic-windows"
+  },
+  "closure": "declared-not-compiler-resolved",
+  "inputs": [
+    {
+      "name": "batch-script",
+      "role": "batch-script",
+      "root": "fixture",
+      "path": "batch-script.synthetic",
+      "bytes": 22,
+      "sha256": "fb1ab78fb34b174b59a22beb2cd4f9cd2c66d2e97e0c228d0970df89da962724"
+    },
+    {
+      "name": "header-bmp",
+      "role": "header-bmp",
+      "root": "fixture",
+      "path": "header-bmp.synthetic",
+      "bytes": 20,
+      "sha256": "d77e0794c3ba81aa6e75c3b65e71d911764012305776670e5037c1c5a01461d0"
+    },
+    {
+      "name": "icon",
+      "role": "icon",
+      "root": "fixture",
+      "path": "icon.synthetic",
+      "bytes": 14,
+      "sha256": "1081ea7863e4b5d732da6f09d7c599460443bc3033f7b68a7597acf690620d39"
+    },
+    {
+      "name": "launcher",
+      "role": "launcher",
+      "root": "fixture",
+      "path": "launcher.synthetic",
+      "bytes": 18,
+      "sha256": "d94f6198d9b231ccdfc2469ec8f48ea3e13890345b9bcbb83d1ec8e55dd25301"
+    },
+    {
+      "name": "launcher-html",
+      "role": "launcher-html",
+      "root": "fixture",
+      "path": "launcher-html.synthetic",
+      "bytes": 23,
+      "sha256": "e8247a1008e59f2bf387d941f489d242cc1d0b5f820c7d0df563e19de4c40f19"
+    },
+    {
+      "name": "license",
+      "role": "license",
+      "root": "fixture",
+      "path": "license.synthetic",
+      "bytes": 17,
+      "sha256": "31815dd0cc368124dbb486a8dd7c8eb30bfc0d403bd94a8ecccdb044330ecc40"
+    },
+    {
+      "name": "locale-de",
+      "role": "locale-de",
+      "root": "fixture",
+      "path": "locale-de.synthetic",
+      "bytes": 19,
+      "sha256": "a2b4235e8b77abda2fb11a10d0ac80f29995f29c8ff7df5ebdf45078cf06ab41"
+    },
+    {
+      "name": "locale-en",
+      "role": "locale-en",
+      "root": "fixture",
+      "path": "locale-en.synthetic",
+      "bytes": 19,
+      "sha256": "41ecc6a49d7ef39669a489ed330988269223a3c886ad4239393b8422d69d6e6e"
+    },
+    {
+      "name": "locale-es",
+      "role": "locale-es",
+      "root": "fixture",
+      "path": "locale-es.synthetic",
+      "bytes": 19,
+      "sha256": "1a05eb8352cdd566dabb33ef336439379de2e1c8e93d504b8df8c0583472dea2"
+    },
+    {
+      "name": "locale-fr",
+      "role": "locale-fr",
+      "root": "fixture",
+      "path": "locale-fr.synthetic",
+      "bytes": 19,
+      "sha256": "ad19da5a1255438d0d61230cdf67c946888d6b71e5e7f2d9347f2558adc1ea1d"
+    },
+    {
+      "name": "node-runtime",
+      "role": "node-runtime",
+      "root": "fixture",
+      "path": "node-runtime.synthetic",
+      "bytes": 22,
+      "sha256": "52b6f014cd8eeb85c5e5b95039c96d70cefe7176f3b24ea70475cacbb9aa9fa6"
+    },
+    {
+      "name": "nsis-script",
+      "role": "nsis-script",
+      "root": "fixture",
+      "path": "nsis-script.synthetic",
+      "bytes": 21,
+      "sha256": "2ea6a69b66acb6c90342195d1d5497b00564c0b59e127ecf817f3c86c0603f47"
+    },
+    {
+      "name": "policy",
+      "role": "policy",
+      "root": "fixture",
+      "path": "policy.synthetic",
+      "bytes": 16,
+      "sha256": "bd721ea4378c09aae4f26275894fcab8d2115da8aa85cc557a123c34e71abfde"
+    },
+    {
+      "name": "python-runtime",
+      "role": "python-runtime",
+      "root": "fixture",
+      "path": "python-runtime.synthetic",
+      "bytes": 24,
+      "sha256": "c4dc058c8d4291129be7729cdd5f1c089043dd49397f0d7fc12f51482cea0e1e"
+    },
+    {
+      "name": "runtime-builder",
+      "role": "runtime-builder",
+      "root": "fixture",
+      "path": "runtime-builder.synthetic",
+      "bytes": 25,
+      "sha256": "1ae1cc2dda4173909394547a4decd1f22c80737556fe52dde492ea6823051962"
+    },
+    {
+      "name": "sdk-compiler",
+      "role": "sdk-compiler",
+      "root": "fixture",
+      "path": "sdk-compiler.synthetic",
+      "bytes": 22,
+      "sha256": "e030440a8e602ac88cec472a6e1982871e83919616d74cafbefe044152805e0c"
+    },
+    {
+      "name": "sdk-include",
+      "role": "sdk-include",
+      "root": "fixture",
+      "path": "sdk-include.synthetic",
+      "bytes": 21,
+      "sha256": "244b8767acf71200439e7e91250d9c9bccebb3d91155756171254c9493b19a0b"
+    },
+    {
+      "name": "sdk-plugin",
+      "role": "sdk-plugin",
+      "root": "fixture",
+      "path": "sdk-plugin.synthetic",
+      "bytes": 20,
+      "sha256": "42a1476c765af7b0c685dc81544f64fa2a29b7c18eac5d320ab4c7d32c3e1d54"
+    },
+    {
+      "name": "sdk-resource",
+      "role": "sdk-resource",
+      "root": "fixture",
+      "path": "sdk-resource.synthetic",
+      "bytes": 22,
+      "sha256": "7319468d48bbcd6d339e89b880c5c9c1f684cd4785ac72540e69eb0440edc3b6"
+    },
+    {
+      "name": "sidebar-bmp",
+      "role": "sidebar-bmp",
+      "root": "fixture",
+      "path": "sidebar-bmp.synthetic",
+      "bytes": 21,
+      "sha256": "3e13c66ae225fa5555ae0b1b23fdfb830d0d630a29b9d8ee5e57483ec724c159"
+    },
+    {
+      "name": "sign-helper",
+      "role": "sign-helper",
+      "root": "fixture",
+      "path": "sign-helper.synthetic",
+      "bytes": 21,
+      "sha256": "025bef38a82faee55e37e6cfeedc7bbd540ceafc78986defbeee3f056ad6eb62"
+    },
+    {
+      "name": "sign-tool",
+      "role": "sign-tool",
+      "root": "fixture",
+      "path": "sign-tool.synthetic",
+      "bytes": 19,
+      "sha256": "bb3ee7d0cbd195cc4c73d6f7d1104f5b24c420ee73ed46686f78e01979bd101b"
+    },
+    {
+      "name": "splash-bmp",
+      "role": "splash-bmp",
+      "root": "fixture",
+      "path": "splash-bmp.synthetic",
+      "bytes": 20,
+      "sha256": "3af2862c4637aeb0f2dae5605ef9141213f757190984710ef37cd173d0720c16"
+    },
+    {
+      "name": "stage-helper",
+      "role": "stage-helper",
+      "root": "fixture",
+      "path": "stage-helper.synthetic",
+      "bytes": 22,
+      "sha256": "211a33fbf24a469eedb333166ab4a83a81a7601dad22915f53e93904a47fa113"
+    }
+  ]
+}

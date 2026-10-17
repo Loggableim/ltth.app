@@ -49,7 +49,9 @@ class MusicResolver extends EventEmitter {
     this.inFlight = new Map();
     this.nextSubscriberId = 1;
     this.destroyed = false;
+    this._destroyPromise = null;
     this.onProgress = typeof options.onProgress === 'function' ? options.onProgress : null;
+    this.ownsRunner = !options.runner;
     this.runner = options.runner || new YtDlpRunner({
       maxConcurrent: 2,
       maxQueue: 100,
@@ -150,13 +152,22 @@ class MusicResolver extends EventEmitter {
   }
 
   async destroy() {
-    if (this.destroyed) return;
+    if (this._destroyPromise) return this._destroyPromise;
     this.destroyed = true;
     this.cancelAll();
-    await this.runner.destroy?.();
-    this.cache.clear();
-    this.cacheSizeBytes = 0;
-    this.removeAllListeners();
+    const attempt = (async () => {
+      if (this.ownsRunner) await this.runner.destroy?.();
+      this.cache.clear();
+      this.cacheSizeBytes = 0;
+      this.removeAllListeners();
+    })();
+    this._destroyPromise = attempt;
+    try {
+      await attempt;
+    } catch (error) {
+      this._destroyPromise = null;
+      throw error;
+    }
   }
 
   getResolverStatus() {
@@ -235,7 +246,9 @@ class MusicResolver extends EventEmitter {
   async _resolveUncached(trimmed, signal, deadline) {
     const isUrl = /^https?:\/\//i.test(trimmed);
     if (isUrl && !this._isSupportedSourceUrl(trimmed)) {
-      throw new Error('Only YouTube and SoundCloud URLs are supported for direct song requests.');
+      const error = new Error('Only YouTube and SoundCloud URLs are supported for direct song requests.');
+      error.code = 'UNSUPPORTED_SOURCE_URL';
+      throw error;
     }
     if (isUrl && this._isYouTubePlaylistUrl(trimmed)) {
       return this._resolvePlaylistUncached(trimmed, 1, signal);
@@ -407,6 +420,7 @@ class MusicResolver extends EventEmitter {
   _selectCandidate(candidates, query) {
     const ranked = [];
     for (const data of candidates.slice(0, 5)) {
+      if (this._unplayableSourceReason(data)) continue;
       const song = this._songFromData(data, data.webpage_url || data.original_url || '');
       const duration = Number(song.duration);
       const maxDuration = Number(this.config.maxDurationSeconds || this.config.maxSongDuration || Infinity);
@@ -420,6 +434,19 @@ class MusicResolver extends EventEmitter {
     }
     ranked.sort((a, b) => b.score - a.score);
     return ranked[0]?.song || null;
+  }
+
+  _unplayableSourceReason(data = {}) {
+    const isAffirmative = (value) => value === true || value === 1 ||
+      ['true', '1', 'yes'].includes(String(value ?? '').trim().toLowerCase());
+    const liveStatus = String(data.live_status ?? '').trim().toLowerCase();
+    if (isAffirmative(data.is_live) || isAffirmative(data.was_live) ||
+        (liveStatus !== '' && liveStatus !== 'not_live')) {
+      return 'live_stream_unsupported';
+    }
+    const duration = data.duration == null ? NaN : Number(data.duration);
+    if (!Number.isFinite(duration) || duration <= 0) return 'unknown_duration';
+    return null;
   }
 
   _hasPlayableLocator(song) {
@@ -448,6 +475,16 @@ class MusicResolver extends EventEmitter {
 
   _createSongResponse(output, fallbackUrl, isUrl) {
     const { data, meta } = this._parseYtDlpOutput(output);
+    const unplayableReason = this._unplayableSourceReason(data);
+    if (unplayableReason) {
+      return {
+        success: false,
+        reason: unplayableReason,
+        message: unplayableReason === 'live_stream_unsupported'
+          ? 'Live streams are not supported by the music player'
+          : 'A finite track duration is required for playback'
+      };
+    }
     const song = this._songFromData(data, fallbackUrl, meta, isUrl);
     const moderationResult = this._applyModeration(song);
     return moderationResult || { success: true, song };

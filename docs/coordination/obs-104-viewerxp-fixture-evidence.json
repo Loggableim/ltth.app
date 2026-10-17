@@ -1,0 +1,363 @@
+{
+  "schemaVersion": 1,
+  "status": "source-hash-bound-cpu-and-loopback-browser-fixture-run",
+  "manifest": {
+    "path": "docs/coordination/obs-104-viewerxp-fixture.json",
+    "sha256": "22de64e5276863e072cdf931602c47c74186ac6494f20e15d85d5e0fa610d218",
+    "files": 10,
+    "localeFiles": 4,
+    "bytes": 503763
+  },
+  "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath plugins\\milestone-leaderboard\\vendor\\viewer-leaderboard\\test\\obs-viewerxp-fixtures.test.js",
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 23,
+    "testsFailed": 0,
+    "snapshots": 0,
+    "recordedAt": "2026-10-07T08:03:19.020Z"
+  },
+  "coverage": {
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "actualOriginalConsumerLocaleProof": {
+      "kind": "parameterized-original-consumer-bfcache-tests",
+      "suitePath": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js",
+      "suiteResult": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 23,
+        "testsFailed": 0,
+        "sourceWitnessPath": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js"
+      },
+      "testGranularity": "One parameterized Jest case per locale exercises all three original Viewer-XP consumers: xp-bar, leaderboard, and level-up.",
+      "perLocaleTests": [
+        {
+          "locale": "de",
+          "testName": "real i18n de: all Viewer-XP renderers survive BFCache restore and clean up on final pagehide"
+        },
+        {
+          "locale": "en",
+          "testName": "real i18n en: all Viewer-XP renderers survive BFCache restore and clean up on final pagehide"
+        },
+        {
+          "locale": "es",
+          "testName": "real i18n es: all Viewer-XP renderers survive BFCache restore and clean up on final pagehide"
+        },
+        {
+          "locale": "fr",
+          "testName": "real i18n fr: all Viewer-XP renderers survive BFCache restore and clean up on final pagehide"
+        }
+      ],
+      "assertedBehavior": "Each locale case selects and requests that locale through the actual shared i18n client; across the three original renderers it dispatches persisted pagehide/pageshow, verifies the localized display and synthetic user/XP/level values after restore, then verifies final pagehide cleanup and ignores late socket payloads."
+    }
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js",
+      "sha256": "1082835e3124707690adf3eeda940e602a5981afbf62333757da2490ee2377d7"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js",
+      "sha256": "4a3e1edeb5568232322e08304a7cb1340d6e0aad02be567114dd1f9c83b84148"
+    },
+    {
+      "path": "app/modules/public-overlay-registry.js",
+      "sha256": "70d3c6f123f237f70285027ca56f6ed27480325285ed7059f494a082236c894c"
+    },
+    {
+      "path": "scripts/obs-pilot/host-viewerxp-fixture.js",
+      "sha256": "8fda2ce8980140d01846c556dec9dcd90b9232ab0a8610f7152b7efc0ae8f24e"
+    },
+    {
+      "path": "scripts/obs-pilot/run-viewerxp-browser-proof.js",
+      "sha256": "99b8e4e00de647e31e137dceceb2a69623b217674feef842f06a95f30b370d10"
+    },
+    {
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+    }
+  ],
+  "transport": {
+    "origin": "synthetic JSDOM URL only",
+    "requestHandling": "fixed local locale catalogs through injected fetch; no TCP listener",
+    "socketHandling": "in-memory socket double; production Socket.IO browser bundle is hash-pinned but not executed",
+    "pluginHandler": "actual ViewerXPPlugin prototype handlers invoked with synthetic DB and Socket.IO doubles"
+  },
+  "evidence": {
+    "surface": "all three canonical Viewer-XP renderer entries: xp-bar, leaderboard and level-up",
+    "privacy": "actual handler projection excludes user IDs, coin balance, raw settings and profile image URL",
+    "untrustedText": "leaderboard username/title markup remains text; invalid name-color styling does not become CSS",
+    "locales": "actual shared i18n client selects de/en/es/fr catalogs; in all three original entries an inbound synthetic server locale-changed event switches de to fr and updates visible labels while preserving synthetic usernames, XP and level values",
+    "lifecycle": "all three renderers preserve active handlers through persisted pagehide/pageshow, publish their local socket only when window.socket is empty, preserve foreign socket ownership, remove only their own global reference on final non-persisted pagehide, and disconnect/ignore late callbacks",
+    "manifestClosure": "10 pinned files: six renderer/shared sources and four locale catalogs; external network, listeners, live plugin runtime and database are excluded"
+  },
+  "browserProof": {
+    "status": "passed",
+    "command": "..\\runtime\\node\\node.exe scripts\\obs-pilot\\run-viewerxp-browser-proof.js",
+    "runRecord": {
+      "path": "output/playwright/viewerxp/run.json",
+      "sha256": "f620bce3c43ccef719f421cb50460ab659c65ec24c90d36dd067bfb38246c689"
+    },
+    "persistentReceipt": {
+      "path": "docs/coordination/evidence/viewerxp-browser-20261007.json",
+      "sha256": "f620bce3c43ccef719f421cb50460ab659c65ec24c90d36dd067bfb38246c689"
+    },
+    "fixtureHost": {
+      "path": "scripts/obs-pilot/host-viewerxp-fixture.js",
+      "sha256": "8fda2ce8980140d01846c556dec9dcd90b9232ab0a8610f7152b7efc0ae8f24e",
+      "hostUid": "5c03e8a6-27b7-4b40-b8a4-d403f655a8ae",
+      "origin": "http://127.0.0.1:64939",
+      "scope": "temporary loopback-only host; exact original renderer/shared scripts/locale sources; no app server, DB, user data, external network, or OBS"
+    },
+    "runner": {
+      "path": "scripts/obs-pilot/run-viewerxp-browser-proof.js",
+      "sha256": "99b8e4e00de647e31e137dceceb2a69623b217674feef842f06a95f30b370d10"
+    },
+    "browser": {
+      "engine": "Chromium",
+      "version": "145.0.7632.6",
+      "playwrightVersion": "1.58.1",
+      "viewport": "1280x800"
+    },
+    "eventFlow": "For each original entry, actual local Socket.IO server emits a synthetic viewer profile/leaderboard/level-up payload in de, then server-origin locale-changed(fr); URL remains byte-for-byte unchanged and the visible localized label changes while synthetic names and XP/level numbers remain stable.",
+    "captures": [
+      {
+        "page": "xp-bar",
+        "urlUnchanged": true,
+        "de": {
+          "name": "Fixture Viewer",
+          "label": "Stufe 7",
+          "xp": "11 / 40 XP",
+          "visible": true
+        },
+        "fr": {
+          "name": "Fixture Viewer",
+          "label": "Niveau 7",
+          "xp": "11 / 40 XP",
+          "visible": true
+        },
+        "screenshots": [
+          {
+            "path": "output/playwright/viewerxp/xp-bar-de.png",
+            "bytes": 25136,
+            "sha256": "f857f9e4c781b2e8babbd3804c64fe1412771889cea0f175a09d087f8c53ad6c"
+          },
+          {
+            "path": "output/playwright/viewerxp/xp-bar-fr.png",
+            "bytes": 25773,
+            "sha256": "de6cf30b9d297be35448fb2683e90c8481b7e627a93f123b966c1c08e34dd728"
+          }
+        ]
+      },
+      {
+        "page": "leaderboard",
+        "urlUnchanged": true,
+        "de": {
+          "name": "Fixture Viewer",
+          "label": "Stufe 7",
+          "xp": "321 XP",
+          "heading": "🏆 Top-Zuschauer 🏆",
+          "visible": true
+        },
+        "fr": {
+          "name": "Fixture Viewer",
+          "label": "Niveau 7",
+          "xp": "321 XP",
+          "heading": "🏆 Meilleurs téléspectateurs 🏆",
+          "visible": true
+        },
+        "screenshots": [
+          {
+            "path": "output/playwright/viewerxp/leaderboard-de.png",
+            "bytes": 228077,
+            "sha256": "a98e5cef17b988747c041886cae6e9e11e0a06c073f7bf8b31d1efe6e98fcee9"
+          },
+          {
+            "path": "output/playwright/viewerxp/leaderboard-fr.png",
+            "bytes": 232983,
+            "sha256": "623e385c48fac9e6030ed2ee34210936ef7c5645d6e272d6072babf25060a161"
+          }
+        ]
+      },
+      {
+        "page": "level-up",
+        "urlUnchanged": true,
+        "de": {
+          "name": "Fixture Viewer",
+          "label": "Level aufsteigen!",
+          "oldLevel": "7",
+          "newLevel": "8",
+          "visible": true
+        },
+        "fr": {
+          "name": "Fixture Viewer",
+          "label": "NIVEAU SUPÉRIEUR !",
+          "oldLevel": "7",
+          "newLevel": "8",
+          "visible": true
+        },
+        "screenshots": [
+          {
+            "path": "output/playwright/viewerxp/level-up-de.png",
+            "bytes": 315287,
+            "sha256": "d150c460900ff937e6d153fb40c3997b983d5e420862572a203304d9915050da"
+          },
+          {
+            "path": "output/playwright/viewerxp/level-up-fr.png",
+            "bytes": 326541,
+            "sha256": "d241668fda2d2a99a352ba7b4e109bbe87021d4bd509b14413d8c5684c221170"
+          }
+        ]
+      }
+    ],
+    "sourcePinsStableDuringCapture": true,
+    "servedRendererSources": [
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html",
+        "bytes": 10941,
+        "sha256": "8d3e7e069deb33c5e9deb0b342f9532e97f5213914545674ad1f967bbd635fd0"
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+        "bytes": 16188,
+        "sha256": "9be6582355a571a7b10038ad7aaa5295f2939e4f36932647682223bc2fb1c927"
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html",
+        "bytes": 15985,
+        "sha256": "ac70fe8cdb1e77a6ea1178d7da6672d154650d19b77314e8c635deadb3923e05"
+      }
+    ],
+    "fixturePreClose": {
+      "entries": 3,
+      "connections": 3,
+      "eventsEmitted": 6,
+      "localeChanges": [
+        "fr",
+        "fr",
+        "fr"
+      ],
+      "requestDenials": 0,
+      "clients": 0,
+      "closed": false
+    },
+    "fixtureShutdown": {
+      "closeResponseClosed": true,
+      "clients": 0,
+      "processExitCode": 0,
+      "processSignal": null,
+      "stderr": "",
+      "processRunningAfterCapture": false
+    },
+    "browserErrors": 0,
+    "requestFailures": 0,
+    "sourcePins": {
+      "xp-bar.html": "8d3e7e069deb33c5e9deb0b342f9532e97f5213914545674ad1f967bbd635fd0",
+      "leaderboard.html": "9be6582355a571a7b10038ad7aaa5295f2939e4f36932647682223bc2fb1c927",
+      "level-up.html": "ac70fe8cdb1e77a6ea1178d7da6672d154650d19b77314e8c635deadb3923e05",
+      "i18n-client.js": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "viewer-xp-i18n.js": "a9a629c05d74e249ba690a9df59712c56436081633bb5c676e46525770189205",
+      "socket.io.js": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "de.json": "e25cc1a58a5ed2c29e67c0edc1c48c518a55fc64d04cf689dc23236e6f277f33",
+      "fr.json": "a37969b2a4493879956a7feac0f771fd034106df7f8cb2b40b49c6fc310438ad"
+    }
+  },
+  "notProven": [
+    "production LTTH server/Socket.IO transport, plugin runtime or database integration",
+    "OBS Browser Source output or all 104 OBS matrix cases",
+    "GPU, audio, profile image loading or shared /api/i18n/locales behavior"
+  ],
+  "history": [
+    {
+      "kind": "previous-source-witnesses-before-public-overlay-hardening",
+      "recordedAt": "2026-10-07",
+      "note": "Prior focused renderer result retained; current registry/projector witnesses refreshed after owner-frozen privacy changes and focused regressions passed.",
+      "sourceWitnesses": [
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "sha256": "ce94de179543bc839b61bd91abb1b914ad1382a5f6274a0e97d24af3a82c2ef5"
+        }
+      ]
+    },
+    {
+      "kind": "previous-cpu-closure-before-active-reward-localization",
+      "recordedAt": "2026-10-07T08:03:19.008Z",
+      "manifest": {
+        "path": "docs/coordination/obs-104-viewerxp-fixture.json",
+        "sha256": "53dbddf2c71166237767703cdd77505baecdf138415a3218b13786b8d68b919a",
+        "files": 10,
+        "localeFiles": 4,
+        "bytes": 503387
+      },
+      "result": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 22,
+        "testsFailed": 0,
+        "snapshots": 0,
+        "recordedAt": "2026-10-07"
+      },
+      "suiteResult": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 22,
+        "testsFailed": 0,
+        "sourceWitnessPath": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js"
+      },
+      "sourceWitnesses": [
+        {
+          "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js",
+          "sha256": "6dbcddf0ee7a6568267da4c54b9dfc39dca62bb949d57b20d59c247c67697141"
+        },
+        {
+          "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js",
+          "sha256": "4a3e1edeb5568232322e08304a7cb1340d6e0aad02be567114dd1f9c83b84148"
+        },
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "sha256": "70d3c6f123f237f70285027ca56f6ed27480325285ed7059f494a082236c894c"
+        },
+        {
+          "path": "scripts/obs-pilot/host-viewerxp-fixture.js",
+          "sha256": "8fda2ce8980140d01846c556dec9dcd90b9232ab0a8610f7152b7efc0ae8f24e"
+        },
+        {
+          "path": "scripts/obs-pilot/run-viewerxp-browser-proof.js",
+          "sha256": "99b8e4e00de647e31e137dceceb2a69623b217674feef842f06a95f30b370d10"
+        },
+        {
+          "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+          "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+        }
+      ],
+      "rendererPin": {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html",
+        "role": "renderer-entry",
+        "bytes": 15985,
+        "sha256": "ac70fe8cdb1e77a6ea1178d7da6672d154650d19b77314e8c635deadb3923e05"
+      },
+      "note": "Historical loopback browserProof remains unchanged and is bound to the previous level-up HTML; it is not a current source acceptance."
+    }
+  ],
+  "currentCpuReview": {
+    "recordedAt": "2026-10-07T08:03:19.020Z",
+    "command": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath plugins\\milestone-leaderboard\\vendor\\viewer-leaderboard\\test\\obs-viewerxp-fixtures.test.js --silent",
+    "result": {
+      "exitCode": 0,
+      "testSuitesPassed": 1,
+      "testsPassed": 23,
+      "testsFailed": 0
+    },
+    "sourceHashes": {
+      "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html": "bc2e7e67f61ae748ae73f7265c394f90ef97de426940659f9a593fb6c668267b",
+      "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/test/obs-viewerxp-fixtures.test.js": "1082835e3124707690adf3eeda940e602a5981afbf62333757da2490ee2377d7"
+    },
+    "activeRewardLocaleBehavior": "Actual shared i18n locale-changed switches active reward header and color badge across DE/FR/EN/ES/DE without recreating reward nodes, confetti, or auto-hide timer; names, levels and configured reward text preserved.",
+    "historicalBrowserProof": "browserProof retained unchanged; its old level-up source pin is historical, not current acceptance."
+  }
+}

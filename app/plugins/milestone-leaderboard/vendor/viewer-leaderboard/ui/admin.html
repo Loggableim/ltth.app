@@ -2602,22 +2602,8 @@
       return div.innerHTML;
     }
 
-    function initializeOverlayUrls() {
-      const legacyOrigin = 'http://localhost:3000';
-      const legacyPrefix = `${legacyOrigin}/overlay/viewer-xp/`;
-      for (const id of ['xpBarUrl', 'leaderboardOverlayUrl', 'levelUpUrl']) {
-        const element = document.getElementById(id);
-        if (!element) continue;
-        const value = element.textContent.trim();
-        if (value.startsWith(legacyPrefix)) {
-          element.textContent = window.location.origin + value.slice(legacyOrigin.length);
-        }
-      }
-    }
-
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', () => {
-      initializeOverlayUrls();
       loadPageData('dashboard');
 
       // Setup leaderboard filter

@@ -1,7 +1,36 @@
 {
   "plugins": {
     "schnorrbecher": {
-      "title": "Schnorrbecher"
+      "title": "Schnorrbecher",
+      "legacy": {
+        "title": "Shared legacy data",
+        "status": "Existing shared data is never assigned to a profile automatically.",
+        "previewButton": "Review legacy import",
+        "config": "Import configuration",
+        "persistentState": "Import persistent state (persistent mode only)",
+        "importButton": "Import selected data into this profile",
+        "found": "Shared legacy data found. Target profile: {profile}. Target files: config {config}, state {state}. The source is preserved.",
+        "activeProfile": "active profile",
+        "yes": "yes",
+        "no": "no",
+        "available": "available",
+        "conflict": "target exists or source is invalid",
+        "missing": "not present",
+        "stateValue": "{value} coin value. {note}",
+        "preview": "Configuration: {config}. State: {state}.",
+        "selectAtLeastOne": "Select at least one importable section.",
+        "confirm": "Copy selected shared legacy data into this profile? Existing target files and the source remain unchanged.",
+        "complete": "Legacy data imported. The source remains unchanged."
+      },
+      "labels": {
+        "status": "Current status",
+        "subtitle": "TikTok LIVE gift jar for OBS browser sources",
+        "connection": "Connection",
+        "livestream": "Livestream",
+        "totalValue": "Total value",
+        "physicalIcons": "Physical icons",
+        "spawnQueue": "Spawn queue"
+      }
     }
   }
 }

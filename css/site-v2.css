@@ -298,6 +298,19 @@ body.site-v2 .feature-hero-title {
   color: var(--site-v2-ink);
 }
 
+body.site-v2 .feature-availability-note {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 0.75rem;
+  color: var(--site-v2-ink);
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.55;
+  margin: 1rem auto;
+  max-width: 52rem;
+  padding: 0.8rem 1rem;
+}
+
 body.site-v2 .feature-plugin-logo {
   display: block;
   filter: drop-shadow(0 14px 24px rgba(5, 4, 17, 0.48));
@@ -637,6 +650,41 @@ body.site-v2 .plugin-catalog-card__meta span {
   color: #176b1a;
   font-size: .78rem;
   font-weight: 700;
+}
+
+body.site-v2 .plugin-closed-beta {
+  border-top: 1px solid #d5e2d6;
+}
+
+body.site-v2 .plugin-closed-beta__eyebrow {
+  display: inline-block;
+  margin-bottom: .65rem;
+  color: #176b1a;
+  font-size: .8rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+body.site-v2 .plugin-closed-beta__list-label {
+  margin: 1.5rem 0 .75rem;
+  font-size: 1rem;
+}
+
+body.site-v2 .plugin-closed-beta__apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  padding: 0;
+  list-style: none;
+}
+
+body.site-v2 .plugin-closed-beta__apps li {
+  padding: .35rem .75rem;
+  border: 1px solid #d5e2d6;
+  border-radius: 999px;
+  background: #fff;
+  color: #42464a;
+  font-size: .9rem;
 }
 
 @media (max-width: 640px) {

@@ -42,8 +42,19 @@ function createAdapter() {
 }
 
 describe('Eulerstream hotpath logging', () => {
+  let adapters;
+
+  beforeEach(() => {
+    adapters = [];
+  });
+
+  afterEach(() => {
+    adapters.forEach(adapter => adapter.disconnect());
+  });
+
   test('processes normal WebSocket messages without info logs on the packet hotpath', async () => {
     const { adapter, db, logger } = createAdapter();
+    adapters.push(adapter);
 
     await adapter._setupWebSocketHandlers();
     adapter.ws.emit('message', JSON.stringify({
@@ -72,6 +83,7 @@ describe('Eulerstream hotpath logging', () => {
 
   test('processes member joins without writing per-join info logs', async () => {
     const { adapter, db, logger } = createAdapter();
+    adapters.push(adapter);
 
     await adapter._setupWebSocketHandlers();
     adapter.eventEmitter.emit('member', {
@@ -89,6 +101,7 @@ describe('Eulerstream hotpath logging', () => {
 
   test('processes like events without writing per-like info logs', async () => {
     const { adapter, db, logger } = createAdapter();
+    adapters.push(adapter);
 
     await adapter._setupWebSocketHandlers();
     adapter.eventEmitter.emit('like', {

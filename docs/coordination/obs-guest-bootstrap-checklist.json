@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 1,
+  "status": "plan-only-blocked-before-guest-start",
+  "task": "offline-obs-pilot-guest-bootstrap",
+  "vm": {
+    "name": "ltth-obs-pilot-20261007",
+    "uuid": "1d436b46-6288-4c8c-8270-30df1e527329",
+    "lastVerifiedState": "poweroff",
+    "lastVerifiedAtLocal": "2026-10-07T01:06:51+02:00",
+    "freshStateRefresh": "blocked-E_ACCESSDENIED-0x80070005",
+    "networkAdapters": "NIC1-8-none-at-last-verified-state",
+    "efi": true,
+    "ramMiB": 4096,
+    "cpus": 2,
+    "vrde": "off-at-last-verified-state"
+  },
+  "artifacts": {
+    "obsPortableManifest": {
+      "path": "docs/coordination/obs-portable-transfer-manifest.json",
+      "sha256": "41E4BED8EB2FE413DFAFD032A2708C51C1A0A7488741BD4716511CCD2728F8FA",
+      "status": "selected installed file inventory and hashes validated; portability/runtime closure unverified",
+      "files": 2107,
+      "bytes": 402653499,
+      "excluded": [
+        "*.pdb",
+        "uninstall.exe"
+      ],
+      "peFiles": 86,
+      "directImportEdges": 1010,
+      "uniqueDirectImports": 112,
+      "parseFailures": 0,
+      "nonOsImportsNotInCandidate": 0,
+      "hostTreeFiles": 2158,
+      "hostTreeBytes": 479355765,
+      "excludedPdbFiles": 50,
+      "excludedPdbBytes": 76554240,
+      "excludedUninstaller": {
+        "path": "uninstall.exe",
+        "bytes": 148026,
+        "sha256": "A3E02CBB572E1A6789CBCE59833A26FADB752885CE3735A4936BE9C7287644D5"
+      },
+      "hostTreePeFiles": 87,
+      "includedPeFiles": 86,
+      "peCountExplanation": "87 host PE files minus the excluded uninstall.exe equals 86 inventoried PE files"
+    },
+    "normalizedTransferValidation": {
+      "manifestSha256": "f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b",
+      "files": 2651,
+      "bytes": 490389602,
+      "roots": {
+        "obs": 2107,
+        "pilot": 543,
+        "runtime": 1,
+        "hostReceipt": 0
+      },
+      "validation": "full PowerShell manifest-only helper pass; isoCreated=false; output empty; owned temp removed",
+      "scope": "source/helper validation only; no product ISO, guest transfer, portability or runtime acceptance",
+      "receiptTransfer": "CPU-only sidecar design available: one CEO-reviewed receipt may be transferred after final user boot with VBoxManage guestcontrol copyto; actual GuestControl remains unperformed and requires Guest Additions plus a user-provided account; no manifest change or fallback channel"
+    },
+    "sidekickManifestOtherOwner": {
+      "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json",
+      "sha256": "879975B60FBCA0AF1755C4AF6C1A2AA3AF62398AE5D12A123CD12FF50DC7A569",
+      "filesLength": 548,
+      "totalsFiles": 548,
+      "packageLockIncluded": false,
+      "packageLockSourceSha256": "EFF811AC8E412AF80CB71927575EE080DF84D0073A5106F67057B31AB314698D",
+      "uniquePaths": 548,
+      "duplicatePaths": 0,
+      "filesTotalPropertyPresent": false,
+      "countState": "consistent",
+      "packageJsonSourceSha256": "133F30D4B3651E16FDAE21312384CC740B3F60AE50533A06344846CEDDE10A09",
+      "bundledNodeVersion": "22.14.0",
+      "bundledNodeAbi": 127,
+      "bundledNodeSha256Verified": "33B1BC1A8ACA11FD5A4F2699E51019C63C0AF30CF437701D07AF69BE7706771B"
+    }
+  },
+  "offlineInputs": {
+    "obsBaseInstaller": "not-found-in-inspected-locations; optional if portable closure is validated",
+    "obsSpout2Installer": "excluded-third-party-installer",
+    "isoAuthoringCli": "not-found; 7-Zip ISO/UDF read-only formats; IMAPI2FS COM registered and instantiated",
+    "transferIso": "one synthetic two-payload-file ISO built and 7-Zip readback-verified in private temp, then removed; no product ISO",
+    "packageOrFileCopy": "not-performed",
+    "isoProducerPlan": "IMAPI2FS COM; synthetic temp staging 2 files + transfer-manifest; ISO9660/Joliet/UDF; 7z list + binary stdout SHA comparisons; tested; product-sized payload still open",
+    "helperPath": "scripts/obs-pilot/build-transfer-iso.ps1",
+    "syntheticTestIsoSha256": "eab2de7ac0cd99fd616c8624e64f188931be0bbe3c416b666f29c5267270cf66",
+    "syntheticTestIsoRemoved": true
+  },
+  "guestAdditions": {
+    "hostIsoPath": "C:\\Program Files\\Oracle\\VirtualBox\\VBoxGuestAdditions.iso",
+    "bytes": 53153792,
+    "sha256": "66FA60B041FCDA5D8B2ED22BA91BFAFAFAA3A5FF05C7D8BA01FBBE639669E153",
+    "hostFileTime": "2025-10-17T13:31:02",
+    "contentCatalogRead": true,
+    "amd64InstallerListed": true,
+    "autorunRevision": "170187 / 2025-08-11",
+    "releaseVersionMatch": "verified",
+    "mountExtractInstall": "only amd64 installer extracted to unique temp, metadata/signature/hash read, temp removed; no mount or install",
+    "installerBytes": 8693920,
+    "fileVersion": "7.2.4",
+    "productVersion": "7.2.4.170995",
+    "installerSha256": "31CB6209B3B453A5C834713A82D6CBA0095B2F0235449E84818C5CB3DD89422C",
+    "authenticodeStatus": "Valid",
+    "signer": "Oracle America, Inc.",
+    "signerThumbprint": "2B1BD188256EB612578949A943DE0DDC52D1DF79",
+    "hostVBoxVersion": "7.2.4r170995",
+    "tempExtractionCleaned": true,
+    "tempExtractionPurpose": "version, product version, Authenticode signer/status and SHA-256 only; installer not executed"
+  },
+  "runtimeDependencies": {
+    "obsMainVersion": "32.1.0",
+    "obsMainSha256": "dda672742960c9e036b06675854e36ebced0f86656a6cfa5a50eea0df5c9c2e0",
+    "msvcImportedDllsNotInObsTree": [
+      "msvcp140.dll",
+      "msvcp140_1.dll",
+      "msvcp140_2.dll",
+      "vcruntime140.dll",
+      "vcruntime140_1.dll"
+    ],
+    "hostSystem32FileVersion": "14.51.36247.0",
+    "guestAvailability": "not-verified-stop-before-obs-start",
+    "redistFoundOrBundled": false,
+    "hostSystemDllsCopied": false,
+    "node": {
+      "version": "22.14.0",
+      "abi": 127,
+      "path": "runtime/node/node.exe",
+      "sha256": "33b1bc1a8aca11fd5a4f2699e51019c63c0af30cf437701d07af69be7706771b"
+    },
+    "packageLock": {
+      "sha256": "EFF811AC8E412AF80CB71927575EE080DF84D0073A5106F67057B31AB314698D",
+      "includedInExistingPilotManifestFiles": false
+    },
+    "redistPlan": {
+      "package": "Microsoft Visual C++ v14 Redistributable x64",
+      "filename": "vc_redist.x64.exe",
+      "source": "https://aka.ms/vc14/vc_redist.x64.exe",
+      "officialDocs": "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+      "status": "source-plan-only-awaiting-CEO-review-before-download",
+      "plannedCommand": "vc_redist.x64.exe /install /passive /norestart",
+      "execution": "not-authorized/not-performed",
+      "pinBeforeTransfer": [
+        "file version",
+        "Authenticode signer/status",
+        "SHA-256",
+        "license and redistribution terms",
+        "manifest inclusion"
+      ],
+      "packageVersion": "dynamic-latest-supported-v14-x64; determine only after CEO review and authorized retrieval",
+      "basis": "Host System32 14.51.36247.0 is observed evidence only, not an asserted guest minimum; target must be at least the actual OBS build-tool runtime requirement",
+      "layoutCommand": "vc_redist.x64.exe /layout <private-staging-dir> (documented, not run)",
+      "officialInstallCommand": "vc_redist.x64.exe /install /passive /norestart (separate system-change approval required; not run)",
+      "redistributionLicenseReview": "required before placing installer on transfer ISO"
+    }
+  },
+  "bootstrapGates": [
+    {
+      "id": "G1-owner-state",
+      "status": "blocked",
+      "requirement": "After user-initiated boot in a later approved session: one read-only showvminfo for exact UUID; on access denied stop and wait, no retry loop; verify NIC1-8 none and isolation controls before receipt."
+    },
+    {
+      "id": "G2-windows",
+      "status": "open",
+      "requirement": "prove install-media and EFI/TPM/Secure-Boot compatibility; never bypass a security requirement"
+    },
+    {
+      "id": "G3-login-ga",
+      "status": "blocked",
+      "requirement": "Guest login unavailable; user-managed console login required. GA 7.2.4.170995 matches host VBox 7.2.4r170995; installation remains a later step."
+    },
+    {
+      "id": "G4-offline-transfer",
+      "status": "blocked",
+      "requirement": "Source manifest count is now consistent at 548 unique entries; build/verify the separately approved read-only ISO and transfer manifest; transfer no profiles, secrets, tokens, cookies, account or user data."
+    },
+    {
+      "id": "G5-obs-closure",
+      "status": "blocked",
+      "requirement": "prove complete portable OBS closure and guest MSVC runtime availability; otherwise stop before OBS launch"
+    },
+    {
+      "id": "G6-loopback-auth",
+      "status": "open",
+      "requirement": "fresh guest-only websocket auth; listener binds only 127.0.0.1/::1; never expose secret in args, logs, files or evidence"
+    },
+    {
+      "id": "G7-evidence",
+      "status": "open",
+      "requirement": "new guest-local temp directory outside repo; synthetic-only runner evidence; no stock report paths"
+    },
+    {
+      "id": "G8-safe-export",
+      "status": "open",
+      "requirement": "after shutdown only, clone VDI; mount clone read-only; extract allowlisted evidence; never mount original disk"
+    }
+  ],
+  "evidencePolicy": {
+    "receipt": "only CEO-reviewed sanitized receipt may later enter guest; raw showvminfo and host review evidence stay on host",
+    "receiptTransferDesign": {
+      "channel": "VBoxManage guestcontrol copyto, one receipt sidecar only",
+      "vmUuid": "1d436b46-6288-4c8c-8270-30df1e527329",
+      "requiredStateAtCapture": "running only; host producer rejects poweroff/preboot state",
+      "copyOptions": "--no-replace --username <user> --passwordfile <user-managed-protected-file> --target-directory <unique-guest-temp-dir>",
+      "postCopy": "guest hash must match separately reviewed receipt SHA; existing runner rechecks hash, UUID, age and every isolation flag",
+      "freshness": "runner start within 30 guest-clock minutes and within a 25-minute host-wall cutoff to account for up to 2-minute guest-clock skew; stale/mismatch stops this pilot session; no retry query within the same session",
+      "forbiddenFallbacks": ["network", "shared-folders", "clipboard", "ISO-update"],
+      "requires": ["installed Guest Additions", "running Guest Service", "user-provided guest account"],
+      "status": "CPU-only design and synthetic guest contract pass; actual GuestControl transfer remains unperformed"
+    },
+    "guestEvidencePattern": "ltth-sidekick-obs-YYYYMMDDThhmmssZ-<8hex>",
+    "websocketUrl": "ws://127.0.0.1:4455",
+    "fixtureBind": "127.0.0.1:8765",
+    "websocketPasswordEnv": "OBS_WEBSOCKET_PASSWORD; guest runner process only; not command argument or evidence",
+    "streamingAndRecording": "remain inactive"
+  },
+  "checks": {
+    "jsonSyntax": "pass",
+    "tests": "pass: targeted synthetic IMAPI2FS/7z test; isolated negative guard validation 2026-10-07; no application test suite was run",
+    "guestRuntime": "not-run",
+    "vmBoot": "not-performed",
+    "downloads": "none",
+    "systemOrFirewallChanges": "none",
+    "manifestCrossReferences": "pass: SHA/count/path/hash values checked against current source files",
+    "obsPeCountBasis": "pass: 87 total, 1 excluded uninstall.exe, 86 inventoried/scanned",
+    "gaSignatureVersionHash": "pass: 7.2.4.170995, Authenticode Valid, SHA recorded, temporary extraction removed",
+    "isoAuthoringCapability": "pass for two-file synthetic payload; product payload/guest transfer untested",
+    "syntheticIsoReadback": {
+      "status": "pass",
+      "payloadFiles": 2,
+      "isoFilesIncludingManifest": 3,
+      "unicodeAndSpaces": "pass",
+      "partialRead": "pass; read request 1024, wrapper returned max 1023 bytes",
+      "sevenZipBinaryStdoutHashes": "all 3 file paths/byte lengths/SHA-256 match",
+      "isoSha256": "eab2de7ac0cd99fd616c8624e64f188931be0bbe3c416b666f29c5267270cf66",
+      "isoRemovedAfterTest": true,
+      "helperTempCleaned": true,
+      "comReleased": true,
+      "vmAttached": false
+    },
+    "transferInputRejections": {
+      "unknownManifestProperty": "pass",
+      "pathTraversal": "pass",
+      "privateHostProfilesPath": "pass",
+      "credentialLikeTextLiteral": "pass",
+      "junctionReparse": "pass"
+    },
+    "independentGuardValidation20261007": {
+      "unknownManifestProperty": "rejected, child process exit 1",
+      "pathTraversal": "rejected, child process exit 1",
+      "unmanifestedExtraFile": "rejected, child process exit 1",
+      "credentialLikeTextLiteral": "rejected, child process exit 1",
+      "junctionReparsePoint": "rejected, child process exit 1",
+      "outputArtifactsAfterEachRejection": "none",
+      "noOverwrite": "pass: actual helper C# writer rejected synthetic existing path; sentinel SHA-256 unchanged and cleanup predicate false",
+      "harnessExit": 0,
+      "privateTempRootRemoved": true,
+      "positiveIsoRebuilt": false
+    },
+    "helperCleanupOwnershipRegression": {
+      "testPath": "scripts/obs-pilot/test/build-transfer-iso-ownership.test.ps1",
+      "command": "pwsh -NoProfile -File .\\scripts\\obs-pilot\\test\\build-transfer-iso-ownership.test.ps1",
+      "exitCode": 0,
+      "createNewCollision": "pre-existing synthetic sentinel retained byte-identically; unowned output not eligible for cleanup",
+      "postCreateWriteFailure": "synthetic partial output marked as owned and removed by the failure cleanup condition",
+      "privateTempRootRemoved": true,
+      "isoBuilt": false
+    },
+    "startLaterAudit": {
+      "receiptQueryOrder": "create-isolation-receipt.js performs the single read-only showvminfo call; do not run a separate query first",
+      "receiptRequirements": "running exact UUID; NIC1-8 none; no shared folders; clipboard, clipboard file transfers, drag-and-drop, USB and VRDE disabled; fresh within 30 minutes",
+      "loopbackPorts": "OBS websocket 127.0.0.1:4455 only; fixture 127.0.0.1:8765 fixed; fixture port must be free before runner; do not enable NICs or kill unknown listeners",
+      "missingInputs": "Windows install source/edition/license and EFI/TPM/Secure Boot compatibility; manual guest login; approved product closure/licenses/size and redist review; guest ISO path and evidence directory",
+      "productTransfer": "locked; no product-sized ISO or guest transfer authorized/performed"
+    },
+    "productPayloadOrGuestTransfer": "not performed"
+  },
+  "openDecisions": [
+    "fresh exact-UUID state after user-initiated boot; no repeated status polling before then",
+    "guest login method supplied by user without reading private unattended artifacts",
+    "Windows edition/install source and EFI/TPM/Secure Boot support",
+    "CEO review of official Microsoft x64 Redist source plan before download",
+    "licensed transfer and exact Redist package version/signature/hash after separately approved acquisition",
+    "guest MSVC runtime availability",
+    "portable OBS closure runtime proof",
+    "validate actual selected product payload file list, size/performance and guest runtime in a separately authorized test"
+  ],
+  "nextActionAfterUserBoot": "After the user starts only the designated VM in a later approved session, invoke create-isolation-receipt.js exactly once; it performs the single read-only showvminfo call internally for UUID 1d436b46-6288-4c8c-8270-30df1e527329. Do not query separately first. Require running state, exact UUID, NIC1-8 none, zero shared folders, clipboard/file transfers/drag-and-drop/USB/VRDE disabled, and a receipt younger than 30 minutes. On access denied or any mismatch, stop without retry, reconfiguration, or guest tooling.",
+  "sourceReferences": [
+    "https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist",
+    "https://learn.microsoft.com/en-us/cpp/windows/troubleshoot-vc-redistributable-installation-issues?view=msvc-170",
+    "https://learn.microsoft.com/en-us/cpp/windows/redistributing-visual-cpp-files?view=msvc-170",
+    "https://learn.microsoft.com/en-us/windows/win32/api/imapi2fs/nf-imapi2fs-ifilesystemimage-createresultimage",
+    "https://learn.microsoft.com/en-us/windows/win32/api/imapi2fs/nf-imapi2fs-ifsidirectoryitem-addtree",
+    "https://learn.microsoft.com/en-us/windows/win32/api/imapi2/ne-imapi2-imapi_media_physical_type"
+  ],
+  "officialSourceReview": "CEO says canonical latest supported x64 permalink; no versioned URL pattern or download used"
+}
+
+

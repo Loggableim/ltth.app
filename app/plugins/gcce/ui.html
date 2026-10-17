@@ -1171,19 +1171,9 @@
                 <input type="text" id="cmd-filter-search" class="filter-input" placeholder="Search commands..." data-i18n-placeholder="plugins.gcce.form_controls.command_search_placeholder">
                 <select id="cmd-filter-category" class="filter-input">
                     <option value="" data-i18n="plugins.gcce.labels.all_categories">All Categories</option>
-                    <option value="System" data-i18n="plugins.gcce.ui.category_system">System</option>
-                    <option value="Information" data-i18n="plugins.gcce.ui.category_information">Information</option>
-                    <option value="HUD">HUD</option>
-                    <option value="Moderation" data-i18n="plugins.gcce.ui.category_moderation">Moderation</option>
-                    <option value="Fun" data-i18n="plugins.gcce.ui.category_fun">Fun</option>
-                    <option value="Utility" data-i18n="plugins.gcce.ui.category_utility">Utility</option>
                 </select>
                 <select id="cmd-filter-permission" class="filter-input">
                     <option value="" data-i18n="plugins.gcce.labels.all_permissions">All Permissions</option>
-                    <option value="all" data-i18n="plugins.gcce.labels.all_viewers_e32ad6">All Viewers</option>
-                    <option value="subscriber" data-i18n="plugins.gcce.ui.permission_subscribers">Subscribers</option>
-                    <option value="moderator" data-i18n="plugins.gcce.ui.permission_moderators">Moderators</option>
-                    <option value="owner" data-i18n="plugins.gcce.labels.owner_only">Owner Only</option>
                 </select>
                 <select id="cmd-filter-status" class="filter-input">
                     <option value="" data-i18n="plugins.gcce.labels.all_status">All Status</option>
@@ -1841,10 +1831,12 @@
             const totalCommands = stats.registeredCommands ?? stats.totalCommands ?? 0;
             const enabledCommands = stats.enabledCommands ?? commands.filter(cmd => cmd.enabled).length;
             const plugins = stats.pluginsWithCommands ?? stats.plugins ?? 0;
+            const executed = stats.totalExecuted;
 
             document.getElementById('stat-total-commands').textContent = totalCommands;
             document.getElementById('stat-enabled-commands').textContent = enabledCommands;
             document.getElementById('stat-plugins').textContent = plugins;
+            document.getElementById('stat-executed').textContent = Number.isFinite(executed) ? executed : '-';
         }
 
         // Display commands
@@ -1852,7 +1844,10 @@
             const container = document.getElementById(containerId);
 
             if (!commandsList || commandsList.length === 0) {
-                container.innerHTML = `<p class="loading" data-i18n="plugins.gcce.ui.no_commands">${t('plugins.gcce.ui.no_commands', 'No commands registered yet.')}</p>`;
+                const isFilteredList = containerId === 'all-commands-container' && allCommandsCache.length > 0;
+                const key = isFilteredList ? 'plugins.gcce.ui.no_matching_commands' : 'plugins.gcce.ui.no_commands';
+                const fallback = isFilteredList ? 'No commands match these filters.' : 'No commands registered yet.';
+                container.innerHTML = `<p class="loading" data-i18n="${key}">${t(key, fallback)}</p>`;
                 return;
             }
 
@@ -3257,12 +3252,45 @@
                 const data = await response.json();
                 if (data.success) {
                     allCommandsCache = data.commands;
+                    populateCommandFilterOptions();
                     displayFilteredCommands();
                 }
             } catch (error) {
                 console.error('Failed to load all commands:', error);
                 document.getElementById('all-commands-container').innerHTML = `<div class="error">${escapeHtml(runtimeText('errors.load_commands', 'Failed to load commands'))}</div>`;
             }
+        }
+
+        function populateCommandFilterOptions() {
+            const categorySelect = document.getElementById('cmd-filter-category');
+            const permissionSelect = document.getElementById('cmd-filter-permission');
+            if (!categorySelect || !permissionSelect) return;
+
+            const replaceOptions = (select, key, fallback, values, labels = {}) => {
+                const selected = select.value;
+                select.replaceChildren(new Option(t(key, fallback), ''));
+                values.forEach(value => {
+                    const option = new Option(labels[value] || value, value);
+                    select.appendChild(option);
+                });
+                if (values.includes(selected)) select.value = selected;
+            };
+
+            const categories = [...new Set(allCommandsCache
+                .map(command => typeof command.category === 'string' ? command.category.trim() : '')
+                .filter(Boolean))].sort((a, b) => a.localeCompare(b));
+            const permissions = [...new Set(allCommandsCache
+                .map(command => typeof command.permission === 'string' ? command.permission.trim() : '')
+                .filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+            replaceOptions(categorySelect, 'plugins.gcce.labels.all_categories', 'All Categories', categories);
+            replaceOptions(permissionSelect, 'plugins.gcce.labels.all_permissions', 'All Permissions', permissions, {
+                all: t('plugins.gcce.labels.all_viewers_e32ad6', 'All Viewers'),
+                subscriber: t('plugins.gcce.ui.permission_subscribers', 'Subscribers'),
+                moderator: t('plugins.gcce.ui.permission_moderators', 'Moderators'),
+                owner: t('plugins.gcce.labels.owner_only', 'Owner Only'),
+                vip: t('plugins.gcce.ui.permission_vip', 'VIP')
+            });
         }
 
         function displayFilteredCommands() {

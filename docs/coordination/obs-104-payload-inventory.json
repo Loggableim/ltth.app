@@ -1,0 +1,2047 @@
+{
+  "schemaVersion": 1,
+  "status": "read-only-source-inventory-no-payload-built-no-guest-run",
+  "matrix": {
+    "path": "docs/coordination/obs-104-acceptance-matrix.json",
+    "sha256": "0463f02d25c85db0282a10a157a5aadf589badd387bace0dd4e54e0800e76f0f",
+    "cases": 104,
+    "plugins": 26,
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "statusCounts": {
+      "blocked-before-practical-capture": 84,
+      "in-process-renderer-fixture-passed-not-obs": 16,
+      "ready-for-isolated-fixture-review": 4
+    }
+  },
+  "currentSidekickTransfer": {
+    "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json",
+    "sourceManifestSha256": "e3f475badac6b1ee51fd873654f310c79d3213b768612164dddf6ed9c633c0ed",
+    "effectiveFiles": 544,
+    "includes104EvidenceSources": false,
+    "includes104LocaleAssets": false,
+    "existingNormalizedContractSha256": "f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b",
+    "existingNormalizedFileCount": 2651,
+    "existingNormalizedBytes": 490389602
+  },
+  "rendererFiles": {
+    "evidenceSourceCount": 71,
+    "evidenceSourceBytes": 3638254,
+    "evidenceSources": [
+      {
+        "path": "app/modules/public-overlay-registry.js",
+        "bytes": 29624,
+        "sha256": "b075a2eef71684a7463aa7d64dfd6eb0e4c36309570ed3cf5ba80d1bc7b5b2b3",
+        "guestTransferPath": "pilot/app/modules/public-overlay-registry.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/advanced-timer/overlay/index.html",
+        "bytes": 5110,
+        "sha256": "bacd9c0c50a46c2e27360f38d61673629018991a944e5b352bd718d5fa1de8ce",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/overlay/index.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/advanced-timer/overlay/overlay.js",
+        "bytes": 28792,
+        "sha256": "109d554ab767cbfc1b87f783dc1dfe646fc6ca0b97f070bfff7f159a6f79e7b1",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/overlay/overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/main.js",
+        "bytes": 23814,
+        "sha256": "103e79da01bd68ce50f2d07f9e97414a7810cc1968ab2a13905ff9ea64a51fde",
+        "guestTransferPath": "pilot/app/plugins/chatango/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/ui.html",
+        "bytes": 34737,
+        "sha256": "c7f78bccc468c01e162b97b9b6544b775a4872ca42f816266a574a4a892ebbbb",
+        "guestTransferPath": "pilot/app/plugins/chatango/ui.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/main.js",
+        "bytes": 5057,
+        "sha256": "aee4eb70165aa57ba66e7b502d5ebe19eaab88f4d61b631bbc84463f33918b60",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/overlays/full.html",
+        "bytes": 12131,
+        "sha256": "3aacc45c17bcaef8298f6771806dbf09772c3cfa0dc65354b10dac63b9808ae2",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/overlays/full.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/overlays/full.js",
+        "bytes": 31943,
+        "sha256": "2439e023b68c9a06bcb5679eeef7f3af35be6ba15c7e70adcb5a11868a44b7ab",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/overlays/full.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/main.js",
+        "bytes": 68939,
+        "sha256": "8067b0b9948647287bbf23e93edd470d47de152f83c3d94141a2930c5894d1f0",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/overlay/overlay.html",
+        "bytes": 8765,
+        "sha256": "dd53e3ac5a12066661fe0e5b5a67198f6fd37364628cc91578f13fc1f301686b",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/overlay/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/overlay/overlay.js",
+        "bytes": 69903,
+        "sha256": "72d914d3a3943493111f4fe9b7596354e43d1b50bd3a9364f90a6a73eefb33bf",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/overlay/overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/main.js",
+        "bytes": 111623,
+        "sha256": "a6b2fc90f7b1fbb5145bc531c0e837f28f8d819af811bdb775058b433c710548",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/obs-hud.html",
+        "bytes": 11107,
+        "sha256": "cfed7bb03c6390876633c6b02aac1acfda470ece46bd0364d63d59bc34f7e249",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/obs-hud.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/gpu/engine.js",
+        "bytes": 168694,
+        "sha256": "8061ff78a4678f20b765aefe0e2294d58ecb82dc09afbd9dc9692dce887e4e86",
+        "guestTransferPath": "pilot/app/plugins/fireworks/gpu/engine.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/main.js",
+        "bytes": 62052,
+        "sha256": "1c7da58b7e004c64aed7ee5b7a8ebaa6cbe258df64519a80f0a458d2ad74155a",
+        "guestTransferPath": "pilot/app/plugins/fireworks/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/overlay.html",
+        "bytes": 27091,
+        "sha256": "b8b27ad88fe340dea834451d02a3dd803f7ab70930c287ba2472ded7ceea35f8",
+        "guestTransferPath": "pilot/app/plugins/fireworks/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/main.js",
+        "bytes": 61921,
+        "sha256": "7f6ed386b0165c3c8c41c54cd68eea546afe1a0c33282670fef4487ae217546c",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/renderer/effects-engine.js",
+        "bytes": 98821,
+        "sha256": "dd740d9609336f6fc6fb72fa5a388fb887efc084a285581f1739c7b25dcab6a7",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/renderer/effects-engine.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/renderer/index.html",
+        "bytes": 1401,
+        "sha256": "a3742983978d6146fd08b9cefd5e59e3fabd007168474c8fe798fa17bf7f2919",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/renderer/index.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/main.js",
+        "bytes": 297296,
+        "sha256": "b664bb41bad7d25fc9403213e97736d55123fe7b08e34fec3103cc1ae8b6b91d",
+        "guestTransferPath": "pilot/app/plugins/game-engine/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/overlay/game-hud.html",
+        "bytes": 31600,
+        "sha256": "b6e4e39264af515b563add9a518bf8124fa660eab7ade6081378a6971cb562a8",
+        "guestTransferPath": "pilot/app/plugins/game-engine/overlay/game-hud.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/backend/websocket.js",
+        "bytes": 12031,
+        "sha256": "2b913a013e0a987175b99fc473da23b7a730ed5dc353a5a4363a5930dd8dba0b",
+        "guestTransferPath": "pilot/app/plugins/goals/backend/websocket.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/overlay/index.html",
+        "bytes": 1559,
+        "sha256": "d5f7466535ca7b2f891663d53e6b67bd8bd55d68ec2cf1fcb23373a40439df40",
+        "guestTransferPath": "pilot/app/plugins/goals/overlay/index.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/overlay/overlay.js",
+        "bytes": 49390,
+        "sha256": "d85e6404ee87fb47f084a1a314c880f12bf18b7ea86db41c6d3dbbbc09431322",
+        "guestTransferPath": "pilot/app/plugins/goals/overlay/overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/main.js",
+        "bytes": 96915,
+        "sha256": "e38d88846422348bbf6c1257cae38648359469a87eb28d7131fcfb0b0ffc25df",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/overlay.html",
+        "bytes": 63445,
+        "sha256": "daef76f7498af2c8262ba5d05830ae5265cee4d6982d81102b150374f4977998",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+        "bytes": 15778,
+        "sha256": "1f8112750f48be4c9c0690620d28c3a2fb33147f477bf2bd522bb3344558ac5c",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html",
+        "bytes": 15867,
+        "sha256": "3ee54c79d155c45d8fca3ba0e9a767a49592c3ae6433fea08b314557ef9df0e1",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html",
+        "bytes": 10503,
+        "sha256": "b5bd261312dfcbd41bfd5ccb8ca2f1c8fdd2552d60decccad9e9547a9663ebad",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js",
+        "bytes": 714,
+        "sha256": "a9a629c05d74e249ba690a9df59712c56436081633bb5c676e46525770189205",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js",
+        "bytes": 128495,
+        "sha256": "4a3e1edeb5568232322e08304a7cb1340d6e0aad02be567114dd1f9c83b84148",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/main.js",
+        "bytes": 21590,
+        "sha256": "081ad4345cb33b6b791ccae2c21be4d289623a73b2c41312809fe2c068072abd",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+        "bytes": 3198,
+        "sha256": "e0cae0ddc1a183aaf78594f9bf8a062ec229e9f76c620664b656569335c58dfc",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/overlay/minecraft_overlay.js",
+        "bytes": 8625,
+        "sha256": "0b7e48a78120d9b8f215018667ee1dcb1ce94b9efd3f80ffb579c0fd16ffbeed",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/overlay/minecraft_overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/main.js",
+        "bytes": 205650,
+        "sha256": "16c4d09359693f0df1f09be8c241473826976a2a1187e92f69a36b69f1f15298",
+        "guestTransferPath": "pilot/app/plugins/music-bot/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/overlay.html",
+        "bytes": 45128,
+        "sha256": "775f609b1353a91f5845665e1317eab6a47a31052881846077246ffab12e538f",
+        "guestTransferPath": "pilot/app/plugins/music-bot/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/overlay/openshock_overlay.html",
+        "bytes": 20552,
+        "sha256": "2d16cecffa9d743c98058bf32db9d27929aa778ae0ca37f07d373ac621dea101",
+        "guestTransferPath": "pilot/app/plugins/openshock/overlay/openshock_overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/overlay/openshock_overlay.js",
+        "bytes": 31327,
+        "sha256": "ebe66a2ed22381bc364d0c4ff3dc80c6b298c0c29a0a73d7cc32e6fb652794aa",
+        "guestTransferPath": "pilot/app/plugins/openshock/overlay/openshock_overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/quiz_show_overlay.html",
+        "bytes": 13579,
+        "sha256": "3f5a0298c8dc494538a2c3eec5dc92424b14989642840cedfe230e87f574e190",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/quiz_show_overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/quiz_show_overlay.js",
+        "bytes": 94798,
+        "sha256": "bc22081b3aea84efd8a2d43131fdda8df3322f07b8c71e0e23e2bd714dd9e2cb",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/quiz_show_overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/main.js",
+        "bytes": 15476,
+        "sha256": "7e52d14ccc069c6b3159fb4d835d8cb12f731e145aab2832b622bfd3af56b094",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/overlay/coincup.html",
+        "bytes": 1086,
+        "sha256": "e187a63103d9421806b2706ed52d43a177d41eeccbcfc4220a93e5736a025fc3",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/overlay/coincup.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/overlay/coincup.js",
+        "bytes": 37337,
+        "sha256": "fdfd892d2d54a3deaa5f1f35c8266a66e1c32bc8f2779562f18ff6ed38b99391",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/overlay/coincup.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/overlays/chatter.html",
+        "bytes": 1432,
+        "sha256": "6095c949d76e44ac405fae3d73f7eaa96a4f9411e68c865041f5986970bc491d",
+        "guestTransferPath": "pilot/app/plugins/spotlight/overlays/chatter.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/overlays/single-overlay.js",
+        "bytes": 8568,
+        "sha256": "4261bb20e5e8d11a362558d0b385b8c03e2a1b8c1798018a89fee837b656556f",
+        "guestTransferPath": "pilot/app/plugins/spotlight/overlays/single-overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/backend/streammonsters/routes.js",
+        "bytes": 101443,
+        "sha256": "064aeabb561e7ac0343d48b83a8fb67a6c836284ff7600197f5bf14c26a098e0",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/backend/streammonsters/routes.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/streammonsters-overlay-runtime.js",
+        "bytes": 60659,
+        "sha256": "b16e2eef2648ab58a06cfc46ccfee774aeba772d671ba094c6dc3e1bd6e0f099",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/streammonsters-overlay-runtime.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "bytes": 214598,
+        "sha256": "6cd042d5ff9a4f9e9c582f5aa9b4ff8386ba45b0a97d2435d54ddf5c527dfe20",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/streammonsters-overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/main.js",
+        "bytes": 36352,
+        "sha256": "f7ae65fbda4a81be1a8640ff5e913877744938c5c957f562460e12b4bbda4b32",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/overlay/ticker.html",
+        "bytes": 26133,
+        "sha256": "ce2a72f8e800dcaca256dbd953f5093cc7bf75dd90fc95f1c8a17a8e1977ffcc",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/overlay/ticker.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/assets/overlay.js",
+        "bytes": 14981,
+        "sha256": "f20631c0b03299a17a17bfed754732856bc94749d2d3ec71bf548de94f5e282a",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/assets/overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/overlay.html",
+        "bytes": 2722,
+        "sha256": "fba3efadb4b48882aea8ec81701442287584b4aad84ef8ee24bfd12bddea74f6",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/assets/overlay.js",
+        "bytes": 23972,
+        "sha256": "dfb184811ca1a4c906e8934e6432a568ad86979b5c32f355de3ecb0d9bd2d88b",
+        "guestTransferPath": "pilot/app/plugins/toptier/assets/overlay.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/backend/score-engine.js",
+        "bytes": 7997,
+        "sha256": "1c8594e7198978172cc11028bb896fbe49bd12e6f07a489211d0c1deb6d7163b",
+        "guestTransferPath": "pilot/app/plugins/toptier/backend/score-engine.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/overlay.html",
+        "bytes": 702,
+        "sha256": "0077612a1633fcc19c3d4089ca610a6727323f2263e69f79f5c682a23d9795ef",
+        "guestTransferPath": "pilot/app/plugins/toptier/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/main.js",
+        "bytes": 70247,
+        "sha256": "055c9b9ed6c119ba6c6700fd894c0fc13e8c10802cf9560b491605370b0c6341",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "bytes": 1424,
+        "sha256": "5f8cc5968363803677f0c798f8e2f37529a649a7df4e389ab796311af1129843",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js",
+        "bytes": 1450,
+        "sha256": "371256f78d09b689f73bf14e7179dfad79bf561da5921c98f685fa687e2a33fa",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/main.js",
+        "bytes": 109055,
+        "sha256": "853e26dfe96c42a3a685db089a47745f9c1e862a5fe99a8d46c3bd9a79396a67",
+        "guestTransferPath": "pilot/app/plugins/weather-control/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/overlay.html",
+        "bytes": 28367,
+        "sha256": "9fb3b6603e3b332ac66750090cef9b8490fe26f565671dbac67c7e4087336a32",
+        "guestTransferPath": "pilot/app/plugins/weather-control/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/gpu/engine.js",
+        "bytes": 29584,
+        "sha256": "c7b3235058de570587a59e49982ab18535ec881d277be0b576cfd941ff2cd0c9",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/gpu/engine.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/main.js",
+        "bytes": 116378,
+        "sha256": "8d397c9ac8651f1d34d766e6530b3e32e0f6730318663a3956b8cd82a82264b6",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/overlay.html",
+        "bytes": 3474,
+        "sha256": "183fd8a0878153201f8d563dde292e5b892ac531c0e291e045a1a5c12e9b25a8",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/gpu/engine.js",
+        "bytes": 169573,
+        "sha256": "55b39024f5ea7380e2e7e4d667f7d1dfc7ecd24f89092438320541ec56885a80",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/gpu/engine.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/main.js",
+        "bytes": 152747,
+        "sha256": "bd54d4430867e6312e60944f3fa37326704046093044e3ee322e9923165604d8",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/overlay.html",
+        "bytes": 26643,
+        "sha256": "501d6a31de889a6c1900495daa0305cab77a6331eaa0e9a50d8136d8d513703c",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/main.js",
+        "bytes": 127799,
+        "sha256": "651b89761b784a628b16d0abb6177f1a26b49c124908e528d7197a5d847cbdef",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/main.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/overlay.html",
+        "bytes": 5647,
+        "sha256": "0a47fffbabee7f528f1b69cf0c033dd8ca8473d753a05253a970a882422f0b45",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/overlay.html",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/public/js/emoji-rain-obs-hud.js",
+        "bytes": 104602,
+        "sha256": "55e1903416219b2f46194f6b69c1e05b31ec93c5ac17e05cee29b2b3370f32d8",
+        "guestTransferPath": "pilot/app/public/js/emoji-rain-obs-hud.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/public/js/i18n-client.js",
+        "bytes": 24765,
+        "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c",
+        "guestTransferPath": "pilot/app/public/js/i18n-client.js",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/public/js/matter.min.js",
+        "bytes": 83476,
+        "sha256": "72d30be0f579eb02ce1e0b6f9d359a4f392e6837e5a26ba8be5dbee7f88e24ae",
+        "guestTransferPath": "pilot/app/public/js/matter.min.js",
+        "includedInCurrentSidekickTransfer": false
+      }
+    ],
+    "directLocalHtmlAssetReferenceCount": 132,
+    "distinctDirectLocalHtmlAssets": 76,
+    "directLocalHtmlAssetBytes": 3998850,
+    "sourcePlusDirectAssetUnionCount": 126,
+    "sourcePlusDirectAssetUnionBytes": 6495130,
+    "directLocalHtmlAssets": [
+      {
+        "from": "app/plugins/webgpu-weather-control/overlay.html",
+        "reference": "/socket.io/socket.io.js",
+        "kind": "local-static",
+        "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+        "bytes": 155836,
+        "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+        "includedInCurrentSidekickTransfer": true
+      },
+      {
+        "from": "app/plugins/advanced-timer/overlay/index.html",
+        "reference": "/plugins/advanced-timer/overlay/overlay.js?v=3",
+        "kind": "local-static",
+        "path": "app/plugins/advanced-timer/overlay/overlay.js",
+        "bytes": 28792,
+        "sha256": "109d554ab767cbfc1b87f783dc1dfe646fc6ca0b97f070bfff7f159a6f79e7b1",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/accessibility.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/accessibility.js",
+        "bytes": 9872,
+        "sha256": "7d708938662bee94bd01feb35df0bcedeefa64c6d42b3e5de8ec9b76f0fd1ae5",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/animations.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/animations.js",
+        "bytes": 11928,
+        "sha256": "c73d6272c4e906a5cc9a225c81bbbd534952e6adeff9cced6a93591b60afe3e9",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/badge-renderer.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/badge-renderer.js",
+        "bytes": 11451,
+        "sha256": "df9410fef5d03cf2375c959be8ef8070aa7944c3e1e777785e0410ffe4e874d3",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/emoji-parser.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/emoji-parser.js",
+        "bytes": 7287,
+        "sha256": "65e3e53b98d23a839a7a2ecee1e3b500f06b6a65c4226293547ff68ca45f3437",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/i18n-runtime.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/i18n-runtime.js",
+        "bytes": 489,
+        "sha256": "05b97c4868c29b983540da5215302a1e34b0d775fa178cf8875c01dec252e936",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/layout-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/layout-engine.js",
+        "bytes": 18347,
+        "sha256": "f81bd4aafe39d1e605eb8039f6b3636e584575778c0561cc653cd2309c3642bd",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/message-parser.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/message-parser.js",
+        "bytes": 8047,
+        "sha256": "8a88a869330a08a3f8a18c1a9f4d33715085256930e532c4a82eee6d650e9daa",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/lib/virtual-scroller.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/lib/virtual-scroller.js",
+        "bytes": 7821,
+        "sha256": "9a8a60eb1a9ba50f7f8cc9b618f1e981dc59d36e91326e1411f5cdb46636fc53",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/plugins/clarityhud/overlays/full.js",
+        "kind": "local-static",
+        "path": "app/plugins/clarityhud/overlays/full.js",
+        "bytes": 31943,
+        "sha256": "2439e023b68c9a06bcb5679eeef7f3af35be6ba15c7e70adcb5a11868a44b7ab",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/coinbattle/overlay/overlay.html",
+        "reference": "/plugins/coinbattle/overlay/overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/coinbattle/overlay/overlay.js",
+        "bytes": 69903,
+        "sha256": "72d914d3a3943493111f4fe9b7596354e43d1b50bd3a9364f90a6a73eefb33bf",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/coinbattle/overlay/overlay.html",
+        "reference": "/plugins/coinbattle/overlay/styles.css",
+        "kind": "local-static",
+        "path": "app/plugins/coinbattle/overlay/styles.css",
+        "bytes": 41285,
+        "sha256": "d3a532c63232605f8efa3f952d82a0a6d34270efca6628a0875ffa634fe7215b",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/fireworks/overlay.html",
+        "reference": "/plugins/fireworks/gpu/engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/fireworks/gpu/engine.js",
+        "bytes": 168694,
+        "sha256": "8061ff78a4678f20b765aefe0e2294d58ecb82dc09afbd9dc9692dce887e4e86",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/fireworks/overlay.html",
+        "reference": "/plugins/fireworks/gpu/particle-system-soa.js",
+        "kind": "local-static",
+        "path": "app/plugins/fireworks/gpu/particle-system-soa.js",
+        "bytes": 19002,
+        "sha256": "7afd0d8cf0458f3e95ec1f23e4a4355a10a27a55d6faa96b5a4d9ba56c38cbd3",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/fireworks/overlay.html",
+        "reference": "/plugins/fireworks/gpu/webgl-particle-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/fireworks/gpu/webgl-particle-engine.js",
+        "bytes": 34781,
+        "sha256": "0e5d196508c76d674cf219833569985402d792d62da75d1c49e116786f059170",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/flame-overlay/renderer/index.html",
+        "reference": "default-config.js",
+        "kind": "local-static",
+        "path": "app/plugins/flame-overlay/default-config.js",
+        "bytes": 1780,
+        "sha256": "24fb9dd180f132c79f26fafbdaeae59cd3612fb944aaae4f0d6d4384a35c0728",
+        "includedInCurrentSidekickTransfer": false,
+        "route": "/flame-overlay/default-config.js"
+      },
+      {
+        "from": "app/plugins/flame-overlay/renderer/index.html",
+        "reference": "effects-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/flame-overlay/renderer/effects-engine.js",
+        "bytes": 98821,
+        "sha256": "dd740d9609336f6fc6fb72fa5a388fb887efc084a285581f1739c7b25dcab6a7",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/flame-overlay/renderer/index.html",
+        "reference": "post-processor.js",
+        "kind": "local-static",
+        "path": "app/plugins/flame-overlay/renderer/post-processor.js",
+        "bytes": 17203,
+        "sha256": "677c89e904c4c88de68ac4ad55c4ad8f06c5fefba63bfba2960d31eedd58d5f8",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/goals/overlay/index.html",
+        "reference": "/plugins/goals/overlay/overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/goals/overlay/overlay.js",
+        "bytes": 49390,
+        "sha256": "d85e6404ee87fb47f084a1a314c880f12bf18b7ea86db41c6d3dbbbc09431322",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html",
+        "reference": "/plugins/viewer-leaderboard/viewer-xp-i18n.js",
+        "kind": "local-static",
+        "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js",
+        "bytes": 714,
+        "sha256": "a9a629c05d74e249ba690a9df59712c56436081633bb5c676e46525770189205",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+        "reference": "/plugins/minecraft-connect/overlay/minecraft_overlay.css",
+        "kind": "local-static",
+        "path": "app/plugins/minecraft-connect/overlay/minecraft_overlay.css",
+        "bytes": 5690,
+        "sha256": "79f026a09d494bc1a0829f0b195db2ba2b7f583f22b8d8f7edd4879221c902af",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+        "reference": "/plugins/minecraft-connect/overlay/minecraft_overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/minecraft-connect/overlay/minecraft_overlay.js",
+        "bytes": 8625,
+        "sha256": "0b7e48a78120d9b8f215018667ee1dcb1ce94b9efd3f80ffb579c0fd16ffbeed",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/openshock/overlay/openshock_overlay.html",
+        "reference": "/openshock/openshock_overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/openshock/overlay/openshock_overlay.js",
+        "bytes": 31327,
+        "sha256": "ebe66a2ed22381bc364d0c4ff3dc80c6b298c0c29a0a73d7cc32e6fb652794aa",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/quiz-show/quiz_show_overlay.html",
+        "reference": "/quiz-show/quiz_show_overlay.css",
+        "kind": "local-static",
+        "path": "app/plugins/quiz-show/quiz_show_overlay.css",
+        "bytes": 80000,
+        "sha256": "6c97ce0d0a63a0a6f238253c546c53f9a70ff98e2d2fdb148eef829ee8a52a14",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/quiz-show/quiz_show_overlay.html",
+        "reference": "/quiz-show/quiz_show_overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/quiz-show/quiz_show_overlay.js",
+        "bytes": 94798,
+        "sha256": "bc22081b3aea84efd8a2d43131fdda8df3322f07b8c71e0e23e2bd714dd9e2cb",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/schnorrbecher/overlay/coincup.html",
+        "reference": "/plugins/schnorrbecher/assets/sounds/adriantnt_glass.mp3",
+        "kind": "local-static",
+        "path": "app/plugins/schnorrbecher/assets/sounds/adriantnt_glass.mp3",
+        "bytes": 4676,
+        "sha256": "ac627e92f234654e947e96ca34d2a1a7283367aeb653a16408f9e1b0b382f4fc",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/schnorrbecher/overlay/coincup.html",
+        "reference": "/plugins/schnorrbecher/overlay/coincup.css",
+        "kind": "local-static",
+        "path": "app/plugins/schnorrbecher/overlay/coincup.css",
+        "bytes": 3489,
+        "sha256": "39a677e5cac2d05377d554220772d9d62e2a94f7054c4ac8e7dc2621a73cbe1a",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/schnorrbecher/overlay/coincup.html",
+        "reference": "/plugins/schnorrbecher/overlay/coincup.js",
+        "kind": "local-static",
+        "path": "app/plugins/schnorrbecher/overlay/coincup.js",
+        "bytes": 37337,
+        "sha256": "fdfd892d2d54a3deaa5f1f35c8266a66e1c32bc8f2779562f18ff6ed38b99391",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/spotlight/overlays/chatter.html",
+        "reference": "/plugins/spotlight/lib/animations.js",
+        "kind": "local-static",
+        "path": "app/plugins/spotlight/lib/animations.js",
+        "bytes": 8974,
+        "sha256": "992352ef79cdba09a37021947821c71301c64d6ff07b6a017a5b390ef52db016",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/spotlight/overlays/chatter.html",
+        "reference": "/plugins/spotlight/lib/template-renderer.js",
+        "kind": "local-static",
+        "path": "app/plugins/spotlight/lib/template-renderer.js",
+        "bytes": 28267,
+        "sha256": "1ad21e282678f9570da36ed56a994e09830c99dd8c6021f1b80e841e3deb7432",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/spotlight/overlays/chatter.html",
+        "reference": "/plugins/spotlight/lib/text-effects.js",
+        "kind": "local-static",
+        "path": "app/plugins/spotlight/lib/text-effects.js",
+        "bytes": 7832,
+        "sha256": "73cd87ea25f5cbf1e7479d1072abac7c98eca53a489fb48499306818c21dc08c",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/spotlight/overlays/chatter.html",
+        "reference": "/plugins/spotlight/overlays/single-overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/spotlight/overlays/single-overlay.js",
+        "bytes": 8568,
+        "sha256": "4261bb20e5e8d11a362558d0b385b8c03e2a1b8c1798018a89fee837b656556f",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/assets/branding/stream-monsters-logo.png",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/assets/branding/stream-monsters-logo.png",
+        "bytes": 1377070,
+        "sha256": "f0758c3d3f32ff2151e3f81d72e3dd9a71cab6a0c68871e9e58313a3f3e4413b",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-arena-director.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-arena-director.js",
+        "bytes": 44689,
+        "sha256": "244553875ec08322c48c5dca7be9a8e7e5e5dac860c92b7ff9f8812c04de6354",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-arena-view.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-arena-view.js",
+        "bytes": 97745,
+        "sha256": "e6d849d5918640ac266309aa6bb316d1f9ebbf2d621149c8aba11594263f7d58",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-audio-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-audio-engine.js",
+        "bytes": 7674,
+        "sha256": "84ef031c38833a8979395abd6c50e8d27221344ce15bf61dc1642f6b9e2940bd",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-chat-view.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-chat-view.js",
+        "bytes": 17977,
+        "sha256": "1a1bb560e69379f8fbfa07b2b92f934ebfda62a8d16afbeb33b7e5dc975f5c5f",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-effects-renderer.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-effects-renderer.js",
+        "bytes": 75444,
+        "sha256": "1f4e2dc80e33de7b75d2a8211a510cbcb604f66ae67d22c70182e216fb8e1a45",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-egg-stage-view.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-egg-stage-view.js",
+        "bytes": 46663,
+        "sha256": "088ce72153813c6e79e463afe773070804f3d77bae8603ee30f8896c158914df",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-overlay-runtime.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-overlay-runtime.js",
+        "bytes": 60659,
+        "sha256": "b16e2eef2648ab58a06cfc46ccfee774aeba772d671ba094c6dc3e1bd6e0f099",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-portrait-arena.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-portrait-arena.js",
+        "bytes": 3946,
+        "sha256": "252c8128a8844d9ae2248ae829b409e7ad4f78bb4af592b375778e395209a830",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-presentation.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-presentation.js",
+        "bytes": 18722,
+        "sha256": "b8244f2a7cd3a0f1df4234788ff62ac79797d30041592345748f49ea81c5ad1b",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/stream-monsters/streammonsters-overlay.html",
+        "reference": "/plugins/stream-monsters/streammonsters-rules-v8-pacing.js",
+        "kind": "local-static",
+        "path": "app/plugins/stream-monsters/streammonsters-rules-v8-pacing.js",
+        "bytes": 612,
+        "sha256": "db36d70f86e3cabb763aceb7231c0a8c252da5fa7168e68077ec09593feb9df9",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/talking-heads/overlay.html",
+        "reference": "/overlay/talking-heads/assets/overlay.css",
+        "kind": "local-static",
+        "path": "app/plugins/talking-heads/assets/overlay.css",
+        "bytes": 10445,
+        "sha256": "beda0c530739fbe461ad6f7fa2a627558fb1e712c1c692fb015e0ea9b15ed6f6",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/talking-heads/overlay.html",
+        "reference": "/overlay/talking-heads/assets/overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/talking-heads/assets/overlay.js",
+        "bytes": 14981,
+        "sha256": "f20631c0b03299a17a17bfed754732856bc94749d2d3ec71bf548de94f5e282a",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/toptier/overlay.html",
+        "reference": "/plugins/toptier/assets/animations.css",
+        "kind": "local-static",
+        "path": "app/plugins/toptier/assets/animations.css",
+        "bytes": 5246,
+        "sha256": "01b136f8be116fb07049e160d168c7fd41c8144a38c337ad78ac01c23e25ab9e",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/toptier/overlay.html",
+        "reference": "/plugins/toptier/assets/overlay.css",
+        "kind": "local-static",
+        "path": "app/plugins/toptier/assets/overlay.css",
+        "bytes": 29357,
+        "sha256": "5929dc8b8bbe7112b70bf063a88a19ded30e6d5b4f27a10beb1969511ce96c28",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/toptier/overlay.html",
+        "reference": "/plugins/toptier/assets/overlay.js",
+        "kind": "local-static",
+        "path": "app/plugins/toptier/assets/overlay.js",
+        "bytes": 23972,
+        "sha256": "dfb184811ca1a4c906e8934e6432a568ad86979b5c32f355de3ecb0d9bd2d88b",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/default-config.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/default-config.js",
+        "bytes": 2386,
+        "sha256": "468bc232f7ca4033d817d49cb3b8ee805cac5953ac10a85fb1243dd345c7efea",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/adaptive-quality.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/adaptive-quality.js",
+        "bytes": 3741,
+        "sha256": "f42ffeb63eb15faaa543e4bf0968c622c78758770752e5c1404fc428f9b5f9f6",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/effect-pipelines.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/effect-pipelines.js",
+        "bytes": 18776,
+        "sha256": "a8ac2d3c4e1ef52f8a9d88bdbc3d4d5fff6a157cdaed39f93566b13afa1c4473",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/gpu-resources.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/gpu-resources.js",
+        "bytes": 2229,
+        "sha256": "18afcf995f394fba19f217815b22c62061f2c1d7e9101192237c77b0e8647979",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/hdr-post-processor.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/hdr-post-processor.js",
+        "bytes": 7955,
+        "sha256": "b682515fefabb6a72f8c69ee65affe6a8456984b68380810679216f3dde15f9a",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/overlay-controller.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js",
+        "bytes": 1450,
+        "sha256": "371256f78d09b689f73bf14e7179dfad79bf561da5921c98f685fa687e2a33fa",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+        "reference": "/visual-fx-frame-webgpu/webgpu-effects-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/visual-fx-frame-webgpu/renderer/webgpu-effects-engine.js",
+        "bytes": 19545,
+        "sha256": "c440719e2b045eb289832183911cf1fe798dffd6d22926a29f7fae3108f3a3d5",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/weather-control/overlay.html",
+        "reference": "/plugins/weather-control/weather-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/weather-control/weather-engine.js",
+        "bytes": 110266,
+        "sha256": "4c23a24e93472197d17c33a3c2a82b5b55315d67decea27efbfb60d166291df8",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-emoji-rain/overlay.html",
+        "reference": "/plugins/webgpu-emoji-rain/gpu/engine.js?v=3.0.5",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-emoji-rain/gpu/engine.js",
+        "bytes": 29584,
+        "sha256": "c7b3235058de570587a59e49982ab18535ec881d277be0b576cfd941ff2cd0c9",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-emoji-rain/overlay.html",
+        "reference": "/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js?v=3.0.5",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js",
+        "bytes": 82202,
+        "sha256": "5230ce03e9e86eb3dc6b882edf6a117fe2c3844a2d4a7d1771223fe0c18832e8",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/boykisser-geometry.js?v=3.1.1-particle-rocket-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/boykisser-geometry.js",
+        "bytes": 19300,
+        "sha256": "89b9107b3ee14ab2a0d561a528b8dfcf326c93ed2ffaed0adc26c97b4f90851d",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/engine.js?v=3.1.1-particle-rocket-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/engine.js",
+        "bytes": 169573,
+        "sha256": "55b39024f5ea7380e2e7e4d667f7d1dfc7ecd24f89092438320541ec56885a80",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js?v=3.1.1-particle-rocket-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js",
+        "bytes": 33223,
+        "sha256": "17ceb20000e405c060e6a1c36425a83fa9ec3b31c49b39115c50597656c925fc",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/spawn-command-policy.js?v=3.1.1-depth3d-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/spawn-command-policy.js",
+        "bytes": 11144,
+        "sha256": "127bead4a9d308e8003d3738b0fb508767ee18f2217ef51d80e4ebe364072875",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/visible-envelope.js?v=3.1.1-glyph-envelope-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/visible-envelope.js",
+        "bytes": 24374,
+        "sha256": "cfe5ae613ed94d4c76ce27ed944f18c33fdcf8c236eb8e80dc30e1162fdcd800",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js?v=3.1.1-particle-rocket-1",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js",
+        "bytes": 178455,
+        "sha256": "389f601ca3307a57464b1479177d0862bde6ff620e297b766a6d80ba1f315f55",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-weather-control/overlay.html",
+        "reference": "/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js",
+        "bytes": 13337,
+        "sha256": "03c03b0a7950ace56c40f5b76bd2dff42adedd9a51b0f421c717f298bfb1dd88",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-weather-control/overlay.html",
+        "reference": "/plugins/webgpu-weather-control/gpu/weather-framegraph.js",
+        "kind": "local-static",
+        "path": "app/plugins/webgpu-weather-control/gpu/weather-framegraph.js",
+        "bytes": 31899,
+        "sha256": "6c8231afe6b6cd44b91934e949d70cf7216c079c5d84d99585fd6b051e8ed27c",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/chatango/ui.html",
+        "reference": "/css/themes.css",
+        "kind": "local-static",
+        "path": "app/public/css/themes.css",
+        "bytes": 61156,
+        "sha256": "edad3559b6592cdc0f43fe92906bb793aeffa51b62e60be118959740f3a0f10b",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/spotlight/overlays/chatter.html",
+        "reference": "/fonts/exo-2.css",
+        "kind": "local-static",
+        "path": "app/public/fonts/exo-2.css",
+        "bytes": 808,
+        "sha256": "099b9a4e7db8cf8c6afd091e440718c46b4560ae4e326f300705c173ddbd811c",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/fonts/open-sans.css",
+        "kind": "local-static",
+        "path": "app/public/fonts/open-sans.css",
+        "bytes": 1005,
+        "sha256": "b2be4d004f9743ecaf676fcf1a73ac273b958cfed491895045a3ce411fe23245",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/clarityhud/overlays/full.html",
+        "reference": "/fonts/opendyslexic.css",
+        "kind": "local-static",
+        "path": "app/public/fonts/opendyslexic.css",
+        "bytes": 1095,
+        "sha256": "44a026cfd29b4173bc465c18efcfe2a4b2791550d25d9c349424efe96c9e8177",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/emoji-rain/obs-hud.html",
+        "reference": "/js/emoji-rain-obs-hud.js?v=heart-balloons-pop-3",
+        "kind": "local-static",
+        "path": "app/public/js/emoji-rain-obs-hud.js",
+        "bytes": 104602,
+        "sha256": "55e1903416219b2f46194f6b69c1e05b31ec93c5ac17e05cee29b2b3370f32d8",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/webgpu-fireworks/overlay.html",
+        "reference": "/js/i18n-client.js",
+        "kind": "local-static",
+        "path": "app/public/js/i18n-client.js",
+        "bytes": 24765,
+        "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/schnorrbecher/overlay/coincup.html",
+        "reference": "/js/matter.min.js",
+        "kind": "local-static",
+        "path": "app/public/js/matter.min.js",
+        "bytes": 83476,
+        "sha256": "72d30be0f579eb02ce1e0b6f9d359a4f392e6837e5a26ba8be5dbee7f88e24ae",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/quiz-show/quiz_show_overlay.html",
+        "reference": "/js/public-overlay-render-mode.js",
+        "kind": "local-static",
+        "path": "app/public/js/public-overlay-render-mode.js",
+        "bytes": 1513,
+        "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "from": "app/plugins/chatango/ui.html",
+        "reference": "/js/theme-manager.js",
+        "kind": "local-static",
+        "path": "app/public/js/theme-manager.js",
+        "bytes": 12820,
+        "sha256": "a6b50cb1249c0d2078de0fe56642b3bea4b7ec755b4034dcf223f1b619cab4fe",
+        "includedInCurrentSidekickTransfer": false
+      }
+    ],
+    "externalHtmlReferences": [
+      {
+        "from": "app/plugins/chatango/ui.html",
+        "reference": "https://st.chatango.com/js/gz/emb.js",
+        "kind": "external",
+        "status": "must-remain-blocked-offline"
+      }
+    ]
+  },
+  "localeAssets": {
+    "expectedCount": 104,
+    "foundCount": 104,
+    "bytes": 2963340,
+    "files": [
+      {
+        "path": "app/plugins/advanced-timer/locales/de.json",
+        "bytes": 18771,
+        "sha256": "305bb9f9898f97a20ec3928983837917c21b0e1027b25311ae33f1de6261db72",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/advanced-timer/locales/en.json",
+        "bytes": 16866,
+        "sha256": "9d5745cce497dca5703a1f8ba23807844679765a85fbd5713dd74617002394e4",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/advanced-timer/locales/es.json",
+        "bytes": 19020,
+        "sha256": "f593b945134993f7d954b8504d0cc513f74f54dea2f94250e1f14ac16a3e13c1",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/advanced-timer/locales/fr.json",
+        "bytes": 19421,
+        "sha256": "e727035282cc0d7aa998791fabb37724e2e014ea2ce0f6bee21813d65e49c95e",
+        "guestTransferPath": "pilot/app/plugins/advanced-timer/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/locales/de.json",
+        "bytes": 4147,
+        "sha256": "5b06e02b601befbc237e7ef560971e1c38ab83fb7c33e6ff8edeb414c51c45d2",
+        "guestTransferPath": "pilot/app/plugins/chatango/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/locales/en.json",
+        "bytes": 3923,
+        "sha256": "719f573d4ed70b62693f6632b72458eaf1d3308d04f1ad4af63dd7a79f882582",
+        "guestTransferPath": "pilot/app/plugins/chatango/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/locales/es.json",
+        "bytes": 4187,
+        "sha256": "75fde188992e0332b9a38b70df0522209f4e1c77ca7503969ae70d8fca2fd5d9",
+        "guestTransferPath": "pilot/app/plugins/chatango/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/chatango/locales/fr.json",
+        "bytes": 4235,
+        "sha256": "d4f7ab6f75b1ed802e7ae1f537977335f063028bc51936fee7ac576c69449cc8",
+        "guestTransferPath": "pilot/app/plugins/chatango/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/locales/de.json",
+        "bytes": 12458,
+        "sha256": "419ec63e5b2291c1a4cf491dabef525554301d094b73438779c57298b009def8",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/locales/en.json",
+        "bytes": 11387,
+        "sha256": "cc4958423a84adf61898bf6a0414c496e479c82a01cb68779d988f3e0aa487ec",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/locales/es.json",
+        "bytes": 12779,
+        "sha256": "4d3f93b05d1daa6b70ca8b88151abb86c199c7486983c09e9dea38a5affa4b04",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/clarityhud/locales/fr.json",
+        "bytes": 12757,
+        "sha256": "5e75e7250ec42ee03fd3b352abe6d9a7e7e50b3f2b9528e5a1acc28ea5a7c53b",
+        "guestTransferPath": "pilot/app/plugins/clarityhud/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/locales/de.json",
+        "bytes": 27091,
+        "sha256": "b875620dce6c22757bd05c65c24a3df31f0ae309c042791266f0dd8dfe61a038",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/locales/en.json",
+        "bytes": 25109,
+        "sha256": "1c80dcafbeda844dfbbd6a42ff815c9b5f96356d752448487914fba3edf6768f",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/locales/es.json",
+        "bytes": 28023,
+        "sha256": "84ecb693a9525a88b62940cb42dbd681a070dad361c93c4529e5ae529fb6ab6a",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/coinbattle/locales/fr.json",
+        "bytes": 27952,
+        "sha256": "5647b10d507e1f518b6532bdf3782daa78c1cb23e18c493ff36bdd47a6a69f99",
+        "guestTransferPath": "pilot/app/plugins/coinbattle/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/locales/de.json",
+        "bytes": 26635,
+        "sha256": "11ffb546aa2b59462b328fd846f427d4aad855cc4d3ab028143137b45d612077",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/locales/en.json",
+        "bytes": 24824,
+        "sha256": "bad7981a908b49242cf1eccb4f026f599122bcf83efb9b098a5d2893d08885e7",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/locales/es.json",
+        "bytes": 27590,
+        "sha256": "9a03bd7bd4c9e92c826fb253a917932ae7b241b3ab32c836c15c2f49f897030a",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/emoji-rain/locales/fr.json",
+        "bytes": 28194,
+        "sha256": "7372f2710ca4b7f8f119ba489568e2e5e8fec2c75cd874d8c1f1d26d15a5c282",
+        "guestTransferPath": "pilot/app/plugins/emoji-rain/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/locales/de.json",
+        "bytes": 22350,
+        "sha256": "3b8eccb94d47c14954aba6f24648360f530566705f9a8059b9b2950accf4c1bd",
+        "guestTransferPath": "pilot/app/plugins/fireworks/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/locales/en.json",
+        "bytes": 20438,
+        "sha256": "e78aa91bfca05b06f81e446f20136a0e1f7da9e9fbb8f2b5819d214440bd5c74",
+        "guestTransferPath": "pilot/app/plugins/fireworks/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/locales/es.json",
+        "bytes": 23022,
+        "sha256": "b0d82169d4ded31d7f01d705d278b67e073df21bc5565c47cde3d7bb69046b35",
+        "guestTransferPath": "pilot/app/plugins/fireworks/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/fireworks/locales/fr.json",
+        "bytes": 23228,
+        "sha256": "4c674b64bb9edbba8bc574685c727e7f9c5568193a3f47463ec4dd33f83d4db3",
+        "guestTransferPath": "pilot/app/plugins/fireworks/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/locales/de.json",
+        "bytes": 21256,
+        "sha256": "3bf9ff90eabcecbe6c95e4f6a83ee87e2a8bb1f0f6a87995c62ac39fa7f34c21",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/locales/en.json",
+        "bytes": 20266,
+        "sha256": "e40a53370564ddfed0bae4b7932a67baab5a7c7d04ff8d27f517154d6d5e199c",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/locales/es.json",
+        "bytes": 22269,
+        "sha256": "50adc9717d9c185e80191c19dcbd58fa2475e60fc2470ab6c0ad2f66be1b7a8a",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/flame-overlay/locales/fr.json",
+        "bytes": 22758,
+        "sha256": "b5ffe8e07fefc666d63d8f59d4086c96e0d0adbf8711cc74eb11323fd46df5db",
+        "guestTransferPath": "pilot/app/plugins/flame-overlay/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/locales/de.json",
+        "bytes": 92226,
+        "sha256": "2bbbdbb935a489ac21f7bfc962e790af27d2861f22322076120f6730026d1859",
+        "guestTransferPath": "pilot/app/plugins/game-engine/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/locales/en.json",
+        "bytes": 87620,
+        "sha256": "d6491d2827d66d70bc65f43cefa36674a38597dcfec3df8fa18ba6fe7ffe5923",
+        "guestTransferPath": "pilot/app/plugins/game-engine/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/locales/es.json",
+        "bytes": 97703,
+        "sha256": "4f2f998a50d5a1a06b7c3e2ae19eba3d76a8eb5a3cbfe262a09dedf8a3ae644b",
+        "guestTransferPath": "pilot/app/plugins/game-engine/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/game-engine/locales/fr.json",
+        "bytes": 98471,
+        "sha256": "378c88b6a4fd718a58aa8e8dccae033926b9142652fb4bab2ee9cc0197bb0658",
+        "guestTransferPath": "pilot/app/plugins/game-engine/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/locales/de.json",
+        "bytes": 11273,
+        "sha256": "a6bbcb608f42a53f64c967f09ecdd434058830be5d9a15556a7a24890647413a",
+        "guestTransferPath": "pilot/app/plugins/goals/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/locales/en.json",
+        "bytes": 10179,
+        "sha256": "ce8ab32a8baf325758c195b7405a8483e169697c8bf3fed574ac26079aaae04e",
+        "guestTransferPath": "pilot/app/plugins/goals/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/locales/es.json",
+        "bytes": 11099,
+        "sha256": "b3eb46f841c0b5ed97f10685f0852a81d97efec7e29eb23e2e1b91d86922454f",
+        "guestTransferPath": "pilot/app/plugins/goals/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/goals/locales/fr.json",
+        "bytes": 11422,
+        "sha256": "0d610f09b6dd409820ee1209e3d977dc47584670a588edddbdba57a1b4843142",
+        "guestTransferPath": "pilot/app/plugins/goals/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/locales/de.json",
+        "bytes": 24318,
+        "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/locales/en.json",
+        "bytes": 22314,
+        "sha256": "35db326b77bc9e1fd7a631d1fc9cd681463aeddf8f8396500e6de363daa9329f",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/locales/es.json",
+        "bytes": 24825,
+        "sha256": "d93b50567bbba5119eaa7d27cfee51951f19e3ada26df03b9b6448da86409df5",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/interactive-story/locales/fr.json",
+        "bytes": 24830,
+        "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21",
+        "guestTransferPath": "pilot/app/plugins/interactive-story/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/locales/de.json",
+        "bytes": 70187,
+        "sha256": "e25cc1a58a5ed2c29e67c0edc1c48c518a55fc64d04cf689dc23236e6f277f33",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/locales/en.json",
+        "bytes": 63430,
+        "sha256": "45dadb8bf7fc295e195c5de9dd95dc3d4720be0bde93c9a6c0c16f284e99af17",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/locales/es.json",
+        "bytes": 71790,
+        "sha256": "2bb329fea1fc4f242fccdc6a54b03121970fedeb2a4c9aa61b60253158915619",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/milestone-leaderboard/locales/fr.json",
+        "bytes": 73409,
+        "sha256": "a37969b2a4493879956a7feac0f771fd034106df7f8cb2b40b49c6fc310438ad",
+        "guestTransferPath": "pilot/app/plugins/milestone-leaderboard/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/locales/de.json",
+        "bytes": 15108,
+        "sha256": "edaac2533e52d1711af982b7a1b2e3c38130b261da0eaa939902157b6f7a1032",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/locales/en.json",
+        "bytes": 14039,
+        "sha256": "7966feeba9cf3384e6260a6f8204faef3b95693d8c4e28578f7551223bb16bd8",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/locales/es.json",
+        "bytes": 12497,
+        "sha256": "8931127a7b25dbfd14fdfe5d0a32f8c69035a9899960f0a6162c9200bd851127",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/minecraft-connect/locales/fr.json",
+        "bytes": 12682,
+        "sha256": "fdd15244296514d3586ff39f2506ceb58f45828888f0c75b4c3eb4f6ead903a6",
+        "guestTransferPath": "pilot/app/plugins/minecraft-connect/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/locales/de.json",
+        "bytes": 37853,
+        "sha256": "5077a876f597524cd35931bb4ea6b260dbf6469df4b666ac25e62b45e5bb6ef8",
+        "guestTransferPath": "pilot/app/plugins/music-bot/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/locales/en.json",
+        "bytes": 35258,
+        "sha256": "870007d0202d44c4f1936af81b854a958fa15f74644ef195a29514ecfc5abd09",
+        "guestTransferPath": "pilot/app/plugins/music-bot/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/locales/es.json",
+        "bytes": 38465,
+        "sha256": "e5748c8a796f755ad873f89fe45ea20c9e50f48971655c321fc8149716bf384c",
+        "guestTransferPath": "pilot/app/plugins/music-bot/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/music-bot/locales/fr.json",
+        "bytes": 38990,
+        "sha256": "3afd8f6f509d2ac91334e2e77605d60bc54faa863fd0fe58a9704de7e683175e",
+        "guestTransferPath": "pilot/app/plugins/music-bot/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/locales/de.json",
+        "bytes": 48928,
+        "sha256": "82374a57fb4783f3db12fe18cb7c86f95680687f5026828139a7672d26870276",
+        "guestTransferPath": "pilot/app/plugins/openshock/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/locales/en.json",
+        "bytes": 44507,
+        "sha256": "b958b11443bef50792c4aec9285117494361ab46b3e9dc543fc6ccd8c426f30d",
+        "guestTransferPath": "pilot/app/plugins/openshock/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/locales/es.json",
+        "bytes": 49525,
+        "sha256": "6f910c08cd4beea886334bba00fdf19b0226d2ec4046ed0ec43a4d4035415c01",
+        "guestTransferPath": "pilot/app/plugins/openshock/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/openshock/locales/fr.json",
+        "bytes": 50769,
+        "sha256": "2bd58c36c54daf671364f532d3d3fe0b8eccd9f5b22cbcc18dac066c269e56c0",
+        "guestTransferPath": "pilot/app/plugins/openshock/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/locales/de.json",
+        "bytes": 44801,
+        "sha256": "6e85d2ee516bc73d57f97a6f4029c11708797dd9deb23338ba616546898cc8ff",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/locales/en.json",
+        "bytes": 42882,
+        "sha256": "1c7eda1d617cc0205fd6d73f8faf4ec83a8c7f1c0f1742500d7137d0faef9323",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/locales/es.json",
+        "bytes": 47050,
+        "sha256": "a2a0caae8f4cdc262f92246769bc39eead018435c7790969b16a9db90f4f6815",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/quiz-show/locales/fr.json",
+        "bytes": 47211,
+        "sha256": "75dbe7b6277d85c318fab638d852316f4705556dd902b155a400fb55c411410d",
+        "guestTransferPath": "pilot/app/plugins/quiz-show/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/locales/de.json",
+        "bytes": 1670,
+        "sha256": "4ccf95f31c6025a02ca62cf3b1523805121f4d3658c033ba6be3c47c4a3fd7a7",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/locales/en.json",
+        "bytes": 1534,
+        "sha256": "ff50a5dd12c11b5e6f7253da11c372a48fbc8ac56050dbe32efc5acb3bf8e303",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/locales/es.json",
+        "bytes": 1625,
+        "sha256": "4723071f7041579bc06e5f7c275d163e4bce1fe4f4a76c419d81ad204b41dcb5",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/schnorrbecher/locales/fr.json",
+        "bytes": 1685,
+        "sha256": "7cbe6e99cc2116b88ef0acabac661d827d6eb33a69bfbde4de58bb09d8186184",
+        "guestTransferPath": "pilot/app/plugins/schnorrbecher/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/locales/de.json",
+        "bytes": 9858,
+        "sha256": "217ee135da5b24bc57100c1ca112927d855accc5691604b3cb16776104f8db6e",
+        "guestTransferPath": "pilot/app/plugins/spotlight/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/locales/en.json",
+        "bytes": 9249,
+        "sha256": "517ab6fd0ae58c4ecf5b14495b4962b13b6489274f5cc332fc6f22cde359e310",
+        "guestTransferPath": "pilot/app/plugins/spotlight/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/locales/es.json",
+        "bytes": 9962,
+        "sha256": "6149e3ed680e028c0f5855318e813a5ac7422cdfa9be0d626a583ec71f5ddc82",
+        "guestTransferPath": "pilot/app/plugins/spotlight/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/spotlight/locales/fr.json",
+        "bytes": 10272,
+        "sha256": "f2cf04808d8ae69cf7e1b316a1f6b290423f8ffa6f0199f3176297740558067a",
+        "guestTransferPath": "pilot/app/plugins/spotlight/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/locales/de.json",
+        "bytes": 81271,
+        "sha256": "4ac8aec00f2751b7eefc479f8684b643155c64365a0e0fa5f20359e5a42bcb34",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/locales/en.json",
+        "bytes": 76849,
+        "sha256": "1d8543d91b8b6322b06821680f171d69247767b84da71b0693593582a5d200b8",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/locales/es.json",
+        "bytes": 80918,
+        "sha256": "fe163753641fced6c96e917e431508a799e4a3ac7aa89f6cc3fe61935850d763",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stream-monsters/locales/fr.json",
+        "bytes": 83119,
+        "sha256": "e204ae21882ae4e2c7d86812b70eccf89d9eb4b6538a44da9dcf089532c5ab09",
+        "guestTransferPath": "pilot/app/plugins/stream-monsters/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/locales/de.json",
+        "bytes": 16925,
+        "sha256": "4ea0fbe59622346a49ef9c51d167e501e34dc781d9c1c1873a695d00a4161663",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/locales/en.json",
+        "bytes": 16202,
+        "sha256": "66b67d854381e58efa104ad304040c879ac5430bc167889aa66402df6311a60a",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/locales/es.json",
+        "bytes": 17766,
+        "sha256": "53ad87a7648a2e6946be616d060830e44ff97d919fb0e3e2b112cd06e56426a1",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/stt-ticker/locales/fr.json",
+        "bytes": 17861,
+        "sha256": "a36c1868c3c74d8d6be88805c85aae0921f86308c3ea55980e42782d6cbc573d",
+        "guestTransferPath": "pilot/app/plugins/stt-ticker/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/locales/de.json",
+        "bytes": 10865,
+        "sha256": "c448140b551e248f41f156ebd4df34e762f12ed834ec6575e3bd3d6c651bdb1f",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/locales/en.json",
+        "bytes": 10217,
+        "sha256": "44fba570e86f1a661f0383ff9d3ba02d0a92fad64d107a6e5a8ff73ef4180342",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/locales/es.json",
+        "bytes": 11115,
+        "sha256": "9eb6e1a0ebb164a8b9ef075d5fea1a31e64a94aba56ecd3605d90406cebb086b",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/talking-heads/locales/fr.json",
+        "bytes": 10995,
+        "sha256": "48281acd4f9a390d11f9aeee0043339d297cbb30d375441b998b908b4212d716",
+        "guestTransferPath": "pilot/app/plugins/talking-heads/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/locales/de.json",
+        "bytes": 14543,
+        "sha256": "db0c608e304762694595d869ac6a81da040d3b3a3e598746c065da599e1dd7d2",
+        "guestTransferPath": "pilot/app/plugins/toptier/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/locales/en.json",
+        "bytes": 13463,
+        "sha256": "a8b9e82ab6efb97ac284520ba6203fb421b0784c2f14cba0ee56c4d5c5617fd9",
+        "guestTransferPath": "pilot/app/plugins/toptier/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/locales/es.json",
+        "bytes": 15205,
+        "sha256": "4a55b95ec7d3bb2d2a3853781f79d6b6d55acb576b9bad2792fefcdc07db3367",
+        "guestTransferPath": "pilot/app/plugins/toptier/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/toptier/locales/fr.json",
+        "bytes": 15335,
+        "sha256": "68486298f1f44e7e9bb31116720b94faaffbf4e241e9e3ec7b504b00d4eab41d",
+        "guestTransferPath": "pilot/app/plugins/toptier/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/locales/de.json",
+        "bytes": 21428,
+        "sha256": "577004d522244640d1d3704e20db72a65d80cab1bd859d021ebd64949965496f",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/locales/en.json",
+        "bytes": 20195,
+        "sha256": "4930a2ccdd52688e76faaf75161e018e7e529b5fba71a52c9a9ab33871850422",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/locales/es.json",
+        "bytes": 22126,
+        "sha256": "b84bc8f6d3836150b5b189482df0c663d420784c75bac6f60122f98fa63c6cf0",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/visual-fx-frame-webgpu/locales/fr.json",
+        "bytes": 22519,
+        "sha256": "679e113cda730392965e3ea253ac0896258cabc78ede732f6bb9fd90da459a31",
+        "guestTransferPath": "pilot/app/plugins/visual-fx-frame-webgpu/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/locales/de.json",
+        "bytes": 15169,
+        "sha256": "916e3723e38e486cee65fb24af9e13c9b80048df7bbe7d90acbde212075aeef9",
+        "guestTransferPath": "pilot/app/plugins/weather-control/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/locales/en.json",
+        "bytes": 14947,
+        "sha256": "280de7f2559326d090447a5eee6fa181cdddf72259bc5112a0e2258140dee32f",
+        "guestTransferPath": "pilot/app/plugins/weather-control/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/locales/es.json",
+        "bytes": 16226,
+        "sha256": "8fcfdb3a9d0f01a2851f4f8acb938159f510daeab5446dd118c52b02d4a4c594",
+        "guestTransferPath": "pilot/app/plugins/weather-control/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/weather-control/locales/fr.json",
+        "bytes": 16483,
+        "sha256": "9fa9772b1589369d0623b3c7ab729458bd4025f133b4862bfac6965b1fe97160",
+        "guestTransferPath": "pilot/app/plugins/weather-control/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/locales/de.json",
+        "bytes": 27597,
+        "sha256": "4af30350b79db5e33a979e8df6b8fa441b74bac13aac394d5eb5be57baecf33a",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/locales/en.json",
+        "bytes": 26157,
+        "sha256": "f76a57100392600c7eaeea3d3bd46796df06f5aba3f0a461530d29f7d81782dc",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/locales/es.json",
+        "bytes": 28797,
+        "sha256": "8a452ea2c6dda6f2b35a6a3856acc44dba5d473b574a9e8f3bf7d1625baf74cd",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-emoji-rain/locales/fr.json",
+        "bytes": 29291,
+        "sha256": "f5059e56a2b8330c4d5354ba4ae19b85286fe58bf3c1c39bdfe1dba36d46d722",
+        "guestTransferPath": "pilot/app/plugins/webgpu-emoji-rain/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/locales/de.json",
+        "bytes": 48840,
+        "sha256": "b1b63a9cd3fe7b8b59450f3870124c9bf7818b3962983a71e8f51e471e8b705e",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/locales/en.json",
+        "bytes": 46417,
+        "sha256": "7a50a1921cb3c677107fe042828fb306276c9e0c6dafb793714f0a35a2104088",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/locales/es.json",
+        "bytes": 48766,
+        "sha256": "de244dbf06b61de7f77aed37e95a3fcffd912c33321d8b365ebf7060ef0416e5",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-fireworks/locales/fr.json",
+        "bytes": 49188,
+        "sha256": "bbc0deefdf81934301d228a9602fe5b45f42d99f3d3ac324ab10d8aa450657c7",
+        "guestTransferPath": "pilot/app/plugins/webgpu-fireworks/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/locales/de.json",
+        "bytes": 15361,
+        "sha256": "4ad33bad71cf8d74145d3b8d7b3022f6c7201dc0ad908bc4def2230ea88ac589",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/locales/de.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/locales/en.json",
+        "bytes": 15035,
+        "sha256": "da66c5692d19c1538fb60ce8a5cadd55b7169e1455b1fc53013e1e836e4741e8",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/locales/en.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/locales/es.json",
+        "bytes": 16517,
+        "sha256": "405768e10026c0467382d8ede8bb2f8e28d05371a268378341af7452d240a68a",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/locales/es.json",
+        "includedInCurrentSidekickTransfer": false
+      },
+      {
+        "path": "app/plugins/webgpu-weather-control/locales/fr.json",
+        "bytes": 17160,
+        "sha256": "8e73fed9c7c0a6a148e17cd2e368bb1ecfcc5082f8ee2bd75752e68042fb9403",
+        "guestTransferPath": "pilot/app/plugins/webgpu-weather-control/locales/fr.json",
+        "includedInCurrentSidekickTransfer": false
+      }
+    ]
+  },
+  "runtimeAnchors": [
+    {
+      "path": "app/server.js",
+      "bytes": 174953,
+      "sha256": "5cdff502080f1aca39b5c49a898f0331315fe27fa7d1285f69d4fc3762f597b6",
+      "guestTransferPath": "pilot/app/server.js",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/package.json",
+      "bytes": 3051,
+      "sha256": "133f30d4b3651e16fdae21312384cc740b3f60ae50533a06344846cedde10a09",
+      "guestTransferPath": "pilot/app/package.json",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/package-lock.json",
+      "bytes": 534051,
+      "sha256": "eff811ac8e412af80cb71927575ee080df84d0073a5106f67057b31ab314698d",
+      "guestTransferPath": "pilot/app/package-lock.json",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/routes/plugin-routes.js",
+      "bytes": 34490,
+      "sha256": "f1c0259ef53abe36d94fdbaa84ce15d1ea116e335fe2ea747bb2a7f225099802",
+      "guestTransferPath": "pilot/app/routes/plugin-routes.js",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/modules/plugin-loader.js",
+      "bytes": 96483,
+      "sha256": "049cca17c5aabaa700c54978de7150f7d47a0a7b351f0d1c891861a351934881",
+      "guestTransferPath": "pilot/app/modules/plugin-loader.js",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/modules/public-overlay-registry.js",
+      "bytes": 29624,
+      "sha256": "b075a2eef71684a7463aa7d64dfd6eb0e4c36309570ed3cf5ba80d1bc7b5b2b3",
+      "guestTransferPath": "pilot/app/modules/public-overlay-registry.js",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "bytes": 24765,
+      "sha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c",
+      "guestTransferPath": "pilot/app/public/js/i18n-client.js",
+      "includedInCurrentSidekickTransfer": false
+    },
+    {
+      "path": "app/node_modules/socket.io/dist/index.js",
+      "bytes": 28401,
+      "sha256": "f6798dc7a9d8ffa53073a6d624033783a36da62db11d01e8d9e09ec6811bf6cd",
+      "guestTransferPath": "pilot/app/node_modules/socket.io/dist/index.js",
+      "includedInCurrentSidekickTransfer": true
+    },
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "guestTransferPath": "pilot/app/node_modules/socket.io/client-dist/socket.io.js",
+      "includedInCurrentSidekickTransfer": true
+    },
+    {
+      "path": "app/node_modules/socket.io-client/dist/socket.io.js",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "guestTransferPath": "pilot/app/node_modules/socket.io-client/dist/socket.io.js",
+      "includedInCurrentSidekickTransfer": true
+    }
+  ],
+  "closureLimits": [
+    "HTML src/href references only; JavaScript imports, CSS url(), dynamic asset construction, API routes and socket producers require separate review.",
+    "The 104-case matrix has no OBS runner; the existing run-pilot.js is Sidekick-specific.",
+    "The existing documentation-capture fixture links modules and node_modules to the host checkout and is not a ready guest transfer bundle.",
+    "Do not include app/.env, user_configs, logs, archives, databases or other user/runtime state in a product payload."
+  ]
+}

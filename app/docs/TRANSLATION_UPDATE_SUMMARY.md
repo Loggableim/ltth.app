@@ -59,7 +59,6 @@ All 4 main locale files now have **complete, professional translations** with id
 | Plugin | EN | DE | ES | FR |
 |--------|----|----|----|----|
 | advanced-timer | ✅ | ✅ | ✅ | ✅ |
-| chatango | ✅ | ✅ | ✅ | ✅ |
 | clarityhud | ✅ | ✅ | ✅ | ✅ |
 | coinbattle | ✅ | ✅ | ✅ | ✅ |
 | config-import | ✅ | ✅ | ✅ | ✅ |

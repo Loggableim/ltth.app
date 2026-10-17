@@ -29,6 +29,49 @@ function markedProcess(pid = 4101, overrides = {}) {
   };
 }
 
+function windowsSentinelEnvironment() {
+  return {
+    Path: 'C:\\safe\\bin',
+    PATHEXT: '.COM;.EXE;.BAT;.CMD',
+    SystemRoot: 'C:\\Windows',
+    WINDIR: 'C:\\Windows',
+    TEMP: 'C:\\Users\\fixture\\AppData\\Local\\Temp',
+    TMP: 'C:\\Users\\fixture\\AppData\\Local\\Temp',
+    USERPROFILE: 'C:\\Users\\fixture',
+    HOMEDRIVE: 'C:',
+    HOMEPATH: '\\Users\\fixture',
+    HOME: 'C:\\Users\\fixture',
+    APPDATA: 'C:\\Users\\fixture\\AppData\\Roaming',
+    LOCALAPPDATA: 'C:\\Users\\fixture\\AppData\\Local',
+    HTTP_PROXY: 'http://proxy.fixture.invalid',
+    HTTPS_PROXY: 'https://proxy.fixture.invalid',
+    ALL_PROXY: 'socks5://proxy.fixture.invalid',
+    no_proxy: 'localhost,.internal.fixture.invalid',
+    NO_PROXY: '.upper.fixture.invalid',
+    LTTH_ADMIN_TOKEN: 'SENTINEL_ADMIN_SECRET',
+    NODE_OPTIONS: '--require SENTINEL_NODE_INJECTION',
+    NODE_PATH: 'SENTINEL_NODE_PATH',
+    PYTHONPATH: 'SENTINEL_PYTHON_PATH',
+    PYTHONHOME: 'SENTINEL_PYTHON_HOME',
+    PYTHONUSERBASE: 'SENTINEL_PYTHON_USERBASE',
+    LD_PRELOAD: 'SENTINEL_LIBRARY_INJECTION',
+    DYLD_INSERT_LIBRARIES: 'SENTINEL_DYLD_LIBRARY_INJECTION',
+    EULER_API_KEY: 'SENTINEL_PROVIDER_SECRET',
+    NOT_ALLOWED_SECRET: 'SENTINEL_UNKNOWN_SECRET'
+  };
+}
+
+function expectedWindowsBaseEnvironment() {
+  return {
+    PATH: 'C:\\safe\\bin',
+    PATHEXT: '.COM;.EXE;.BAT;.CMD',
+    SystemRoot: 'C:\\Windows',
+    WINDIR: 'C:\\Windows',
+    TEMP: 'C:\\Users\\fixture\\AppData\\Local\\Temp',
+    TMP: 'C:\\Users\\fixture\\AppData\\Local\\Temp'
+  };
+}
+
 describe('Music Bot marked MPV process registry', () => {
   afterEach(() => {
     jest.useRealTimers();
@@ -201,6 +244,84 @@ describe('Music Bot marked MPV process registry', () => {
     expect(script).not.toContain("'Stop' | Get-CimInstance");
   });
 
+  test('passes only the Windows base environment to the PowerShell process scanner', async () => {
+    const scanner = Object.assign(new EventEmitter(), {
+      stdout: new EventEmitter(),
+      stderr: new EventEmitter(),
+      kill: jest.fn()
+    });
+    const environment = windowsSentinelEnvironment();
+    const spawnScanner = jest.fn(() => scanner);
+    const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
+      platform: 'win32',
+      environment,
+      spawn: spawnScanner
+    });
+    process.nextTick(() => {
+      scanner.stdout.emit('data', '[]');
+      scanner.emit('close', 0);
+    });
+
+    await expect(registry.findMarkedProcesses()).resolves.toEqual([]);
+
+    expect(spawnScanner).toHaveBeenCalledWith(
+      'powershell.exe',
+      expect.any(Array),
+      expect.objectContaining({
+        shell: false,
+        windowsHide: true,
+        env: expectedWindowsBaseEnvironment()
+      })
+    );
+    const childEnv = spawnScanner.mock.calls[0][2].env;
+    for (const key of [
+      'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY',
+      'no_proxy', 'NO_PROXY', 'LTTH_ADMIN_TOKEN', 'EULER_API_KEY', 'NODE_OPTIONS', 'NODE_PATH',
+      'PYTHONPATH', 'PYTHONHOME', 'PYTHONUSERBASE', 'LD_PRELOAD', 'DYLD_INSERT_LIBRARIES',
+      'NOT_ALLOWED_SECRET'
+    ]) {
+      expect(childEnv).not.toHaveProperty(key);
+    }
+  });
+
+  test('passes only the Windows taskkill base environment to registry cleanup', async () => {
+    const environment = windowsSentinelEnvironment();
+    const taskkill = Object.assign(new EventEmitter(), { kill: jest.fn() });
+    const spawnChild = jest.fn(() => {
+      process.nextTick(() => taskkill.emit('close', 0));
+      return taskkill;
+    });
+    const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
+      platform: 'win32',
+      environment,
+      spawn: spawnChild
+    });
+
+    await expect(registry._terminateProcess(markedProcess(4601, {
+      name: 'mpv.exe',
+      commandLine: `mpv --title=${SOUND_BOT_PROCESS_MARKER} --input-ipc-server=\\\\.\\pipe\\${SOUND_BOT_IPC_PREFIX}abc`
+    }), { timeoutMs: 1000 })).resolves.toBe(true);
+
+    expect(spawnChild).toHaveBeenCalledWith(
+      'taskkill.exe',
+      ['/PID', '4601', '/T', '/F'],
+      expect.objectContaining({
+        shell: false,
+        windowsHide: true,
+        env: expectedWindowsBaseEnvironment()
+      })
+    );
+    const childEnv = spawnChild.mock.calls[0][2].env;
+    for (const key of [
+      'USERPROFILE', 'APPDATA', 'LOCALAPPDATA', 'HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY',
+      'no_proxy', 'NO_PROXY', 'LTTH_ADMIN_TOKEN', 'EULER_API_KEY', 'NODE_OPTIONS', 'NODE_PATH',
+      'PYTHONPATH', 'PYTHONHOME', 'PYTHONUSERBASE', 'LD_PRELOAD', 'DYLD_INSERT_LIBRARIES',
+      'NOT_ALLOWED_SECRET'
+    ]) {
+      expect(childEnv).not.toHaveProperty(key);
+    }
+  });
+
   test('preserves a five-second budget for slow Windows MPV scans', async () => {
     const observedTimeouts = [];
     const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
@@ -257,9 +378,10 @@ describe('Music Bot marked MPV process registry', () => {
       stderr: new EventEmitter(),
       kill: jest.fn()
     });
+    const spawnImpl = jest.fn(() => scanner);
     const registry = new SoundbotProcessRegistry({ log: jest.fn() }, {
       platform,
-      spawn: jest.fn(() => scanner)
+      spawn: spawnImpl
     });
     process.nextTick(() => {
       scanner.stderr.emit('data', 'scanner unavailable\nsecond line');
@@ -270,6 +392,9 @@ describe('Music Bot marked MPV process registry', () => {
       code: 'SOUNDBOT_PROCESS_SCAN_FAILED',
       message: expect.stringContaining(`${executable} process scan failed with exit code 7`)
     });
+    if (platform !== 'win32') {
+      expect(spawnImpl.mock.calls[0][2]).not.toHaveProperty('env');
+    }
   });
 });
 
@@ -584,6 +709,29 @@ describe('Music Bot orphan reconciliation', () => {
       'slot-shutdown-complete',
       'marked-process-scan'
     ]);
+  });
+
+  test.each([
+    ['an orphan remains', { found: [4803], killed: [], remaining: [4803] }],
+    ['the registry reports an error', { found: [], killed: [], remaining: [], error: 'scan failed' }]
+  ])('application shutdown remains retryable when marked-process cleanup fails because %s', async (_label, failedCleanup) => {
+    const processRegistry = {
+      cleanupMarked: jest.fn()
+        .mockResolvedValueOnce(failedCleanup)
+        .mockResolvedValueOnce({ found: [4803], killed: [4803], remaining: [] })
+    };
+    const controller = createController(processRegistry);
+
+    await expect(controller.shutdown({ reconcileOrphans: true })).rejects.toMatchObject({
+      code: 'SOUNDBOT_PROCESS_CLEANUP_INCOMPLETE'
+    });
+    expect(controller.lifecycle).toBe('destroying');
+    expect(controller._lastProcessCleanup).toEqual(failedCleanup);
+
+    await expect(controller.shutdown({ reconcileOrphans: true })).resolves.toBeUndefined();
+    expect(controller.lifecycle).toBe('destroyed');
+    expect(controller._shutdownError).toBeNull();
+    expect(processRegistry.cleanupMarked).toHaveBeenCalledTimes(2);
   });
 
   test('does not scan or kill marked processes while controller playback is active', async () => {

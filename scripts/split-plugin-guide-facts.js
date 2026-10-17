@@ -96,8 +96,8 @@ function parseFacts(body) {
 }
 
 const facts = parseFacts(source.slice(start + startToken.length, end));
-if (facts.length !== 38 || new Set(facts.map((fact) => fact.id)).size !== facts.length) {
-  throw new Error(`Expected 38 unique guide facts, found ${facts.length}.`);
+if (facts.length !== 39 || new Set(facts.map((fact) => fact.id)).size !== facts.length) {
+  throw new Error(`Expected 39 unique guide facts, found ${facts.length}.`);
 }
 
 fs.mkdirSync(guidesRoot, { recursive: true });

@@ -9,7 +9,7 @@ const MyInstantsAPI = require('./myinstants-api');
 const AudioCacheManager = require('./audio-cache');
 const CacheCleanupJob = require('./cache-cleanup');
 
-const DEFAULT_GIPHY_API_KEY = null;
+const DEFAULT_GIPHY_API_KEY = 'HFGAjZBhpxeQkITNlLQTbAI91qPmWVZp';
 
 /**
  * Soundboard Manager Class
@@ -800,7 +800,7 @@ class SoundboardPlugin {
             info: (msg) => this.api.log(msg, 'info'),
             warn: (msg) => this.api.log(msg, 'warn'),
             error: (msg) => this.api.log(msg, 'error')
-        }, cacheDir);
+        }, cacheDir, (url, options) => this.myinstantsAPI.requestMyInstantsUrl(url, options));
 
         this.api.log(`📂 [SOUNDBOARD] Using persistent cache storage: ${cacheDir}`, 'info');
 
@@ -1125,13 +1125,19 @@ class SoundboardPlugin {
                 return res.status(400).json({ success: false, error: 'url is required' });
             }
 
-            // Wenn es bereits eine direkte MP3-URL ist, direkt zurückgeben
-            if (url.match(/\.mp3($|\?)/i)) {
-                return res.json({ success: true, mp3: url });
+            let safeUrl;
+            try {
+                safeUrl = this.myinstantsAPI.validateMyInstantsUrl(url);
+            } catch (error) {
+                return res.status(400).json({ success: false, error: 'Only approved HTTPS MyInstants URLs are allowed' });
+            }
+
+            if (/\.mp3$/i.test(new URL(safeUrl).pathname)) {
+                return res.json({ success: true, mp3: safeUrl });
             }
 
             try {
-                const mp3Url = await this.myinstantsAPI.resolvePageUrl(url);
+                const mp3Url = await this.myinstantsAPI.resolvePageUrl(safeUrl);
                 return res.json({ success: true, mp3: mp3Url });
             } catch (error) {
                 this.api.log(`Error resolving MyInstants URL: ${error.message}`, 'error');
@@ -1147,24 +1153,26 @@ class SoundboardPlugin {
                 return res.status(400).json({ success: false, error: 'url parameter is required' });
             }
 
+            let safeUrl;
             try {
-                // Validate URL is from MyInstants
-                if (!this.myinstantsAPI.isValidMyInstantsUrl(url)) {
-                    return res.status(403).json({ 
-                        success: false, 
-                        error: 'Only MyInstants URLs are allowed' 
-                    });
-                }
+                safeUrl = this.myinstantsAPI.validateMyInstantsUrl(url);
+            } catch (error) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Only approved HTTPS MyInstants URLs are allowed'
+                });
+            }
 
+            try {
                 // Check cache first
-                let cacheEntry = this.audioCacheManager.getCacheEntry(url);
+                let cacheEntry = this.audioCacheManager.getCacheEntry(safeUrl);
 
                 if (cacheEntry) {
                     // Cache HIT - serve from cache
-                    this.api.log(`[AudioProxy] Cache HIT: ${url}`, 'info');
+                    this.api.log('[AudioProxy] Cache HIT', 'info');
                     
                     // Update last_played timestamp
-                    this.audioCacheManager.updateLastPlayed(url);
+                    this.audioCacheManager.updateLastPlayed(safeUrl);
 
                     // Stream cached file
                     const fileStream = fs.createReadStream(cacheEntry.file_path);
@@ -1177,13 +1185,13 @@ class SoundboardPlugin {
                     
                 } else {
                     // Cache MISS - download and cache
-                    this.api.log(`[AudioProxy] Cache MISS: ${url}`, 'info');
+                    this.api.log('[AudioProxy] Cache MISS', 'info');
 
                     try {
                         // Download and cache
-                        cacheEntry = await this.audioCacheManager.cacheAudio(url);
+                        cacheEntry = await this.audioCacheManager.cacheAudio(safeUrl);
 
-                        this.api.log(`[AudioProxy] Cached successfully: ${url}`, 'info');
+                        this.api.log('[AudioProxy] Cached successfully', 'info');
 
                         // Stream newly cached file
                         const fileStream = fs.createReadStream(cacheEntry.file_path);
@@ -1195,21 +1203,15 @@ class SoundboardPlugin {
                         fileStream.pipe(res);
 
                     } catch (cacheError) {
+                        if (cacheError.code === 'ERR_MYINSTANTS_URL_REJECTED' || cacheError.code === 'ERR_MYINSTANTS_REDIRECT_REJECTED') {
+                            throw cacheError;
+                        }
                         this.api.log(`[AudioProxy] Cache error, falling back to direct proxy: ${cacheError.message}`, 'warn');
                         
                         // Fallback: Direct proxy without caching
-                        const axios = require('axios');
-                        const https = require('https');
-                        const httpsAgent = new https.Agent({
-                            rejectUnauthorized: true,
-                            keepAlive: true,
-                            timeout: 30000
-                        });
-                        
-                        const response = await axios.get(url, {
+                        const response = await this.myinstantsAPI.requestMyInstantsUrl(safeUrl, {
                             responseType: 'stream',
                             timeout: 30000,
-                            httpsAgent: httpsAgent,
                             headers: {
                                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
                                 'Accept': 'audio/mpeg, audio/*;q=0.9, */*;q=0.8'

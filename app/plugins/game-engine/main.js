@@ -2337,6 +2337,26 @@ class GameEnginePlugin {
   /**
    * Register API routes
    */
+  registerWheelSpinRoute() {
+    // API: Trigger manual wheel spin (for testing, supports wheelId)
+    this.api.registerRoute('POST', '/api/game-engine/wheel/spin', async (req, res) => {
+      try {
+        const { username, nickname, giftName, wheelId } = req.body;
+        const result = await this.wheelGame.triggerSpin(
+          username || 'test_user',
+          nickname || 'Test User',
+          '',
+          giftName || 'Manual Spin',
+          wheelId ? parseInt(wheelId) : null
+        );
+        res.json(result);
+      } catch (error) {
+        this.logger.error(`Error triggering Wheel spin: ${error.message}`);
+        res.status(500).json({ error: error.message });
+      }
+    });
+  }
+
   registerRoutes() {
     // Serve overlay HTML
     this.api.registerRoute('GET', '/overlay/game-engine/connect4', (req, res) => {
@@ -3747,23 +3767,7 @@ class GameEnginePlugin {
       }
     });
 
-    // API: Trigger manual wheel spin (for testing, supports wheelId)
-    this.api.registerRoute('POST', '/api/game-engine/wheel/spin', (req, res) => {
-      try {
-        const { username, nickname, giftName, wheelId } = req.body;
-        const result = this.wheelGame.triggerSpin(
-          username || 'test_user',
-          nickname || 'Test User',
-          '',
-          giftName || 'Manual Spin',
-          wheelId ? parseInt(wheelId) : null
-        );
-        res.json(result);
-      } catch (error) {
-        this.logger.error(`Error triggering Wheel spin: ${error.message}`);
-        res.status(500).json({ error: error.message });
-      }
-    });
+    this.registerWheelSpinRoute();
 
     // === WHEEL CUSTOM AUDIO ROUTES ===
     
@@ -4526,6 +4530,38 @@ class GameEnginePlugin {
       // Unified overlay requests current game state (e.g. on load or reconnect)
       socket.on('game-engine:request-state', () => {
         if (!this._requireSocketRole(socket, 'game-engine:request-state', ['admin', 'overlay'])) return;
+
+        const manualConnect4 = [...this.activeSessions.entries()].reverse().find(([sessionId, game]) => {
+          if (game?.gameType !== 'connect4' || game?.status !== 'active' || typeof game.getState !== 'function') {
+            return false;
+          }
+          const session = this.db?.getSession?.(sessionId);
+          return session?.game_type === 'connect4'
+            && session.status !== 'completed'
+            && session.trigger_type === 'manual'
+            && String(session.trigger_value || '').startsWith('manual_');
+        });
+
+        if (manualConnect4) {
+          const [sessionId, game] = manualConnect4;
+          const storedConfig = this.db?.getGameConfig?.('connect4') || this.defaultConfigs.connect4;
+          const config = this._getConfigWithDefaults('connect4', storedConfig);
+          const renderConfig = Object.fromEntries([
+            'boardColor', 'player1Color', 'player2Color', 'textColor', 'fontFamily',
+            'showCoordinates', 'animationSpeed', 'celebrationEnabled', 'displayTexts'
+          ].filter(key => config[key] !== undefined).map(key => [key, config[key]]));
+          const state = game.getState();
+          socket.emit('game-engine:game-started', {
+            sessionId,
+            gameType: 'connect4',
+            state,
+            config: renderConfig,
+            manual: true,
+            opponentType: state.player2?.role === 'bot' ? 'bot' : 'manual'
+          });
+          return;
+        }
+
         if (this.interactiveController) {
           this.interactiveController.emitState(socket);
           return;

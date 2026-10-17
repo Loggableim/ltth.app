@@ -707,8 +707,10 @@ class SpotlightPlugin {
       });
     }
 
-    // SuperFan event markers are not subscription notifications.
-    // Event-only display is handled by the dashboard until a separate overlay contract exists.
+    // Also handle 'superfan' as subscriber
+    this.api.registerTikTokEvent('superfan', async (data) => {
+      await this.handleEvent('superfan', 'subscriber', data);
+    });
 
     // A transport reconnect within the same room must preserve overlay state.
     this.api.registerTikTokEvent('streamSessionStarted', async () => {

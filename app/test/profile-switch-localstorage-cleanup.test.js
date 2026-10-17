@@ -269,4 +269,99 @@ describe('Profile Switch localStorage Cleanup', () => {
       window.close();
     }
   });
+
+  test('real profile manager stops and stays blocked after plugin cleanup failure', async () => {
+    const fs = require('fs');
+    const path = require('path');
+    const { JSDOM } = require('jsdom');
+    const source = fs.readFileSync(
+      path.join(__dirname, '..', 'public', 'js', 'profile-manager.js'),
+      'utf8'
+    );
+    const activeStatus = {
+      activeProfile: 'profileA',
+      pendingProfile: 'profileB',
+      requiresRestart: true,
+      restartState: 'blocked-cleanup',
+      restartFailure: {
+        code: 'PLUGIN_CLEANUP_BLOCKED',
+        message: 'Server restart is blocked because plugin cleanup did not complete.'
+      }
+    };
+    const requests = [];
+    const toast = jest.fn();
+
+    const createDom = () => {
+      const dom = new JSDOM(`<!doctype html>
+        <html><body>
+          <header class="topbar"></header>
+          <button id="profile-btn"><span id="current-profile-name"></span></button>
+          <div id="server-restart-overlay">Waiting</div>
+        </body></html>`, {
+        url: 'http://localhost:3000/dashboard.html',
+        runScripts: 'outside-only'
+      });
+      const { window } = dom;
+      window.console = { log: jest.fn(), warn: jest.fn(), error: jest.fn() };
+      window.showToast = toast;
+      window.i18n = { t: key => key };
+      window.fetch = jest.fn(async (url, options = {}) => {
+        requests.push({ url: String(url), method: options.method || 'GET' });
+        if (String(url).startsWith('/api/profiles/active')) {
+          return { ok: true, json: async () => ({ ...activeStatus }) };
+        }
+        throw new Error(`Unexpected request: ${url}`);
+      });
+      window.eval(source);
+      return dom;
+    };
+
+    const dispatchReadyAndFlush = async window => {
+      window.document.dispatchEvent(new window.Event('DOMContentLoaded'));
+      await new Promise(resolve => setImmediate(resolve));
+      await new Promise(resolve => setImmediate(resolve));
+    };
+
+    let firstDom;
+    let reloadedDom;
+    try {
+      firstDom = createDom();
+      firstDom.window.localStorage.setItem('selectedProfile', 'profileB');
+      await dispatchReadyAndFlush(firstDom.window);
+
+      expect(firstDom.window.document.getElementById('server-restart-overlay')).toBeNull();
+      const warning = firstDom.window.document.getElementById('profile-switch-warning');
+      expect(warning).not.toBeNull();
+      expect(firstDom.window.profileManager.activeProfile).toBe('profileA');
+      expect(firstDom.window.profileManager.selectedProfile).toBe('profileB');
+      expect(firstDom.window.localStorage.getItem('selectedProfile')).toBeNull();
+      expect(warning.querySelector('.btn-restart-now')).toBeNull();
+      expect(toast).toHaveBeenCalledWith(
+        'profile.restart_failed: Server restart is blocked because plugin cleanup did not complete.',
+        'error',
+        10000
+      );
+
+      await dispatchReadyAndFlush(firstDom.window);
+      expect(firstDom.window.document.getElementById('server-restart-overlay')).toBeNull();
+      expect(firstDom.window.localStorage.getItem('selectedProfile')).toBeNull();
+      expect(warning.querySelector('.btn-restart-now')).toBeNull();
+
+      reloadedDom = createDom();
+      await dispatchReadyAndFlush(reloadedDom.window);
+      expect(reloadedDom.window.document.getElementById('server-restart-overlay')).toBeNull();
+      expect(reloadedDom.window.document.getElementById('profile-switch-warning')).not.toBeNull();
+      expect(reloadedDom.window.profileManager.activeProfile).toBe('profileA');
+      expect(reloadedDom.window.profileManager.selectedProfile).toBe('profileB');
+      expect(reloadedDom.window.document.querySelector('.btn-restart-now')).toBeNull();
+
+      expect(requests.filter(request => request.method === 'POST')).toHaveLength(0);
+      expect(requests.filter(request => request.url.includes('restartPoll='))).toHaveLength(0);
+      expect(requests.every(request => request.url === '/api/profiles/active')).toBe(true);
+      expect(toast).toHaveBeenCalledTimes(2);
+    } finally {
+      firstDom?.window.close();
+      reloadedDom?.window.close();
+    }
+  });
 });

@@ -187,7 +187,8 @@ function listMarkdown(directory, baseDirectory = directory) {
 for (const root of ['app/wiki', 'docs', 'infos']) {
   const source = listMarkdown(path.join(repoRoot, root)).filter(file => {
     if (/^(en|de|es|fr)\//.test(file)) return false;
-    if (root === 'docs' && /^(?:plans|superpowers)\//.test(file)) return false;
+    // Internal work logs are not published documentation or translation sources.
+    if (root === 'docs' && /^(?:plans|superpowers|coordination)\//.test(file)) return false;
     return true;
   });
   const docsSummary = { label: `docs:${root}`, files: source.length };

@@ -13,7 +13,7 @@ const REVIEW_ONLY_STEPS = Object.freeze({
   multicam: ['scene-dry-run'],
   'music-bot': ['queue-reset'],
   'osc-bridge': ['loopback-check', 'osc-review'],
-  streamalchemy: ['rule-reset'],
+  'stream-monsters': ['rule-reset'],
   'stt-ticker': ['sample-sentence', 'ticker-reset'],
   'talking-heads': ['text-preview', 'heads-reset'],
   'thermal-printer': ['queue-test', 'printer-review'],

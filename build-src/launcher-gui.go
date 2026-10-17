@@ -4,7 +4,10 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"crypto/rand"
+	"crypto/sha256"
 	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,11 +16,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"runtime/debug"
 	"sort"
@@ -37,10 +41,11 @@ const (
 	maxLogBytes    = 100000
 
 	// Node.js settings
-	nodeVersionFallback        = "22.14.0"
-	defaultBackendPort         = 3000
-	serverHealthTimeoutSeconds = 180
-	serverHealthTimeout        = time.Duration(serverHealthTimeoutSeconds) * time.Second
+	nodeVersionFallback          = "22.14.0"
+	defaultBackendPort           = 3000
+	serverHealthTimeoutSeconds   = 180
+	serverHealthTimeout          = time.Duration(serverHealthTimeoutSeconds) * time.Second
+	launcherShutdownPollInterval = 250 * time.Millisecond
 
 	// GitHub API settings for auto-update
 	githubOwner      = "Loggableim"
@@ -142,6 +147,10 @@ type Launcher struct {
 	translations            map[string]interface{}
 	nodeCmd                 *exec.Cmd  // Referenz auf laufenden Node-Prozess
 	nodeMu                  sync.Mutex // Schützt nodeCmd-Zugriff
+	nodeLauncherToken       string
+	nodeExit                chan struct{}
+	nodeWaitErr             error
+	nodeShutdownMu          sync.Mutex
 	startMu                 sync.Mutex
 	startupGate             sync.Mutex
 	resolvedNodeVersion     string // Node.js LTS version resolved at startup
@@ -152,6 +161,135 @@ type Launcher struct {
 	dependenciesVerified    bool
 	serverCommandStarter    serverCommandStarter
 	serverCommandWaiter     serverCommandWaiter
+}
+
+type launcherShutdownReceipt struct {
+	Success       bool   `json:"success"`
+	Status        string `json:"status"`
+	Message       string `json:"message"`
+	PID           int    `json:"pid"`
+	Port          int    `json:"port"`
+	SupervisorPID int    `json:"supervisorPid"`
+}
+
+func newLauncherShutdownToken() (string, error) {
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return "", fmt.Errorf("generate launcher shutdown token: %w", err)
+	}
+	return hex.EncodeToString(secret), nil
+}
+
+func validLauncherShutdownToken(token string) bool {
+	if len(token) != 64 {
+		return false
+	}
+	decoded, err := hex.DecodeString(token)
+	return err == nil && len(decoded) == 32
+}
+
+func launcherShutdownHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: &http.Transport{Proxy: nil},
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
+func requestLauncherShutdownState(client *http.Client, method string, port, supervisorPID int, token string) (launcherShutdownReceipt, error) {
+	var receipt launcherShutdownReceipt
+	if client == nil || (method != http.MethodGet && method != http.MethodPost) {
+		return receipt, fmt.Errorf("invalid launcher shutdown request")
+	}
+	if port < 1 || port > 65535 || supervisorPID < 1 || !validLauncherShutdownToken(token) {
+		return receipt, fmt.Errorf("invalid launcher shutdown identity")
+	}
+	endpoint := "shutdown-status"
+	if method == http.MethodPost {
+		endpoint = "shutdown"
+	}
+	request, err := http.NewRequest(method, fmt.Sprintf("http://127.0.0.1:%d/api/launcher/%s", port, endpoint), nil)
+	if err != nil {
+		return receipt, err
+	}
+	request.Header.Set("x-ltth-launcher-token", token)
+	response, err := client.Do(request)
+	if err != nil {
+		return receipt, fmt.Errorf("launcher shutdown endpoint unavailable: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return receipt, fmt.Errorf("launcher shutdown endpoint returned HTTP %d", response.StatusCode)
+	}
+	if err := json.NewDecoder(io.LimitReader(response.Body, 4096)).Decode(&receipt); err != nil {
+		return receipt, fmt.Errorf("launcher shutdown endpoint returned an invalid receipt: %w", err)
+	}
+	if !receipt.Success || receipt.PID < 1 || receipt.Port != port || receipt.SupervisorPID != supervisorPID {
+		return receipt, fmt.Errorf("launcher shutdown receipt did not match the managed server process and port")
+	}
+	return receipt, nil
+}
+
+func waitForManagedShutdown(exit <-chan struct{}, poll func() (launcherShutdownReceipt, error), interval time.Duration) error {
+	if exit == nil || poll == nil || interval <= 0 {
+		return fmt.Errorf("invalid managed shutdown wait")
+	}
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-exit:
+			return fmt.Errorf("managed server exited before authenticated shutdown completion was confirmed")
+		default:
+		}
+		select {
+		case <-exit:
+			return fmt.Errorf("managed server exited before authenticated shutdown completion was confirmed")
+		case <-ticker.C:
+			receipt, err := poll()
+			if err != nil {
+				select {
+				case <-exit:
+					return fmt.Errorf("managed server exited before authenticated shutdown completion was confirmed: %w", err)
+				default:
+				}
+				return fmt.Errorf("launcher shutdown state is unknown; server remains available for retry: %w", err)
+			}
+			switch receipt.Status {
+			case "scheduled", "running":
+				continue
+			case "pending":
+				message := strings.TrimSpace(receipt.Message)
+				if message == "" {
+					message = "plugin or resource cleanup is pending"
+				}
+				return fmt.Errorf("launcher shutdown is pending; server remains available for retry: %s", message)
+			case "complete":
+				return nil
+			default:
+				return fmt.Errorf("launcher shutdown returned unknown state %q; server remains available for retry", receipt.Status)
+			}
+		}
+	}
+}
+
+func waitForManagedProcessExit(exit <-chan struct{}, waitErr func() error, timeout time.Duration) error {
+	if exit == nil || waitErr == nil || timeout <= 0 {
+		return fmt.Errorf("managed server exit result is unavailable")
+	}
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	select {
+	case <-exit:
+	case <-timer.C:
+		return fmt.Errorf("authenticated cleanup completed but the managed server is still open; retry shutdown")
+	}
+	if err := waitErr(); err != nil {
+		return fmt.Errorf("managed server exited unsuccessfully after shutdown completion: %w", err)
+	}
+	return nil
 }
 
 var allowedLocales = []string{"de", "en", "es", "fr"}
@@ -1341,11 +1479,13 @@ func selectReleaseForChannel(releases []GitHubRelease, channel string) (*GitHubR
 	}
 	for i := range releases {
 		release := releases[i]
-		if !isAppReleaseTag(release.TagName) {
+		if !isAppReleaseTag(release.TagName) || !validRuntimeVersion(strings.TrimPrefix(release.TagName, "v")) {
 			continue
 		}
 		if strings.TrimSpace(release.ZipballURL) == "" {
-			continue
+			if _, _, err := runtimeAssetURLs(&release); err != nil {
+				continue
+			}
 		}
 		if channel == updateChannelStable && !release.Prerelease {
 			return &release, nil
@@ -2139,7 +2279,7 @@ func (l *Launcher) checkUpdateForCurrentChannel() (map[string]interface{}, error
 		return nil, err
 	}
 	localVersion, _ := getLocalVersion()
-	available := localVersion == "" || compareVersions(release.TagName, localVersion) > 0
+	available := requireNewRuntimeVersion(release.TagName, filepath.Join(l.exeDir, versionFile)) == nil
 	return map[string]interface{}{
 		"success":        true,
 		"channel":        settings.UpdateChannel,
@@ -2175,8 +2315,12 @@ func (l *Launcher) applyUpdateForCurrentChannel() (map[string]interface{}, error
 }
 
 func (l *Launcher) rollbackLastUpdate() (map[string]interface{}, error) {
-	backupRoot := l.updateBackupRoot()
-	entries, err := listUpdateBackups(backupRoot)
+	runtimeUpdateMu.Lock()
+	defer runtimeUpdateMu.Unlock()
+	if l.isNodeRunning() || l.serverStarted || l.startupInProgress {
+		return nil, fmt.Errorf("stop server before rollback")
+	}
+	entries, err := listUpdateBackups(l.updateBackupRoot())
 	if err != nil {
 		return nil, err
 	}
@@ -2184,28 +2328,24 @@ func (l *Launcher) rollbackLastUpdate() (map[string]interface{}, error) {
 		return nil, fmt.Errorf("no update backup found")
 	}
 	latest := entries[0]
-	backupApp := filepath.Join(backupRoot, latest.Name(), "app")
-	if info, err := os.Stat(backupApp); err != nil || !info.IsDir() {
-		return nil, fmt.Errorf("latest backup does not contain app directory")
+	parent := filepath.Join(l.updateBackupRoot(), latest.Name())
+	backupApp := filepath.Join(parent, "app")
+	data, err := os.ReadFile(filepath.Join(parent, "version.txt"))
+	if err != nil {
+		return nil, fmt.Errorf("backup version metadata unavailable: %w", err)
 	}
-	failedApp := filepath.Join(l.exeDir, "runtime", "failed_update_app_"+time.Now().Format("2006-01-02_15-04-05"))
-	_ = os.RemoveAll(failedApp)
-	if _, err := os.Stat(l.appDir); err == nil {
-		if err := os.Rename(l.appDir, failedApp); err != nil {
-			return nil, fmt.Errorf("could not move current app before rollback: %w", err)
-		}
+	version := strings.TrimSpace(string(data))
+	if !runtimeSemver.MatchString(strings.TrimPrefix(version, "v")) {
+		return nil, fmt.Errorf("invalid backup version")
 	}
-	if err := os.Rename(backupApp, l.appDir); err != nil {
-		_ = os.Rename(failedApp, l.appDir)
-		return nil, fmt.Errorf("rollback restore failed: %w", err)
+	failed := filepath.Join(l.exeDir, "runtime", "failed_update_app_"+time.Now().Format("2006-01-02_15-04-05.000000000"), "app")
+	if err := swapRuntimeStage(l.appDir, backupApp, filepath.Join(l.exeDir, versionFile), version, failed, os.Rename); err != nil {
+		return nil, err
 	}
-	if err := os.RemoveAll(filepath.Join(backupRoot, latest.Name())); err != nil {
-		l.logAndSync("[WARNING] Could not remove consumed rollback backup %s: %v", latest.Name(), err)
+	if err := os.RemoveAll(parent); err != nil {
+		l.logAndSync("[WARNING] Consumed backup cleanup: %v", err)
 	}
-	if err := pruneUpdateBackups(backupRoot, maxUpdateBackups); err != nil {
-		l.logAndSync("[WARNING] Could not prune old update backups after rollback: %v", err)
-	}
-	return map[string]interface{}{"success": true, "backup": latest.Name(), "failedApp": failedApp}, nil
+	return map[string]interface{}{"success": true, "backup": latest.Name(), "failedApp": failed}, nil
 }
 
 func (l *Launcher) updateBackupRoot() string {
@@ -2243,19 +2383,13 @@ func listUpdateBackups(backupRoot string) ([]os.DirEntry, error) {
 }
 
 func pruneUpdateBackups(backupRoot string, keep int) error {
-	if keep < 1 {
-		keep = 1
-	}
-	backups, err := listUpdateBackups(backupRoot)
-	if err != nil || len(backups) <= keep {
+	_ = keep
+	if _, err := os.Stat(backupRoot); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
 		return err
 	}
-	for _, backup := range backups[keep:] {
-		if err := os.RemoveAll(filepath.Join(backupRoot, backup.Name())); err != nil {
-			return err
-		}
-	}
-	return nil
+	return fmt.Errorf("automatic backup pruning disabled because backups may contain user data; no backups removed")
 }
 
 type vacuumMaintenanceOptions struct {
@@ -3184,6 +3318,10 @@ func (l *Launcher) startToolLocked() (*exec.Cmd, error) {
 	if !l.dependenciesVerified {
 		return nil, fmt.Errorf("server start refused because production dependencies were not verified")
 	}
+	launcherToken, err := newLauncherShutdownToken()
+	if err != nil {
+		return nil, err
+	}
 
 	launchJS := filepath.Join(l.appDir, "launch.js")
 	cmd := hiddenCommand(l.nodePath, launchJS)
@@ -3212,12 +3350,16 @@ func (l *Launcher) startToolLocked() (*exec.Cmd, error) {
 		if strings.HasPrefix(upper, "NODE_OPTIONS=") || strings.HasPrefix(upper, "NPM_CONFIG_NODE_OPTIONS=") {
 			continue
 		}
+		if strings.HasPrefix(upper, "LTTH_LAUNCHER_TOKEN=") {
+			continue
+		}
 		env = append(env, e)
 	}
 	rootLogDir := rootLogDirForApp(l.appDir)
 	env = append(env, "OPEN_BROWSER=false")
 	env = append(env, fmt.Sprintf("LTTH_PORT=%d", preferredPort))
 	env = append(env, fmt.Sprintf("LTTH_MAX_PORT=%d", maxPort))
+	env = append(env, "LTTH_LAUNCHER_TOKEN="+launcherToken)
 	env = append(env, fmt.Sprintf("LTTH_LOG_DIR=%s", rootLogDir))
 	env = append(env, "LTTH_LOG_ARCHIVE_DONE=true")
 	if l.logPath != "" {
@@ -3256,13 +3398,16 @@ func (l *Launcher) startToolLocked() (*exec.Cmd, error) {
 			return cmd.Start()
 		}
 	}
-	err := starter(cmd)
+	err = starter(cmd)
 	if err != nil {
 		return nil, err
 	}
 
 	l.nodeMu.Lock()
 	l.nodeCmd = cmd
+	l.nodeLauncherToken = launcherToken
+	l.nodeExit = make(chan struct{})
+	l.nodeWaitErr = nil
 	l.nodeMu.Unlock()
 
 	return cmd, nil
@@ -3275,32 +3420,112 @@ func (l *Launcher) waitForServerCommand(cmd *exec.Cmd) error {
 	return cmd.Wait()
 }
 
-// killNodeProcess beendet den Node-Child-Prozess sauber.
-// Auf Windows: taskkill /T um auch Child-Prozesse von Node zu beenden.
-// Auf Unix: SIGTERM an die Prozessgruppe, dann SIGKILL-Fallback nach 3s.
-func (l *Launcher) killNodeProcess() {
+func (l *Launcher) waitForManagedServerCommand(cmd *exec.Cmd) error {
+	err := l.waitForServerCommand(cmd)
+	l.nodeMu.Lock()
+	if l.nodeCmd == cmd {
+		l.nodeWaitErr = err
+		l.nodeCmd = nil
+		l.nodeLauncherToken = ""
+		if l.nodeExit != nil {
+			close(l.nodeExit)
+			l.nodeExit = nil
+		}
+	}
+	l.nodeMu.Unlock()
+	return err
+}
+
+// killNodeProcess requests the authenticated in-process shutdown and waits for
+// this launcher's own Node supervisor to exit. Pending/unknown cleanup is retryable.
+func (l *Launcher) killNodeProcess() error {
+	l.nodeShutdownMu.Lock()
+	defer l.nodeShutdownMu.Unlock()
+
 	l.nodeMu.Lock()
 	cmd := l.nodeCmd
+	token := l.nodeLauncherToken
+	exit := l.nodeExit
 	l.nodeMu.Unlock()
 
-	if cmd == nil || cmd.Process == nil {
-		return
+	if cmd == nil {
+		l.startMu.Lock()
+		serverMayBeRunning := l.serverStarted || l.startupInProgress
+		l.startMu.Unlock()
+		if serverMayBeRunning {
+			return l.reportShutdownPending(fmt.Errorf("no managed server process is available; no external process was stopped"))
+		}
+		return nil
+	}
+	if cmd.Process == nil {
+		return l.reportShutdownPending(fmt.Errorf("managed server process identity is incomplete; process left running"))
+	}
+	port := l.serverPort
+	if port == 0 {
+		port = l.readRuntimePortFile()
+	}
+	if exit == nil {
+		return l.reportShutdownPending(fmt.Errorf("managed server exit monitor is unavailable; process left running"))
+	}
+	if token == "" {
+		return l.reportShutdownPending(fmt.Errorf("managed server shutdown token is unavailable; process left running"))
+	}
+	if port < 1 || !validLauncherShutdownToken(token) {
+		return l.reportShutdownPending(fmt.Errorf("managed server shutdown identity is unavailable; process left running"))
 	}
 
 	pid := cmd.Process.Pid
-	if l.logger != nil {
-		l.logger.Printf("[INFO] Terminating Node.js process (PID: %d)...\n", pid)
+	requestClient := launcherShutdownHTTPClient(3 * time.Second)
+	receipt, err := requestLauncherShutdownState(requestClient, http.MethodPost, port, pid, token)
+	requestClient.CloseIdleConnections()
+	if err != nil {
+		return l.reportShutdownPending(fmt.Errorf("graceful shutdown request failed; process left running: %w", err))
+	}
+	if receipt.Status != "shutdown_scheduled" && receipt.Status != "shutdown_complete" {
+		return l.reportShutdownPending(fmt.Errorf("graceful shutdown was not scheduled; process left running"))
+	}
+	if receipt.Status == "shutdown_scheduled" {
+		if l.logger != nil {
+			l.logger.Printf("[INFO] Waiting for managed server process %d to finish graceful shutdown on port %d.\n", receipt.PID, port)
+		}
+		statusClient := launcherShutdownHTTPClient(2 * time.Second)
+		err = waitForManagedShutdown(exit, func() (launcherShutdownReceipt, error) {
+			return requestLauncherShutdownState(statusClient, http.MethodGet, port, pid, token)
+		}, launcherShutdownPollInterval)
+		statusClient.CloseIdleConnections()
+		if err != nil {
+			return l.reportShutdownPending(err)
+		}
+	}
+	err = waitForManagedProcessExit(exit, func() error {
+		l.nodeMu.Lock()
+		defer l.nodeMu.Unlock()
+		return l.nodeWaitErr
+	}, 6*time.Second)
+	if err != nil {
+		return l.reportShutdownPending(err)
 	}
 
-	killNodeProcessOS(cmd, pid)
+	l.startMu.Lock()
+	l.serverStarted = false
+	l.serverPort = 0
+	l.startupInProgress = false
+	l.startMu.Unlock()
+	l.clearRuntimePortFile()
+	l.markServerStartDone(fmt.Errorf("server stopped gracefully"))
+	l.updateProgressLocalized(100, "status.manual_start_available", "Server gestoppt. Manueller Start ist verfügbar.")
+	return nil
+}
 
-	l.nodeMu.Lock()
-	l.nodeCmd = nil
-	l.nodeMu.Unlock()
-
+func (l *Launcher) reportShutdownPending(err error) error {
 	if l.logger != nil {
-		l.logger.Printf("[INFO] Node.js process (PID: %d) terminated.\n", pid)
+		l.logger.Printf("[WARNING] Server shutdown remains retryable: %v\n", err)
 	}
+	l.startMu.Lock()
+	l.lastStartError = err.Error()
+	l.startMu.Unlock()
+	l.updateProgressLocalized(95, "status.shutdown_pending", "Server shutdown is pending; keep the launcher open and retry after cleanup completes.")
+	return err
 }
 
 // checkServerHealth checks if the server is responding
@@ -3640,13 +3865,7 @@ func (l *Launcher) manualStartServer(port int) error {
 
 	processDied := make(chan error, 1)
 	go func(startedCmd *exec.Cmd) {
-		waitErr := l.waitForServerCommand(startedCmd)
-		l.nodeMu.Lock()
-		if l.nodeCmd == startedCmd {
-			l.nodeCmd = nil
-		}
-		l.nodeMu.Unlock()
-		processDied <- waitErr
+		processDied <- l.waitForManagedServerCommand(startedCmd)
 	}(cmd)
 
 	go func() {
@@ -4424,6 +4643,28 @@ func writePublicDistributionMarker(appDir string) error {
 	return os.WriteFile(filepath.Join(configDir, "distribution-mode.json"), []byte("{\"channel\":\"public\"}\n"), 0644)
 }
 
+func normalizePublicPluginPathPart(value string) (string, bool) {
+	for attempt := 0; attempt < 8 && strings.Contains(value, "%"); attempt++ {
+		decoded, err := url.PathUnescape(value)
+		if err != nil {
+			return "", false
+		}
+		if decoded == value {
+			break
+		}
+		value = decoded
+	}
+	if strings.Contains(value, "%") {
+		return "", false
+	}
+	for _, character := range value {
+		if character > 0x7f {
+			return "", false
+		}
+	}
+	return strings.ToLower(value), true
+}
+
 func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -4484,12 +4725,13 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	var policy struct {
 		SchemaVersion         int               `json:"schemaVersion"`
 		ClosedBeta            []string          `json:"closedBeta"`
+		PublicRuntimeExcluded []string          `json:"publicRuntimeExcluded"`
 		Aliases               map[string]string `json:"aliases"`
 		PublicAssetPathOwners map[string]string `json:"publicAssetPathOwners"`
 	}
 	policyDecoder := json.NewDecoder(bytes.NewReader(policyBytes))
 	policyDecoder.DisallowUnknownFields()
-	if err := policyDecoder.Decode(&policy); err != nil || policy.SchemaVersion != 1 || len(policy.ClosedBeta) == 0 || policy.PublicAssetPathOwners == nil {
+	if err := policyDecoder.Decode(&policy); err != nil || policy.SchemaVersion != 1 || len(policy.ClosedBeta) == 0 {
 		return fmt.Errorf("invalid plugin release policy")
 	}
 	if err := policyDecoder.Decode(new(interface{})); err != io.EOF {
@@ -4512,21 +4754,13 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 		}
 		blocked[id] = true
 	}
-	seenPublicAssetPaths := map[string]bool{}
-	for publicPath, owner := range policy.PublicAssetPathOwners {
-		if !strings.HasPrefix(publicPath, "/") || strings.HasPrefix(publicPath, "//") ||
-			publicPath != strings.ToLower(publicPath) || strings.ContainsAny(publicPath, "\\%?#") ||
-			path.Clean(publicPath) != publicPath || len(strings.Split(publicPath[1:], "/")) == 0 ||
-			!validID(owner) || !blocked[owner] || seenPublicAssetPaths[strings.ToLower(publicPath)] {
-			return fmt.Errorf("invalid public asset path owner mapping")
+	for _, id := range policy.PublicRuntimeExcluded {
+		if !validID(id) || blocked[id] {
+			return fmt.Errorf("invalid public runtime exclusion ID")
 		}
-		for _, segment := range strings.Split(publicPath[1:], "/") {
-			if segment == "" || segment == "." || segment == ".." {
-				return fmt.Errorf("invalid public asset path owner mapping")
-			}
-		}
-		seenPublicAssetPaths[strings.ToLower(publicPath)] = true
+		blocked[id] = true
 	}
+	blocked["chatango"] = true
 	for alias, canonical := range policy.Aliases {
 		if !validID(alias) || !validID(canonical) || !blocked[canonical] || alias == canonical || blocked[alias] {
 			return fmt.Errorf("invalid closed beta plugin alias")
@@ -4534,6 +4768,19 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	}
 	for alias := range policy.Aliases {
 		blocked[alias] = true
+	}
+	deniedPublicAssets := map[string]bool{"public/js/chatango-theme-adapter.js": true}
+	for assetPath, owner := range policy.PublicAssetPathOwners {
+		if !blocked[owner] || !strings.HasPrefix(assetPath, "/") || strings.HasPrefix(assetPath, "//") ||
+			strings.ToLower(assetPath) != assetPath || strings.ContainsAny(assetPath, "\\%?#") {
+			return fmt.Errorf("invalid public asset policy")
+		}
+		for _, segment := range strings.Split(assetPath[1:], "/") {
+			if segment == "" || segment == "." || segment == ".." || strings.Contains(segment, ":") {
+				return fmt.Errorf("invalid public asset path")
+			}
+		}
+		deniedPublicAssets["public"+assetPath] = true
 	}
 	// Directory names are not identities: vendor/renamed manifests may also
 	// identify a closed plugin. Inspect all manifests before creating files.
@@ -4551,7 +4798,12 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 			end++
 		}
 		for _, directory := range parts[3:end] {
-			if blocked[strings.ToLower(directory)] {
+			normalized, valid := normalizePublicPluginPathPart(directory)
+			blockedPathPart := !valid
+			for _, decodedPart := range strings.Split(normalized, "/") {
+				blockedPathPart = blockedPathPart || blocked[decodedPart]
+			}
+			if blockedPathPart {
 				blockedDirectories[strings.ToLower(parts[3])] = true
 			}
 		}
@@ -4605,6 +4857,9 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 		if relPath == "" {
 			continue
 		}
+		if deniedPublicAssets[strings.ToLower(relPath)] {
+			continue
+		}
 		foundApp = true
 		segments := strings.Split(relPath, "/")
 		if len(segments) >= 2 && strings.EqualFold(segments[0], "plugins") && blockedDirectories[strings.ToLower(segments[1])] {
@@ -4612,12 +4867,6 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 		}
 		if strings.EqualFold(relPath, "config/distribution-mode.json") {
 			continue
-		}
-		if len(segments) > 1 && strings.EqualFold(segments[0], "public") {
-			publicPath := "/" + strings.ToLower(strings.Join(segments[1:], "/"))
-			if _, excluded := policy.PublicAssetPathOwners[publicPath]; excluded {
-				continue
-			}
 		}
 		targetPath, err := filepath.Abs(filepath.Join(cleanDest, filepath.FromSlash(relPath)))
 		if err != nil {
@@ -4664,85 +4913,836 @@ func extractAppSubdirFromGitHubZip(zipPath, destDir string) error {
 	return os.WriteFile(filepath.Join(cleanDest, "config", "distribution-mode.json"), []byte("{\"channel\":\"public\"}\n"), 0644)
 }
 
-// downloadAndApplyUpdate downloads the zipball of the given release and applies
-// it by replacing the app/ directory (with backup + rollback on failure).
+// Release manifests bind bytes to metadata over GitHub HTTPS; they are not signatures.
+const maxRuntimeReleaseBytes int64 = 512 * 1024 * 1024
+const maxRuntimeExpandedBytes uint64 = 2 * 1024 * 1024 * 1024
+
+var runtimeUpdateMu sync.Mutex
+var runtimeSemver = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$`)
+var runtimeCommit = regexp.MustCompile(`^[0-9a-f]{40}$`)
+var runtimeDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
+type runtimeReleaseManifest struct {
+	Schema    int    `json:"schema"`
+	Component string `json:"component"`
+	Version   string `json:"version"`
+	Tag       string `json:"tag"`
+	CommitSHA string `json:"commitSha"`
+	Bytes     int64  `json:"bytes"`
+	SHA256    string `json:"sha256"`
+}
+
+func decodeRuntimeManifest(data []byte, tag string) (runtimeReleaseManifest, error) {
+	var m runtimeReleaseManifest
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&m); err != nil {
+		return m, err
+	}
+	if err := decoder.Decode(new(interface{})); err != io.EOF {
+		return m, fmt.Errorf("trailing release manifest data")
+	}
+	if m.Schema != 1 || m.Component != "ltth_latest.zip" || !validRuntimeVersion(m.Version) ||
+		m.Tag != "v"+m.Version || m.Tag != tag || !runtimeCommit.MatchString(m.CommitSHA) ||
+		!runtimeDigest.MatchString(m.SHA256) || m.Bytes <= 0 || m.Bytes > maxRuntimeReleaseBytes {
+		return m, fmt.Errorf("invalid or mismatched runtime release manifest")
+	}
+	return m, nil
+}
+
+func validRuntimeVersion(version string) bool {
+	if !runtimeSemver.MatchString(version) {
+		return false
+	}
+	parts := strings.SplitN(version, "-", 2)
+	if len(parts) == 2 {
+		for _, id := range strings.Split(parts[1], ".") {
+			if len(id) > 1 && id[0] == '0' && strings.Trim(id, "0123456789") == "" {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func compareRuntimeVersions(a, b string) int {
+	a = strings.TrimPrefix(a, "v")
+	b = strings.TrimPrefix(b, "v")
+	left := strings.SplitN(a, "-", 2)
+	right := strings.SplitN(b, "-", 2)
+	cmp := func(x, y string) int {
+		if len(x) < len(y) {
+			return -1
+		}
+		if len(x) > len(y) {
+			return 1
+		}
+		return strings.Compare(x, y)
+	}
+	x := strings.Split(left[0], ".")
+	y := strings.Split(right[0], ".")
+	for i := 0; i < 3; i++ {
+		if c := cmp(x[i], y[i]); c != 0 {
+			return c
+		}
+	}
+	if len(left) == 1 && len(right) == 1 {
+		return 0
+	}
+	if len(left) == 1 {
+		return 1
+	}
+	if len(right) == 1 {
+		return -1
+	}
+	x = strings.Split(left[1], ".")
+	y = strings.Split(right[1], ".")
+	for i := 0; i < len(x) && i < len(y); i++ {
+		xn := strings.Trim(x[i], "0123456789") == ""
+		yn := strings.Trim(y[i], "0123456789") == ""
+		if xn && !yn {
+			return -1
+		}
+		if !xn && yn {
+			return 1
+		}
+		c := strings.Compare(x[i], y[i])
+		if xn {
+			c = cmp(x[i], y[i])
+		}
+		if c != 0 {
+			return c
+		}
+	}
+	if len(x) < len(y) {
+		return -1
+	}
+	if len(x) > len(y) {
+		return 1
+	}
+	return 0
+}
+
+func requireNewRuntimeVersion(tag, versionPath string) error {
+	if !strings.HasPrefix(tag, "v") || !validRuntimeVersion(strings.TrimPrefix(tag, "v")) {
+		return fmt.Errorf("invalid release version")
+	}
+	data, err := os.ReadFile(versionPath)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	local := strings.TrimSpace(string(data))
+	if local != "" && !validRuntimeVersion(strings.TrimPrefix(local, "v")) {
+		return fmt.Errorf("invalid installed version metadata")
+	}
+	if local != "" && compareRuntimeVersions(tag, local) <= 0 {
+		return fmt.Errorf("release %s is not newer than installed %s", tag, local)
+	}
+	return nil
+}
+
+func runtimeAssetURLs(release *GitHubRelease) (string, string, error) {
+	var manifestURL, zipURL string
+	for _, asset := range release.Assets {
+		if asset.Name != "ltth_latest.json" && asset.Name != "ltth_latest.zip" {
+			continue
+		}
+		parsed, err := url.Parse(asset.BrowserDownloadURL)
+		if err != nil || parsed.Scheme != "https" || parsed.Host == "" || parsed.User != nil {
+			return "", "", fmt.Errorf("invalid release asset HTTPS URL")
+		}
+		if asset.Name == "ltth_latest.json" {
+			if manifestURL != "" {
+				return "", "", fmt.Errorf("duplicate manifest asset")
+			}
+			manifestURL = asset.BrowserDownloadURL
+		} else {
+			if zipURL != "" {
+				return "", "", fmt.Errorf("duplicate ZIP asset")
+			}
+			zipURL = asset.BrowserDownloadURL
+		}
+	}
+	if manifestURL == "" || zipURL == "" {
+		return "", "", fmt.Errorf("release is missing verified runtime assets")
+	}
+	return manifestURL, zipURL, nil
+}
+
+func runtimeHTTPClient() *http.Client {
+	return &http.Client{Timeout: 10 * time.Minute, CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 10 || req.URL.Scheme != "https" {
+			return fmt.Errorf("unsafe runtime asset redirect")
+		}
+		return nil
+	}}
+}
+
+func fetchRuntimeManifest(client *http.Client, address, tag string) (runtimeReleaseManifest, error) {
+	var empty runtimeReleaseManifest
+	resp, err := client.Get(address)
+	if err != nil {
+		return empty, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return empty, fmt.Errorf("manifest HTTP %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 65537))
+	if err != nil {
+		return empty, err
+	}
+	if len(data) > 65536 {
+		return empty, fmt.Errorf("release manifest too large")
+	}
+	return decodeRuntimeManifest(data, tag)
+}
+
+func downloadVerifiedRuntime(client *http.Client, address, dest string, m runtimeReleaseManifest) error {
+	if m.Bytes <= 0 || m.Bytes > maxRuntimeReleaseBytes {
+		return fmt.Errorf("invalid download limit")
+	}
+	resp, err := client.Get(address)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ZIP HTTP %d", resp.StatusCode)
+	}
+	if resp.ContentLength >= 0 && resp.ContentLength != m.Bytes {
+		return fmt.Errorf("ZIP content length mismatch")
+	}
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	digest := sha256.New()
+	n, copyErr := io.Copy(io.MultiWriter(out, digest), io.LimitReader(resp.Body, m.Bytes+1))
+	closeErr := out.Close()
+	if copyErr != nil {
+		return copyErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	if n != m.Bytes || fmt.Sprintf("%x", digest.Sum(nil)) != m.SHA256 {
+		return fmt.Errorf("ZIP bytes or SHA256 mismatch")
+	}
+	return nil
+}
+
+// Preflight the complete archive before extraction; only app/ is installed.
+func stageRuntimeArchive(archive, dest, version string) error {
+	reader, err := zip.OpenReader(archive)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	root := "ltth_" + version + "/"
+	seen := map[string]bool{}
+	entries := map[string]*zip.File{}
+	var expanded uint64
+	for _, f := range reader.File {
+		name := f.Name
+		if !strings.HasPrefix(name, root) || strings.Contains(name, "\\") || f.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("unexpected runtime root or symlink: %s", name)
+		}
+		relative := strings.TrimSuffix(strings.TrimPrefix(name, root), "/")
+		if relative == "" {
+			continue
+		}
+		lowerRelative := strings.ToLower(relative)
+		if lowerRelative == "app/.config_path" {
+			return fmt.Errorf("runtime archive may not contain the bootstrap config pointer")
+		}
+		if lowerRelative == "app/.env" || (strings.HasPrefix(lowerRelative, "app/.env.") && lowerRelative != "app/.env.example") {
+			return fmt.Errorf("runtime archive may not contain private environment files")
+		}
+		key := strings.ToLower(relative)
+		if seen[key] {
+			return fmt.Errorf("duplicate runtime path")
+		}
+		seen[key] = true
+		for _, segment := range strings.Split(relative, "/") {
+			if segment == "" || segment == "." || segment == ".." || strings.Contains(segment, ":") || strings.TrimRight(segment, " .") != segment {
+				return fmt.Errorf("illegal runtime path")
+			}
+		}
+		if f.UncompressedSize64 > maxRuntimeExpandedBytes-expanded {
+			return fmt.Errorf("expanded archive exceeds limit")
+		}
+		expanded += f.UncompressedSize64
+		entries[relative] = f
+	}
+	read := func(name string) ([]byte, error) {
+		f := entries[name]
+		if f == nil || f.UncompressedSize64 > 1024*1024 {
+			return nil, fmt.Errorf("missing or oversized %s", name)
+		}
+		rc, e := f.Open()
+		if e != nil {
+			return nil, e
+		}
+		defer rc.Close()
+		return io.ReadAll(io.LimitReader(rc, 1024*1024+1))
+	}
+	packageData, err := read("app/package.json")
+	if err != nil {
+		return err
+	}
+	var pkg struct {
+		Version string `json:"version"`
+	}
+	if json.Unmarshal(packageData, &pkg) != nil || pkg.Version != version {
+		return fmt.Errorf("runtime package version mismatch")
+	}
+	for _, required := range []string{"app/server.js", "app/launch.js", "app/package-lock.json"} {
+		if entries[required] == nil {
+			return fmt.Errorf("missing runtime file %s", required)
+		}
+	}
+	marker, err := read("app/config/distribution-mode.json")
+	if err != nil {
+		return err
+	}
+	var channel map[string]interface{}
+	if json.Unmarshal(marker, &channel) != nil || len(channel) != 1 || channel["channel"] != "public" {
+		return fmt.Errorf("runtime distribution marker mismatch")
+	}
+	data, err := read("app/config/plugin-release-policy.json")
+	if err != nil {
+		return err
+	}
+	var policy struct {
+		Schema                int               `json:"schemaVersion"`
+		Closed                []string          `json:"closedBeta"`
+		PublicRuntimeExcluded []string          `json:"publicRuntimeExcluded"`
+		Aliases               map[string]string `json:"aliases"`
+		Owners                map[string]string `json:"publicAssetPathOwners"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	if dec.Decode(&policy) != nil || policy.Schema != 1 || len(policy.Closed) == 0 {
+		return fmt.Errorf("invalid runtime policy")
+	}
+	if dec.Decode(new(interface{})) != io.EOF {
+		return fmt.Errorf("trailing runtime policy")
+	}
+	validID := regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
+	blocked := map[string]bool{"chatango": true}
+	for _, id := range policy.Closed {
+		if !validID.MatchString(id) || blocked[id] {
+			return fmt.Errorf("invalid policy ID")
+		}
+		blocked[id] = true
+	}
+	for _, id := range policy.PublicRuntimeExcluded {
+		if !validID.MatchString(id) || blocked[id] {
+			return fmt.Errorf("invalid public runtime exclusion ID")
+		}
+		blocked[id] = true
+	}
+	for alias, id := range policy.Aliases {
+		if !validID.MatchString(alias) || !blocked[id] || blocked[alias] {
+			return fmt.Errorf("invalid policy alias")
+		}
+		blocked[alias] = true
+	}
+	deniedAssets := map[string]bool{"app/public/js/chatango-theme-adapter.js": true}
+	for asset, owner := range policy.Owners {
+		if !blocked[owner] || !strings.HasPrefix(asset, "/") || strings.ContainsAny(asset, "\\?#") {
+			return fmt.Errorf("invalid asset policy")
+		}
+		for _, segment := range strings.Split(asset[1:], "/") {
+			if segment == "" || segment == "." || segment == ".." || strings.Contains(segment, ":") {
+				return fmt.Errorf("invalid asset path")
+			}
+		}
+		key := "app/public" + strings.ToLower(asset)
+		if deniedAssets[key] {
+			return fmt.Errorf("duplicate asset policy")
+		}
+		deniedAssets[key] = true
+	}
+	for name := range entries {
+		lower := strings.ToLower(name)
+		if deniedAssets[lower] {
+			return fmt.Errorf("retired/closed runtime asset present")
+		}
+		if strings.HasPrefix(lower, "app/plugins/") {
+			parts := strings.Split(lower, "/")
+			for _, part := range parts[2:] {
+				normalized, valid := normalizePublicPluginPathPart(part)
+				blockedPathPart := !valid
+				for _, decodedPart := range strings.Split(normalized, "/") {
+					blockedPathPart = blockedPathPart || blocked[decodedPart]
+				}
+				if blockedPathPart {
+					return fmt.Errorf("closed runtime plugin present")
+				}
+			}
+			if strings.HasSuffix(lower, "/plugin.json") {
+				raw, e := read(name)
+				if e != nil {
+					return e
+				}
+				var manifest struct {
+					ID       string   `json:"id"`
+					Aliases  []string `json:"aliases"`
+					Replaces []string `json:"replaces"`
+				}
+				if json.Unmarshal(raw, &manifest) != nil || !validID.MatchString(manifest.ID) {
+					return fmt.Errorf("invalid plugin manifest")
+				}
+				for _, id := range append(append([]string{manifest.ID}, manifest.Aliases...), manifest.Replaces...) {
+					if !validID.MatchString(id) || blocked[id] {
+						return fmt.Errorf("closed plugin identity present")
+					}
+				}
+			}
+		}
+	}
+	for name, f := range entries {
+		if !strings.HasPrefix(name, "app/") {
+			continue
+		}
+		target := filepath.Join(dest, filepath.FromSlash(strings.TrimPrefix(name, "app/")))
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0755); err != nil {
+				return err
+			}
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		rc, e := f.Open()
+		if e != nil {
+			return e
+		}
+		out, e := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if e != nil {
+			rc.Close()
+			return e
+		}
+		_, e = io.Copy(out, io.LimitReader(rc, int64(f.UncompressedSize64)+1))
+		closeErr := out.Close()
+		rc.Close()
+		if e != nil {
+			return e
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+	}
+	return nil
+}
+
+func readRuntimeConfigFile(path string, maxBytes int64) ([]byte, bool, error) {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	if !info.Mode().IsRegular() || info.Size() > maxBytes {
+		return nil, false, fmt.Errorf("unsafe or oversized runtime config file: %s", path)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, false, err
+	}
+	if int64(len(data)) > maxBytes {
+		return nil, false, fmt.Errorf("oversized runtime config file: %s", path)
+	}
+	return data, true, nil
+}
+
+func runtimeEnvKeys(data []byte) (map[string]bool, error) {
+	if bytes.IndexByte(data, 0) >= 0 {
+		return nil, fmt.Errorf("environment file contains a NUL byte")
+	}
+	keyPattern := regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+	keys := make(map[string]bool)
+	for lineNumber, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		key, _, found := strings.Cut(line, "=")
+		key = strings.TrimSpace(key)
+		if !found || !keyPattern.MatchString(key) {
+			return nil, fmt.Errorf("invalid environment assignment on line %d", lineNumber+1)
+		}
+		keys[key] = true
+	}
+	return keys, nil
+}
+
+func preserveRuntimeConfig(appDir, staged string) error {
+	pointer, hasPointer, err := readRuntimeConfigFile(filepath.Join(appDir, ".config_path"), 32*1024)
+	if err != nil {
+		return err
+	}
+	if hasPointer {
+		value := strings.TrimSpace(string(pointer))
+		if value != "" {
+			resolved := value
+			if !filepath.IsAbs(resolved) {
+				resolved = filepath.Join(appDir, resolved)
+			}
+			resolved, err = filepath.Abs(resolved)
+			if err != nil {
+				return err
+			}
+			root, rootErr := filepath.Abs(appDir)
+			if rootErr != nil {
+				return rootErr
+			}
+			relative, relErr := filepath.Rel(root, resolved)
+			if relErr != nil {
+				if !strings.EqualFold(filepath.VolumeName(root), filepath.VolumeName(resolved)) {
+					relative = resolved
+				} else {
+					return relErr
+				}
+			}
+			if relative == "." || (relative != ".." && !strings.HasPrefix(relative, ".."+string(os.PathSeparator)) && !filepath.IsAbs(relative)) {
+				return fmt.Errorf("existing .config_path points inside runtime; manual data migration required")
+			}
+		}
+	}
+	env, hasEnv, err := readRuntimeConfigFile(filepath.Join(appDir, ".env"), 1024*1024)
+	if err != nil {
+		return err
+	}
+	if hasEnv {
+		example, found, err := readRuntimeConfigFile(filepath.Join(staged, ".env.example"), 1024*1024)
+		if err != nil {
+			return err
+		}
+		if !found {
+			return fmt.Errorf("existing .env cannot be preserved: new runtime has no .env.example")
+		}
+		envKeys, err := runtimeEnvKeys(env)
+		if err != nil {
+			return fmt.Errorf("existing .env is incompatible with new runtime: %w", err)
+		}
+		exampleKeys, err := runtimeEnvKeys(example)
+		if err != nil {
+			return fmt.Errorf("new .env.example is invalid: %w", err)
+		}
+		for key := range envKeys {
+			if !exampleKeys[key] {
+				return fmt.Errorf("existing .env is incompatible with new runtime: key %s is not declared", key)
+			}
+		}
+	}
+	for _, item := range []struct {
+		name string
+		data []byte
+		set  bool
+	}{{".config_path", pointer, hasPointer}, {".env", env, hasEnv}} {
+		if !item.set {
+			continue
+		}
+		target := filepath.Join(staged, item.name)
+		maxBytes := int64(32 * 1024)
+		if item.name == ".env" {
+			maxBytes = 1024 * 1024
+		}
+		stagedData, exists, err := readRuntimeConfigFile(target, maxBytes)
+		if err != nil {
+			return err
+		}
+		if exists {
+			if bytes.Equal(stagedData, item.data) {
+				continue
+			}
+			return fmt.Errorf("new runtime config file %s conflicts with existing user config", item.name)
+		}
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0600)
+		if err != nil {
+			return err
+		}
+		_, writeErr := out.Write(item.data)
+		closeErr := out.Close()
+		if writeErr != nil {
+			return writeErr
+		}
+		if closeErr != nil {
+			return closeErr
+		}
+	}
+	configRoot := filepath.Join(appDir, "config")
+	if _, err := os.Lstat(configRoot); err == nil {
+		err = filepath.Walk(configRoot, func(source string, info os.FileInfo, walkErr error) error {
+			if walkErr != nil {
+				return walkErr
+			}
+			if source == configRoot || info.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(appDir, source)
+			if err != nil {
+				return err
+			}
+			relSlash := filepath.ToSlash(rel)
+			if strings.EqualFold(relSlash, "config/plugin-release-policy.json") || strings.EqualFold(relSlash, "config/distribution-mode.json") {
+				return nil
+			}
+			if !info.Mode().IsRegular() {
+				return fmt.Errorf("unsafe existing config file %s", rel)
+			}
+			target := filepath.Join(staged, rel)
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			data, err := os.ReadFile(source)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(target, data, info.Mode().Perm()); err != nil {
+				return err
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("migrate existing runtime config: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+// validateRuntimeSwapContinuity rejects live state and unclassified files before
+// any migration or rename can alter the active application tree. Only the
+// bootstrap pointer, compatible environment file, and config/ files are
+// explicitly migrated by this updater.
+func validateRuntimeSwapContinuity(appDir, staged string) error {
+	root, err := filepath.Abs(appDir)
+	if err != nil {
+		return err
+	}
+	stageRoot, err := filepath.Abs(staged)
+	if err != nil {
+		return err
+	}
+	return filepath.Walk(root, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if path == root {
+			return nil
+		}
+		rel, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("existing runtime contains symlink %s", rel)
+		}
+		if info.IsDir() {
+			name := strings.ToLower(filepath.Base(rel))
+			switch name {
+			case "user_configs", "user_data", "uploads", "logs", "data":
+				if !strings.Contains(filepath.ToSlash(rel), "/") {
+					entries, err := os.ReadDir(path)
+					if err != nil {
+						return err
+					}
+					if len(entries) > 0 {
+						return fmt.Errorf("existing runtime contains user data directory %s", rel)
+					}
+				}
+			}
+			return nil
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("existing runtime contains unsupported file %s", rel)
+		}
+		lower := strings.ToLower(filepath.Base(rel))
+		if strings.HasSuffix(lower, ".log") || strings.HasSuffix(lower, ".db") || strings.HasSuffix(lower, ".sqlite") || strings.HasSuffix(lower, ".sqlite3") || strings.HasSuffix(lower, "-wal") || strings.HasSuffix(lower, "-shm") {
+			return fmt.Errorf("existing runtime contains persistent or database state %s", rel)
+		}
+		if rel == ".config_path" || rel == ".env" || rel == ".env.example" || strings.HasPrefix(filepath.ToSlash(rel), "config/") {
+			return nil
+		}
+		stagedPath := filepath.Join(stageRoot, rel)
+		stagedInfo, err := os.Lstat(stagedPath)
+		if err == nil {
+			if !stagedInfo.Mode().IsRegular() {
+				return fmt.Errorf("staged runtime does not safely replace %s", rel)
+			}
+			if runtimePathHasDataDirectory(rel) {
+				activeBytes, err := os.ReadFile(path)
+				if err != nil {
+					return err
+				}
+				stagedBytes, err := os.ReadFile(stagedPath)
+				if err != nil {
+					return err
+				}
+				if !bytes.Equal(activeBytes, stagedBytes) {
+					return fmt.Errorf("existing runtime data file %s differs from staged release", rel)
+				}
+			}
+			return nil
+		}
+		if !os.IsNotExist(err) {
+			return err
+		}
+		return fmt.Errorf("existing runtime file %s has no explicit migration or staged replacement", rel)
+	})
+}
+
+func runtimePathHasDataDirectory(rel string) bool {
+	parts := strings.Split(filepath.ToSlash(rel), "/")
+	for _, part := range parts[:len(parts)-1] {
+		if strings.EqualFold(part, "data") {
+			return true
+		}
+	}
+	return false
+}
+
+// Renames are individually atomic. This is a checked rollback transaction, not
+// a crash-atomic multi-file transaction; a crash-recovery journal is separate.
+func swapRuntimeStage(appDir, staged, versionPath, newVersion, backup string, rename func(string, string) error) error {
+	if err := validateRuntimeSwapContinuity(appDir, staged); err != nil {
+		return fmt.Errorf("runtime data continuity preflight: %w", err)
+	}
+	if err := preserveRuntimeConfig(appDir, staged); err != nil {
+		return fmt.Errorf("preserve existing runtime config: %w", err)
+	}
+	versionStage := filepath.Join(filepath.Dir(staged), "version.new")
+	if err := os.WriteFile(versionStage, []byte(newVersion), 0600); err != nil {
+		return err
+	}
+	versionBackup := filepath.Join(filepath.Dir(staged), "version.old")
+	hadApp := false
+	hadVersion := false
+	installed := false
+	versionMoved := false
+	if _, err := os.Stat(appDir); err == nil {
+		hadApp = true
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	if _, err := os.Stat(versionPath); err == nil {
+		hadVersion = true
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+	rollback := func(cause error) error {
+		var failures []error
+		if installed {
+			if err := os.RemoveAll(appDir); err != nil {
+				failures = append(failures, err)
+			}
+		}
+		if hadApp {
+			if err := rename(backup, appDir); err != nil {
+				failures = append(failures, fmt.Errorf("restore app from %s: %w", backup, err))
+			}
+		}
+		if versionMoved {
+			if err := rename(versionBackup, versionPath); err != nil {
+				failures = append(failures, fmt.Errorf("restore version: %w", err))
+			}
+		}
+		return errors.Join(append([]error{cause}, failures...)...)
+	}
+	if hadApp {
+		if err := os.MkdirAll(filepath.Dir(backup), 0755); err != nil {
+			return err
+		}
+		if hadVersion {
+			oldVersion, err := os.ReadFile(versionPath)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(filepath.Join(filepath.Dir(backup), "version.txt"), oldVersion, 0600); err != nil {
+				return err
+			}
+		}
+		if err := rename(appDir, backup); err != nil {
+			return err
+		}
+	}
+	if err := rename(staged, appDir); err != nil {
+		return rollback(err)
+	}
+	installed = true
+	if hadVersion {
+		if err := rename(versionPath, versionBackup); err != nil {
+			return rollback(err)
+		}
+		versionMoved = true
+	}
+	if err := rename(versionStage, versionPath); err != nil {
+		return rollback(err)
+	}
+	return nil
+}
+
 func (l *Launcher) downloadAndApplyUpdate(release *GitHubRelease) error {
+	runtimeUpdateMu.Lock()
+	defer runtimeUpdateMu.Unlock()
 	if release == nil {
 		return fmt.Errorf("release is required")
 	}
-	if strings.TrimSpace(release.ZipballURL) == "" {
-		return fmt.Errorf("release %s does not include a zipball URL", release.TagName)
-	}
-	if !isAppReleaseTag(release.TagName) {
-		return fmt.Errorf("release %s is not an app release", release.TagName)
+	versionPath := filepath.Join(l.exeDir, versionFile)
+	if err := requireNewRuntimeVersion(release.TagName, versionPath); err != nil {
+		return err
 	}
 	if l.isNodeRunning() || l.serverStarted || l.startupInProgress {
-		return fmt.Errorf("stop the server before applying an update")
+		return fmt.Errorf("stop server before update")
 	}
-
+	manifestURL, zipURL, err := runtimeAssetURLs(release)
+	if err != nil {
+		return err
+	}
+	client := runtimeHTTPClient()
+	manifest, err := fetchRuntimeManifest(client, manifestURL, release.TagName)
+	if err != nil {
+		return err
+	}
 	runtimeDir := filepath.Join(l.exeDir, "runtime")
-	os.MkdirAll(runtimeDir, 0755)
-
-	zipDest := filepath.Join(runtimeDir, "update_download.zip")
-	l.logAndSync("[INFO] Downloading update %s from %s", release.TagName, release.ZipballURL)
-	l.updateProgressLocalized(6, "status.update_downloading", "Lade Update %s herunter...", release.TagName)
-
-	if err := l.downloadFileHTTP(release.ZipballURL, zipDest); err != nil {
-		return fmt.Errorf("update download failed: %v", err)
+	if err := os.MkdirAll(runtimeDir, 0755); err != nil {
+		return err
 	}
-	defer os.Remove(zipDest)
-
-	l.logAndSync("[INFO] Applying update %s...", release.TagName)
-	l.updateProgressLocalized(8, "status.update_applying", "Installiere Update %s...", release.TagName)
-
-	appDir := l.appDir
-	backupDir := filepath.Join(runtimeDir, "update_backups", time.Now().Format("2006-01-02_15-04-05")+"-"+strings.TrimPrefix(release.TagName, "v"), "app")
-
-	// Backup existing app/
-	os.RemoveAll(backupDir)
-	if _, err := os.Stat(appDir); err == nil {
-		if err := os.MkdirAll(filepath.Dir(backupDir), 0755); err != nil {
-			return fmt.Errorf("backup directory creation failed: %v", err)
+	workspace, err := os.MkdirTemp(runtimeDir, "update-stage-")
+	if err != nil {
+		return err
+	}
+	// Keep recovery files if rollback fails; successful updates and pre-swap
+	// failures have no old version in this workspace and can safely clean it.
+	defer func() {
+		if _, e := os.Stat(filepath.Join(workspace, "version.old")); os.IsNotExist(e) {
+			_ = os.RemoveAll(workspace)
 		}
-		if err := os.Rename(appDir, backupDir); err != nil {
-			return fmt.Errorf("backup of app/ failed: %v", err)
-		}
+	}()
+	zipPath := filepath.Join(workspace, "release.zip")
+	if err := downloadVerifiedRuntime(client, zipURL, zipPath, manifest); err != nil {
+		return err
 	}
-
-	if err := os.MkdirAll(appDir, 0755); err != nil {
-		_ = os.Rename(backupDir, appDir)
-		return fmt.Errorf("cannot create app/ dir: %v", err)
+	staged := filepath.Join(workspace, "app")
+	if err := stageRuntimeArchive(zipPath, staged, manifest.Version); err != nil {
+		return err
 	}
-
-	if err := extractAppSubdirFromGitHubZip(zipDest, appDir); err != nil {
-		os.RemoveAll(appDir)
-		_ = os.Rename(backupDir, appDir)
-		return fmt.Errorf("update extraction failed: %v", err)
+	backup := filepath.Join(runtimeDir, "update_backups", filepath.Base(workspace)+"-"+manifest.Version, "app")
+	if err := swapRuntimeStage(l.appDir, staged, versionPath, release.TagName, backup, os.Rename); err != nil {
+		return err
 	}
-
-	// Success – remove backup
-	if _, err := os.Stat(filepath.Join(appDir, "package.json")); err != nil {
-		os.RemoveAll(appDir)
-		_ = os.Rename(backupDir, appDir)
-		return fmt.Errorf("update payload is missing app/package.json: %v", err)
-	}
-
-	// Write version
-	if err := writeLocalVersion(release.TagName); err != nil {
-		l.logAndSync("[WARNING] Could not write version file: %v", err)
-	}
-
-	// Dependency installation is deliberately deferred until runLauncher has
-	// selected the portable Node runtime. This prevents a global Node/npm from
-	// building native modules before the supported Node 22 runtime is ready.
-	if _, err := os.Stat(filepath.Join(appDir, "node_modules")); os.IsNotExist(err) {
-		l.logAndSync("[INFO] node_modules missing after update; installation will run once after portable Node setup.")
-		l.updateProgressLocalized(9, "status.update_npm_install", "Abhängigkeiten werden nach Node-Setup installiert...")
-	}
-
-	l.logAndSync("[SUCCESS] Update %s applied", release.TagName)
+	_ = os.Remove(filepath.Join(workspace, "version.old"))
+	l.logAndSync("[SUCCESS] Verified runtime release %s applied", release.TagName)
 	if err := pruneUpdateBackups(filepath.Join(runtimeDir, "update_backups"), maxUpdateBackups); err != nil {
-		l.logAndSync("[WARNING] Could not prune old update backups: %v", err)
+		l.logAndSync("[WARNING] Backup pruning: %v", err)
 	}
 	return nil
 }
@@ -4795,7 +5795,7 @@ func (l *Launcher) ensureAppReadyOnStartup() (result error) {
 		return nil
 	}
 
-	if !needsBootstrap && compareVersions(release.TagName, localVersion) <= 0 {
+	if !needsBootstrap && requireNewRuntimeVersion(release.TagName, filepath.Join(l.exeDir, versionFile)) != nil {
 		l.logAndSync("[INFO] App release %s already installed on channel %s.", localVersion, channel)
 		return nil
 	}
@@ -4900,8 +5900,7 @@ func (l *Launcher) startTrayMenu(launcherURL string) {
 						}
 					}()
 				case <-stopServer.ClickedCh:
-					l.killNodeProcess()
-					if _, err := l.stopDetectedLTTHServers("TRAY"); err != nil {
+					if err := l.killNodeProcess(); err != nil {
 						l.logAndSync("[TRAY] Server stop failed: %v", err)
 					}
 				case <-safeMode.ClickedCh:
@@ -4923,7 +5922,10 @@ func (l *Launcher) startTrayMenu(launcherURL string) {
 						l.logAndSync("[TRAY] Diagnostic export written: %s", path)
 					}
 				case <-quit.ClickedCh:
-					l.killNodeProcess()
+					if err := l.killNodeProcess(); err != nil {
+						l.logAndSync("[TRAY] Launcher exit deferred because server cleanup is pending: %v", err)
+						continue
+					}
 					l.closeLogging()
 					systray.Quit()
 					os.Exit(0)
@@ -5161,13 +6163,7 @@ func (l *Launcher) runLauncher() {
 	// Monitor if the process exits prematurely
 	processDied := make(chan error, 1)
 	go func() {
-		waitErr := cmd.Wait()
-		l.nodeMu.Lock()
-		if l.nodeCmd == cmd {
-			l.nodeCmd = nil
-		}
-		l.nodeMu.Unlock()
-		processDied <- waitErr
+		processDied <- l.waitForManagedServerCommand(cmd)
 	}()
 
 	// Wait for server to be ready
@@ -5224,13 +6220,7 @@ func (l *Launcher) runLauncher() {
 				} else {
 					// Monitor the restarted process
 					go func() {
-						waitErr := cmd.Wait()
-						l.nodeMu.Lock()
-						if l.nodeCmd == cmd {
-							l.nodeCmd = nil
-						}
-						l.nodeMu.Unlock()
-						processDied <- waitErr
+						processDied <- l.waitForManagedServerCommand(cmd)
 					}()
 
 					l.updateProgressLocalized(96, "status.server_restart_wait", "🔄 Server neugestartet - warte auf Antwort...")
@@ -5875,17 +6865,11 @@ func main() {
 		}
 
 		launcher.logAndSync("[MANUAL] Stop server requested from launcher UI")
-		launcher.killNodeProcess()
-		if _, err := launcher.stopDetectedLTTHServers("MANUAL"); err != nil {
-			launcher.logAndSync("[ERROR] Stop server request could not stop all LTTH instances: %v", err)
+		if err := launcher.killNodeProcess(); err != nil {
+			launcher.logAndSync("[ERROR] Managed server stop remains retryable: %v", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		launcher.clearRuntimePortFile()
-		launcher.serverStarted = false
-		launcher.serverPort = 0
-		launcher.markServerStartDone(fmt.Errorf("server stopped manually"))
-		launcher.updateProgressLocalized(100, "status.manual_start_available", "Server gestoppt. Manueller Start ist verfügbar.")
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(map[string]interface{}{"success": true})
@@ -6099,13 +7083,19 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
-		sig := <-sigCh
-		if launcher.logger != nil {
-			launcher.logger.Printf("[INFO] Signal received (%v) – shutting down Node.js...\n", sig)
+		for sig := range sigCh {
+			if launcher.logger != nil {
+				launcher.logger.Printf("[INFO] Signal received (%v) – requesting graceful Node.js shutdown...\n", sig)
+			}
+			if err := launcher.killNodeProcess(); err != nil {
+				if launcher.logger != nil {
+					launcher.logger.Printf("[WARNING] Launcher remains open so shutdown can be retried: %v\n", err)
+				}
+				continue
+			}
+			launcher.closeLogging()
+			os.Exit(0)
 		}
-		launcher.killNodeProcess()
-		launcher.closeLogging()
-		os.Exit(0)
 	}()
 
 	// Keep running

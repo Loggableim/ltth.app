@@ -1,7 +1,10 @@
 const Database = require('better-sqlite3');
 const { EventEmitter } = require('events');
+const path = require('path');
 const GCCE = require('../plugins/gcce');
 const StreamAlchemyPlugin = require('../plugins/stream-monsters');
+
+const APP_DIR = path.resolve(__dirname, '..');
 
 function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
   const events = [];
@@ -21,7 +24,7 @@ function createApi({ gcce = null, streamMonstersEnabled = true } = {}) {
     emitted,
     pluginEvents,
     api: {
-      pluginDir: require('path').join(process.cwd(), 'plugins', 'stream-monsters'),
+      pluginDir: path.join(APP_DIR, 'plugins', 'stream-monsters'),
       log: jest.fn(),
       getDatabase: () => sqlite,
       getConfig: key => settings.get(key) || null,
@@ -1054,11 +1057,11 @@ describe('Stream Monsters plugin integration', () => {
     api.registerFlowAction = jest.fn();
     api.registerIFTTTAction = jest.fn();
     api.getSocketIO = () => ({ emit: jest.fn() });
-    api.pluginDir = require('path').join(process.cwd(), 'plugins', 'gcce');
+    api.pluginDir = path.join(APP_DIR, 'plugins', 'gcce');
     const gcce = new GCCE(api);
     await gcce.init();
     api.pluginLoader.loadedPlugins.set('gcce', { instance: gcce });
-    api.pluginDir = require('path').join(process.cwd(), 'plugins', 'stream-monsters');
+    api.pluginDir = path.join(APP_DIR, 'plugins', 'stream-monsters');
     const plugin = new StreamAlchemyPlugin(api);
     await plugin.init();
     plugin.streamMonstersCommandIngress.execute = jest.fn().mockRejectedValue(new Error('handler exploded'));

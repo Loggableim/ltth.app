@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "exceptions": [
+    {
+      "path": "pilot/app/node_modules/cookie/index.js",
+      "bytes": 8166,
+      "sha256": "a88f6d7257e3403b727b90a2f3f5c03591e14eaa0b217c501b7071074f080e42",
+      "reason": "Pinned cookie@0.7.2 parser/serializer required by engine.io; not cookie or session data."
+    },
+    {
+      "path": "pilot/app/node_modules/cookie/LICENSE",
+      "bytes": 1175,
+      "sha256": "c02110eedc16c7114f1a9bdc026c65626ce1d9c7e27fd51a8e0feee8a48a6858",
+      "reason": "Pinned license file for the cookie@0.7.2 runtime dependency."
+    },
+    {
+      "path": "pilot/app/node_modules/cookie/package.json",
+      "bytes": 1092,
+      "sha256": "7fa781bd142e7f38b66bff64b4e3a8be9e53e340e7ddaf27caebd00322602208",
+      "reason": "Pinned package metadata for cookie@0.7.2."
+    },
+    {
+      "path": "pilot/app/node_modules/cookie/README.md",
+      "bytes": 11769,
+      "sha256": "ba8b36c7d860d6ef37887b6ef496a486e91aefe5229f65157cc8b44725b9bec5",
+      "reason": "Pinned documentation file shipped with cookie@0.7.2."
+    },
+    {
+      "path": "pilot/app/node_modules/cookie/SECURITY.md",
+      "bytes": 1180,
+      "sha256": "299f5e632ccb1ae2d74f95dac09db13d7ff46c482663b67032e3e72cbe376276",
+      "reason": "Pinned security contact file shipped with cookie@0.7.2."
+    },
+    {
+      "path": "pilot/app/node_modules/engine.io/build/contrib/types.cookie.d.ts",
+      "bytes": 6041,
+      "sha256": "08c2bb524b8ed271f194e1c7cc6ad0bcc773f596c41f68a207d0ec02c9727060",
+      "reason": "Pinned engine.io@6.6.9 CookieSerializeOptions type definition; not session data."
+    },
+    {
+      "path": "pilot/app/node_modules/engine.io/build/contrib/types.cookie.js",
+      "bytes": 298,
+      "sha256": "a374c183df3da0115753ea5423b0fe66feece4f6d7feef4ee6591c8f7c092483",
+      "reason": "Pinned engine.io@6.6.9 generated type-module export; not session data."
+    }
+  ]
+}

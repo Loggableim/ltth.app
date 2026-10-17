@@ -27,12 +27,16 @@ function evaluate(source, bytes = originalMapBytes, readError) {
   vm.runInNewContext(source, context, { filename: 'original-release-event-policy.js' });
   return context.module.exports;
 }
-const publicPolicy = { getSnapshot: () => ({ publicMode: true }), isClosedBetaId: () => true };
+const publicPolicy = {
+  getPublicSurfaceSnapshot: () => ({ publicMode: true, publicSurface: true }),
+  isClosedBetaId: () => true
+};
+const baselinePublicPolicy = { getSnapshot: () => ({ publicMode: true }), isClosedBetaId: () => true };
 
 test('baseline original body proves missing128 mappings and changed owner reopen admission', () => {
   const empty = JSON.parse(originalMapBytes);
   empty.events = { outgoing: {}, incoming: {} };
-  const guard = evaluate(baselineSource, Buffer.from(JSON.stringify(empty))).createPublicReleaseEventGuard(publicPolicy);
+  const guard = evaluate(baselineSource, Buffer.from(JSON.stringify(empty))).createPublicReleaseEventGuard(baselinePublicPolicy);
   for (const [direction, name] of pairs) expect(guard(direction, name)).toBe(true);
   const changed = JSON.parse(originalMapBytes);
   changed.events.outgoing['story:chapter-ready'].owner = 'weather-control';
@@ -70,50 +74,61 @@ test.each([
   expect(() => evaluate(hardeningSource, bytes, readError)).toThrow('Public release event ownership contract is unavailable');
 });
 
-test('unknown direction denied, unknown event/control packet remains original Registry concern', () => {
+test('unknown direction and unowned event names are denied', () => {
   const guard = createPublicReleaseEventGuard(publicPolicy);
   expect(guard('other', 'story:chapter-ready')).toBe(false);
   expect(guard(undefined, 'story:chapter-ready')).toBe(false);
-  expect(guard('outgoing', 'weather:clear')).toBe(true);
-  expect(guard('outgoing', 'musicbot:unknown')).toBe(true);
-  expect(guard('outgoing', undefined)).toBe(true);
-  expect(guard('outgoing', 'toString')).toBe(true);
+  expect(guard('outgoing', 'weather:clear')).toBe(false);
+  expect(guard('outgoing', 'musicbot:unknown')).toBe(false);
+  expect(guard('outgoing', undefined)).toBe(false);
+  expect(guard('outgoing', 'toString')).toBe(false);
 });
 
 test.each([
-  ['throwing snapshot', { getSnapshot() { throw new ReferenceError('preinit'); } }],
-  ['undefined snapshot', { getSnapshot() {} }],
-  ['malformed snapshot', { getSnapshot: () => ({}) }],
-  ['invalid public policy', { getSnapshot: () => ({ publicMode: true, policyInvalid: true }), isClosedBetaId: () => false }],
-  ['contradictory invalid local snapshot', { getSnapshot: () => ({ publicMode: false, policyInvalid: true }), isClosedBetaId: () => false }],
-  ['undefined owner verdict', { getSnapshot: () => ({ publicMode: true }), isClosedBetaId() {} }]
-])('%s fails closed for all128 known names while shared event is untouched', (label, policy) => {
+  ['throwing snapshot', { getPublicSurfaceSnapshot() { throw new ReferenceError('preinit'); } }],
+  ['undefined snapshot', { getPublicSurfaceSnapshot() {} }],
+  ['malformed snapshot', { getPublicSurfaceSnapshot: () => ({}) }],
+  ['invalid public policy', { getPublicSurfaceSnapshot: () => ({ publicMode: true, publicSurface: true, policyInvalid: true }), isClosedBetaId: () => false }],
+  ['contradictory invalid local snapshot', { getPublicSurfaceSnapshot: () => ({ publicMode: false, publicSurface: true, policyInvalid: true }), isClosedBetaId: () => false }],
+  ['undefined owner verdict', { getPublicSurfaceSnapshot: () => ({ publicMode: true, publicSurface: true }), isClosedBetaId() {} }]
+])('%s fails closed for all mapped names', (label, policy) => {
   const guard = createPublicReleaseEventGuard(policy);
   for (const [direction, name] of pairs) expect(guard(direction, name)).toBe(false);
-  expect(guard('outgoing', 'weather:clear')).toBe(true);
+  expect(guard('outgoing', 'weather:clear')).toBe(false);
 });
 
-test('actual public policy alias resolution/default developer/local behavior preserved', () => {
+test('public-surface owner policy is dynamic and independent of distribution mode', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-owner-contract-'));
   try {
     fs.mkdirSync(path.join(temp, 'config'));
     fs.copyFileSync(path.join(__dirname, '../config/plugin-release-policy.json'), path.join(temp, 'config/plugin-release-policy.json'));
     const policy = createPluginReleasePolicy({ appRoot: temp });
     const guard = createPublicReleaseEventGuard(policy);
-    for (const [direction, name] of pairs) expect(guard(direction, name)).toBe(true);
+    const configured = JSON.parse(fs.readFileSync(path.join(temp, 'config/plugin-release-policy.json'), 'utf8'));
+    const betaOwners = new Set(configured.closedBeta);
+    const expectMappedEvents = () => {
+      for (const [direction, name] of pairs) {
+        const owner = mapping.events[direction][name].owner;
+        expect(guard(direction, name)).toBe(!betaOwners.has(owner));
+      }
+    };
+    expect(policy.getSnapshot().publicMode).toBe(false);
+    expect(policy.getPublicSurfaceSnapshot().publicSurface).toBe(true);
+    expectMappedEvents();
+    expect(policy.isClosedBetaId('streamalchemy', policy.getPublicSurfaceSnapshot())).toBe(true);
     fs.writeFileSync(path.join(temp, 'config/distribution-mode.json'), JSON.stringify({ channel: 'public' }));
     expect(policy.isClosedBetaId('streamalchemy')).toBe(true);
     expect(policy.isClosedBetaId('stream-monsters')).toBe(true);
-    for (const [direction, name] of pairs) expect(guard(direction, name)).toBe(false);
+    expectMappedEvents();
     fs.writeFileSync(path.join(temp, 'config/distribution-mode.json'), JSON.stringify({ channel: 'local' }));
-    for (const [direction, name] of pairs) expect(guard(direction, name)).toBe(true);
+    expectMappedEvents();
   } finally { fs.rmSync(temp, { recursive: true, force: true }); }
 });
 
 test.each(['intact packaged bytes', 'malformed JSON', 'unknown schema', 'missing file'])('native Node22 require startup contract: %s', kind => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-native-owner-contract-'));
   try {
-    for (const name of ['public-overlay-release-event-policy.js', 'plugin-release-policy.js', 'plugin-paths.js', 'plugin-identities.js']) {
+    for (const name of ['public-overlay-release-event-policy.js', 'plugin-release-policy.js', 'plugin-paths.js', 'plugin-identities.js', 'plugin-retirement.js']) {
       fs.copyFileSync(path.join(moduleDir, name), path.join(temp, name));
     }
     const packaged = fs.readFileSync(path.join(moduleDir, 'public-overlay-release-event-owners.json'));

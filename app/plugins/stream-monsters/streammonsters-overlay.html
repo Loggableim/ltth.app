@@ -2367,7 +2367,15 @@
     guard: text('statGuard', 'Verteidigung'),
     agility: text('statAgility', 'Agilität')
   }[String(stat || '').toLowerCase()] || value(stat, text('unknown', 'unbekannt')));
-  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  let overlayLifecycleStopped = false;
+  const pendingWaits = new Map();
+  const wait = milliseconds => new Promise(resolve => {
+    const timer = window.setTimeout(() => {
+      pendingWaits.delete(timer);
+      resolve();
+    }, milliseconds);
+    pendingWaits.set(timer, resolve);
+  });
   const effectsRenderer = window.StreamMonstersEffectsRenderer.createEffectsRenderer({
     canvas: node('effects-canvas')
   });
@@ -2585,7 +2593,6 @@
     applySnapshot:() => ({ total:0, visible:[], overflow:null }),
     destroy:() => {}
   };
-  let overlayLifecycleStopped = false;
   let socket = null;
   let reconnectController = null;
   const registeredSocketListeners = [];
@@ -4294,6 +4301,11 @@
       window.clearInterval(overlayHeartbeatTimer);
       overlayHeartbeatTimer = null;
     }
+    pendingWaits.forEach((resolve, timer) => {
+      window.clearTimeout(timer);
+      resolve();
+    });
+    pendingWaits.clear();
     if (queueWakeTimer != null) {
       window.clearTimeout(queueWakeTimer);
       queueWakeTimer = null;
@@ -4321,6 +4333,7 @@
     registeredSocketListeners.length = 0;
     socket?.disconnect?.();
     window.removeEventListener('pagehide', stopOverlayLifecycle);
+    window.removeEventListener('pageshow', handleOverlayPageShow);
   };
   window.addEventListener('pagehide', stopOverlayLifecycle);
   socket = typeof io === 'function' ? io() : null;
@@ -4445,6 +4458,11 @@
   };
   socket.on('connect', handleSocketConnect);
   registeredSocketListeners.push(['connect', handleSocketConnect]);
+  const handleOverlayPageShow = event => {
+    if (event?.persisted !== true || overlayLifecycleStopped || !socket?.connected) return;
+    handleSocketConnect();
+  };
+  window.addEventListener('pageshow', handleOverlayPageShow);
 })();
 </script>
 </body>

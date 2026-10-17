@@ -71,4 +71,31 @@ describe('ZappieHellManager OpenShock steps', () => {
     );
     expect(queueManager.addItem).not.toHaveBeenCalled();
   });
+
+  test('emits overlay animation data through the manager event without invoking device actions', async () => {
+    const { manager, queueManager, patternExecutor } = createManager();
+    const emit = jest.fn();
+    const payload = {
+      animationType: '<img id="fixture-markup">',
+      duration: 1000000000,
+      data: {
+        deviceId: 'fixture-private-device-id',
+        userId: 'fixture-private-user-id',
+        apiKey: 'fixture-private-api-key',
+        settings: { pattern: 'fixture-private-pattern' }
+      }
+    };
+    manager.on('overlay:animate', emit);
+
+    await manager._executeOverlayStep(payload);
+
+    expect(emit).toHaveBeenCalledTimes(1);
+    expect(emit).toHaveBeenCalledWith({
+      animationType: payload.animationType,
+      duration: payload.duration,
+      data: payload.data
+    });
+    expect(queueManager.addItem).not.toHaveBeenCalled();
+    expect(patternExecutor.executePattern).not.toHaveBeenCalled();
+  });
 });

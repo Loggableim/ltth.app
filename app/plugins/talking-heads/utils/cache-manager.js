@@ -97,7 +97,7 @@ class CacheManager {
         .test(filename);
   }
 
-  async registerGeneratedAssets(ownerId, assetPaths, expiresAt = null) {
+  async registerGeneratedAssets(ownerId, assetPaths, expiresAt = null, options = {}) {
     if (!this.initialized) {
       throw new Error('Cache manager not initialized');
     }
@@ -113,9 +113,10 @@ class CacheManager {
       ? Math.max(0, Math.round(requestedExpiry))
       : now + Math.max(60000, Number(this.config.cacheDuration) || 2592000000);
 
-    return this._withGeneratedAssetLock(async () => (
-      this._registerGeneratedAssetsLocked(normalizedOwnerId, safePaths, now, normalizedExpiry)
-    ));
+    return this._withGeneratedAssetLock(async () => {
+      this._throwIfAssetOperationAborted(options?.signal);
+      return this._registerGeneratedAssetsLocked(normalizedOwnerId, safePaths, now, normalizedExpiry);
+    });
   }
 
   _registerGeneratedAssetsLocked(ownerId, safePaths, createdAt, expiresAt) {
@@ -132,7 +133,7 @@ class CacheManager {
     return safePaths.length;
   }
 
-  async materializeGeneratedAssets(ownerId, assetPaths, expiresAt, materialize) {
+  async materializeGeneratedAssets(ownerId, assetPaths, expiresAt, materialize, options = {}) {
     if (!this.initialized) {
       throw new Error('Cache manager not initialized');
     }
@@ -153,14 +154,74 @@ class CacheManager {
       : now + Math.max(60000, Number(this.config.cacheDuration) || 2592000000);
 
     return this._withGeneratedAssetLock(async () => {
-      this._registerGeneratedAssetsLocked(
-        normalizedOwnerId,
-        safePaths,
-        now,
-        normalizedExpiry
-      );
-      return materialize();
+      this._throwIfAssetOperationAborted(options.signal);
+      const priorRows = this.db.prepare(`
+        SELECT asset_path, created_at, expires_at
+        FROM talking_heads_generated_assets
+        WHERE owner_id = ? AND asset_path IN (${safePaths.map(() => '?').join(',')})
+      `).all(normalizedOwnerId, ...safePaths) || [];
+      try {
+        this._registerGeneratedAssetsLocked(
+          normalizedOwnerId,
+          safePaths,
+          now,
+          normalizedExpiry
+        );
+        const result = await materialize();
+        this._throwIfAssetOperationAborted(options.signal);
+        return result;
+      } catch (error) {
+        await this._rollbackGeneratedAssetMaterializationLocked(normalizedOwnerId, safePaths, priorRows);
+        throw error;
+      }
     });
+  }
+
+  _throwIfAssetOperationAborted(signal) {
+    if (!signal?.aborted) return;
+    const error = new Error('Generated asset operation aborted');
+    error.name = 'AbortError';
+    throw error;
+  }
+
+  async _rollbackGeneratedAssetMaterializationLocked(ownerId, assetPaths, priorRows = []) {
+    const priorByPath = new Map(priorRows.map(row => [path.resolve(row.asset_path), row]));
+    const restore = this.db.prepare(`
+      INSERT INTO talking_heads_generated_assets (
+        asset_path, owner_id, created_at, expires_at
+      ) VALUES (?, ?, ?, ?)
+      ON CONFLICT(asset_path, owner_id) DO UPDATE SET
+        created_at = excluded.created_at,
+        expires_at = excluded.expires_at
+    `);
+    const remove = this.db.prepare(`
+      DELETE FROM talking_heads_generated_assets
+      WHERE asset_path = ? AND owner_id = ?
+    `);
+    for (const filePath of assetPaths) {
+      const normalizedPath = path.resolve(filePath);
+      const previous = priorByPath.get(normalizedPath);
+      if (previous) {
+        restore.run(normalizedPath, ownerId, previous.created_at, previous.expires_at);
+      } else {
+        remove.run(normalizedPath, ownerId);
+      }
+    }
+
+    for (const filePath of assetPaths) {
+      const normalizedPath = path.resolve(filePath);
+      const remaining = this.db.prepare(
+        'SELECT COUNT(*) AS count FROM talking_heads_generated_assets WHERE asset_path = ?'
+      ).get(normalizedPath);
+      if (Number(remaining?.count) > 0 || !this._isOwnedGeneratedAsset(normalizedPath)) continue;
+      try {
+        await fs.unlink(normalizedPath);
+      } catch (error) {
+        if (error?.code !== 'ENOENT') {
+          this.logger.warn(`TalkingHeads: Could not roll back generated asset ${path.basename(normalizedPath)}`, error);
+        }
+      }
+    }
   }
 
   async _releaseGeneratedAssetOwnerLocked(ownerId) {

@@ -7,9 +7,16 @@ const Database = require('better-sqlite3');
 const fs = require('fs');
 const path = require('path');
 
+const pluginsForCleanup = new Set();
+
+function trackPlugin(plugin) {
+  pluginsForCleanup.add(plugin);
+  return plugin;
+}
+
 function createPlugin() {
   const ttsPlugin = { speak: jest.fn().mockResolvedValue({ success: true, id: 'tts-1' }) };
-  const plugin = Object.create(AnimazingPalPlugin.prototype);
+  const plugin = trackPlugin(Object.create(AnimazingPalPlugin.prototype));
   plugin.api = {
     getPluginInstance: jest.fn(id => id === 'tts' ? ttsPlugin : null),
     registerRoute: jest.fn(),
@@ -27,6 +34,22 @@ function createPlugin() {
 }
 
 describe('AnimazingPal live host integration', () => {
+  afterEach(() => {
+    for (const plugin of pluginsForCleanup) {
+      const playback = plugin.liveHostSpeechPlayback;
+      if (!playback) continue;
+
+      for (const record of playback.recordsByKey.values()) {
+        if (record.timer) clearTimeout(record.timer);
+      }
+      playback.recordsByKey.clear();
+      playback.keyBySpeechId.clear();
+      playback.pendingCount = 0;
+      playback.resumeIdleMotion = false;
+    }
+    pluginsForCleanup.clear();
+  });
+
   test('imports legacy Sidekick state once without modifying the source settings or memory table', () => {
     const db = new Database(':memory:');
     db.exec(`
@@ -132,10 +155,12 @@ describe('AnimazingPal live host integration', () => {
     expect(overlayResponse.sendFile).toHaveBeenCalledWith(expect.stringContaining('stream-assistant-hud.html'));
   });
 
-  test('removes the standalone Sidekick runtime and compatibility routes', () => {
+  test('keeps Sidekick independent while excluding its legacy routes from AnimazingPal', () => {
     const mainSource = fs.readFileSync(path.join(__dirname, '../plugins/animazingpal/main.js'), 'utf8');
+    const sidekickManifest = JSON.parse(fs.readFileSync(path.join(__dirname, '../plugins/sidekick/plugin.json'), 'utf8'));
 
-    expect(fs.existsSync(path.join(__dirname, '../plugins/sidekick'))).toBe(false);
+    expect(sidekickManifest).toEqual(expect.objectContaining({ id: 'sidekick', entry: 'main.js', type: 'tool' }));
+    expect(fs.existsSync(path.join(__dirname, '../plugins/sidekick/main.js'))).toBe(true);
     expect(mainSource).not.toContain('/api/sidekick/');
     expect(mainSource).not.toContain("registerSocket('sidekick:");
   });

@@ -29,6 +29,10 @@ const QueueManager = require('./helpers/queueManager');
 const { SAFETY_MARGIN_MS } = require('./helpers/queueManager');
 const PatternExecutor = require('./helpers/patternExecutor');
 const ZappieHellManager = require('./helpers/zappieHellManager');
+const {
+    registerPublicZappieHellGoal,
+    forgetPublicZappieHellGoal
+} = require('../../modules/public-overlay-payload-projection');
 
 class OpenShockPlugin {
     constructor(api) {
@@ -593,8 +597,7 @@ class OpenShockPlugin {
         });
 
         this.zappieHellManager.on('overlay:animate', (data) => {
-            // Emit to Socket.io for overlay animations
-            this.api.getSocketIO().emit('zappiehell:overlay:animate', data);
+            this._broadcastZappieHellOverlayAnimation(data);
         });
 
         // Queue Event-Handler
@@ -1863,6 +1866,7 @@ class OpenShockPlugin {
         this.api.registerRoute('post', '/api/openshock/zappiehell/goals', (req, res) => {
             try {
                 const goal = this.zappieHellManager.addGoal(req.body);
+                registerPublicZappieHellGoal(goal);
                 this._broadcastZappieHellUpdate({ goals: this.zappieHellManager.getAllGoals() });
                 res.json({
                     success: true,
@@ -1896,7 +1900,10 @@ class OpenShockPlugin {
         // Delete goal
         this.api.registerRoute('delete', '/api/openshock/zappiehell/goals/:id', (req, res) => {
             try {
+                const goal = this.zappieHellManager.getAllGoals()
+                    .find(candidate => candidate.id === req.params.id);
                 this.zappieHellManager.deleteGoal(req.params.id);
+                forgetPublicZappieHellGoal(req.params.id, goal);
                 this._broadcastZappieHellUpdate({ goals: this.zappieHellManager.getAllGoals() });
                 res.json({
                     success: true,
@@ -3143,6 +3150,22 @@ class OpenShockPlugin {
      */
     _broadcastZappieHellCompleted(data) {
         this.api.emit('zappiehell:goals:completed', data);
+    }
+
+    /**
+     * Broadcast only the bounded duration consumed by the public ZappieHell overlay.
+     * Internal step data and animation labels stay on the manager side.
+     */
+    _broadcastZappieHellOverlayAnimation(data) {
+        if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
+
+        const duration = data.duration == null ? 500 : data.duration;
+        if (typeof duration !== 'number' || !Number.isFinite(duration) || duration < 100 || duration > 10000) {
+            return false;
+        }
+
+        this.api.getSocketIO().emit('zappiehell:overlay:animate', { duration });
+        return true;
     }
 
     /**

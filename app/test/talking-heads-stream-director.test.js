@@ -38,6 +38,11 @@ function createPlugin(savedConfig = { enabled: true, assetPack: 'boba' }) {
     getCatalog: jest.fn(() => ({ packs: [{ id: 'boba', name: 'Boba Animals', characters: ['Fox'] }] })),
     getRandomSelection: jest.fn(() => fox),
     getLotteryCandidates: jest.fn(() => [bear, fox, bear]),
+    normalizeSelection: jest.fn((sel) => ({
+      packId: sel?.packId || 'boba',
+      characterId: sel?.characterId || 'Fox',
+      options: sel?.options || {}
+    })),
     getSpriteSet: jest.fn(async (selection) => ({
       ...selection,
       sprites: { idle_neutral: `/sprites/${selection.characterId}.png` }
@@ -109,7 +114,7 @@ describe('Talking Heads Stream Director routes', () => {
         reason: 'preview',
         playbackId: expect.stringMatching(/^preview-spin-/),
         spinId: expect.any(String),
-        winner: expect.objectContaining({ selection: expect.objectContaining({ packId: expect.stringMatching(/^(boba|kenney|rgs)$/) }) })
+        winner: expect.objectContaining({ selection: expect.objectContaining({ packId: 'boba' }) })
       })
     ]);
     expect(plugin.avatarLotteryManager.assign).not.toHaveBeenCalled();
@@ -150,5 +155,130 @@ describe('Talking Heads Stream Director routes', () => {
       rerollGiftNames: ['Heart Me'],
       spinDurationMs: 3100
     });
+  });
+
+  test('normalizes, validates, and clamps all nameplate and animation properties', () => {
+    const { plugin } = createPlugin();
+
+    // Default fallbacks for empty / invalid configuration
+    const normalizedDefault = plugin._normalizeAvatarConfig({});
+    expect(normalizedDefault).toMatchObject({
+      nameplatePosition: 'below',
+      nameplateFontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+      nameplateFontSize: 14,
+      nameplateFontColor: '#ffffff',
+      nameplateBackgroundColor: '#060c1c',
+      nameplateBackgroundOpacity: 0.75,
+      nameplateTextShadow: 'subtle',
+      nameplateTextStroke: 'none',
+      headEntranceAnimation: 'slide-up',
+      headExitAnimation: 'fade',
+      nameplateEntranceAnimation: 'fade',
+      nameplateExitAnimation: 'fade'
+    });
+
+    // Valid custom values
+    const customConfig = {
+      nameplatePosition: 'above',
+      nameplateFontFamily: 'Impact, sans-serif',
+      nameplateFontSize: 24,
+      nameplateFontColor: '#ff0055',
+      nameplateBackgroundColor: '#123456',
+      nameplateBackgroundOpacity: 0.42,
+      nameplateTextShadow: 'glow',
+      nameplateTextStroke: '1px black',
+      headEntranceAnimation: 'bounce',
+      headExitAnimation: 'slide-down',
+      nameplateEntranceAnimation: 'pop',
+      nameplateExitAnimation: 'slide-up'
+    };
+    expect(plugin._normalizeAvatarConfig(customConfig)).toMatchObject(customConfig);
+
+    // Clamping and sanitation
+    const clampedConfig = plugin._normalizeAvatarConfig({
+      nameplatePosition: 'invalid-pos',
+      nameplateFontFamily: '   ',
+      nameplateFontSize: 999, // exceeds 48
+      nameplateFontColor: 'not-a-color',
+      nameplateBackgroundColor: 'rgb(0,0,0)',
+      nameplateBackgroundOpacity: 5.5, // exceeds 1
+      nameplateTextShadow: 'extreme-shadow',
+      nameplateTextStroke: '5px red',
+      headEntranceAnimation: 'unknown-anim',
+      headExitAnimation: 'unknown-anim',
+      nameplateEntranceAnimation: 'unknown-anim',
+      nameplateExitAnimation: 'unknown-anim'
+    });
+    expect(clampedConfig).toMatchObject({
+      nameplatePosition: 'below',
+      nameplateFontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+      nameplateFontSize: 48,
+      nameplateFontColor: '#ffffff',
+      nameplateBackgroundColor: '#060c1c',
+      nameplateBackgroundOpacity: 1,
+      nameplateTextShadow: 'subtle',
+      nameplateTextStroke: 'none',
+      headEntranceAnimation: 'slide-up',
+      headExitAnimation: 'fade',
+      nameplateEntranceAnimation: 'fade',
+      nameplateExitAnimation: 'fade'
+    });
+
+    // Lower bound clamping for font size and opacity
+    const lowerClamped = plugin._normalizeAvatarConfig({
+      nameplateFontSize: 2, // below 10
+      nameplateBackgroundOpacity: -0.5 // below 0
+    });
+    expect(lowerClamped.nameplateFontSize).toBe(10);
+    expect(lowerClamped.nameplateBackgroundOpacity).toBe(0);
+  });
+
+  test('POST /api/talkingheads/config persists config and emits talkingheads:config:update live broadcast', () => {
+    const { plugin, api, io } = createPlugin();
+    plugin._registerRoutes();
+    const configRoute = findRoute(api, 'post', '/api/talkingheads/config');
+    const res = responseRecorder();
+
+    expect(configRoute).toEqual(expect.any(Function));
+
+    const updatedSettings = {
+      nameplatePosition: 'above',
+      nameplateFontSize: 20,
+      nameplateFontColor: '#00ffcc',
+      nameplateBackgroundColor: '#112233',
+      nameplateBackgroundOpacity: 0.9,
+      headEntranceAnimation: 'pop',
+      nameplateEntranceAnimation: 'bounce'
+    };
+
+    configRoute({ body: updatedSettings }, res);
+
+    expect(api.setConfig).toHaveBeenCalledWith('talking_heads_config', expect.objectContaining({
+      nameplatePosition: 'above',
+      nameplateFontSize: 20,
+      nameplateFontColor: '#00ffcc',
+      nameplateBackgroundColor: '#112233',
+      nameplateBackgroundOpacity: 0.9,
+      headEntranceAnimation: 'pop',
+      nameplateEntranceAnimation: 'bounce'
+    }));
+
+    expect(io.emit).toHaveBeenCalledWith('talkingheads:config:update', {
+      config: expect.objectContaining({
+        nameplatePosition: 'above',
+        nameplateFontSize: 20,
+        nameplateFontColor: '#00ffcc',
+        nameplateBackgroundColor: '#112233',
+        nameplateBackgroundOpacity: 0.9
+      })
+    });
+
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      success: true,
+      config: expect.objectContaining({
+        nameplatePosition: 'above',
+        nameplateFontSize: 20
+      })
+    }));
   });
 });

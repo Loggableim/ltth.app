@@ -457,7 +457,7 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     const persisted = api.setConfig.mock.calls[api.setConfig.mock.calls.length - 1][1];
     expect(persisted).toEqual(postBody.config);
 
-    const getReq = {};
+    const getReq = { socket: { remoteAddress: '127.0.0.1' }, headers: {} };
     const getRes = createResponseMock();
     await getHandler(getReq, getRes);
 
@@ -565,7 +565,7 @@ describe('music-bot POST /api/plugins/music-bot/config', () => {
     expect(persisted).toEqual(postBody.config);
 
     const getRes = createResponseMock();
-    await getHandler({}, getRes);
+    await getHandler({ socket: { remoteAddress: '127.0.0.1' }, headers: {} }, getRes);
     const getBody = getRes.json.mock.calls[0][0];
     expect(getBody.success).toBe(true);
     expect(getBody.config).toEqual(persisted);

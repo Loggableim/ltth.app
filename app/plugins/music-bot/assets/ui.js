@@ -1,14 +1,16 @@
 (() => {
+  let musicBotLocalOnlyNoticeShown = false;
   const MIN_SONG_DURATION_LIMIT_SECONDS = 30;
   const MAX_SONG_DURATION_LIMIT_SECONDS = 7200;
   const DEFAULT_SONG_DURATION_LIMIT_SECONDS = 360;
+  const MPV_INSTALL_DOC_URL = 'https://mpv.io/installation/';
   const I18N_PREFIX = 'plugins.music-bot.music_bot.ui';
   const RUNTIME_I18N_SECTIONS = Object.fromEntries(Object.entries({
-    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
-    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestFailed requestRejectedTitle requestRequired requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther streamerPlaylistFeedbackAria streamerPlaylistUp streamerPlaylistDown streamerPlaylistOnly streamerPlaylistSaving streamerPlaylistSaved streamerPlaylistNeutral streamerPlaylistFailed songRadioStart songRadioStop songRadioUnavailable songRadioStarted songRadioStopped songRadioFailed',
+    shell: 'networkTitle connectionLost socketDisconnected apiError unknownError saved error configLocalOnlyTitle configLocalOnlyMessage dataLocalOnlyTitle dataLocalOnlyMessage onboardingSettingsTitle onboardingSettingsMeta onboardingOverlayTitle onboardingOverlayMeta onboardingPlayerTitle onboardingPlayerMeta setupHint setupOpen onboardingHelpWithIssues onboardingHelpReady mpvNotInstalled install mpvInstallation mpvReady installationFailed installationSlow statusCheckFailed installing installationStarted installationStartFailed installMpv assistantCompleted assistantCompletedMessage setup onboardingSaveFailed viewerFallback toastDefaultTitle setupYtdlpMissingTitle setupYtdlpMissingDescription setupYtdlpInstallNpm setupYtdlpInstallManual setupYtdlpConfigurePath setupMpvMissingTitle setupMpvMissingDescription setupMpvInstallWindows setupMpvInstallLinux setupMpvInstallMacos setupMpvConfigurePath mpvInstallIdle mpvAlreadyAvailable mpvInstalledReady mpvInstallFailed mpvPackageManagerUnavailable mpvInstallTimedOut mpvInstallWindowsPrompt mpvInstallStartFailed mpvInstallChocolateyLock mpvInstallAdminConfirmation mpvInstallPermissionDenied mpvInstallCommandUnavailable mpvInstallExited mpvInstallMissingAfterExit',
+    player: 'seekUnavailable seekFailed nowPlayingEmpty stateIdle statePaused statePlaying stateUnknown playbackAdvancing loading skip pauseTitle noActiveTrack playbackResumed playbackStarted nextTrackPlaying resumeTitle noStartableTrack skipTitle playingNow searchLoading searching noResult queueAdding queueAdded songAddedTitle requestAdded requestAcceptedPlaybackFailed requestFailed requestRateLimited requestTemporarilyUnavailable requestRejectedTitle requestRequired queryTooLong requestUserBlocked requestLikesRequired requestGiftRequired songBlockedTitle songSkipped banSong banArtist banKeyword banChannel queueInvalidSong queueFull queueDurationUnknown queueDurationTooLong queueDuplicate queueUserLimit queueCooldown payToPlayTitle payToPlayCredits payToSkipTitle payToSkipGift masterVolumeTitle sourceVolumeTitle volumeSetFailed crossfadeSaveFailed crossfadeSaving crossfadeApplied requestedBy selectedTitle playerToastTitle sourceYoutube sourceSoundCloud sourceOther streamerPlaylistFeedbackAria streamerPlaylistUp streamerPlaylistDown streamerPlaylistOnly streamerPlaylistSaving streamerPlaylistSaved streamerPlaylistNeutral streamerPlaylistFailed songRadioStart songRadioStop songRadioUnavailable songRadioStarted songRadioStopped songRadioFailed',
     queue: 'queueEmptyTitle queueEmptyHint playNow moveUp moveDown queueUpdated trackRemoved trackRemovedRefreshFailed queueTitle alreadyPlaying titleStartFailed orderUpdated queueRefreshRetry queueChanged queueRefreshFailed trackMoved remove',
-    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved radioPlanTitle radioPlanCount streamerPlaylistTitle streamerPlaylistDescription streamerPlaylistCount streamerPlaylistEmpty streamerSuggestionAccept streamerSuggestionReject streamerSuggestionSaving streamerSuggestionFailed streamerSuggestionAccepted streamerSuggestionRejected',
-    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
+    autoDj: 'autoDjPlaying autoDjActive autoDjDisabled autoDjOn autoDjOff autoDjSelected autoDjSource autoDjBlocked consecutiveProgress autoDjLimitReached autoDjStarted autoDjWaiting noTrackAvailable autoDjToastTitle sourceFamiliar sourceDiscoveryFallback sourceDiscovery sourceFamiliarFallback sourceHistory sourceRadio sourceHistoryFallback sourceUnknown radioPreviewDisabled radioCandidateCount radioNoCandidates radioPreviewDisabledHint radioPreviewEmptyHint radioUnknownTitle radioScore radioScoreReason radioFeedbackSaving radioFeedbackFailed radioFeedbackMoreSaved radioFeedbackLessSaved radioPlanTitle radioPlanCount streamerPlaylistTitle streamerPlaylistDescription streamerPlaylistCount streamerPlaylistEmpty streamerSuggestionAccept streamerSuggestionReject streamerSuggestionSaving streamerSuggestionFailed streamerSuggestionAccepted streamerSuggestionRejected streamerSuggestionPartial',
+    moderation: 'banAdded banAddFailed banRemoveFailed enterTitleKeyword banFailed moderationTitle queueMatchesRemoved queueMatchesRemovalFailed trackBanStopFailed trackBanAdvanceFailed banLabel trackBanLabel enterValue noEntries delete url keyword channel user artist exactTrack titleKeyword unknownBanType',
     history: 'historyLoadFailed historyFeedbackFailed historyToastTitle',
     playlists: 'playlistSaveFailed playlistConflict importRunning',
     settings: 'giftNoResults giftsCount giftSelectFirst giftSaveFailed giftApplied giftCatalogTitle giftUpdated giftLoading giftLoadFailed giftVisible giftLoaded giftLoadedApi giftUpdatedAt giftLocales giftLocalesDefault giftRegion crossfadeTitle',
@@ -47,7 +49,22 @@
     return source[field] || fallback;
   }
 
+  const API_ERROR_MESSAGE_KEYS = Object.freeze({
+    MUSIC_BOT_RATE_LIMITED: 'requestRateLimited',
+    MUSIC_BOT_RATE_LIMIT_CAPACITY: 'requestRateLimited',
+    MUSIC_BOT_RATE_LIMIT_IP_UNAVAILABLE: 'requestTemporarilyUnavailable',
+    MUSIC_BOT_QUERY_REQUIRED: 'requestRequired',
+    MUSIC_BOT_QUERY_TOO_LONG: 'queryTooLong'
+  });
+
   function localizedApiError(payload, fallback = '') {
+    const code = String(payload?.code || '');
+    const messageKey = Object.prototype.hasOwnProperty.call(API_ERROR_MESSAGE_KEYS, code)
+      ? API_ERROR_MESSAGE_KEYS[code]
+      : null;
+    if (messageKey) {
+      return tr(messageKey, fallback || payload?.error || 'Please try again shortly.');
+    }
     return localizedProducerText(payload, 'message', payload?.error || fallback);
   }
 
@@ -373,6 +390,8 @@
   let historyTotal = 0;
   let historyRequestGeneration = 0;
   let catalogSearchRequestGeneration = 0;
+  let resolvePreviewGeneration = 0;
+  let resolvePreviewController = null;
   const historyFilters = {
     q: '',
     outcome: '',
@@ -421,6 +440,7 @@
   let trackBanCatalogEventId = null;
   let trackBanScope = 'track';
   let trackBanReturnFocus = null;
+  let dashboardRequestInProgress = false;
 
   // Client-side YouTube ID extraction (no server call needed for direct links)
   function extractYouTubeId(url) {
@@ -456,6 +476,7 @@
     });
     previewFrame.onload = () => setPreviewVolume(previewVolumeInput?.value);
     previewFrame.src = `https://www.youtube.com/embed/${youtubeId}?${params.toString()}`;
+    previewFrame.tabIndex = 0;
     playerFrameBox?.classList.add('has-video');
     previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
@@ -474,6 +495,7 @@
   function clearPreview() {
     if (!previewFrame) return;
     previewFrame.src = '';
+    previewFrame.tabIndex = -1;
     playerFrameBox?.classList.remove('has-video');
     previewSource.textContent = tr('sourceYoutube', 'YouTube');
   }
@@ -557,7 +579,14 @@
           ? issue.installInstructionKeys.map((key) => translateRuntimeMessageKey(key, key))
           : (Array.isArray(issue?.installInstructions) ? issue.installInstructions : []);
         const instructionsHtml = instructions.length
-          ? `<ul>${instructions.map((instr) => `<li><code>${escapeHtml(instr)}</code></li>`).join('')}</ul>`
+          ? `<ul>${instructions.map((instruction) => {
+            const text = String(instruction || '');
+            const parts = text.split(MPV_INSTALL_DOC_URL);
+            if (parts.length === 1) return `<li><code>${escapeHtml(text)}</code></li>`;
+
+            const link = `<a href="${MPV_INSTALL_DOC_URL}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${MPV_INSTALL_DOC_URL}</a>`;
+            return `<li>${parts.map((part, index) => `${index ? link : ''}${part ? `<code>${escapeHtml(part)}</code>` : ''}`).join('')}</li>`;
+          }).join('')}</ul>`
           : '';
         const installStatus = issue?.installStatus;
         const installStatusMessage = localizedProducerText(installStatus, 'message');
@@ -743,7 +772,19 @@
     }
   });
   document.getElementById('clear-btn').addEventListener('click', () => {
-    post('/clear');
+    post('/clear').then((result) => {
+      if (result?.success) {
+        showToast('success', tr('queueClearTitle', 'Queue'), tr('queueCleared', 'Queue cleared.'));
+      } else if (result?.queueCleared) {
+        showToast(
+          'warn',
+          tr('queueClearTitle', 'Queue'),
+          result.error || tr('queueClearPlaybackStopFailed', 'Queue cleared, but playback could not be stopped. Retry to confirm playback has stopped.')
+        );
+      } else {
+        showToast('error', tr('queueClearTitle', 'Queue'), result?.error || tr('queueClearFailed', 'Queue could not be cleared.'));
+      }
+    });
   });
 
   previewVolumeInput?.addEventListener('input', () => {
@@ -752,17 +793,25 @@
 
   // Auto-detect YouTube URLs as the user types/pastes
   searchInput?.addEventListener('input', () => {
+    resolvePreviewController?.abort();
+    resolvePreviewController = null;
+    resolvePreviewGeneration += 1;
     const val = searchInput.value.trim();
     const ytId = extractYouTubeId(val);
+    searchFeedback.textContent = '';
+    clearPreview();
     if (ytId) {
       setPreviewVideo(ytId);
-      searchFeedback.textContent = '';
     }
   });
 
   async function resolvePreview() {
     const query = searchInput.value.trim();
     if (!query) return;
+    const requestGeneration = ++resolvePreviewGeneration;
+    resolvePreviewController?.abort();
+    const requestController = new AbortController();
+    resolvePreviewController = requestController;
 
     // For YouTube URLs: show the player immediately client-side, then fetch metadata
     const ytId = extractYouTubeId(query);
@@ -773,16 +822,30 @@
       searchFeedback.textContent = `🔍 ${tr('searching', 'Suche…')}`;
     }
 
-    const res = await get(`/resolve?q=${encodeURIComponent(query)}`);
-    if (res?.success) {
-      const dur = formatDuration(res.song.duration);
-      const channel = res.song.channelName || res.song.artist || '';
-      searchFeedback.textContent = `🎵 ${res.song.title}${channel ? ' • ' + channel : ''}${dur !== '—' ? ' • ' + dur : ''}`;
+    let res;
+    try {
+      res = await get(`/resolve?q=${encodeURIComponent(query)}`, { signal: requestController.signal });
+    } finally {
+      if (resolvePreviewController === requestController) resolvePreviewController = null;
+    }
+    if (requestController.signal.aborted) return;
+    if (requestGeneration !== resolvePreviewGeneration || searchInput.value.trim() !== query) return;
+    const resolvedSong = res?.song;
+    const resolvedTitle = typeof resolvedSong?.title === 'string' ? resolvedSong.title.trim() : '';
+    if (res?.success && resolvedSong && typeof resolvedSong === 'object' && resolvedTitle) {
+      const dur = formatDuration(resolvedSong.duration);
+      const channel = resolvedSong.channelName || resolvedSong.artist || '';
+      searchFeedback.textContent = `🎵 ${resolvedTitle}${channel ? ' • ' + channel : ''}${dur !== '—' ? ' • ' + dur : ''}`;
       if (!ytId) {
-        updatePreviewFrame(res.song);
+        updatePreviewFrame(resolvedSong);
       }
     } else {
-      searchFeedback.textContent = `⚠️ ${res?.error || tr('noResult', 'Kein Ergebnis.')}`;
+      const errorMessage = res?.success
+        ? tr('noResult', 'Kein Ergebnis.')
+        : res === null
+          ? catalogTr('getFailed', 'GET request failed.')
+          : localizedApiError(res, tr('noResult', 'Kein Ergebnis.'));
+      searchFeedback.textContent = `⚠️ ${errorMessage}`;
       if (!ytId) {
         clearPreview();
       }
@@ -797,21 +860,53 @@
     }
   });
 
-  requestBtn?.addEventListener('click', async () => {
+  async function submitDashboardRequest() {
+    if (dashboardRequestInProgress) return;
     const query = searchInput.value.trim();
-    if (!query) return;
-    requestFeedback.textContent = `⏳ ${tr('queueAdding', 'Wird zur Queue hinzugefügt…')}`;
-    const result = await post('/request', { query });
-    if (result?.success) {
-      requestFeedback.textContent = `✅ ${tr('queueAdded', 'Hinzugefügt: {title}', { title: result.song.title })}`;
-      renderQueueFromServer();
-      showToast('success', tr('songAddedTitle', 'Song hinzugefügt'), result.song.title);
-    } else {
-      const errorMessage = localizedApiError(result, tr('requestFailed', 'Fehler beim Request.'));
-      requestFeedback.textContent = `⚠️ ${errorMessage}`;
-      showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), errorMessage);
+    if (!query) {
+      requestFeedback.textContent = `⚠️ ${tr('requestRequired', 'Bitte gib einen Song an.')}`;
+      return;
     }
-  });
+    dashboardRequestInProgress = true;
+    if (requestBtn) {
+      requestBtn.disabled = true;
+      requestBtn.setAttribute('aria-busy', 'true');
+    }
+    requestFeedback.textContent = `⏳ ${tr('queueAdding', 'Wird zur Queue hinzugefügt…')}`;
+    try {
+      const result = await post('/request', { query });
+      const requestedTitle = typeof result?.song?.title === 'string' ? result.song.title.trim() : '';
+      if (result?.success && requestedTitle) {
+        requestFeedback.textContent = `✅ ${tr('queueAdded', 'Hinzugefügt: {title}', { title: requestedTitle })}`;
+        renderQueueFromServer();
+        if (result.playback?.started === false) {
+          showToast(
+            'warn',
+            tr('songAddedTitle', 'Song hinzugefügt'),
+            tr('requestAcceptedPlaybackFailed', 'Added to the queue, but playback could not start.')
+          );
+        } else {
+          showToast('success', tr('songAddedTitle', 'Song hinzugefügt'), requestedTitle, null, { announce: false });
+        }
+      } else {
+        const errorMessage = result?.success
+          ? tr('requestFailed', 'Fehler beim Request.')
+          : localizedApiError(result, tr('requestFailed', 'Fehler beim Request.'));
+        requestFeedback.textContent = `⚠️ ${errorMessage}`;
+        if (!result?.networkError) {
+          showToast('warn', tr('requestRejectedTitle', 'Song-Request abgelehnt'), errorMessage, null, { announce: false });
+        }
+      }
+    } finally {
+      dashboardRequestInProgress = false;
+      if (requestBtn) {
+        requestBtn.disabled = false;
+        requestBtn.removeAttribute('aria-busy');
+      }
+    }
+  }
+
+  requestBtn?.addEventListener('click', submitDashboardRequest);
 
   // Debounced volume/crossfade POSTs — the label updates immediately for responsiveness,
   // but the server request (which also persists config) only fires after the user stops dragging.
@@ -1327,6 +1422,33 @@
     }
     closeTrackBanMenu();
     await Promise.all([renderQueueFromServer(), refreshHistory(), refreshBans()]);
+    const queueRemovalIncomplete = result.queueRemovalRequested && result.queueRemovalComplete === false;
+    if (result.playbackStopFailed) {
+      showToast(
+        'warn',
+        tr('moderationTitle', 'Moderation'),
+        tr('trackBanStopFailed', 'Ban saved, but playback could not be stopped. The track may still be playing.')
+      );
+    }
+    if (result.playbackAdvanceFailed) {
+      showToast(
+        'warn',
+        tr('moderationTitle', 'Moderation'),
+        tr('trackBanAdvanceFailed', 'Ban saved and the current track stopped, but the next track could not be started.')
+      );
+    }
+    if (queueRemovalIncomplete) {
+      showToast(
+        'warn',
+        tr('moderationTitle', 'Moderation'),
+        tr('queueMatchesRemovalFailed', 'Ban saved, but matching queue entries could not all be removed. Check the queue after persistence recovery.')
+      );
+    }
+    if (result.playbackStopFailed || result.playbackAdvanceFailed || queueRemovalIncomplete) return;
+    if (!result.queueRemovalRequested || Number(result.removedQueued || 0) === 0) {
+      showToast('success', tr('moderationTitle', 'Moderation'), tr('banAdded', 'Ban hinzugefügt.'));
+      return;
+    }
     showToast('success', tr('moderationTitle', 'Moderation'), tr('queueMatchesRemoved', '{count} Queue-Treffer entfernt.', {
       count: result.removedQueued || 0
     }));
@@ -1743,6 +1865,9 @@
     await refreshHistory({ reset: true });
 
     const configData = await get('/config');
+    if (configData?.localOnly || configData?.code === 'MUSIC_BOT_CONFIG_LOCAL_ONLY' || [401, 403].includes(configData?.httpStatus)) {
+      showMusicBotLocalOnlyNotice();
+    }
     const crossfadeMs = configData?.config?.playback?.crossfadeDuration;
     if (typeof crossfadeMs === 'number') {
       const seconds = Math.round(crossfadeMs / 1000);
@@ -1887,7 +2012,7 @@
     syncHistoryFilters();
     const requestGeneration = ++historyRequestGeneration;
     const historyData = await get(`/history?${historyQueryString()}`);
-    if (requestGeneration !== historyRequestGeneration) return;
+    if (requestGeneration !== historyRequestGeneration || historyData?.localOnly) return;
     const rows = historyData?.history || historyData?.items;
     if (!Array.isArray(rows)) {
       showToast('warn', tr('historyToastTitle', 'Verlauf'), tr('historyLoadFailed', 'History konnte nicht geladen werden.'));
@@ -1898,12 +2023,40 @@
     updateHistoryPagination(rows.length);
   }
 
-  async function get(path) {
+  function showMusicBotLocalOnlyNotice() {
+    if (musicBotLocalOnlyNoticeShown) return;
+    musicBotLocalOnlyNoticeShown = true;
+    showToast(
+      'warn',
+      tr('dataLocalOnlyTitle', 'Music-Bot-Daten nur lokal verfügbar'),
+      tr('dataLocalOnlyMessage', 'Öffne das Dashboard direkt auf diesem Gerät. LAN-, Tunnel- und weitergeleitete Verbindungen können Music-Bot-Daten nicht laden.')
+    );
+  }
+
+  async function get(path, options = {}) {
     try {
-      const res = await fetch(`/api/plugins/music-bot${path}`);
-      return { ...(await res.json()), httpStatus: res.status };
+      const url = `/api/plugins/music-bot${path}`;
+      const res = options?.signal ? await fetch(url, options) : await fetch(url);
+      const payload = await res.json();
+      if (['MUSIC_BOT_LOCAL_READS_ONLY', 'MUSIC_BOT_CONFIG_LOCAL_ONLY'].includes(payload?.code)) {
+        showMusicBotLocalOnlyNotice();
+        return {
+          ...payload,
+          error: tr('dataLocalOnlyMessage', 'Öffne das Dashboard direkt auf diesem Gerät. LAN-, Tunnel- und weitergeleitete Verbindungen können Music-Bot-Daten nicht laden.'),
+          httpStatus: res.status,
+          localOnly: true
+        };
+      }
+      return { ...payload, httpStatus: res.status };
     } catch (error) {
-      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('getFailed', 'GET request failed.'));
+      if (error?.name === 'AbortError') return null;
+      showToast(
+        'error',
+        catalogTr('networkTitle', 'Network'),
+        catalogTr('getFailed', 'GET request failed.'),
+        null,
+        { announce: !String(path).startsWith('/resolve?') }
+      );
       return null;
     }
   }
@@ -1915,9 +2068,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: body ? JSON.stringify(body) : undefined
       });
-      return await res.json();
+      return { ...(await res.json()), httpStatus: res.status };
     } catch (error) {
-      showToast('error', catalogTr('networkTitle', 'Network'), catalogTr('postFailed', 'POST request failed.'));
+      showToast(
+        'error',
+        catalogTr('networkTitle', 'Network'),
+        catalogTr('postFailed', 'POST request failed.'),
+        null,
+        { announce: path !== '/request' }
+      );
       return { success: false, networkError: true };
     }
   }
@@ -2338,11 +2497,12 @@
     `;
   }
 
-  function showToast(type = 'info', title = '', message = '', semanticPayload = null) {
+  function showToast(type = 'info', title = '', message = '', semanticPayload = null, options = {}) {
     if (!toastContainer) return;
     const toast = document.createElement('div');
-    const record = { type, title, message, semanticPayload, element: toast };
+    const record = { type, title, message, semanticPayload, announce: options.announce !== false, element: toast };
     renderToastRecord(record);
+    if (!record.announce) toast.setAttribute('aria-hidden', 'true');
     toastContainer.appendChild(toast);
     setTimeout(() => {
       toast.remove();
@@ -2361,6 +2521,7 @@
     const embedUrl = buildEmbedUrl(song);
     if (embedUrl) {
       previewFrame.src = embedUrl;
+      previewFrame.tabIndex = 0;
       playerFrameBox?.classList.add('has-video');
     }
     previewSource.textContent = mediaSourceLabel(song.source);
@@ -2962,6 +3123,13 @@
     const result = await post(`/streamer-playlist/suggestions/${songId}`, { action });
     button.disabled = false;
     if (!result?.success) {
+      if (result?.partial && (result.playlistChanged || result.suggestionUpdated)) {
+        const warning = tr('streamerSuggestionPartial', 'Changes were saved, but an update did not finish. Refreshing the playlist.');
+        if (streamerPlaylistSummary) streamerPlaylistSummary.textContent = warning;
+        showToast('warn', tr('playerToastTitle', 'Player'), warning);
+        await Promise.all([refreshStreamerPlaylistCuration(), refreshPlaylists()]);
+        return;
+      }
       if (streamerPlaylistSummary) streamerPlaylistSummary.textContent = result?.error || tr('streamerSuggestionFailed', 'Vorschlag konnte nicht aktualisiert werden.');
       return;
     }

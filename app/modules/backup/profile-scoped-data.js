@@ -1,6 +1,6 @@
 'use strict';
 
-const PROFILE_SCOPED_PLUGIN_DATA = Object.freeze(['advanced-timer', 'schnorrbecher']);
+const PROFILE_SCOPED_PLUGIN_DATA = Object.freeze(['advanced-timer', 'schnorrbecher', 'quiz-show']);
 const PROFILE_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 
 function normalizeScopedPluginIds(value) {

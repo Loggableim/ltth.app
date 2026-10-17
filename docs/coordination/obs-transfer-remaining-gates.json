@@ -1,0 +1,383 @@
+{
+  "schemaVersion": 1,
+  "title": "OBS preparation gate closure",
+  "checkedAt": "2026-10-07",
+  "overallStatus": "blocked",
+  "gateCounts": {
+    "passed_source": 8,
+    "blocked": 2,
+    "not_checked": 4
+  },
+  "scope": {
+    "purpose": "Source-level preparation inventory for offline OBS transfer and later isolated guest acceptance.",
+    "prohibitionsObserved": [
+      "No product payload was staged for ISO or guest transfer; a full 2,651-file validation-only copy was placed in a unique GUID OS temp workspace and removed",
+      "No ISO or COM operation",
+      "No download",
+      "No VM query or start",
+      "No product-data mutation or production/release policy change; one exact internal-test policy was added under CEO authorization",
+      "No OBS acceptance run"
+    ],
+    "statusDefinitions": {
+      "passed_source": "Verified against source files, pinned metadata, a read-only check, or a focused isolated fixture; not guest/runtime acceptance.",
+      "blocked": "A known prerequisite, policy decision, or reproducible source defect prevents progression.",
+      "not_checked": "No current evidence was collected for this gate."
+    }
+  },
+  "sourcePins": {
+    "obsManifest": {
+      "path": "docs/coordination/obs-portable-transfer-manifest.json",
+      "sha256": "41e4bed8eb2fe413dfafd032a2708c51c1a0a7488741bd4716511ccd2728f8fa",
+      "files": 2107,
+      "bytes": 402653499,
+      "declaredStatus": "host-installed-source-inventory-only-portability-unverified"
+    },
+    "sidekickManifest": {
+      "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json",
+      "sha256": "e3f475badac6b1ee51fd873654f310c79d3213b768612164dddf6ed9c633c0ed",
+      "sourceFiles": 548,
+      "effectiveTransferFiles": 544,
+      "excludedFromGuest": 4,
+      "declaredStatus": "plan-only-no-ISO-no-transfer-no-guest-start"
+    },
+    "cookieExceptionPolicy": {
+      "path": "scripts/obs-pilot/transfer-path-exceptions.json",
+      "sha256": "6e4106f878b1f0cf987fe6a0ad6ae306fe5ad6d46600066c01c257bffd211036",
+      "exactEntries": 7
+    },
+    "localeRule1Policy": {
+      "path": "scripts/obs-pilot/transfer-rule1-exceptions.obs32.1.0.json",
+      "sha256": "7ff07bf8eb90d6280f07c200a6fc68ce4f3a449435367c0c95101af0ea39d27e",
+      "sourceManifestSha256": "41e4bed8eb2fe413dfafd032a2708c51c1a0a7488741bd4716511ccd2728f8fa",
+      "exactEntries": 176,
+      "rule1HitLines": 258,
+      "sourceBytes": 5849134
+    },
+    "publicKeyExceptionPolicy": {
+      "path": "scripts/obs-pilot/transfer-public-key-exception.obs32.1.0.json",
+      "sourceManifestSha256": "41e4bed8eb2fe413dfafd032a2708c51c1a0a7488741bd4716511ccd2728f8fa",
+      "exactEntries": 1,
+      "target": "obs/data/obs-studio/OBSPublicRSAKey.pem",
+      "bytes": 814,
+      "scope": "internal-isolated-vm-test-only; no external redistribution or release",
+      "sha256": "104189d06ecc8246bb774626181ba5eb7f9e9c2bbbcec6ac34c44273274fecb2",
+      "policyVersion": "obs-public-rsa-internal-test-v1"
+    }
+  },
+  "gates": [
+    {
+      "id": "obs-source-manifest-pin",
+      "status": "passed_source",
+      "detail": "Current manifest JSON parses and its file SHA matches the recorded pin. It inventories the host-installed OBS tree; it does not establish portability or guest closure.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-portable-transfer-manifest.json"
+        },
+        {
+          "path": "docs/coordination/obs-guest-bootstrap.md",
+          "lines": "8-10"
+        }
+      ]
+    },
+    {
+      "id": "sidekick-source-selection-pin",
+      "status": "passed_source",
+      "detail": "The pinned manifest contains 548 source records, 544 effective guest-transfer targets, and four explicit host/test exclusions. Its own status remains plan-only.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json",
+          "lines": "1-8,6335-6355"
+        },
+        {
+          "path": "docs/coordination/CEO_HANDOFF.md",
+          "lines": "463,568"
+        }
+      ]
+    },
+    {
+      "id": "cookie-exception-policy-and-validator-fixtures",
+      "status": "passed_source",
+      "detail": "Seven exact cookie@0.7.2 / engine.io@6.6.9 targets remain pinned by path, bytes, and SHA. The focused PowerShell helper harness now passes 6/6, including tamper/lookalike rejection and the cross-line authorization false-positive regression; complete OBS plus Sidekick helper validation is recorded separately.",
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/transfer-path-exceptions.json"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-manifest-only.test.ps1"
+        },
+        {
+          "path": "docs/coordination/obs-runtime-closure-audit.md",
+          "lines": "145-175"
+        },
+        {
+          "path": "docs/coordination/CEO_HANDOFF.md",
+          "lines": "498"
+        }
+      ]
+    },
+    {
+      "id": "locale-rule1-source-policy",
+      "status": "passed_source",
+      "detail": "Active policy is pinned to the current OBS manifest SHA and contains 176 exact files / 258 Rule-1 hit lines. CEO handoff records the real PowerShell source harness at 12/12 PASS, 5,849,134 source bytes, with hash and reparse checks. This skips only Rule 1; Rules 2-7 and the PEM block remain active.",
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/transfer-rule1-exceptions.obs32.1.0.json"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-locale-rule1-policy.test.ps1"
+        },
+        {
+          "path": "docs/coordination/CEO_HANDOFF.md",
+          "lines": "567-568"
+        }
+      ]
+    },
+    {
+      "id": "normalizer-cookie-target-mapping",
+      "status": "passed_source",
+      "detail": "The exact cookie targets and the single public-key target pass only after actual source containment/reparse, bytes, and SHA checks. The read-only full normalizer now includes the pinned PEM after source-manifest identity and RSA-4096 parser checks; all other PEM paths remain blocked.",
+      "reproduction": {
+        "command": "runtime/node/node.exe scripts/obs-pilot/normalize-transfer-manifests.js",
+        "observed": "dry-run-only-normalization-verified; 2651 files; 490389602 bytes; canonical SHA-256 f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b; includes obs/data/obs-studio/OBSPublicRSAKey.pem",
+        "exitCode": 0,
+        "regressionCommand": "runtime/node/node.exe scripts/obs-pilot/test/normalize-transfer-manifests.test.js",
+        "regressionObserved": "14/14 passed; actual cookie source, cookie reparse, public-key caller-bypass rejection, and lookalike cases",
+        "regressionExitCode": 0,
+        "powerShellCommand": "pwsh -NoProfile -File scripts/obs-pilot/test/validate-manifest-only.test.ps1",
+        "powerShellObserved": "4/4 validator cases passed; no ISO or COM path was entered.",
+        "powerShellExitCode": 0,
+        "syntaxCheck": "runtime/node/node.exe --check scripts/obs-pilot/normalize-transfer-manifests.js",
+        "syntaxCheckExitCode": 0
+      },
+      "fullCli": {
+        "command": "runtime/node/node.exe scripts/obs-pilot/normalize-transfer-manifests.js",
+        "exitCode": 0,
+        "observed": "dry-run-only-normalization-verified; exact public key included"
+      },
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/normalize-transfer-manifests.js",
+          "lines": "37-62,68-85,140-166,177-184,202-241"
+        },
+        {
+          "path": "scripts/obs-pilot/test/normalize-transfer-manifests.test.js",
+          "lines": "213-319"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-manifest-only.test.ps1"
+        },
+        {
+          "path": "scripts/obs-pilot/transfer-path-exceptions.json"
+        },
+        {
+          "path": "docs/coordination/obs-transfer-remaining-gates.md",
+          "lines": "10-20"
+        }
+      ],
+      "nextAction": "Retain the exact-path and actual-source hash/reparse regression cases; do not change the shared exception policy as part of this fix."
+    },
+    {
+      "id": "obs-public-key-external-redistribution",
+      "status": "blocked",
+      "detail": "The exact public-key file is now permitted only by the separately pinned internal-test policy. External redistribution/release eligibility is not granted or claimed; this gate applies only to public/external distribution.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-runtime-closure-audit.md",
+          "lines": "115-145,175-220"
+        },
+        {
+          "path": "docs/coordination/obs-portable-transfer-manifest.json"
+        },
+        {
+          "path": "scripts/obs-pilot/transfer-public-key-exception.obs32.1.0.json"
+        },
+        {
+          "path": "docs/coordination/obs-pem-internal-test-exception-design.md"
+        }
+      ],
+      "nextAction": "Do not use the internal-test exception for publishing, release, or external redistribution."
+    },
+    {
+      "id": "obs-public-key-exact-internal-test-exception",
+      "status": "passed_source",
+      "detail": "Separate versioned policy is hard-pinned by SHA in JS and PowerShell and bound to the exact OBS 32.1.0 source-manifest SHA. Only the exact target, 814 bytes, and pinned SHA can pass; full-file PEM type and RSA-4096 parsing are enforced. The PowerShell helper checks containment, reparse, hidden/system, bytes/hash, PEM structure, and all credential rules before the extension exception. This authorizes validation only, not payload transfer or VM use.",
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/transfer-public-key-exception.obs32.1.0.json"
+        },
+        {
+          "path": "scripts/obs-pilot/normalize-transfer-manifests.js"
+        },
+        {
+          "path": "scripts/obs-pilot/build-transfer-iso.ps1"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-public-key-exception.test.ps1"
+        },
+        {
+          "path": "docs/coordination/obs-pem-internal-test-exception-design.md"
+        }
+      ],
+      "verification": {
+        "javascriptNormalizer": "14/14 PASS, Exit 0",
+        "fullReadOnlyNormalizer": "2651 files / 490389602 bytes / SHA-256 f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b, Exit 0",
+        "powerShellPublicKeyFixture": "11/11 PASS, Exit 0, temp cleanup; no ISO/COM",
+        "cookieValidatorRegression": "6/6 PASS, Exit 0; same-line credential-shaped text still rejected and cross-line benign ws authorization code accepted",
+        "localeRule1Regression": "12/12 PASS, Exit 0",
+        "outputOwnershipRegression": "3/3 PASS, Exit 0",
+        "powerShellReparseFixtureNote": "The case named reparse-target-placeholder is not counted as proof of actual PowerShell reparse rejection. The full validation runner checked actual source and copied path chains and found no reparse points; the JS regression contains a symlink rejection branch that can skip if link creation is unavailable."
+      }
+    },
+    {
+      "id": "runbook-source-preconditions",
+      "status": "passed_source",
+      "detail": "The guest bootstrap document is explicitly plan-only and lists host isolation, OS/EFI/TPM, Redist, payload, loopback, and evidence gates. The VM state/receipt and runbook steps were not rechecked or executed in this task.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-guest-bootstrap.md",
+          "lines": "1-12,78-129"
+        },
+        {
+          "path": "docs/coordination/obs-guest-bootstrap-checklist.json",
+          "lines": "1-18"
+        }
+      ]
+    },
+    {
+      "id": "complete-source-tree-revalidation",
+      "status": "not_checked",
+      "detail": "The current OBS and Sidekick manifest files and hashes were checked, but a fresh full-file source-tree comparison for all 2,107 OBS and 548 Sidekick records was not run during this gate closure.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-portable-transfer-manifest.json"
+        },
+        {
+          "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json"
+        }
+      ]
+    },
+    {
+      "id": "full-manifest-only-helper-validation",
+      "status": "passed_source",
+      "detail": "The real PowerShell helper validated the complete 2,651-entry canonical OBS plus Sidekick manifest against a unique isolated temp payload copy. Source roots and every file were containment- and reparse-checked and byte/hash verified before copy; each copy was verified again. Helper returned manifest-validation-only-passed, isoCreated=false, the output directory stayed empty, and the owned temp workspace was removed. An initial full run exposed a Rule-1 false positive spanning a newline in ws/lib/websocket.js; the scanner now limits assignment whitespace to one line, with regressions preserving same-line rejection. No actual disk-full event was induced; the first validator-failure path and successful path both exercised owned-temp cleanup.",
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/test/validate-manifest-only.test.ps1"
+        },
+        {
+          "path": "scripts/obs-pilot/build-transfer-iso.ps1"
+        },
+        {
+          "path": "scripts/obs-pilot/normalize-transfer-manifests.js",
+          "lines": "130-140"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-full-normalized-manifest-only.ps1"
+        },
+        {
+          "path": "scripts/obs-pilot/test/validate-public-key-exception.test.ps1"
+        }
+      ],
+      "verification": {
+        "command": "pwsh -NoProfile -File scripts/obs-pilot/test/validate-full-normalized-manifest-only.ps1",
+        "exitCode": 0,
+        "normalizedManifestSha256": "f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b",
+        "manifestFileSha256": "f9750454f55466d648197ea74c536d716cebde8491b3a1d35e5109993413ed5b",
+        "payloadFileCount": 2651,
+        "payloadBytes": 490389602,
+        "helperStatus": "manifest-validation-only-passed",
+        "helperExitCode": 0,
+        "isoCreated": false,
+        "outputDirectoryEmpty": true,
+        "nodeVersion": "v22.14.0",
+        "nodeAbi": "127",
+        "tempCleanup": "owned GUID workspace resolved under OS temp before recursive cleanup; verified absent afterward",
+        "diskFullFailure": "not induced; cleanup after validator rejection was observed on initial attempt"
+      }
+    },
+    {
+      "id": "product-payload-iso-com-readback",
+      "status": "not_checked",
+      "detail": "A complete normalized manifest-only fixture was copied to a unique OS temp root and removed after validation. No product payload was staged for transfer; no product ISO, IMAPI/COM build, or 7-Zip invocation/readback was performed.",
+      "evidence": [
+        {
+          "path": "scripts/obs-pilot/build-transfer-iso.ps1"
+        },
+        {
+          "path": "docs/coordination/obs-sidekick-pilot-transfer-manifest.json",
+          "lines": "1-8"
+        }
+      ]
+    },
+    {
+      "id": "guest-portability-and-vc-runtime",
+      "status": "not_checked",
+      "detail": "OBS portable dependency closure, Windows guest compatibility, and guest VC++ runtime availability are unverified. Host System32 observations do not establish guest availability; the planned Microsoft Redistributable has not been downloaded or installed.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-guest-bootstrap.md",
+          "lines": "8-10,39-49,117-129"
+        },
+        {
+          "path": "docs/coordination/obs-portable-transfer-manifest.json",
+          "lines": "10703-10720"
+        }
+      ]
+    },
+    {
+      "id": "guest-vm-start-and-pilot",
+      "status": "blocked",
+      "detail": "Guest start remains explicitly user-gated for later. No VM query/start or pilot was performed; this gate is not authorization to start.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-guest-bootstrap.md",
+          "lines": "1,78-129"
+        },
+        {
+          "path": "docs/coordination/obs-guest-bootstrap-checklist.json",
+          "lines": "1-18"
+        },
+        {
+          "path": "docs/coordination/CEO_HANDOFF.md",
+          "lines": "568-570"
+        }
+      ]
+    },
+    {
+      "id": "practical-obs-acceptance-104-cases",
+      "status": "not_checked",
+      "detail": "The acceptance matrix is a source-reviewed plan only; all 104 OBS cases remain unrun, with no guest rendering, updates, error-state, lifecycle, or independent image-review evidence.",
+      "evidence": [
+        {
+          "path": "docs/coordination/obs-104-acceptance-matrix.json",
+          "lines": "1-10,60-68"
+        },
+        {
+          "path": "docs/coordination/obs-pruefplan.md",
+          "lines": "1-3,21,348-352"
+        },
+        {
+          "path": "docs/coordination/CEO_HANDOFF.md",
+          "lines": "568-570"
+        }
+      ]
+    }
+  ],
+  "ownedArtifacts": [
+    "docs/coordination/obs-transfer-remaining-gates.json",
+    "docs/coordination/obs-transfer-remaining-gates.md",
+    "docs/coordination/obs-pem-internal-test-exception-design.md",
+    "scripts/obs-pilot/transfer-public-key-exception.obs32.1.0.json",
+    "scripts/obs-pilot/normalize-transfer-manifests.js",
+    "scripts/obs-pilot/build-transfer-iso.ps1",
+    "scripts/obs-pilot/test/normalize-transfer-manifests.test.js",
+    "scripts/obs-pilot/test/validate-public-key-exception.test.ps1",
+    "scripts/obs-pilot/test/validate-full-normalized-manifest-only.ps1",
+    "scripts/obs-pilot/test/validate-manifest-only.test.ps1"
+  ],
+  "commitDependencies": {
+    "commitCreated": false,
+    "ownedScope": "This handoff reports the narrowly scoped OBS public-key exception, its normalizer/helper changes, focused fixtures, and gate reports. The wider checkout contains unrelated parallel work and remains unstaged.",
+    "dependencyNote": "No commit or staging was performed. Review file ownership before any later commit; do not stage the broad checkout. The internal exception does not authorize external redistribution or VM execution."
+  }
+}

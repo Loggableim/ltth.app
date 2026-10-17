@@ -50,7 +50,7 @@ function workflowInstructions(copy) {
   }]));
 }
 
-function readOnlyStep(id, selector, copy) {
+function readOnlyStep(id, selector, copy, captureFrame = null) {
   return {
     id,
     copy,
@@ -86,8 +86,12 @@ function readOnlyStep(id, selector, copy) {
       ],
       captureRule: {
         selector,
-        viewport: { width: 1440, height: 900 },
-        stateChange: false
+        viewport: captureFrame?.viewport || { width: 1440, height: 900 },
+        stateChange: false,
+        ...(captureFrame?.clipSelector && captureFrame.clipSelector !== selector
+          ? { clipSelector: captureFrame.clipSelector }
+          : {}),
+        ...(captureFrame?.imageCrop ? { imageCrop: captureFrame.imageCrop } : {})
       }
     }
   };
@@ -191,6 +195,11 @@ module.exports = Object.freeze({
         expected: 'Le Live Center affiche tous les états de diffusion importants dans une seule vue.',
         alt: 'Live Center de Stream Monsters 1.12 avec état de diffusion'
       }
+    }, {
+      // The measured Live Center is 1272 × 938 CSS px. Give it a viewport and
+      // crop with a small margin so titles and both status-card columns fit.
+      viewport: { width: 1440, height: 1040 },
+      imageCrop: { width: 1400, height: 1000 }
     }),
     readOnlyStep('retention-rules', '#gameplay', {
       de: {
@@ -217,6 +226,14 @@ module.exports = Object.freeze({
         expected: 'Gameplay affiche le délai, les conseils, les rôles équilibrés, les quêtes et les limites de saison.',
         alt: 'Gameplay Stream Monsters 1.12 avec œufs gratuits et choix scellés'
       }
+    }, {
+      // Source-based candidate frame, not a browser measurement. At desktop
+      // width this section contains the 12-control grid, three rule notes,
+      // warning/status rows, fairness contract, and community indicators.
+      // Keep the complete section in view; validate this envelope in the
+      // separately authorized locale capture before treating it as measured.
+      viewport: { width: 1440, height: 1200 },
+      imageCrop: { width: 1400, height: 1160 }
     }),
     readOnlyStep('automation-rule', '#gifts-chat', {
       de: {
@@ -243,6 +260,13 @@ module.exports = Object.freeze({
         expected: 'La vue Gifts & Chat affiche les mappages actifs et les commandes disponibles pour les œufs, monstres et combats.',
         alt: 'Œufs-cadeaux, œufs gratuits facultatifs et alias dans Stream Monsters 1.12'
       }
+    }, {
+      // Source-based candidate frame, not browser-measured. The full section
+      // stacks two full-width gift/mapping cards, 14 aliases in seven desktop
+      // rows, and bounded catalog/policy lists. This tall desktop frame is
+      // intended to retain the whole instructions context without UI changes.
+      viewport: { width: 1440, height: 3400 },
+      imageCrop: { width: 1400, height: 3360 }
     }),
     readOnlyStep('action-chain', '#asset-library', {
       de: {
@@ -269,6 +293,13 @@ module.exports = Object.freeze({
         expected: 'La bibliothèque confirme 72 formes intégrées et le fallback d’urgence Kenney.',
         alt: 'Bibliothèque Stream Monsters 1.12 avec 72 formes Furry'
       }
+    }, {
+      // Source-based candidate, not browser-measured. The section stacks its
+      // summary/integrity cards, a 620px scrollable stage gallery, and the
+      // 24-slot desktop dex (six columns, four rows). Keep that context in one
+      // capture while leaving enough vertical room for localized status text.
+      viewport: { width: 1440, height: 2300 },
+      imageCrop: { width: 1400, height: 2260 }
     }),
     readOnlyStep('rule-dry-run', '#portraitBattlePreview', {
       de: {
@@ -295,6 +326,12 @@ module.exports = Object.freeze({
         expected: 'L’aperçu portrait montre le combat interactif A/B/C et la zone de chat réservée.',
         alt: 'Arène portrait Stream Monsters 1.12 avec actions A/B/C'
       }
+    }, {
+      // Source-based candidate, not browser-measured. The portrait canvas is
+      // 300 × 533 CSS px; this wider card frame adds its existing title and
+      // explanatory caption while preserving the preview as the workflow target.
+      viewport: { width: 1440, height: 820 },
+      imageCrop: { width: 760, height: 720 }
     }),
     readOnlyStep('alchemy-overlay', '#overlayUrl', {
       de: {
@@ -321,6 +358,13 @@ module.exports = Object.freeze({
         expected: 'L’URL réelle de l’overlay et tous les aperçus de diffusion sont visibles dans le Creator.',
         alt: 'URL de l’overlay OBS et aperçu portrait de Stream Monsters 1.12'
       }
+    }, {
+      // Source-based candidate, not browser-measured. Keep #overlayUrl as the
+      // workflow target, but frame its existing OBS Browser Source card so the
+      // heading, responsive-layout context, URL, and adjacent controls stay together.
+      clipSelector: '.area#live-center .grid > .card:nth-child(2)',
+      viewport: { width: 1440, height: 900 },
+      imageCrop: { width: 520, height: 440 }
     }),
     readOnlyStep('rule-reset', '#community-seasons', {
       de: {
@@ -347,6 +391,11 @@ module.exports = Object.freeze({
         expected: 'La vue Communauté sépare les classements saisonniers de la progression permanente des monstres.',
         alt: 'Vue Communauté et saisons de Stream Monsters 1.12'
       }
+    }, {
+      // Source-based candidate only; browser-measured section bounds are not available yet.
+      // Keep the viewer, season badge, empty collection, and both leaderboards in frame.
+      viewport: { width: 1440, height: 1600 },
+      imageCrop: { width: 1400, height: 1560 }
     })
   ]
 });

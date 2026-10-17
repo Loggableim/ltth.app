@@ -904,6 +904,67 @@ describe('GameEnginePlugin interactive controller integration', () => {
     expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(admin);
   });
 
+  test('privately sends the active manual Connect4 board and render config to a late socket', () => {
+    const { plugin, getConnectionHandler, io } = createPlugin();
+    const state = {
+      sessionId: 27,
+      board: [[0]],
+      currentPlayer: 1,
+      player1: { username: 'Host', role: 'test_player' },
+      player2: { username: 'Bot', role: 'bot' },
+      status: 'active'
+    };
+    const game = { gameType: 'connect4', status: 'active', getState: jest.fn(() => state) };
+    plugin.activeSessions.set(27, game);
+    plugin.db = {
+      getSession: jest.fn(() => ({
+        game_type: 'connect4', status: 'active', trigger_type: 'manual', trigger_value: 'manual_bot'
+      })),
+      getGameConfig: jest.fn(() => ({
+        player1Color: '#123456', soundEnabled: true, displayTexts: { titleText: 'Game' }
+      }))
+    };
+    plugin.interactiveController = { emitState: jest.fn() };
+    plugin.registerSocketEvents();
+    const overlay = socket('overlay');
+    getConnectionHandler()(overlay);
+
+    overlay.trigger('game-engine:request-state');
+
+    expect(overlay.emit).toHaveBeenCalledWith('game-engine:game-started', {
+      sessionId: 27,
+      gameType: 'connect4',
+      state,
+      config: expect.objectContaining({
+        player1Color: '#123456',
+        displayTexts: expect.objectContaining({ titleText: 'Game' })
+      }),
+      manual: true,
+      opponentType: 'bot'
+    });
+    expect(overlay.emit.mock.calls[0][1].config).not.toHaveProperty('soundEnabled');
+    expect(plugin.interactiveController.emitState).not.toHaveBeenCalled();
+    expect(io.emit).not.toHaveBeenCalledWith('game-engine:game-started', expect.anything());
+  });
+
+  test.each([
+    ['completed manual game', { gameType: 'connect4', status: 'completed' }, { game_type: 'connect4', status: 'completed', trigger_type: 'manual', trigger_value: 'manual_bot' }],
+    ['different game', { gameType: 'chess', status: 'active' }, { game_type: 'chess', status: 'active', trigger_type: 'manual', trigger_value: 'manual_bot' }]
+  ])('does not treat %s as a live manual Connect4 board', (_label, game, session) => {
+    const { plugin, getConnectionHandler } = createPlugin();
+    plugin.activeSessions.set(28, { ...game, getState: jest.fn(() => ({ status: game.status })) });
+    plugin.db = { getSession: jest.fn(() => session) };
+    plugin.interactiveController = { emitState: jest.fn() };
+    plugin.registerSocketEvents();
+    const overlay = socket('overlay');
+    getConnectionHandler()(overlay);
+
+    overlay.trigger('game-engine:request-state');
+
+    expect(overlay.emit).not.toHaveBeenCalledWith('game-engine:game-started', expect.anything());
+    expect(plugin.interactiveController.emitState).toHaveBeenCalledWith(overlay);
+  });
+
   test('authorizes revisioned host-turn skips and reports stable controller errors to the admin socket', () => {
     const { plugin, getConnectionHandler } = createPlugin();
     plugin.interactiveController = {

@@ -7,7 +7,7 @@ The output matches the historical install package layout:
   ltth_<version>/
     CHANGELOG.md
     LICENSE
-    launcher.exe
+    # Launcher is distributed separately via the verified signed handoff.
     main.js
     package-lock.json
     package.json
@@ -30,9 +30,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import posixpath
 import re
 import sys
+import unicodedata
+from urllib.parse import unquote
 import zipfile
 from pathlib import Path
 
@@ -40,7 +41,6 @@ from pathlib import Path
 ROOT_TOP_LEVEL_FILES = [
     "CHANGELOG.md",
     "LICENSE",
-    "launcher.exe",
     "main.js",
     "package-lock.json",
     "package.json",
@@ -65,7 +65,25 @@ APP_EXCLUDED_EXACT = {
     "CURRENT_RELEASE.json",
     "CURRENT_VERSION.txt",
     "ltth_latest.zip",
+    "locales/validation-report.json",
+    "locales/translation-inventory.json",
+    "locales/literal-inventory.json",
 }
+
+# Explicit generated test/audit/cache paths observed in the app tree.
+# Keep these narrow; runtime ZIP assets and arbitrary dot-directories remain eligible.
+APP_EXCLUDED_GENERATED_TEMP_PREFIXES = (
+    ".codex-test-temp/node-compile-cache/",
+    ".jest-sandbox-temp/jest/",
+    ".jest-sandbox-temp/jest-cache/",
+    ".jest-sandbox-temp/logs/",
+    ".jest-sandbox-temp/node-compile-cache/",
+    ".jest-sandbox-temp/passive-receiver-cache/",
+    ".runtime-test-temp/jest/",
+    ".tmp/node-compile-cache/",
+    ".tmp-dashboard-error-audit/jest/",
+    "node-compile-cache/",
+)
 
 TALKING_HEADS_RGS_PREFIX = "plugins/talking-heads/assets/asset-packs/rgs/"
 TALKING_HEADS_RGS_RUNTIME_FRAMES = {
@@ -386,34 +404,53 @@ def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> 
     policy_path = app_root / "config" / "plugin-release-policy.json"
     policy = json.loads(policy_path.read_text(encoding="utf-8-sig"))
     closed_beta = policy.get("closedBeta")
+    public_runtime_excluded = policy.get("publicRuntimeExcluded", [])
     aliases = policy.get("aliases", {})
-    public_asset_path_owners = policy.get("publicAssetPathOwners", {})
+    public_asset_owners = policy.get("publicAssetPathOwners")
     if (type(policy.get("schemaVersion")) is not int or policy.get("schemaVersion") != 1
-            or set(policy) - {"schemaVersion", "closedBeta", "aliases", "publicAssetPathOwners"} or not isinstance(closed_beta, list)
+            or set(policy) - {"schemaVersion", "closedBeta", "publicRuntimeExcluded", "aliases", "publicAssetPathOwners"} or not isinstance(closed_beta, list)
+            or not isinstance(public_runtime_excluded, list)
+            or not all(isinstance(item, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", item) for item in public_runtime_excluded)
+            or len(set(public_runtime_excluded)) != len(public_runtime_excluded)
+            or set(public_runtime_excluded) & set(closed_beta)
             or not all(isinstance(item, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", item) for item in closed_beta)
             or len(set(closed_beta)) != len(closed_beta) or not isinstance(aliases, dict)
             or not all(isinstance(key, str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", key)
                        and key not in closed_beta and value in closed_beta for key, value in aliases.items())
-            or not isinstance(public_asset_path_owners, dict)
-            or not all(isinstance(asset_path, str) and asset_path.startswith("/")
-                       and not asset_path.startswith("//") and asset_path == asset_path.lower()
-                       and "\\" not in asset_path and not any(char in asset_path for char in "%?#")
-                       and posixpath.normpath(asset_path) == asset_path
-                       and all(part not in {"", ".", ".."} for part in asset_path[1:].split("/"))
-                       and isinstance(owner, str) and owner in closed_beta
-                       for asset_path, owner in public_asset_path_owners.items())
-            or len({asset_path.lower() for asset_path in public_asset_path_owners}) != len(public_asset_path_owners)):
+            or not isinstance(public_asset_owners, dict)):
         raise ValueError("Invalid plugin release policy")
-    excluded_ids = set(closed_beta) | set(aliases)
+    # Retired integration exclusions apply only to public packaging, not local sources.
+    excluded_ids = set(closed_beta) | set(public_runtime_excluded) | set(aliases) | {"chatango"}
+    excluded_public_assets: set[str] = {"public/js/chatango-theme-adapter.js"}
+    for asset_path, owner in public_asset_owners.items():
+        if (not isinstance(asset_path, str) or not asset_path.startswith("/") or asset_path.startswith("//")
+                or asset_path != asset_path.lower() or any(char in asset_path for char in "\\%?#")
+                or Path(asset_path).as_posix() != asset_path or not isinstance(owner, str)
+                or owner not in closed_beta):
+            raise ValueError("Invalid public asset ownership mapping")
+        excluded_public_assets.add(f"public/{asset_path.lstrip('/')}".lower())
     excluded_directories = set(excluded_ids)
+    def normalize_plugin_path_id(value: str) -> str:
+        normalized = unicodedata.normalize("NFKC", value).strip()
+        for _ in range(8):
+            if "%" not in normalized:
+                break
+            decoded = unquote(normalized)
+            if decoded == normalized:
+                break
+            normalized = unicodedata.normalize("NFKC", decoded)
+        return unicodedata.normalize("NFKC", normalized).strip().casefold()
+
     plugins_root = app_root / "plugins"
     if plugins_root.exists():
         for plugin_dir in plugins_root.iterdir():
-            if not plugin_dir.is_dir() or plugin_dir.name.lower() in excluded_directories:
+            normalized_dir_id = normalize_plugin_path_id(plugin_dir.name)
+            if not plugin_dir.is_dir() or normalized_dir_id in excluded_directories or "%" in normalized_dir_id:
                 continue
-            if any(part.lower() in excluded_ids for path in plugin_dir.rglob("*")
+            if any(normalize_plugin_path_id(part) in excluded_ids or "%" in normalize_plugin_path_id(part)
+                   for path in plugin_dir.rglob("*")
                    for part in path.relative_to(plugin_dir).parts[:-1]):
-                excluded_directories.add(plugin_dir.name.lower())
+                excluded_directories.add(normalized_dir_id)
                 continue
             for manifest_path in (path for path in plugin_dir.rglob("*") if path.is_file() and path.name.lower() == "plugin.json"):
                 if manifest_path.stat().st_size > 1024 * 1024:
@@ -434,11 +471,14 @@ def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> 
     for file_path in files:
         rel_path = file_path.relative_to(app_root).as_posix()
         parts = rel_path.split("/")
-        if len(parts) >= 2 and parts[0].lower() == "plugins" and parts[1].lower() in excluded_directories:
+        normalized_parts = [normalize_plugin_path_id(part) for part in parts]
+        if len(parts) >= 2 and normalized_parts[0] == "plugins" and (normalized_parts[1] in excluded_directories or "%" in normalized_parts[1]):
+            continue
+        if rel_path.lower() in excluded_public_assets:
             continue
         if rel_path == "config/distribution-mode.json":
             continue
-        if should_exclude_app_path(rel_path, public_asset_path_owners):
+        if should_exclude_app_path(rel_path):
             continue
         add_file_entry(archive, file_path, f"{root_prefix}/app/{rel_path}")
     marker = zipfile.ZipInfo(f"{root_prefix}/app/config/distribution-mode.json", date_time=FIXED_ZIP_DATETIME)
@@ -446,14 +486,45 @@ def add_app_tree(archive: zipfile.ZipFile, app_root: Path, root_prefix: str) -> 
     archive.writestr(marker, '{"channel":"public"}\n')
 
 
-def should_exclude_app_path(relative_path: str, public_asset_path_owners: dict[str, str] | None = None) -> bool:
+def is_generated_temp_artifact_path(relative_path: str) -> bool:
+    normalized = relative_path.replace("\\", "/").lower()
+    parts = normalized.split("/")
+    if any(normalized.startswith(prefix) for prefix in APP_EXCLUDED_GENERATED_TEMP_PREFIXES):
+        return True
+    if (
+        len(parts) >= 3
+        and parts[0] == ".jest-sandbox-temp"
+        and re.fullmatch(r"ltth-(?:quiz-)?backup-[a-z0-9][a-z0-9_-]*", parts[1])
+    ):
+        return True
+    if parts and re.fullmatch(r"\.tmp-superfan-jest-[0-9a-f]{32}", parts[0]):
+        return True
+    return False
+
+
+def should_exclude_app_path(relative_path: str) -> bool:
+    if relative_path.replace("\\", "/").lower() == ".config_path":
+        return True
     normalized = relative_path.replace("\\", "/")
-    if normalized.lower().startswith("public/") and "/" + normalized[7:].lower() in {
-        item.lower() for item in (public_asset_path_owners or {})
-    }:
+    if is_generated_temp_artifact_path(normalized):
+        return True
+    parts = normalized.lower().split("/")
+    if (
+        (len(parts) == 1 and re.fullmatch(r"test-backup-[0-9]+\.zip", parts[0]))
+        or (
+            len(parts) == 2
+            and parts[0] == ".jest-sandbox-temp"
+            and re.fullmatch(r"test-backup-[0-9]+\.zip", parts[1])
+        )
+    ):
+        return True
+    if (any(part.startswith(".jest-") for part in parts[:-1])
+            and any(part.startswith(("jest-transform-cache-", "haste-map-", "perf-cache-"))
+                    for part in parts[1:])):
         return True
     filename = normalized.rsplit("/", 1)[-1]
-    if filename != ".env.example" and (filename == ".env" or filename.startswith(".env.")):
+    if normalized != ".env.example" and (
+            filename.lower() == ".env" or filename.lower().startswith(".env.")):
         return True
     if normalized in APP_EXCLUDED_EXACT:
         return True

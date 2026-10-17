@@ -13,11 +13,11 @@
    * browser audio element has actually done.
    */
   class DashboardTTSRenderer {
-    constructor({ audio, socket, now = () => Date.now(), progressIntervalMs = 120, AudioContext: AudioContextCtor } = {}) {
+    constructor({ audio, socket, now = () => Date.now(), progressIntervalMs = 40, AudioContext: AudioContextCtor } = {}) {
       this.audio = audio || null;
       this.socket = socket || null;
       this.now = now;
-      this.progressIntervalMs = Math.max(50, Number(progressIntervalMs) || 120);
+      this.progressIntervalMs = Math.max(20, Number(progressIntervalMs) || 40);
       this.AudioContext = AudioContextCtor || root.AudioContext || root.webkitAudioContext || null;
       this.activePlayback = null;
       this.audioContext = null;
@@ -57,7 +57,8 @@
         terminal: false,
         lastProgressAt: -Infinity,
         cleanup: typeof cleanup === 'function' ? cleanup : null,
-        handlers: null
+        handlers: null,
+        progressTimer: null
       };
       this.activePlayback = active;
       this._bindNativeEvents(active);
@@ -89,15 +90,11 @@
         active.started = true;
         this._ensureAnalyser();
         this._emit('tts:renderer:started', this._payload(active));
+        this._startProgressTicker(active);
       };
       const onTimeUpdate = () => {
         if (!this._isCurrent(active) || !active.started) return;
-        const now = this.now();
-        if (now - active.lastProgressAt < this.progressIntervalMs) return;
-        active.lastProgressAt = now;
-        this._emit('tts:renderer:progress', this._payload(active, {
-          level: this._readAudioLevel()
-        }));
+        this._tickProgress(active);
       };
       const onEnded = () => this._terminal(active, 'ended');
       const onError = () => this._terminal(active, 'failed', { reason: 'media-error' });
@@ -107,6 +104,35 @@
       this.audio.addEventListener('timeupdate', onTimeUpdate);
       this.audio.addEventListener('ended', onEnded);
       this.audio.addEventListener('error', onError);
+    }
+
+    _startProgressTicker(active) {
+      if (!this._isCurrent(active) || active.progressTimer) return;
+      const intervalMs = Math.max(20, Math.min(50, this.progressIntervalMs));
+      active.progressTimer = setInterval(() => {
+        if (!this._isCurrent(active) || !active.started) {
+          this._stopProgressTicker(active);
+          return;
+        }
+        this._tickProgress(active);
+      }, intervalMs);
+    }
+
+    _stopProgressTicker(active) {
+      if (active?.progressTimer) {
+        clearInterval(active.progressTimer);
+        active.progressTimer = null;
+      }
+    }
+
+    _tickProgress(active) {
+      if (!this._isCurrent(active) || !active.started) return;
+      const now = this.now();
+      if (now - active.lastProgressAt < this.progressIntervalMs) return;
+      active.lastProgressAt = now;
+      this._emit('tts:renderer:progress', this._payload(active, {
+        level: this._readAudioLevel()
+      }));
     }
 
     _terminal(active, phase, details = {}) {
@@ -122,6 +148,7 @@
     _disposeActive(emitFailure) {
       const active = this.activePlayback;
       if (!active) return;
+      this._stopProgressTicker(active);
       if (emitFailure) {
         this._terminal(active, 'failed', { reason: 'playback-replaced' });
         return;
@@ -132,6 +159,7 @@
     }
 
     _removeNativeEvents(active) {
+      this._stopProgressTicker(active);
       if (!this.audio || !active?.handlers) return;
       this.audio.removeEventListener('playing', active.handlers.onPlaying);
       this.audio.removeEventListener('timeupdate', active.handlers.onTimeUpdate);

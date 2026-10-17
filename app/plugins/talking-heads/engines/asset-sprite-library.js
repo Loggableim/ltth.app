@@ -5,26 +5,26 @@ const path = require('path');
 const FRAME_NAMES = ['idle_neutral', 'blink', 'speak_closed', 'speak_mid', 'speak_open'];
 
 const BOBA_ANIMALS = [
-  'Axolotl', 'Bear', 'Bull', 'Bunny', 'Dog', 'Duck', 'Fox', 'Frog', 'Giraffe', 'Goat',
-  'Monkey', 'Octopus', 'Otter', 'Parrot', 'Pig', 'Pinguin', 'Raccoon', 'Seal', 'Snake', 'Spider'
+  'Axolotl', 'Bear', 'Bunny', 'Dog', 'Fox', 'Frog', 'Giraffe', 'Goat',
+  'Monkey', 'Octopus', 'Otter', 'Pinguin', 'Raccoon', 'Seal', 'Snake', 'Spider'
 ];
 const BOBA_EXPRESSIONS = ['Default', 'Angry', 'Annoyed', 'Cry', 'Happy', 'Scared'];
 const BOBA_MOUTH_PROFILES = {
-  Axolotl: ['Mouth_Default_Happy.png', 'Mouth_Sad_Angry_Annoyed_Scared.png'],
-  Bear: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Bunny: ['Mouth_Default_Angry_Annoyed.png', 'Mouth_Happy.png'],
-  Dog: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Fox: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Frog: ['Mouth_Default_Happy.png', 'Mouth_Angry_Sad.png'],
-  Giraffe: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Goat: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Monkey: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Octopus: ['Mouth_Default_Happy.png', 'Mouth_Annoyed.png'],
-  Otter: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Raccoon: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Seal: ['Mouth_Default.png', 'Mouth_Happy.png'],
-  Snake: ['Mouth_Default.png', 'Mouth_Angry_Annoyed.png'],
-  Spider: ['Mouth_Default.png', 'Mouth_Annoyed.png']
+  Axolotl: ['Mouth_Sad_Angry_Annoyed_Scared.png', 'Mouth_Default_Happy.png', 'Mouth_Shock.png'],
+  Bear: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared_Cry.png'],
+  Bunny: ['Mouth_Default_Angry_Annoyed.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Dog: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared_Sad.png'],
+  Fox: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Frog: ['Mouth_Angry_Sad.png', 'Mouth_Default_Happy.png', 'Mouth_Scared_Annoyed.png'],
+  Giraffe: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Goat: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Monkey: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Octopus: ['Mouth_Annoyed.png', 'Mouth_Default_Happy.png', 'Mouth_Angry_Cry_Scared.png'],
+  Otter: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared_Cry.png'],
+  Raccoon: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared.png'],
+  Seal: ['Mouth_Default.png', 'Mouth_Happy.png', 'Mouth_Scared_Sad.png'],
+  Snake: ['Mouth_Angry_Annoyed.png', 'Mouth_Default.png', 'Mouth_Scared_Cry.png'],
+  Spider: ['Mouth_Annoyed.png', 'Mouth_Default.png', 'Mouth_Angry.png']
 };
 
 const KENNEY_BODIES = [
@@ -62,18 +62,6 @@ class AssetSpriteLibrary {
           name: 'Boba Animals',
           characters: BOBA_ANIMALS,
           options: { expression: BOBA_EXPRESSIONS }
-        },
-        {
-          id: 'kenney',
-          name: 'Kenney Monster Builder',
-          characters: KENNEY_BODIES,
-          options: { body: KENNEY_BODIES, eye: KENNEY_EYES }
-        },
-        {
-          id: 'rgs',
-          name: 'Vector Character Builder',
-          characters: RGS_HEADS,
-          options: { head: RGS_HEADS, hair: RGS_HAIRS, eyes: RGS_EYES, mouth: RGS_MOUTHS }
         }
       ]
     };
@@ -109,24 +97,12 @@ class AssetSpriteLibrary {
   getLotterySelectionPools() {
     return {
       boba: BOBA_ANIMALS
-      .filter((characterId) => BOBA_MOUTH_PROFILES[characterId])
-      .flatMap((characterId) => BOBA_EXPRESSIONS.map((expression) => ({
-        packId: 'boba',
-        characterId,
-        options: { expression }
-      }))),
-      kenney: KENNEY_BODIES.flatMap((characterId) => KENNEY_EYES.map((eye) => ({
-        packId: 'kenney',
-        characterId,
-        options: { eye }
-      }))),
-      rgs: RGS_HEADS.flatMap((characterId) => RGS_HAIRS.flatMap((hair) =>
-        RGS_EYES.flatMap((eyes) => RGS_MOUTHS.map((mouth) => ({
-          packId: 'rgs',
+        .filter((characterId) => BOBA_MOUTH_PROFILES[characterId])
+        .flatMap((characterId) => BOBA_EXPRESSIONS.map((expression) => ({
+          packId: 'boba',
           characterId,
-          options: { hair, eyes, mouth }
-        }))))
-      )
+          options: { expression }
+        })))
     };
   }
 
@@ -147,10 +123,11 @@ class AssetSpriteLibrary {
   }
 
   _selectionKey(selection) {
+    const safeSelection = selection && typeof selection === 'object' ? selection : {};
     return JSON.stringify({
-      packId: selection.packId,
-      characterId: selection.characterId,
-      options: selection.options || {}
+      packId: safeSelection.packId,
+      characterId: safeSelection.characterId,
+      options: safeSelection.options || {}
     });
   }
 
@@ -159,51 +136,61 @@ class AssetSpriteLibrary {
     return Number.isFinite(value) ? Math.min(0.999999999, Math.max(0, value)) : 0;
   }
 
-  normalizeSelection({ packId, characterId, options } = {}) {
-    const normalizedOptions = options && typeof options === 'object' ? options : {};
-    const requestedPack = String(packId || '').toLowerCase();
+  normalizeSelection(selection = {}) {
+    try {
+      const safeSelection = selection && typeof selection === 'object' && !Array.isArray(selection)
+        ? selection
+        : {};
+      const { characterId, options } = safeSelection;
+      const safeOptions = options && typeof options === 'object' && !Array.isArray(options)
+        ? options
+        : {};
+      const rawExpression = typeof safeOptions.expression === 'string'
+        ? safeOptions.expression.trim().toLowerCase()
+        : '';
+      const expression = BOBA_EXPRESSIONS.find(
+        (candidate) => candidate.toLowerCase() === rawExpression
+      ) || BOBA_EXPRESSIONS[0];
+      const rawCharacter = typeof characterId === 'string'
+        ? characterId.trim().toLowerCase()
+        : '';
+      const character = BOBA_ANIMALS.find(
+        (candidate) => candidate.toLowerCase() === rawCharacter
+      ) || 'Fox';
 
-    if (requestedPack === 'kenney') {
-      const body = KENNEY_BODIES.includes(characterId) ? characterId : KENNEY_BODIES[0];
       return {
-        packId: 'kenney',
-        characterId: body,
-        options: {
-          eye: KENNEY_EYES.includes(normalizedOptions.eye) ? normalizedOptions.eye : 'human'
-        }
+        packId: 'boba',
+        characterId: character,
+        options: { expression }
+      };
+    } catch {
+      return {
+        packId: 'boba',
+        characterId: 'Fox',
+        options: { expression: BOBA_EXPRESSIONS[0] }
       };
     }
-
-    if (requestedPack === 'rgs') {
-      const head = RGS_HEADS.includes(characterId) ? characterId : RGS_HEADS[0];
-      return {
-        packId: 'rgs',
-        characterId: head,
-        options: {
-          hair: RGS_HAIRS.includes(normalizedOptions.hair) ? normalizedOptions.hair : RGS_HAIRS[0],
-          eyes: RGS_EYES.includes(normalizedOptions.eyes) ? normalizedOptions.eyes : RGS_EYES[0],
-          mouth: RGS_MOUTHS.includes(normalizedOptions.mouth) ? normalizedOptions.mouth : RGS_MOUTHS[0]
-        }
-      };
-    }
-
-    const expression = BOBA_EXPRESSIONS.find(
-      (candidate) => candidate.toLowerCase() === String(normalizedOptions.expression || '').toLowerCase()
-    ) || BOBA_EXPRESSIONS[0];
-    return {
-      packId: 'boba',
-      characterId: BOBA_ANIMALS.includes(characterId) ? characterId : 'Fox',
-      options: { expression }
-    };
   }
 
-  async getSpriteSet(selection, { frameNames = FRAME_NAMES, ownerId = null, expiresAt = null } = {}) {
+  async getSpriteSet(selection, options = {}) {
     if (!this.dataDir) {
       throw new Error('A plugin data directory is required for local sprite output');
     }
 
+    const safeOptions = options && typeof options === 'object' && !Array.isArray(options) ? options : {};
+    const { frameNames = FRAME_NAMES, ownerId = null, expiresAt = null, signal = null } = safeOptions;
+    const throwIfAborted = () => {
+      if (signal?.aborted) {
+        const error = new Error('Sprite preparation aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+    };
+    throwIfAborted();
+
     const normalized = this.normalizeSelection(selection);
     const frameLayers = await this._getFrameLayers(normalized);
+    throwIfAborted();
     const signature = crypto.createHash('sha256')
       .update(JSON.stringify(normalized))
       .digest('hex')
@@ -223,13 +210,22 @@ class AssetSpriteLibrary {
     const sprites = {};
     const materialize = async () => {
       for (const frameName of requestedFrames) {
+        throwIfAborted();
         const filename = `asset_${normalized.packId}_${signature}_${frameName}.svg`;
         const outputPath = path.join(outputDir, filename);
+        let fileExists = false;
         try {
           await fs.access(outputPath);
+          fileExists = true;
         } catch {
+          fileExists = false;
+        }
+        throwIfAborted();
+        if (!fileExists) {
           const svg = await this._composeSvg(frameLayers[frameName]);
+          throwIfAborted();
           await fs.writeFile(outputPath, svg, 'utf8');
+          throwIfAborted();
         }
         sprites[frameName] = `/api/talkingheads/sprite/${filename}`;
       }
@@ -238,17 +234,31 @@ class AssetSpriteLibrary {
       // Registration and writes share the registry's release lock. An
       // operator clear or stale playback terminal cannot interleave between
       // ownership acquisition and the final SVG write.
+      throwIfAborted();
       await this.generatedAssetRegistry.materializeGeneratedAssets(
         ownerId,
         outputPaths,
         expiresAt,
-        materialize
+        materialize,
+        { signal }
       );
     } else {
-      if (ownerId && this.generatedAssetRegistry?.registerGeneratedAssets) {
-        await this.generatedAssetRegistry.registerGeneratedAssets(ownerId, outputPaths, expiresAt);
+      try {
+        if (ownerId && this.generatedAssetRegistry?.registerGeneratedAssets) {
+          await this.generatedAssetRegistry.registerGeneratedAssets(ownerId, outputPaths, expiresAt, { signal });
+        }
+        throwIfAborted();
+        await materialize();
+      } catch (error) {
+        if (signal?.aborted && ownerId && this.generatedAssetRegistry?.releaseGeneratedAssetOwner) {
+          try {
+            await this.generatedAssetRegistry.releaseGeneratedAssetOwner(ownerId);
+          } catch (releaseError) {
+            error.cleanupError = releaseError;
+          }
+        }
+        throw error;
       }
-      await materialize();
     }
 
     return { ...normalized, sprites };
@@ -278,13 +288,16 @@ class AssetSpriteLibrary {
     ]);
 
     if (combinedExpression) {
-      const combinedLayers = [base, combinedExpression, nose];
+      const combinedClosed = await this._optionalFile(animalRoot, ['Default.png']) || combinedExpression;
+      const combinedMid = await this._optionalFile(animalRoot, ['Happy.png']) || combinedExpression;
+      const combinedOpen = await this._optionalFile(animalRoot, ['Scared.png']) || combinedExpression;
+      const combinedBlink = await this._optionalFile(animalRoot, ['Happy.png']) || combinedExpression;
       return {
-        idle_neutral: combinedLayers,
-        blink: combinedLayers,
-        speak_closed: combinedLayers,
-        speak_mid: combinedLayers,
-        speak_open: combinedLayers
+        idle_neutral: [base, combinedExpression, nose],
+        blink: [base, combinedBlink, nose],
+        speak_closed: [base, combinedClosed, nose],
+        speak_mid: [base, combinedMid, nose],
+        speak_open: [base, combinedOpen, nose]
       };
     }
 
@@ -314,11 +327,10 @@ class AssetSpriteLibrary {
       || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Happy')
       || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Default')
       || mouthClosed;
-    const mouthOpen = await this._optionalFile(
-      path.join(this.assetRoot, 'boba', 'extras'),
-      ['Mouth_Shock.png']
-      )
+    const mouthOpen = await this._optionalFile(animalRoot, mouthProfile ? [mouthProfile[2]] : [])
+      || (mouthProfile && mouthProfile[2] ? await this._optionalFile(path.join(this.assetRoot, 'boba', 'extras'), [mouthProfile[2]]) : null)
       || await this._optionalBobaExpressionFile(animalRoot, 'Mouth_', 'Scared')
+      || await this._optionalFile(path.join(this.assetRoot, 'boba', 'extras'), ['Mouth_Shock.png'])
       || mouthMid
       || mouthClosed;
     const facialLayers = [base, eyes, brows, nose];

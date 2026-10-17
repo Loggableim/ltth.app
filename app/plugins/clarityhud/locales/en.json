@@ -150,6 +150,8 @@
         "gift_sent_count": "sent {gift} x{count}",
         "multi_gift_sent": "🎁 Sent {gift} x{count}",
         "message_render_error": "Error rendering message: {message}",
+        "superfan_signal": "Possible Super Fan signal",
+        "superfan_join_signal": "Possible fan-club join signal",
         "event": {
           "chat": "Chat",
           "follow": "Followed",
@@ -202,6 +204,7 @@
       },
       "empty": { "no_additional_streams": "No additional streams configured", "unknown_tab": "Unknown tab", "no_activity_title": "No activity yet", "no_activity_description": "Events will appear here as they happen" },
       "stream": { "fallback": "Stream {number}" },
+      "fallback": { "confirm_button": "Confirm fallback API key", "confirm_title": "Use fallback API key?", "confirm_prompt": "This additional stream will use an LTTH fallback API key. Continue only if you agree.", "cancel": "Cancel", "confirm": "Yes, continue", "confirm_failed": "Could not confirm fallback key use: {message}" },
       "dock": { "chat": "Chat HUD", "full": "Full Activity HUD", "multi": "Multi-Stream HUD", "stream": "Stream Overlay" },
       "preset": { "highContrast": "High Contrast", "visionImpaired": "Vision Impaired", "dyslexiaFriendly": "Dyslexia-Friendly", "motionSensitive": "Motion Sensitive" },
       "tab": { "stream_settings": "Stream Settings", "streams": "Streams", "appearance": "Appearance", "events": "Events", "layout": "Layout", "animation": "Animation", "styling": "Styling", "accessibility": "Accessibility" },

@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-08",
+  "sourceBase": "d65a54891f6ba1d055e95fda70d0df696d5299f0",
+  "kind": "synthetic-fixture supplement, not full matrix re-audit",
+  "baseline": "obs-104-renderer-followthrough-audit-20261008.md",
+  "publicCases": 68,
+  "directCpuFollowthrough": 51,
+  "partialCpuFollowthrough": 2,
+  "missingCpuFollowthrough": 15,
+  "addedCases": [
+    "emoji-rain:es",
+    "weather-control:es"
+  ],
+  "obsPassed": 0,
+  "obsDocumented": 104,
+  "browserObsLiveVerified": false,
+  "newTest": "app/test/weather-control-es-renderer-effect-fixture.test.js",
+  "newTestSha256": "481207a1d78d581a8bdb0be7b526fef781f82335a6fae2d92fab816704652435",
+  "result": "1 suite / 1 test PASS",
+  "limits": [
+    "Spanish document language manually seeded; no translated-backend proof",
+    "Canvas/timers/fetch/socket external boundaries simulated; original overlay and engine executed",
+    "Particles/state proof only; no GPU pixels, browser, OBS, server, VM or live events"
+  ],
+  "ownership": "weather-control overlay.html/weather-engine.js clean; foreign untracked DE test read only; original shared matrix not rewritten"
+}

@@ -196,7 +196,7 @@
               <button id="search-btn" class="btn ghost" type="button" data-i18n="plugins.music-bot.music_bot.ui.player.search">Suchen</button>
               <button id="request-btn" class="btn primary" type="button" data-i18n="plugins.music-bot.music_bot.ui.player.requestSong">Song anfordern</button>
             </div>
-        <div id="search-feedback" class="feedback"></div>
+        <div id="search-feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
 
         <div class="player-main">
           <div class="player-embed-wrapper">
@@ -204,7 +204,7 @@
               <div class="player-placeholder" id="player-placeholder">
                 <span data-i18n="plugins.music-bot.music_bot.ui.player.previewPlaceholder">YouTube-Link einfuegen oder oben suchen</span>
               </div>
-              <iframe id="preview-frame" title="YouTube Vorschau" data-i18n-title="plugins.music-bot.music_bot.ui.player.previewTitle" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+              <iframe id="preview-frame" title="YouTube Vorschau" data-i18n-title="plugins.music-bot.music_bot.ui.player.previewTitle" tabindex="-1" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
             </div>
             <label class="preview-volume-control" for="preview-volume-input">
               <span data-i18n="plugins.music-bot.music_bot.ui.player.previewVolume">Vorschau-Lautstärke</span>
@@ -261,7 +261,7 @@
           </div>
         </div>
 
-        <div id="request-feedback" class="feedback"></div>
+        <div id="request-feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true"></div>
             <form id="request-form" style="display:none">
               <label class="sr-only" for="request-input" data-i18n="plugins.music-bot.music_bot.ui.player.requestLabel">Song-Anfrage</label>
               <input type="text" id="request-input">

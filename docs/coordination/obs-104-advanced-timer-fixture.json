@@ -1,0 +1,108 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "advanced-timer-source-fixture-v1",
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "caseCount": 4,
+  "files": [
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "role": "browser-socket-client-source"
+    },
+    {
+      "path": "app/plugins/advanced-timer/locales/de.json",
+      "bytes": 18771,
+      "sha256": "305bb9f9898f97a20ec3928983837917c21b0e1027b25311ae33f1de6261db72",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/advanced-timer/locales/en.json",
+      "bytes": 16866,
+      "sha256": "9d5745cce497dca5703a1f8ba23807844679765a85fbd5713dd74617002394e4",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/advanced-timer/locales/es.json",
+      "bytes": 19020,
+      "sha256": "f593b945134993f7d954b8504d0cc513f74f54dea2f94250e1f14ac16a3e13c1",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/advanced-timer/locales/fr.json",
+      "bytes": 19421,
+      "sha256": "e727035282cc0d7aa998791fabb37724e2e014ea2ce0f6bee21813d65e49c95e",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/advanced-timer/overlay/index.html",
+      "bytes": 5110,
+      "sha256": "bacd9c0c50a46c2e27360f38d61673629018991a944e5b352bd718d5fa1de8ce",
+      "role": "renderer-entry"
+    },
+    {
+      "path": "app/plugins/advanced-timer/overlay/overlay.js",
+      "bytes": 31312,
+      "sha256": "ee6c1e0bef09b3d89cf66d90aec88d663fdc752b9e771d54e4d57e4c79878024",
+      "role": "renderer-script"
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "bytes": 24907,
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "role": "shared-i18n-client"
+    }
+  ],
+  "runnerContract": {
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "listenerStarted": false,
+    "assetGetRoutes": [
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      },
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/plugins/advanced-timer/overlay/overlay.js?v=3",
+        "source": "app/plugins/advanced-timer/overlay/overlay.js"
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)",
+      "/api/advanced-timer/timers/{fixture-timer-{locale}}",
+      "/api/advanced-timer/timers/{fixture-timer-{locale}}/rotator",
+      "/api/advanced-timer/timers/{fixture-timer-{locale}}/threshold-effects"
+    ],
+    "socketEventsConsumed": [
+      "advanced-timer:completed",
+      "advanced-timer:paused",
+      "advanced-timer:reset",
+      "advanced-timer:rotator-snapshot",
+      "advanced-timer:started",
+      "advanced-timer:stopped",
+      "advanced-timer:threshold-effect",
+      "advanced-timer:tick",
+      "advanced-timer:time-added",
+      "advanced-timer:time-removed"
+    ],
+    "driverEvents": [
+      {
+        "event": "advanced-timer:tick",
+        "matchingId": "fixture-timer-{locale}",
+        "payload": {
+          "currentValue": 89,
+          "state": "running"
+        },
+        "negativeCase": "same event with nonmatching fixture id is ignored"
+      }
+    ],
+    "pluginControlProducer": "excluded; runner returns fixed synthetic GET responses and drives the renderer socket shim only",
+    "externalNetwork": "blocked",
+    "productProfileOrCredentialData": "excluded",
+    "cleanup": "dispatch pagehide, assert renderer disconnect and no recurring timers in scoped scenario, close JSDOM; localStorage exists only in ephemeral JSDOM instance"
+  }
+}

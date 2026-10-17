@@ -22,8 +22,8 @@ class PermissionMemoizer {
    * @param {string} permission - Required permission
    * @returns {boolean|null} Cached result or null
    */
-  get(userId, permission) {
-    const key = this.getCacheKey(userId, permission);
+  get(userId, role, permission) {
+    const key = this.getCacheKey(userId, role, permission);
     const entry = this.cache.get(key);
 
     if (!entry) {
@@ -51,8 +51,8 @@ class PermissionMemoizer {
    * @param {string} permission - Required permission
    * @param {boolean} result - Permission check result
    */
-  set(userId, permission, result) {
-    const key = this.getCacheKey(userId, permission);
+  set(userId, role, permission, result) {
+    const key = this.getCacheKey(userId, role, permission);
     
     this.cache.set(key, {
       result,
@@ -87,8 +87,8 @@ class PermissionMemoizer {
    * @param {string} permission - Permission
    * @returns {string} Cache key
    */
-  getCacheKey(userId, permission) {
-    return `${userId}:${permission}`;
+  getCacheKey(userId, role, permission) {
+    return `${userId}:${String(role || 'all').toLowerCase()}:${String(permission || 'all').toLowerCase()}`;
   }
 
   /**

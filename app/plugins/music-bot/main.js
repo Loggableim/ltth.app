@@ -5,7 +5,8 @@ const { execFile } = require('child_process');
 const { spawn } = require('child_process');
 const { promisify } = require('util');
 const EventEmitter = require('events');
-const { createHash } = require('crypto');
+const { createHash, timingSafeEqual } = require('crypto');
+const { getRequestAddress, hasForwardingHeaders, isLoopbackAddress } = require('../../modules/admin-auth');
 let YOUTUBE_DL_PATH = 'yt-dlp';
 try {
   const youtubeDlExec = require('youtube-dl-exec');
@@ -47,14 +48,18 @@ const RadioSupervisor = require('./lib/radio-supervisor');
 const MusicCatalog = require('./lib/music-catalog');
 const PlaylistStore = require('./lib/playlist-store');
 const PlaylistImportService = require('./lib/playlist-import-service');
+const { createDashboardRequestLimiters } = require('./lib/dashboard-request-rate-limit');
 
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
+// Keep dashboard search/URL inputs bounded by encoded size before they reach yt-dlp or cache keys.
+const MAX_DASHBOARD_QUERY_BYTES = 2048;
 const CATALOG_METADATA_ENRICH_INITIAL_DELAY_MS = 5_000;
 const CATALOG_METADATA_ENRICH_INTERVAL_MS = 20_000;
 const CATALOG_METADATA_ENRICH_IDLE_DELAY_MS = 5 * 60_000;
 const CATALOG_METADATA_ENRICH_STALE_AFTER_MS = 24 * 60 * 60_000;
 const MPV_INSTALL_TIMEOUT_MS = 5 * 60 * 1000;
+const QUEUE_SHUTDOWN_RETRY_DELAYS_MS = [25, 75];
 const GIFT_EVENT_DEDUPE_TTL_MS = 10 * 60 * 1000;
 const MAX_TRACKED_GIFT_EVENT_IDS = 10000;
 const MUSIC_BOT_BUILD_FINGERPRINT = 'music-bot-radio-supervisor-v1';
@@ -62,6 +67,13 @@ const HISTORY_OUTCOMES = new Set(['completed', 'skipped', 'early_skip', 'failed'
 const HISTORY_FEEDBACK = new Set(['up', 'down', 'neutral']);
 const HISTORY_BAN_FILTERS = new Set(['only', 'exclude']);
 const HISTORY_SORTS = new Set(['finished_desc', 'finished_asc']);
+
+function dashboardResolverHttpStatus({ result, error } = {}) {
+  if (error?.code === 'UNSUPPORTED_SOURCE_URL') return 400;
+  if (error?.code === 'ETIMEDOUT') return 504;
+  if (error) return 503;
+  return result?.reason === 'resolver_unavailable' ? 503 : 400;
+}
 
 function normalizeHistoryQuery(query = {}) {
   const limit = Math.min(Math.max(Number(query.limit) || 50, 1), 200);
@@ -260,6 +272,10 @@ class MusicBotPlugin extends EventEmitter {
     this._autoDjAdvanceOperations = new Set();
     this._lifecycleGeneration = 1;
     this._destroyed = false;
+    this.cleanupPending = false;
+    this._pendingShutdownCleanupRetries = [];
+    this._queuePersistedOnDestroy = false;
+    this._playbackShutdownComplete = false;
     this._stateTransitions = [];
     this._lastResolverProgress = null;
     this._controllerSafetySyncPromise = Promise.resolve();
@@ -302,6 +318,8 @@ class MusicBotPlugin extends EventEmitter {
     };
     this._mpvInstallChild = null;
     this._mpvInstallTimer = null;
+    this._mpvInstallPromise = null;
+    this._dashboardRequestLimiters = createDashboardRequestLimiters();
   }
 
   async init() {
@@ -386,8 +404,39 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async destroy(context = {}) {
-    if (this._destroyed) return;
+    if (this._destroyed) {
+      if (!this.cleanupPending) return;
+      const retryOperations = this._pendingShutdownCleanupRetries;
+      const retryResults = await Promise.all(retryOperations.map(async (retry) => {
+        try {
+          await retry();
+          return null;
+        } catch (error) {
+          return { error, retry };
+        }
+      }));
+      const pendingRetries = retryResults.filter(Boolean);
+      this._pendingShutdownCleanupRetries = pendingRetries.map(({ retry }) => retry);
+      if (pendingRetries.length > 0) {
+        const error = pendingRetries[0].error;
+        this.api.log(`[music-bot] Pending shutdown cleanup retry failed: ${error.message}`, 'error');
+        throw error;
+      }
+      try {
+        await this._persistQueueBeforeShutdown();
+        await this._shutdownPlaybackForDestroy(context);
+        this._finalizeDestroy();
+        this.cleanupPending = false;
+        this.api.log('[music-bot] Pending cleanup completed', 'info');
+      } catch (error) {
+        this.api.log(`[music-bot] Pending cleanup finalization failed: ${error.message}`, 'error');
+        throw error;
+      }
+      return;
+    }
     this._destroyed = true;
+    this.cleanupPending = true;
+    this.queueManager?.closeMutations?.();
     this._cancelNextSongVote('plugin-destroyed');
     if (this._catalogMetadataEnrichmentTimer) {
       clearTimeout(this._catalogMetadataEnrichmentTimer);
@@ -406,40 +455,179 @@ class MusicBotPlugin extends EventEmitter {
     this.autoDJ?.deactivate?.();
 
     const pendingAutoDjAdvances = [...this._autoDjAdvanceOperations];
-    const precacheShutdown = Promise.resolve(this._stopPrecacheTasks());
-    const cacheShutdown = Promise.resolve(this.mediaCache?.destroy?.()).catch((error) => {
+    const shutdownErrors = [];
+    const precacheShutdown = Promise.resolve().then(() => this._stopPrecacheTasks()).catch((error) => {
+      shutdownErrors.push(error);
+      this._pendingShutdownCleanupRetries.push(() => this._stopPrecacheTasks());
+      this.api.log(`[music-bot] Failed to shutdown precache tasks: ${error.message}`, 'error');
+    });
+    const cacheShutdown = Promise.resolve().then(() => this.mediaCache?.destroy?.()).catch((error) => {
+      shutdownErrors.push(error);
+      this._pendingShutdownCleanupRetries.push(() => this.mediaCache?.destroy?.());
       this.api.log(`[music-bot] Failed to shutdown media cache: ${error.message}`, 'error');
     });
-    const resolverShutdown = Promise.resolve(this.musicResolver?.destroy?.()).catch((error) => {
+    const resolverShutdown = Promise.resolve().then(() => this.musicResolver?.destroy?.()).catch((error) => {
+      shutdownErrors.push(error);
+      this._pendingShutdownCleanupRetries.push(() => this.musicResolver?.destroy?.());
       this.api.log(`[music-bot] Failed to shutdown resolver: ${error.message}`, 'error');
     });
-    const playlistImportShutdown = Promise.resolve(this.playlistImports?.destroy?.()).catch((error) => {
+    const playlistImportShutdown = Promise.resolve().then(() => this.playlistImports?.destroy?.()).catch((error) => {
+      shutdownErrors.push(error);
+      this._pendingShutdownCleanupRetries.push(() => this.playlistImports?.destroy?.());
       this.api.log(`[music-bot] Failed to shutdown playlist imports: ${error.message}`, 'error');
     });
-    this.playbackEngine?.removeAllListeners?.();
-    const playbackShutdown = Promise.resolve(this.playbackEngine?.shutdown?.({
-      reconcileOrphans: context.reason === 'application-shutdown'
-    })).catch((error) => {
-      this.api.log(`[music-bot] Failed to shutdown playback: ${error.message}`, 'error');
-    });
+    const autoDjDrain = Promise.resolve()
+      .then(() => this._drainOperations(pendingAutoDjAdvances, 250))
+      .then((drained) => {
+        if (drained !== false) return;
+        const error = new Error('AutoDJ queue operations did not settle before shutdown.');
+        error.code = 'MUSIC_BOT_OPERATIONS_PENDING';
+        shutdownErrors.push(error);
+        this._pendingShutdownCleanupRetries.push(async () => {
+          const retryDrained = await this._drainOperations(pendingAutoDjAdvances, 250);
+          if (retryDrained === false) throw error;
+        });
+        this.api.log(`[music-bot] Failed to drain AutoDJ operations: ${error.message}`, 'error');
+      })
+      .catch((error) => {
+        shutdownErrors.push(error);
+        this._pendingShutdownCleanupRetries.push(async () => {
+          const retryDrained = await this._drainOperations(pendingAutoDjAdvances, 250);
+          if (retryDrained === false) throw error;
+        });
+        this.api.log(`[music-bot] Failed to drain AutoDJ operations: ${error.message}`, 'error');
+      });
     await Promise.all([
       precacheShutdown,
       cacheShutdown,
       resolverShutdown,
       playlistImportShutdown,
-      playbackShutdown,
-      this._drainOperations(pendingAutoDjAdvances, 250)
+      autoDjDrain
     ]);
     await configUpdateDrain;
 
+    if (shutdownErrors.length > 0) {
+      this.cleanupPending = true;
+      throw shutdownErrors[0];
+    }
+
+    try {
+      await this._persistQueueBeforeShutdown();
+      await this._shutdownPlaybackForDestroy(context);
+      this._finalizeDestroy();
+    } catch (error) {
+      this.cleanupPending = true;
+      this.api.log(`[music-bot] Queue/playback shutdown pending: ${error.message}`, 'error');
+      throw error;
+    }
+    this.cleanupPending = false;
+    this.api.log('[music-bot] Plugin destroyed', 'info');
+  }
+
+  async _persistQueueBeforeShutdown() {
+    if (this._queuePersistedOnDestroy) return;
+    const queueManager = this.queueManager;
+    const persistQueue = queueManager?.persistQueue;
+    if (typeof persistQueue !== 'function') {
+      this._queuePersistedOnDestroy = true;
+      return;
+    }
+
+    let lastError = null;
+    const attemptCount = QUEUE_SHUTDOWN_RETRY_DELAYS_MS.length + 1;
+    for (let attempt = 0; attempt < attemptCount; attempt += 1) {
+      let persistResult;
+      try {
+        persistResult = persistQueue.call(queueManager);
+      } catch (error) {
+        lastError = error;
+      }
+
+      if (persistResult?.success === true) {
+        this._queuePersistedOnDestroy = true;
+        return;
+      }
+
+      if (persistResult?.blocked === true) {
+        try {
+          const restoreResult = await queueManager.restoreQueue?.({
+            isAllowed: (song) => !this._checkBans(song, song.requestedBy)
+          });
+          const persistenceStatus = queueManager.getPersistenceStatus?.();
+          if (
+            restoreResult?.error ||
+            restoreResult?.persistenceBlocked ||
+            persistenceStatus?.blocked === true ||
+            queueManager._persistenceGuard?.blocked === true
+          ) {
+            lastError = new Error(restoreResult?.error || 'Queue restore remains blocked');
+          } else {
+            persistResult = persistQueue.call(queueManager);
+            if (persistResult?.success === true) {
+              this._queuePersistedOnDestroy = true;
+              return;
+            }
+            lastError = new Error(persistResult?.error || 'Queue persistence did not succeed after restore');
+          }
+        } catch (error) {
+          lastError = error;
+        }
+      } else if (!lastError) {
+        lastError = new Error(persistResult?.error || 'Queue persistence did not succeed');
+      }
+
+      if (attempt < QUEUE_SHUTDOWN_RETRY_DELAYS_MS.length) {
+        await new Promise((resolve) => setTimeout(resolve, QUEUE_SHUTDOWN_RETRY_DELAYS_MS[attempt]));
+      }
+    }
+
+    const error = new Error(`Queue shutdown persistence is still pending: ${lastError?.message || 'queue could not be saved'}`);
+    error.code = 'MUSIC_BOT_QUEUE_SHUTDOWN_PENDING';
+    error.cause = lastError || undefined;
+    throw error;
+  }
+
+  async _shutdownPlaybackForDestroy(context = {}) {
+    if (this._playbackShutdownComplete) return;
+    this.playbackEngine?.removeAllListeners?.();
+    await this.playbackEngine?.shutdown?.({
+      reconcileOrphans: context.reason === 'application-shutdown'
+    });
+    this._playbackShutdownComplete = true;
+  }
+
+  _finalizeDestroy() {
     // Keep queued songs across app restarts and plugin reloads. Explicit user
     // actions still use queueManager.clear() through the clear route/command.
-    this.queueManager?.persistQueue?.();
+    if (!this._queuePersistedOnDestroy) {
+      const persistQueue = this.queueManager?.persistQueue;
+      if (typeof persistQueue === 'function') {
+        let persistResult = persistQueue.call(this.queueManager);
+        if (persistResult?.blocked === true) {
+          const restoreResult = this.queueManager.restoreQueue?.({
+            isAllowed: (song) => !this._checkBans(song, song.requestedBy)
+          });
+          const persistenceStatus = this.queueManager.getPersistenceStatus?.();
+          if (
+            restoreResult?.error ||
+            restoreResult?.persistenceBlocked ||
+            persistenceStatus?.blocked === true ||
+            this.queueManager._persistenceGuard?.blocked === true
+          ) {
+            throw new Error(restoreResult?.error || 'Queue restore remains blocked');
+          }
+          persistResult = persistQueue.call(this.queueManager);
+        }
+        if (persistResult?.success !== true) {
+          throw new Error(persistResult?.error || 'Queue persistence did not succeed');
+        }
+      }
+      this._queuePersistedOnDestroy = true;
+    }
     this._pendingRequests.clear();
     this._requestCredits.clear();
     this._userLikes.clear();
     this.removeAllListeners();
-    this.api.log('[music-bot] Plugin destroyed', 'info');
   }
 
   // ---------- Initialization helpers ----------
@@ -683,7 +871,8 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _normalizeMpvInstallStatus(status = {}) {
-    const state = String(status.state || 'idle');
+    const allowedStates = new Set(['idle', 'installing', 'installed', 'failed', 'unavailable']);
+    const state = allowedStates.has(status.state) ? status.state : 'failed';
     const defaultMessageKeys = {
       installed: 'mpvInstalledReady',
       installing: 'mpvInstallStarted',
@@ -691,13 +880,31 @@ class MusicBotPlugin extends EventEmitter {
       unavailable: 'mpvPackageManagerUnavailable',
       idle: 'mpvInstallIdle'
     };
-    const params = { ...(status.params || {}) };
-    if (status.message && !params.detail) params.detail = String(status.message);
+    const allowedMessageKeys = new Set([
+      'mpvInstallStarted', 'mpvAlreadyAvailable', 'mpvInstalledReady', 'mpvInstallFailed',
+      'mpvPackageManagerUnavailable', 'mpvInstallTimedOut', 'mpvInstallWindowsPrompt',
+      'mpvInstallStartFailed', 'mpvInstallChocolateyLock', 'mpvInstallAdminConfirmation',
+      'mpvInstallPermissionDenied', 'mpvInstallCommandUnavailable', 'mpvInstallExited',
+      'mpvInstallMissingAfterExit'
+    ]);
+    const messageKey = allowedMessageKeys.has(status.messageKey)
+      ? status.messageKey
+      : (defaultMessageKeys[state] || 'mpvInstallFailed');
+    const params = {};
+    if (['mpvInstallExited', 'mpvInstallMissingAfterExit'].includes(messageKey)) {
+      const code = status.params?.code;
+      params.code = Number.isInteger(code) ? code : 'unknown';
+    }
+    const allowedCommands = new Set([
+      'winget install shinchiro.mpv', 'scoop install mpv', 'brew install mpv',
+      'sudo apt-get install -y mpv', 'sudo dnf install -y mpv',
+      'sudo pacman -S --noconfirm mpv', 'sudo zypper --non-interactive install mpv'
+    ]);
     return {
       state,
-      messageKey: status.messageKey || defaultMessageKeys[state] || 'mpvInstallFailed',
+      messageKey,
       params,
-      command: status.command || null,
+      command: allowedCommands.has(status.command) ? status.command : null,
       updatedAt: status.updatedAt || null
     };
   }
@@ -807,7 +1014,7 @@ class MusicBotPlugin extends EventEmitter {
     const text = String(output || '').replace(/\s+/g, ' ').trim();
     const lockMatch = text.match(/Unable to obtain lock file access on '([^']+)'/i);
     if (lockMatch) {
-      return { messageKey: 'mpvInstallChocolateyLock', params: { path: lockMatch[1] } };
+      return { messageKey: 'mpvInstallChocolateyLock', params: {} };
     }
     if (/do you want to continue|not running from an elevated|non.?elevated/i.test(text)) {
       return { messageKey: 'mpvInstallAdminConfirmation', params: {} };
@@ -819,31 +1026,55 @@ class MusicBotPlugin extends EventEmitter {
       return { messageKey: 'mpvInstallCommandUnavailable', params: {} };
     }
     if (text) {
-      return { messageKey: 'mpvInstallExited', params: { code: code ?? 'unknown', detail: text.slice(-900) } };
+      return { messageKey: 'mpvInstallExited', params: { code: Number.isInteger(code) ? code : 'unknown' } };
     }
     return { messageKey: 'mpvInstallMissingAfterExit', params: { code: code ?? 'unknown' } };
   }
 
-  _buildWindowsElevatedCommand(executablePath, args = []) {
-    const quotePs = (value) => `'${String(value).replace(/'/g, "''")}'`;
-    const quoteCmd = (value) => `"${String(value).replace(/"/g, '""')}"`;
-    const commandLine = [
-      [quoteCmd(executablePath), ...args.map(quoteCmd)].join(' '),
-      'echo.',
-      'echo [LTTH] The installer window stays open for 30 seconds so you can read the logs.',
-      'timeout /t 30 /nobreak >nul'
-    ].join(' & ');
-    return {
-      executable: 'powershell.exe',
-      args: [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-Command',
-        `Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', ${quotePs(commandLine)}) -Verb RunAs -Wait`
-      ],
-      windowsHide: true
-    };
+  _isSameOriginMpvInstallRequest(req) {
+    const originHeader = req.get?.('origin') ?? req.headers?.origin;
+    if (typeof originHeader !== 'string' || !originHeader.trim() || originHeader.trim() === 'null') {
+      return false;
+    }
+
+    const fetchSite = req.get?.('sec-fetch-site') ?? req.headers?.['sec-fetch-site'];
+    if (fetchSite !== undefined && fetchSite !== 'same-origin') {
+      return false;
+    }
+
+    try {
+      const origin = new URL(originHeader.trim());
+      const protocol = String(req.protocol || '').toLowerCase().replace(/:$/, '');
+      const host = req.get?.('host') ?? req.headers?.host;
+      if (
+        !['http:', 'https:'].includes(origin.protocol)
+        || origin.username
+        || origin.password
+        || origin.pathname !== '/'
+        || origin.search
+        || origin.hash
+        || !['http', 'https'].includes(protocol)
+        || typeof host !== 'string'
+        || !host.trim()
+      ) {
+        return false;
+      }
+
+      const requestOrigin = new URL(`${protocol}://${host.trim()}`);
+      if (requestOrigin.username || requestOrigin.password || requestOrigin.pathname !== '/') {
+        return false;
+      }
+      if (origin.origin !== requestOrigin.origin) return false;
+
+      const networkOriginCheck = req.app?.locals?.isNetworkOriginAllowed;
+      if (typeof networkOriginCheck !== 'function') return false;
+      const requestPort = Number(req.socket?.localPort)
+        || Number(requestOrigin.port)
+        || (protocol === 'https' ? 443 : 80);
+      return networkOriginCheck(origin.origin, requestPort) === true;
+    } catch (_error) {
+      return false;
+    }
   }
 
   async _getMpvInstallCommand() {
@@ -860,16 +1091,6 @@ class MusicBotPlugin extends EventEmitter {
       const scoopPath = await this._resolveExecutable('scoop');
       if (scoopPath) {
         return { executable: scoopPath, args: ['install', 'mpv'], label: 'scoop install mpv' };
-      }
-
-      const chocoPath = await this._resolveExecutable('choco');
-      if (chocoPath) {
-        const elevated = this._buildWindowsElevatedCommand(chocoPath, ['install', 'mpvio.install', '-y', '--no-progress']);
-        return {
-          ...elevated,
-          label: 'choco install mpvio.install (Administrator)',
-          opensWindow: true
-        };
       }
 
       return null;
@@ -896,6 +1117,20 @@ class MusicBotPlugin extends EventEmitter {
     }
 
     return null;
+  }
+
+  _installMpv() {
+    if (this._mpvInstallPromise) return this._mpvInstallPromise;
+
+    // Publish the shared flight before any async availability/manager lookup can yield.
+    const installPromise = Promise.resolve()
+      .then(() => this._ensureMpv())
+      .then(() => this._startMpvInstall())
+      .finally(() => {
+        if (this._mpvInstallPromise === installPromise) this._mpvInstallPromise = null;
+      });
+    this._mpvInstallPromise = installPromise;
+    return installPromise;
   }
 
   async _startMpvInstall() {
@@ -1011,7 +1246,7 @@ class MusicBotPlugin extends EventEmitter {
 
     child.on('error', (error) => {
       this.api.log(`[music-bot] mpv install failed to start: ${error.message}`, 'error');
-      settleInstall('failed', { messageKey: 'mpvInstallStartFailed', params: { error: error.message } }).catch((settleError) => {
+      settleInstall('failed', { messageKey: 'mpvInstallStartFailed', params: {} }).catch((settleError) => {
         this.api.log(`[music-bot] Failed to settle mpv install start error: ${settleError.message}`, 'error');
       });
     });
@@ -1279,7 +1514,7 @@ class MusicBotPlugin extends EventEmitter {
 
   _sanitizeDiagnosticString(value, field = '') {
     const normalized = String(value || '');
-    const inspectContent = !field || /(?:error|message|detail|progress|reason|stderr|output)/i.test(field);
+    const inspectContent = !field || /(?:error|message|detail|progress|reason|stderr|output|key)/i.test(field);
     if (!inspectContent) return normalized;
     return normalized
       .replace(/https?:\/\/[^\s"'<>]+/gi, '[redacted]')
@@ -1312,6 +1547,42 @@ class MusicBotPlugin extends EventEmitter {
     const error = new Error('Music Bot config update cancelled because the plugin is shutting down');
     error.code = 'PLUGIN_DESTROYED';
     return error;
+  }
+
+  _safeConfigUpdateFailure(error, fallbackCode, fallbackMessage) {
+    if (error?.code === 'CONFIG_VALIDATION_FAILED') {
+      const message = String(error.message || '');
+      const staticMessages = new Set([
+        'config payload must be an object',
+        'autoDJ.selectedGenres must be an array of strings'
+      ]);
+      const objectSections = new Set([
+        'commands', 'commandAliases', 'permissions', 'queue', 'playback', 'voteSkip',
+        'audio', 'autoDJ', 'fallbackPlaylist', 'moderation', 'monetization',
+        'giftIntegration', 'resolver', 'onboarding', 'preCache'
+      ]);
+      const booleanFields = new Set([
+        'enabled', 'historyShuffled', 'announceAutoDJ', 'playlistFallbackToRandom',
+        'genreFilterEnabled', 'bpmTransitionsEnabled', 'requestSeedsEnabled',
+        'liveFeedbackEnabled', 'previewEnabled', 'chatVotingEnabled'
+      ]);
+      let safeMessage = 'Music Bot settings are invalid.';
+      const sectionMatch = message.match(/^([A-Za-z]+) must be an object$/);
+      const autoDjMatch = message.match(/^autoDJ\.([A-Za-z]+) must be a boolean$/);
+      if (staticMessages.has(message)) safeMessage = message;
+      else if (sectionMatch && objectSections.has(sectionMatch[1])) safeMessage = message;
+      else if (autoDjMatch && booleanFields.has(autoDjMatch[1])) safeMessage = message;
+      else if (/^Alias ".*" conflicts with another command$/.test(message)) {
+        safeMessage = 'Command alias conflicts with another command.';
+      } else if (/^Alias ".*" is already in use$/.test(message)) {
+        safeMessage = 'Command alias is already in use.';
+      }
+      return { code: 'MUSIC_BOT_CONFIG_INVALID', error: safeMessage };
+    }
+    if (error?.code === 'PLUGIN_DESTROYED') {
+      return { code: 'MUSIC_BOT_PLUGIN_STOPPING', error: 'Music Bot is stopping. Please try again.' };
+    }
+    return { code: fallbackCode, error: fallbackMessage };
   }
 
   _assertConfigUpdateActive() {
@@ -1451,18 +1722,17 @@ class MusicBotPlugin extends EventEmitter {
 
   _drainOperations(operations, timeoutMs) {
     const pending = Array.isArray(operations) ? operations.filter(Boolean) : [];
-    if (!pending.length) return Promise.resolve();
+    if (!pending.length) return Promise.resolve(true);
     return new Promise((resolve) => {
       let settled = false;
-      const finish = () => {
+      const finish = (drained) => {
         if (settled) return;
         settled = true;
         clearTimeout(timer);
-        resolve();
+        resolve(drained);
       };
-      const timer = setTimeout(finish, Math.max(1, Number(timeoutMs) || 1));
-      timer.unref?.();
-      Promise.allSettled(pending).then(finish);
+      const timer = setTimeout(() => finish(false), Math.max(1, Number(timeoutMs) || 1));
+      Promise.allSettled(pending).then(() => finish(true));
     });
   }
 
@@ -1687,7 +1957,13 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   _registerPlaybackEvents() {
+    const lifecycleGeneration = this._lifecycleGeneration;
+    const isCurrentLifecycle = () => !this._destroyed
+      && this._lifecycleGeneration === lifecycleGeneration
+      && !this.queueManager?._mutationsClosed;
+
     this.playbackEngine.on('track-start', (track) => {
+      if (!isCurrentLifecycle()) return;
       if (track?.trackKey) this.mediaCache?.pin?.(track.trackKey);
       this.queueManager.markPlaying(track);
       this.queueManager.resetVoteSkips();
@@ -1701,6 +1977,7 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('track-end', (info) => {
+      if (!isCurrentLifecycle()) return;
       if (info.track?.trackKey) this.mediaCache?.unpin?.(info.track.trackKey);
       const activeTrack = this.playbackEngine.getNowPlaying?.();
       if (info.reason === 'error' && !info.track && !activeTrack) {
@@ -1777,14 +2054,17 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('volume-changed', (volume) => {
+      if (!isCurrentLifecycle()) return;
       this._emitVolume(volume);
     });
 
     this.playbackEngine.on('paused', () => {
+      if (!isCurrentLifecycle()) return;
       this._clearCrossfadeTimer();
     });
 
     this.playbackEngine.on('resumed', () => {
+      if (!isCurrentLifecycle()) return;
       const track = this.playbackEngine.getNowPlaying?.();
       const playbackId = this.playbackEngine.getSnapshot?.().activePlaybackId || null;
       if (!track || !playbackId) return;
@@ -1828,6 +2108,7 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.playbackEngine.on('heartbeat-failure-confirmed', (info = {}) => {
+      if (!isCurrentLifecycle()) return;
       const track = info.track || this.playbackEngine.getNowPlaying?.();
       const error = info.error instanceof Error
         ? info.error
@@ -2009,9 +2290,37 @@ class MusicBotPlugin extends EventEmitter {
       res.status(503).json({ success: false, error: 'Playlist catalog is unavailable' });
     };
     const playlistError = (res, error) => {
-      const status = error?.code === 'PLAYLIST_REVISION_CONFLICT' ? 409
-        : (error?.code === 'PLAYLIST_NOT_FOUND' || error?.code === 'PLAYLIST_ITEM_NOT_FOUND' ? 404 : 400);
-      res.status(status).json({ success: false, error: error?.message || 'Playlist request failed', code: error?.code });
+      const knownErrors = {
+        PLAYLIST_REVISION_CONFLICT: { status: 409, error: 'Playlist was modified by another edit' },
+        PLAYLIST_NOT_FOUND: { status: 404, error: 'Playlist not found' },
+        PLAYLIST_ITEM_NOT_FOUND: { status: 404, error: 'Playlist item not found' },
+        SONG_NOT_FOUND: { status: 404, error: 'Catalog song not found' },
+        PLAYLIST_NAME_CONFLICT: { status: 400, error: 'Playlist name already exists' },
+        INVALID_PLAYLIST_UPDATE: { status: 400, error: 'Playlist name or mode is required' },
+        INVALID_PLAYLIST_ITEMS: { status: 400, error: 'Playlist items are invalid' },
+        INVALID_IMPORT: { status: 400, error: 'Playlist snapshot entries are invalid' },
+        INVALID_RADIO_SOURCES: { status: 400, error: 'Playlist radio sources are invalid' },
+        INVALID_RADIO_WEIGHT: { status: 400, error: 'Playlist source weight must be an integer from 1 to 10' },
+        PLAYLIST_PROTECTED: { status: 400, error: 'Protected playlists cannot be renamed or deleted' },
+        INVALID_PLAYLIST_NAME: { status: 400, error: 'Playlist name must be 1 to 120 characters' },
+        INVALID_PLAYLIST_MODE: { status: 400, error: 'Playlist mode must be ordered or shuffle' }
+      };
+      const known = Object.prototype.hasOwnProperty.call(knownErrors, error?.code)
+        ? knownErrors[error.code]
+        : null;
+      if (known) {
+        res.status(known.status).json({ success: false, error: known.error, code: error.code });
+        return;
+      }
+      const importValidationErrors = new Set([
+        'Playlist import URL must be a YouTube playlist URL',
+        'Playlist import URL must include a YouTube playlist ID'
+      ]);
+      if (importValidationErrors.has(error?.message)) {
+        res.status(400).json({ success: false, error: error.message });
+        return;
+      }
+      res.status(500).json({ success: false, error: 'Playlist request failed' });
     };
 
     this.api.registerRoute('get', '/api/plugins/music-bot/catalog/search', async (req, res) => {
@@ -2030,8 +2339,16 @@ class MusicBotPlugin extends EventEmitter {
         this.api.emit('musicbot:history-update', { songId, feedback });
         res.json({ success: true, feedback });
       } catch (error) {
-        const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
-        res.status(status).json({ success: false, error: error.message, code: error?.code });
+        if (error?.code === 'CATALOG_SONG_NOT_FOUND') {
+          res.status(404).json({ success: false, error: 'Catalog song not found', code: 'CATALOG_SONG_NOT_FOUND' });
+          return;
+        }
+        if (error?.message === 'Invalid feedback state') {
+          res.status(400).json({ success: false, error: 'Invalid feedback state' });
+          return;
+        }
+        this.api.log?.('[music-bot] Catalog feedback update failed', 'error');
+        res.status(500).json({ success: false, error: 'Catalog feedback could not be updated' });
       }
     });
 
@@ -2044,8 +2361,12 @@ class MusicBotPlugin extends EventEmitter {
         this.api.emit('musicbot:history-update', { songId, refresh: true });
         res.json({ success: true, ...result });
       } catch (error) {
-        const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
-        res.status(status).json({ success: false, error: error.message, code: error?.code });
+        if (error?.code === 'CATALOG_SONG_NOT_FOUND') {
+          res.status(404).json({ success: false, error: 'Catalog song not found', code: 'CATALOG_SONG_NOT_FOUND' });
+          return;
+        }
+        this.api.log?.('[music-bot] Catalog genre update failed', 'error');
+        res.status(500).json({ success: false, error: 'Catalog genres could not be updated' });
       }
     });
 
@@ -2216,7 +2537,7 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, status });
       } catch (error) {
         this.api.log?.(`[music-bot] Could not start song radio: ${error.message}`, 'warn');
-        res.status(400).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Song radio could not be started' });
       }
     });
 
@@ -2297,8 +2618,16 @@ class MusicBotPlugin extends EventEmitter {
         this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'streamer-feedback' });
         res.json({ success: true, feedback, playlist, suggestions });
       } catch (error) {
-        const status = error?.code === 'CATALOG_SONG_NOT_FOUND' ? 404 : 400;
-        res.status(status).json({ success: false, error: error.message, code: error?.code });
+        if (error?.code === 'CATALOG_SONG_NOT_FOUND') {
+          res.status(404).json({ success: false, error: 'Catalog song not found', code: 'CATALOG_SONG_NOT_FOUND' });
+          return;
+        }
+        if (error?.message === 'Invalid feedback state') {
+          res.status(400).json({ success: false, error: 'Invalid feedback state' });
+          return;
+        }
+        this.api.log?.('[music-bot] Streamer Playlist feedback update failed', 'error');
+        res.status(500).json({ success: false, error: 'Streamer Playlist feedback could not be updated' });
       }
     });
 
@@ -2313,27 +2642,81 @@ class MusicBotPlugin extends EventEmitter {
         res.status(400).json({ success: false, error: 'songId and action (accept or reject) are required' });
         return;
       }
+      let playlist = null;
+      let playlistChanged = false;
+      let suggestionUpdated = false;
+      let mutationCommitted = false;
+      let mutationStep = 'playlist';
+      let hasSharedTransaction = false;
       try {
-        let playlist = this.playlistStore.getStreamerPlaylist();
-        const existing = (playlist.items || []).some((item) => Number(item.songId) === songId);
-        if (action === 'accept' && !existing) {
-          const added = this.playlistStore.addItem(playlist.id, songId, playlist.revision);
-          playlist = added.playlist;
-        } else if (action === 'reject' && existing) {
-          const removed = this.playlistStore.removeItem(playlist.id, songId, playlist.revision);
-          playlist = removed.playlist;
-        }
-        const suggestion = this.musicCatalog.updateStreamerPlaylistSuggestionStatus(
-          songId,
-          action === 'accept' ? 'accepted' : 'rejected'
-        );
+        const database = this.api.getDatabase?.();
+        const transactionOwner = typeof database?.transaction === 'function' ? database : database?.db;
+        const transaction = transactionOwner?.transaction;
+        hasSharedTransaction = typeof transaction === 'function';
+        const persistDecision = () => {
+          playlist = this.playlistStore.getStreamerPlaylist();
+          const existing = (playlist.items || []).some((item) => Number(item.songId) === songId);
+          if (action === 'accept' && !existing) {
+            const added = this.playlistStore.addItem(playlist.id, songId, playlist.revision);
+            playlist = added.playlist;
+            playlistChanged = added.added !== false;
+          } else if (action === 'reject' && existing) {
+            const removed = this.playlistStore.removeItem(playlist.id, songId, playlist.revision);
+            playlist = removed.playlist;
+            playlistChanged = removed.removed !== false;
+          }
+          mutationStep = 'suggestion-status';
+          const suggestion = this.musicCatalog.updateStreamerPlaylistSuggestionStatus(
+            songId,
+            action === 'accept' ? 'accepted' : 'rejected'
+          );
+          suggestionUpdated = true;
+          return suggestion;
+        };
+        const suggestion = hasSharedTransaction
+          ? transactionOwner.transaction(persistDecision)()
+          : persistDecision();
+        mutationCommitted = true;
+        mutationStep = 'post-commit-effect';
         this.autoDJ?.invalidateRadioPlan?.('streamer-playlist-suggestion');
         const suggestions = this.musicCatalog.listStreamerPlaylistSuggestions?.({ status: 'pending', limit: 20 }) || [];
         this._invalidateRadioPrefetch('streamer-playlist-suggestion');
-        this.api.emit('musicbot:streamer-playlist', { action, suggestion, playlist, suggestions });
-        this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'streamer-suggestion' });
+        const streamEventSent = this.api.emit('musicbot:streamer-playlist', { action, suggestion, playlist, suggestions });
+        const playlistEventSent = this.api.emit('musicbot:playlist-update', { playlistId: playlist.id, reason: 'streamer-suggestion' });
+        if (streamEventSent === false || playlistEventSent === false) {
+          res.status(200).json({
+            success: false,
+            partial: true,
+            playlistChanged,
+            suggestionUpdated,
+            code: 'STREAMER_PLAYLIST_SYNC_FAILED',
+            error: 'Changes were saved, but live updates failed. Refresh the playlist.'
+          });
+          return;
+        }
         res.json({ success: true, action, suggestion, playlist, suggestions });
       } catch (error) {
+        if (mutationCommitted || (!hasSharedTransaction && playlistChanged)) {
+          try {
+            this.api.emit('musicbot:streamer-playlist', { action, partial: true, playlist });
+          } catch (_emitError) {
+            // The HTTP response below still tells the caller to refresh its persisted view.
+          }
+          try {
+            this.api.emit('musicbot:playlist-update', { playlistId: playlist?.id || 'streamer-playlist', reason: 'streamer-suggestion-partial' });
+          } catch (_emitError) {
+            // The HTTP response below still tells the caller to refresh its persisted view.
+          }
+          res.status(200).json({
+            success: false,
+            partial: true,
+            playlistChanged,
+            suggestionUpdated,
+            code: mutationStep === 'suggestion-status' ? 'SUGGESTION_STATUS_UPDATE_FAILED' : 'STREAMER_PLAYLIST_SYNC_FAILED',
+            error: 'The playlist changed, but the suggestion update did not finish. Refresh the playlist.'
+          });
+          return;
+        }
         const status = error?.code === 'STREAMER_PLAYLIST_SUGGESTION_NOT_FOUND' ? 404 : 400;
         res.status(status).json({ success: false, error: error.message, code: error?.code });
       }
@@ -2404,8 +2787,12 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, locked: safety.locked, safety, health: this._buildHealthPayload() });
       } catch (error) {
         this.api.log(`[music-bot] Safety lock update failed: ${error.message}`, 'error');
-        const statusCode = error.code === 'SOUNDBOT_MPV_REMAINS' ? 409 : 500;
-        res.status(statusCode).json({ success: false, locked: this._isSafetyLocked(), error: error.message });
+        const remains = error.code === 'SOUNDBOT_MPV_REMAINS';
+        const statusCode = remains ? 409 : 500;
+        const failure = remains
+          ? { code: 'MUSIC_BOT_MPV_PROCESS_STILL_RUNNING', error: 'Safety Lock cannot be released while MPV is still running.' }
+          : { code: 'MUSIC_BOT_SAFETY_LOCK_FAILED', error: 'Safety Lock could not be updated.' };
+        res.status(statusCode).json({ success: false, locked: this._isSafetyLocked(), ...failure });
       }
     });
 
@@ -2427,7 +2814,7 @@ class MusicBotPlugin extends EventEmitter {
         });
       } catch (error) {
         this.api.log(`[music-bot] Player reset failed: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, code: 'MUSIC_BOT_PLAYER_RESET_FAILED', error: 'Player could not be reset.' });
       }
     });
 
@@ -2450,7 +2837,7 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, ...(result || {}) });
       } catch (error) {
         this.api.log(`[music-bot] Test tone failed: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, code: 'MUSIC_BOT_TEST_TONE_FAILED', error: 'Test tone could not be played.' });
       }
     });
 
@@ -2465,9 +2852,12 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/install/mpv', async (req, res) => {
+      if (!this._isSameOriginMpvInstallRequest(req)) {
+        return res.status(403).json({ success: false, error: 'Same-origin request required' });
+      }
+
       try {
-        await this._ensureMpv();
-        const status = await this._startMpvInstall();
+        const status = await this._installMpv();
         res.json({
           success: status.state !== 'failed' && status.state !== 'unavailable',
           pending: status.state === 'installing',
@@ -2480,31 +2870,33 @@ class MusicBotPlugin extends EventEmitter {
         this._mpvInstallStatus = {
           state: 'failed',
           messageKey: 'mpvInstallStartFailed',
-          params: { error: error.message },
+          params: {},
           command: null,
           updatedAt: new Date().toISOString()
         };
         this.api.log(`[music-bot] mpv one-click install failed: ${error.message}`, 'error');
         res.status(500).json({
           success: false,
-          error: error.message,
+          code: 'MUSIC_BOT_MPV_INSTALL_START_FAILED',
           installStatus: this._normalizeMpvInstallStatus(this._mpvInstallStatus),
           issues: this._getSetupIssues()
         });
       }
     });
 
-    this.api.registerRoute('get', '/api/plugins/music-bot/resolve', async (req, res) => {
-      const query = req.query?.q || req.query?.query;
-      if (!query) {
-        res.status(400).json({ success: false, error: 'Missing query' });
+    this.api.registerRoute('get', '/api/plugins/music-bot/resolve', this._dashboardRequestLimiters.resolve, async (req, res) => {
+      const validation = this._validateDashboardQuery(req.query?.q || req.query?.query);
+      if (validation.error) {
+        res.status(400).json(validation.error);
         return;
       }
-      const requestAbort = this._createRequestAbort(req);
+      const { query } = validation;
+      const requestAbort = this._createRequestAbort(req, res);
       try {
         const resolved = await this.musicResolver.resolve(query, { signal: requestAbort.signal });
+        if (requestAbort.signal.aborted) return;
         if (!resolved?.success) {
-          res.status(400).json(resolved);
+          res.status(dashboardResolverHttpStatus({ result: resolved })).json(resolved);
           return;
         }
 
@@ -2520,8 +2912,11 @@ class MusicBotPlugin extends EventEmitter {
 
         res.json({ success: true, song: resolved.song });
       } catch (error) {
-        this.api.log(`[music-bot] Resolve failed: ${error.message}`, 'error');
-        res.status(500).json({ success: false, error: error.message });
+        if (requestAbort.signal.aborted || error?.name === 'AbortError') return;
+        const code = 'MUSIC_BOT_RESOLVE_FAILED';
+        const message = 'Music search failed. Please try again.';
+        this.api.log(`[music-bot] Resolve failed (${code})`, 'error');
+        res.status(dashboardResolverHttpStatus({ error })).json({ success: false, error: message, code });
       } finally {
         requestAbort.cleanup();
       }
@@ -2534,21 +2929,28 @@ class MusicBotPlugin extends EventEmitter {
       });
     });
 
-    this.api.registerRoute('post', '/api/plugins/music-bot/request', async (req, res) => {
-      const { query, username = 'dashboard', requesterAvatar = null } = req.body || {};
-      if (!query) {
-        res.status(400).json({ success: false, error: 'Missing query' });
+    this.api.registerRoute('post', '/api/plugins/music-bot/request', this._dashboardRequestLimiters.request, async (req, res) => {
+      const validation = this._validateDashboardQuery(req.body?.query);
+      if (validation.error) {
+        res.status(400).json(validation.error);
         return;
       }
-      const requestAbort = this._createRequestAbort(req);
-      const result = await this._handleDashboardRequest(
-        query,
-        username,
-        requesterAvatar,
-        { signal: requestAbort.signal }
-      );
-      requestAbort.cleanup();
-      res.status(result.success ? 200 : 400).json(result);
+      const { query } = validation;
+      const requestAbort = this._createRequestAbort(req, res);
+      try {
+        const result = await this._handleDashboardRequest(
+          query,
+          'dashboard',
+          null,
+          { signal: requestAbort.signal }
+        );
+        if (requestAbort.signal.aborted || result?.aborted) return;
+        const statusCode = result.success ? 200 : (result.httpStatus || 400);
+        const { httpStatus: _httpStatus, ...payload } = result;
+        res.status(statusCode).json(payload);
+      } finally {
+        requestAbort.cleanup();
+      }
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/skip', async (req, res) => {
@@ -2594,16 +2996,28 @@ class MusicBotPlugin extends EventEmitter {
         res.json({ success: true, ...result, playbackId });
       } catch (error) {
         const code = error?.code;
-        const statusCode = code === 'PLAYBACK_SAFETY_LOCKED'
-          ? 423
-          : code === 'PLAYBACK_STALE_ID' || code === 'PLAYBACK_SEEK_STATE' || code === 'PLAYBACK_SEEK_UNCONFIRMED'
-            ? 409
-            : code === 'PLAYBACK_UNSEEKABLE' || code === 'PLAYBACK_UNKNOWN_DURATION'
-              ? 422
-              : code === 'MPV_IPC_DISCONNECTED' || ['EPIPE', 'ECONNRESET', 'ECONNABORTED', 'ENOTCONN'].includes(code)
-                ? 503
-                : 400;
-        res.status(statusCode).json({ success: false, error: error?.message || 'Seek failed', code });
+        const knownFailures = {
+          PLAYBACK_SAFETY_LOCKED: { status: 423, error: 'Playback safety lock is engaged' },
+          PLAYBACK_STALE_ID: { status: 409, error: 'Playback changed while seeking' },
+          PLAYBACK_SEEK_STATE: { status: 409, error: 'Playback state does not allow seeking' },
+          PLAYBACK_SEEK_UNCONFIRMED: { status: 409, error: 'Seek could not be confirmed' },
+          PLAYBACK_UNSEEKABLE: { status: 422, error: 'The active track is not seekable' },
+          PLAYBACK_UNKNOWN_DURATION: { status: 422, error: 'The active track has no known duration' },
+          MPV_IPC_DISCONNECTED: { status: 503, error: 'Playback service is temporarily unavailable' },
+          EPIPE: { status: 503, error: 'Playback service is temporarily unavailable' },
+          ECONNRESET: { status: 503, error: 'Playback service is temporarily unavailable' },
+          ECONNABORTED: { status: 503, error: 'Playback service is temporarily unavailable' },
+          ENOTCONN: { status: 503, error: 'Playback service is temporarily unavailable' }
+        };
+        const failure = Object.prototype.hasOwnProperty.call(knownFailures, code)
+          ? knownFailures[code]
+          : null;
+        if (failure) {
+          res.status(failure.status).json({ success: false, error: failure.error, code });
+          return;
+        }
+        this.api.log?.('[music-bot] Playback seek failed', 'error');
+        res.status(500).json({ success: false, error: 'Seek failed' });
       }
     });
 
@@ -2633,7 +3047,7 @@ class MusicBotPlugin extends EventEmitter {
           sourceVolume: result.config.audio.sourceVolume
         });
       } catch (error) {
-        res.status(500).json({ success: false, error: error.message || 'Volume update failed' });
+        res.status(500).json({ success: false, ...this._safeConfigUpdateFailure(error, 'MUSIC_BOT_VOLUME_SAVE_FAILED', 'Volume could not be saved.') });
       }
     });
 
@@ -2669,14 +3083,22 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerRoute('post', '/api/plugins/music-bot/clear', async (req, res) => {
-      this.queueManager.clear();
-      await this.playbackEngine.stop();
-      this.autoDJ?.reset();
-      this._emitQueue();
-      res.json({ success: true });
+      const result = await this._clearQueueAndStop();
+      const status = result.success
+        ? 200
+        : (result.queueCleared || result.code === 'QUEUE_PERSISTENCE_BLOCKED' ? 503 : 500);
+      res.status(status).json(result);
     });
 
-    this.api.registerRoute('get', '/api/plugins/music-bot/config', async (req, res) => {
+    this.api.registerRoute('get', '/api/plugins/music-bot/config', (req, res) => {
+      if (!isLoopbackAddress(getRequestAddress(req)) || hasForwardingHeaders(req)) {
+        return res.status(403).json({
+          success: false,
+          code: 'MUSIC_BOT_CONFIG_LOCAL_ONLY',
+          error: 'Music Bot configuration is only available from a local connection'
+        });
+      }
+
       res.json({ success: true, config: this.config });
     });
 
@@ -2691,7 +3113,7 @@ class MusicBotPlugin extends EventEmitter {
         this.io?.emit?.('music-bot:onboarding-updated', result.config.onboarding);
         res.json({ success: true, onboarding: result.config.onboarding });
       } catch (error) {
-        res.status(500).json({ success: false, error: error.message || 'Onboarding update failed' });
+        res.status(500).json({ success: false, ...this._safeConfigUpdateFailure(error, 'MUSIC_BOT_ONBOARDING_SAVE_FAILED', 'Onboarding could not be saved.') });
       }
     });
 
@@ -2750,13 +3172,23 @@ class MusicBotPlugin extends EventEmitter {
             const responseError = this._destroyed ? this._configLifecycleError() : error;
             this.api.log(`[music-bot] Live config update rejected: ${responseError.message}`, 'error');
             const statusCode = responseError.code === 'PLUGIN_DESTROYED' ? 503 : 500;
-            res.status(statusCode).json({ success: false, error: responseError.message });
+            const failure = this._safeConfigUpdateFailure(
+              responseError,
+              'MUSIC_BOT_CONFIG_SAVE_FAILED',
+              'Music Bot settings could not be persisted.'
+            );
+            res.status(statusCode).json({ success: false, ...failure });
           }
         });
       } catch (error) {
         this.api.log(`[music-bot] Live config update rejected: ${error.message}`, 'error');
         const statusCode = error.code === 'PLUGIN_DESTROYED' ? 503 : 500;
-        res.status(statusCode).json({ success: false, error: error.message });
+        const failure = this._safeConfigUpdateFailure(
+          error,
+          'MUSIC_BOT_CONFIG_SAVE_FAILED',
+          'Music Bot settings could not be persisted.'
+        );
+        res.status(statusCode).json({ success: false, ...failure });
       }
     });
 
@@ -2820,7 +3252,13 @@ class MusicBotPlugin extends EventEmitter {
       }
       const result = await this._handleDashboardRequest(url, 'dashboard');
       if (!result?.success) {
-        res.status(400).json(result || { success: false, error: 'Replay failed' });
+        const statusCode = result?.httpStatus === 503 || result?.httpStatus === 504
+          ? result.httpStatus
+          : 400;
+        const error = statusCode === 400
+          ? 'Replay request could not be completed.'
+          : 'Replay service is temporarily unavailable. Please try again.';
+        res.status(statusCode).json({ success: false, error });
         return;
       }
       if (mode === 'queue') {
@@ -2992,31 +3430,75 @@ class MusicBotPlugin extends EventEmitter {
           'dashboard'
         );
         let removedQueued = 0;
+        let queueRemovalFailedCount = 0;
+        let queueRemovalFailureCode = null;
         if (removeQueued) {
           const queue = this.queueManager.getQueue();
           for (let index = queue.length - 1; index >= 0; index -= 1) {
             if (!this._trackMatchesBanSelection(queue[index], selection)) continue;
-            if (this.queueManager.removeSong(index).success) removedQueued += 1;
+            const removal = this.queueManager.removeSong(index);
+            if (removal?.success) {
+              removedQueued += 1;
+            } else {
+              queueRemovalFailedCount += 1;
+              queueRemovalFailureCode ||= removal?.errorCode || 'QUEUE_MUTATION_FAILED';
+            }
           }
         }
 
         const current = this.playbackEngine.getNowPlaying?.();
-        const stoppedCurrent = Boolean(
+        const stopRequested = Boolean(
           stopCurrent && current && this._trackMatchesBanSelection(current, selection)
         );
-        if (stoppedCurrent) {
-          await this.playbackEngine.stop();
-          this.playbackEngine.clearNowPlaying?.();
-          this.queueManager.markPlaying?.(null);
-          this._emitPlaybackStopped();
-          this._emitNowPlaying(null);
+        let playbackStopFailed = false;
+        let playbackStopFailureCode = null;
+        let playbackAdvanceFailed = false;
+        let playbackAdvanceFailureCode = null;
+        if (stopRequested) {
+          try {
+            await this.playbackEngine.stop();
+            this.playbackEngine.clearNowPlaying?.();
+            this.queueManager.markPlaying?.(null);
+            this._emitPlaybackStopped();
+            this._emitNowPlaying(null);
+          } catch (error) {
+            playbackStopFailed = true;
+            playbackStopFailureCode = error?.code || 'PLAYBACK_STOP_FAILED';
+            this.api.log(`[music-bot] Ban committed but playback stop failed (${playbackStopFailureCode})`, 'warn');
+          }
         }
         this._emitQueue();
         if (track.songId) this.api.emit('musicbot:history-update', { songId: track.songId, refresh: true });
-        if (stoppedCurrent && !this._isSafetyLocked()) {
-          await this._playNextFromQueue();
+        if (stopRequested && !playbackStopFailed && !this._isSafetyLocked()) {
+          try {
+            const advance = await this._playNextFromQueue();
+            if (!advance?.success) {
+              playbackAdvanceFailed = true;
+              playbackAdvanceFailureCode = advance?.code || advance?.errorCode || 'PLAYBACK_ADVANCE_FAILED';
+              this.api.log(`[music-bot] Ban committed but queue auto-advance failed (${playbackAdvanceFailureCode})`, 'warn');
+            }
+          } catch (error) {
+            playbackAdvanceFailed = true;
+            playbackAdvanceFailureCode = error?.code || 'PLAYBACK_ADVANCE_FAILED';
+            this.api.log(`[music-bot] Ban committed but queue auto-advance failed (${playbackAdvanceFailureCode})`, 'warn');
+          }
         }
-        res.json({ success: true, ban, stoppedCurrent, removedQueued });
+        res.json({
+          success: true,
+          ban,
+          stoppedCurrent: stopRequested && !playbackStopFailed,
+          playbackStopAttempted: stopRequested,
+          playbackStopped: stopRequested && !playbackStopFailed ? true : null,
+          playbackStopFailed,
+          playbackStopFailureCode,
+          playbackAdvanceFailed,
+          playbackAdvanceFailureCode,
+          removedQueued,
+          queueRemovalRequested: Boolean(removeQueued),
+          queueRemovalComplete: !removeQueued || queueRemovalFailedCount === 0,
+          queueRemovalFailedCount,
+          queueRemovalFailureCode
+        });
       } catch (error) {
         this.api.log(`[music-bot] Failed to ban track: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
@@ -3110,54 +3592,106 @@ class MusicBotPlugin extends EventEmitter {
     });
 
     this.api.registerSocket('musicbot:dashboard-skip', async (socket) => {
-      if (this._isSafetyLocked()) {
-        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
-        return;
+      if (!this._requireDashboardSocketAdmin(socket, 'musicbot:dashboard-skip')) return;
+      try {
+        if (this._isSafetyLocked()) {
+          socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+          return;
+        }
+        await this._skipCurrent('dashboard-socket');
+      } catch (_error) {
+        this._emitDashboardSocketFailure(socket, 'musicbot:dashboard-skip');
       }
-      await this._skipCurrent('dashboard-socket');
     });
 
     this.api.registerSocket('musicbot:dashboard-volume', async (socket, payload) => {
-      const source = Number(payload?.sourceVolume ?? payload?.volume);
-      const master = Number(payload?.masterVolume);
-      if (
-        (Number.isFinite(source) && source >= 0 && source <= 100) ||
-        (Number.isFinite(master) && master >= 0 && master <= 100)
-      ) {
-        const audio = {};
-        if (Number.isFinite(source)) audio.sourceVolume = source;
-        if (Number.isFinite(master)) audio.masterVolume = master;
-        try {
+      if (!this._requireDashboardSocketAdmin(socket, 'musicbot:dashboard-volume')) return;
+      try {
+        const source = Number(payload?.sourceVolume ?? payload?.volume);
+        const master = Number(payload?.masterVolume);
+        if (
+          (Number.isFinite(source) && source >= 0 && source <= 100) ||
+          (Number.isFinite(master) && master >= 0 && master <= 100)
+        ) {
+          const audio = {};
+          if (Number.isFinite(source)) audio.sourceVolume = source;
+          if (Number.isFinite(master)) audio.masterVolume = master;
           await this._applySerializedConfigPatch(
             { audio },
             'dashboard volume update',
             { applyAudio: true }
           );
-        } catch (error) {
-          socket.emit('musicbot:error', { message: error.message || 'Volume update failed' });
+        } else {
+          socket.emit('musicbot:error', { message: 'Volume must be between 0 and 100' });
         }
-      } else {
-        socket.emit('musicbot:error', { message: 'Volume must be between 0 and 100' });
+      } catch (_error) {
+        this._emitDashboardSocketFailure(socket, 'musicbot:dashboard-volume');
       }
     });
 
     this.api.registerSocket('musicbot:dashboard-pause', async (socket) => {
-      if (this._isSafetyLocked()) {
-        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
-        return;
+      if (!this._requireDashboardSocketAdmin(socket, 'musicbot:dashboard-pause')) return;
+      try {
+        if (this._isSafetyLocked()) {
+          socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+          return;
+        }
+        await this.playbackEngine.pause();
+        this._emitPaused();
+      } catch (_error) {
+        this._emitDashboardSocketFailure(socket, 'musicbot:dashboard-pause');
       }
-      await this.playbackEngine.pause();
-      this._emitPaused();
     });
 
     this.api.registerSocket('musicbot:dashboard-resume', async (socket) => {
-      if (this._isSafetyLocked()) {
-        socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
-        return;
+      if (!this._requireDashboardSocketAdmin(socket, 'musicbot:dashboard-resume')) return;
+      try {
+        if (this._isSafetyLocked()) {
+          socket?.emit?.('musicbot:error', { message: this._lockedResult().error, locked: true });
+          return;
+        }
+        await this.playbackEngine.resume();
+        this._emitResumed();
+      } catch (_error) {
+        this._emitDashboardSocketFailure(socket, 'musicbot:dashboard-resume');
       }
-      await this.playbackEngine.resume();
-      this._emitResumed();
     });
+  }
+
+  _emitDashboardSocketFailure(socket, eventName) {
+    this.api.log(`[music-bot] Dashboard socket action failed: ${eventName}`, 'error');
+    socket?.emit?.('musicbot:error', {
+      message: 'Music Bot action failed',
+      code: 'MUSIC_BOT_ACTION_FAILED',
+      event: eventName
+    });
+  }
+
+  _requireDashboardSocketAdmin(socket, eventName) {
+    if (['loopback-admin', 'admin'].includes(socket?.data?.ltthSocketAccess)) return true;
+
+    const handshake = socket?.handshake;
+    const auth = handshake?.auth || {};
+    const headers = handshake?.headers || {};
+    const address = handshake?.address || socket?.conn?.remoteAddress || socket?.request?.socket?.remoteAddress || '';
+    const forwarded = Object.keys(headers).some((header) => {
+      const normalized = String(header).toLowerCase();
+      return normalized === 'forwarded' || normalized.startsWith('x-forwarded-');
+    });
+    const isDirectLoopback = isLoopbackAddress(address) && !forwarded;
+    const expectedToken = process.env.LTTH_ADMIN_TOKEN || process.env.ADMIN_TOKEN || '';
+    const bearerMatch = String(headers.authorization || '').match(/^Bearer\s+(.+)$/i);
+    const providedToken = String(auth.adminToken || auth.token || headers['x-ltth-admin-token'] || (bearerMatch ? bearerMatch[1] : ''));
+    const expectedBuffer = Buffer.from(expectedToken, 'utf8');
+    const providedBuffer = Buffer.from(providedToken, 'utf8');
+    const hasValidToken = expectedBuffer.length > 0 && expectedBuffer.length === providedBuffer.length &&
+      timingSafeEqual(expectedBuffer, providedBuffer);
+    const authorized = auth.role === 'admin' && (isDirectLoopback || hasValidToken);
+    if (!authorized) {
+      this.api.log(`[music-bot] Rejected unauthorized socket event: ${eventName}`, 'warn');
+      socket?.emit?.('musicbot:error', { error: 'Unauthorized socket action', event: eventName });
+    }
+    return authorized;
   }
 
   _registerTikTokEvents() {
@@ -3241,6 +3775,56 @@ class MusicBotPlugin extends EventEmitter {
 
   // ---------- Command handling ----------
 
+  async _clearQueueAndStop() {
+    let clearResult;
+    try {
+      clearResult = await this.queueManager.clear();
+    } catch (error) {
+      this.api.log?.(`[music-bot] Queue clear failed: ${error.message}`, 'error');
+      return {
+        success: false,
+        queueCleared: false,
+        playbackStopped: false,
+        code: error?.code || 'QUEUE_CLEAR_FAILED',
+        error: 'Queue could not be cleared; playback was left unchanged'
+      };
+    }
+
+    if (clearResult?.success !== true) {
+      const code = clearResult?.errorCode
+        || (clearResult?.blocked || clearResult?.persistenceBlocked
+          ? 'QUEUE_PERSISTENCE_BLOCKED'
+          : 'QUEUE_PERSISTENCE_FAILED');
+      return {
+        success: false,
+        queueCleared: false,
+        playbackStopped: false,
+        code,
+        error: clearResult?.error || 'Queue could not be cleared; playback was left unchanged'
+      };
+    }
+
+    this.autoDJ?.reset();
+    this._emitQueue();
+    // The queue is durably empty even if MPV shutdown needs a retry. Clear the
+    // renderer's Now Playing state only after that durable mutation succeeds.
+    this._emitNowPlaying(null);
+    try {
+      await this.playbackEngine.stop();
+    } catch (error) {
+      this.api.log?.(`[music-bot] Playback stop failed after queue clear: ${error.message}`, 'error');
+      return {
+        success: false,
+        queueCleared: true,
+        playbackStopped: false,
+        code: 'PLAYBACK_STOP_FAILED',
+        error: 'Queue was cleared, but playback could not be stopped'
+      };
+    }
+
+    return { success: true, queueCleared: true, playbackStopped: true };
+  }
+
   async _handleCommand(command, chatData) {
     const username = this._getChatUsername(chatData);
     switch (command.type) {
@@ -3285,11 +3869,18 @@ class MusicBotPlugin extends EventEmitter {
         this._emitResumed();
         return;
       case 'clear':
-        this.queueManager.clear();
-        await this.playbackEngine.stop();
-        this.autoDJ?.reset();
-        this._emitQueue();
-        return;
+        {
+          const result = await this._clearQueueAndStop();
+          this._emitChatResponse(
+            result.success
+              ? 'Warteschlange geleert und Wiedergabe gestoppt.'
+              : (result.queueCleared
+                ? 'Warteschlange geleert, aber die Wiedergabe konnte nicht sicher gestoppt werden. Bitte erneut versuchen.'
+                : 'Warteschlange konnte nicht geleert werden; Wiedergabe blieb unverändert.'),
+            username
+          );
+          return result;
+        }
       case 'mysong': {
         const queue = this.queueManager.getQueue();
         const lowerUser = username.toLowerCase();
@@ -3382,22 +3973,85 @@ class MusicBotPlugin extends EventEmitter {
     return false;
   }
 
-  _createRequestAbort(req) {
+  _validateDashboardQuery(query) {
+    if (typeof query !== 'string' || !query.trim()) {
+      return {
+        error: {
+          success: false,
+          code: 'MUSIC_BOT_QUERY_REQUIRED',
+          error: 'A non-empty song query is required.'
+        }
+      };
+    }
+
+    const normalized = query.trim();
+    if (Buffer.byteLength(normalized, 'utf8') > MAX_DASHBOARD_QUERY_BYTES) {
+      return {
+        error: {
+          success: false,
+          code: 'MUSIC_BOT_QUERY_TOO_LONG',
+          maxBytes: MAX_DASHBOARD_QUERY_BYTES,
+          error: `Song query must not exceed ${MAX_DASHBOARD_QUERY_BYTES} UTF-8 bytes.`
+        }
+      };
+    }
+    return { query: normalized, error: null };
+  }
+
+  _createRequestAbort(req, res) {
     const controller = new AbortController();
     const onAborted = () => controller.abort();
+    let responseFinished = res?.writableFinished === true;
+    const onResponseFinish = () => { responseFinished = true; };
+    const onResponseClose = () => {
+      if (!responseFinished && res?.writableFinished !== true) controller.abort();
+    };
     req?.once?.('aborted', onAborted);
+    res?.once?.('finish', onResponseFinish);
+    res?.once?.('close', onResponseClose);
+    if (req?.aborted || (res?.destroyed && res?.writableFinished !== true)) controller.abort();
     return {
       signal: controller.signal,
-      cleanup: () => req?.removeListener?.('aborted', onAborted)
+      cleanup: () => {
+        req?.removeListener?.('aborted', onAborted);
+        res?.removeListener?.('finish', onResponseFinish);
+        res?.removeListener?.('close', onResponseClose);
+      }
     };
   }
 
   async _handleDashboardRequest(query, username, requesterAvatar = null, options = {}) {
+    if (this._destroyed) return { success: false, code: 'MUSIC_BOT_SHUTTING_DOWN' };
+    const lifecycleGeneration = this._lifecycleGeneration;
     try {
-      const resolved = await this.musicResolver.resolve(query, { signal: options.signal });
+      let resolved;
+      try {
+        resolved = await this.musicResolver.resolve(query, { signal: options.signal });
+      } catch (error) {
+        if (options.signal?.aborted || error?.name === 'AbortError') {
+          return { success: false, aborted: true };
+        }
+        if (this._destroyed || lifecycleGeneration !== this._lifecycleGeneration) {
+          return { success: false, code: 'MUSIC_BOT_SHUTTING_DOWN' };
+        }
+        const code = 'MUSIC_BOT_REQUEST_FAILED';
+        const message = 'Song request failed. Please try again.';
+        const httpStatus = dashboardResolverHttpStatus({ error });
+        this.api.log(`[music-bot] Dashboard resolver failed (${code})`, 'error');
+        this._emitToast('error', { titleKey: 'apiError', message });
+        return { success: false, error: message, code, httpStatus };
+      }
+      if (options.signal?.aborted) return { success: false, aborted: true };
+      if (this._destroyed || lifecycleGeneration !== this._lifecycleGeneration) {
+        return { success: false, code: 'MUSIC_BOT_SHUTTING_DOWN' };
+      }
       if (!resolved?.success) {
         this._emitToast('error', { titleKey: 'apiError', message: resolved?.message || '' });
-        return { success: false, error: resolved?.message || 'Song konnte nicht geladen werden.' };
+        return {
+          success: false,
+          error: resolved?.message || 'Song konnte nicht geladen werden.',
+          httpStatus: dashboardResolverHttpStatus({ result: resolved })
+        };
       }
 
       const banRejection = this._getBanRejection(resolved.song, username);
@@ -3418,19 +4072,51 @@ class MusicBotPlugin extends EventEmitter {
       this._schedulePreCache();
       this.autoDJ?.onSongRequested();
       this._emitSongAdded(added.song, added.position);
+      let playbackFailure = null;
       if (!this._isPlaybackOccupied() && this.config.playback.autoPlay) {
-        await this._playNextFromQueue();
+        try {
+          const playback = await this._playNextFromQueue();
+          if (!playback?.success) {
+            playbackFailure = {
+              attempted: true,
+              started: false,
+              code: playback?.code || playback?.errorCode || 'MUSIC_BOT_AUTO_PLAY_FAILED'
+            };
+          }
+        } catch (error) {
+          playbackFailure = {
+            attempted: true,
+            started: false,
+            code: error?.code || 'MUSIC_BOT_AUTO_PLAY_FAILED'
+          };
+          this.api.log(`[music-bot] Queue request committed but auto-play failed (${playbackFailure.code})`, 'warn');
+        }
       }
       this._emitToast('success', { titleKey: 'songAddedTitle', messageKey: 'requestAdded', params: { title: resolved.song.title, position: added.position } });
-      return { success: true, song: added.song, position: added.position };
+      return {
+        success: true,
+        song: added.song,
+        position: added.position,
+        ...(playbackFailure ? { playback: playbackFailure } : {})
+      };
     } catch (error) {
-      this.api.log(`[music-bot] Failed to request song: ${error.message}`, 'error');
-      this._emitToast('error', { titleKey: 'apiError', message: error.message || '' });
-      return { success: false, error: error.message };
+      if (options.signal?.aborted || error?.name === 'AbortError') {
+        return { success: false, aborted: true };
+      }
+      if (this._destroyed || lifecycleGeneration !== this._lifecycleGeneration) {
+        return { success: false, code: 'MUSIC_BOT_SHUTTING_DOWN' };
+      }
+      const code = 'MUSIC_BOT_REQUEST_FAILED';
+      const message = 'Song request failed. Please try again.';
+      this.api.log(`[music-bot] Dashboard request failed (${code})`, 'error');
+      this._emitToast('error', { titleKey: 'apiError', message });
+      return { success: false, error: message, code };
     }
   }
 
   async _handleRequest(query, username, chatData = {}) {
+    if (this._destroyed) return;
+    const lifecycleGeneration = this._lifecycleGeneration;
     if (!query) {
       this._emitChatResponse('Bitte gib einen Song an.', username);
       this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestRequired' });
@@ -3472,6 +4158,7 @@ class MusicBotPlugin extends EventEmitter {
     this._pendingRequests.add(lowerUser);
     try {
       const resolved = await this.musicResolver.resolve(query);
+      if (this._destroyed || lifecycleGeneration !== this._lifecycleGeneration) return;
       if (!resolved?.success) {
         this._emitChatResponse(resolved?.message || 'Song konnte nicht geladen werden.', username);
         this._emitToast('error', { titleKey: 'apiError', message: resolved?.message || '' });
@@ -3513,6 +4200,7 @@ class MusicBotPlugin extends EventEmitter {
       this._emitChatResponse(`Hinzugefügt: ${resolved.song.title}${artist} (#${addResult.position})`, username);
       this._emitToast('success', { titleKey: 'songAddedTitle', messageKey: 'requestAdded', params: { title: resolved.song.title, position: addResult.position } });
     } catch (error) {
+      if (this._destroyed || lifecycleGeneration !== this._lifecycleGeneration) return;
       this.api.log(`[music-bot] request failed: ${error.message}`, 'error');
       this._emitChatResponse('Song konnte nicht geladen werden.', username);
       this._emitToast('error', { titleKey: 'apiError', message: error.message || '' });
@@ -3749,10 +4437,8 @@ class MusicBotPlugin extends EventEmitter {
     };
   }
 
-  _buildMpvUnavailableMessage(error) {
-    const configuredPath = this.config?.playback?.mpvPath || 'mpv';
-    const suffix = error?.message ? ` (${error.message})` : '';
-    return `mpv nicht gefunden ("${configuredPath}"). Installiere mpv oder setze den korrekten Pfad in den Music-Bot-Einstellungen.${suffix}`;
+  _buildMpvUnavailableMessage(_error) {
+    return 'mpv ist nicht verfügbar. Prüfe die Installation und den Pfad in den Music-Bot-Einstellungen.';
   }
 
   _isMpvUnavailableError(error) {
@@ -3770,11 +4456,12 @@ class MusicBotPlugin extends EventEmitter {
     }
     this._mpvAvailable = false;
     const message = this._buildMpvUnavailableMessage(error);
+    const code = this._isMpvUnavailableError(error) ? 'MUSIC_BOT_MPV_UNAVAILABLE' : 'MUSIC_BOT_PLAYBACK_UNAVAILABLE';
     this.api.log(`[music-bot] ${message}`, 'warn');
-    this._emitError(message);
+    this._emitError(message, code);
     this._emitSetupStatus();
     this._emitQueue();
-    return { success: false, error: message };
+    return { success: false, error: message, code };
   }
 
   async _playNextFromQueue(reason = 'queue-empty', payload = {}) {
@@ -3954,10 +4641,15 @@ class MusicBotPlugin extends EventEmitter {
         return this._lockedResult();
       }
       await this.playbackEngine.play(next);
+      if (!isCurrent()) return { success: false, stale: true };
+      if (this._isSafetyLocked() || this._destroyed) return this._lockedResult();
       this._emitQueue();
       this._schedulePreCache();
       return { success: true, song: next };
     } catch (error) {
+      if (!isCurrent() || this._destroyed || this.queueManager?._mutationsClosed) {
+        return { success: false, stale: true };
+      }
       this.api.log(`[music-bot] Playback failed: ${error.message}`, 'error');
       if (this._isMpvUnavailableError(error)) {
         return this._handlePlaybackUnavailable(next, error);
@@ -3967,6 +4659,9 @@ class MusicBotPlugin extends EventEmitter {
         await context.resetPlayerOnce(
           () => this.playbackEngine?.resetPlayer?.({ remainLocked: false })
         );
+        if (!isCurrent() || this._destroyed || this.queueManager?._mutationsClosed) {
+          return { success: false, stale: true };
+        }
       }
       this._recordCatalogTrackEnd({
         track: next,
@@ -4240,8 +4935,8 @@ class MusicBotPlugin extends EventEmitter {
     this.api.emit('musicbot:playback-stopped', {});
   }
 
-  _emitError(message) {
-    this.api.emit('musicbot:error', { message });
+  _emitError(message, code) {
+    this.api.emit('musicbot:error', { message, ...(code ? { code } : {}) });
   }
 
   _emitNowPlaying(track) {
@@ -4365,6 +5060,7 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _handleGiftEvent(data) {
+    if (this._destroyed || this.queueManager?._mutationsClosed) return;
     const username =
       data?.username || data?.nickname || data?.user?.uniqueId || data?.user?.nickname;
     if (!username) return;
@@ -4400,6 +5096,7 @@ class MusicBotPlugin extends EventEmitter {
         .map((entry) => this._normalizeGiftKey(entry));
       if (skipCatalog.includes(giftName)) {
         const skipped = await this._skipCurrent(`gift:${giftNameRaw}`);
+        if (this._destroyed || this.queueManager?._mutationsClosed) return;
         if (skipped.success) {
           this._emitToast('info', { titleKey: 'payToSkipTitle', messageKey: 'payToSkipGift', params: { giftName: giftNameRaw } });
         }
@@ -4417,8 +5114,9 @@ class MusicBotPlugin extends EventEmitter {
     const hasSong = this._findSongByUser(username);
     if (!hasSong) return;
 
-    hasSong.isGiftRequest = true;
-    this.queueManager.addSkipImmunity(username);
+    if (this._destroyed || this.queueManager?._mutationsClosed) return;
+    if (!this.queueManager.markGiftRequest?.(hasSong.id)) return;
+    if (!this.queueManager.addSkipImmunity(username)) return;
     this.api.emit('musicbot:skip-immunity-granted', { username, giftName: match });
     this._emitChatResponse(`${username} hat Skip-Immunity erhalten (${match}).`, username);
   }
@@ -4779,6 +5477,7 @@ class MusicBotPlugin extends EventEmitter {
   }
 
   async _handleAutoDJPlaybackFailure(track, reason, error) {
+    if (this._destroyed || this.queueManager?._mutationsClosed) return null;
     if (!track || typeof track !== 'object') return null;
     const activeTrack = this.playbackEngine?.getNowPlaying?.();
     if (activeTrack && activeTrack !== track) {

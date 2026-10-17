@@ -1,0 +1,155 @@
+{
+  "schemaVersion": 1,
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "fixtureId": "viewerxp-source-fixture-v1",
+  "caseCount": 4,
+  "files": [
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/xp-bar.html",
+      "role": "renderer-entry",
+      "bytes": 10941,
+      "sha256": "8d3e7e069deb33c5e9deb0b342f9532e97f5213914545674ad1f967bbd635fd0"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "role": "renderer-entry",
+      "bytes": 16188,
+      "sha256": "9be6582355a571a7b10038ad7aaa5295f2939e4f36932647682223bc2fb1c927"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/level-up.html",
+      "role": "renderer-entry",
+      "bytes": 16361,
+      "sha256": "bc2e7e67f61ae748ae73f7265c394f90ef97de426940659f9a593fb6c668267b"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js",
+      "role": "renderer-library",
+      "bytes": 714,
+      "sha256": "a9a629c05d74e249ba690a9df59712c56436081633bb5c676e46525770189205"
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "role": "shared-i18n-client",
+      "bytes": 24907,
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+    },
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "role": "browser-socket-client-source",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/locales/de.json",
+      "role": "plugin-locale",
+      "bytes": 70187,
+      "sha256": "e25cc1a58a5ed2c29e67c0edc1c48c518a55fc64d04cf689dc23236e6f277f33"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/locales/en.json",
+      "role": "plugin-locale",
+      "bytes": 63430,
+      "sha256": "45dadb8bf7fc295e195c5de9dd95dc3d4720be0bde93c9a6c0c16f284e99af17"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/locales/es.json",
+      "role": "plugin-locale",
+      "bytes": 71790,
+      "sha256": "2bb329fea1fc4f242fccdc6a54b03121970fedeb2a4c9aa61b60253158915619"
+    },
+    {
+      "path": "app/plugins/milestone-leaderboard/locales/fr.json",
+      "role": "plugin-locale",
+      "bytes": 73409,
+      "sha256": "a37969b2a4493879956a7feac0f771fd034106df7f8cb2b40b49c6fc310438ad"
+    }
+  ],
+  "runnerContract": {
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "externalNetwork": "blocked",
+    "productProfileOrCredentialData": "excluded",
+    "listenerStarted": false,
+    "assetGetRoutes": [
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/plugins/viewer-leaderboard/viewer-xp-i18n.js",
+        "source": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js"
+      },
+      {
+        "path": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/{xp-bar|leaderboard|level-up}.html",
+        "source": "three pinned Viewer-XP renderer entries"
+      },
+      {
+        "path": "/plugins/viewer-leaderboard/locales/{de|en|es|fr}.json",
+        "source": "four pinned milestone-leaderboard locale files"
+      },
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)",
+      "/api/i18n/locales is not consumed by the fixture and remains unreviewed"
+    ],
+    "socketEventsConsumed": [
+      "connect",
+      "connect_error",
+      "disconnect",
+      "locale-changed",
+      "viewer-xp:public-profile",
+      "viewer-xp:public-leaderboard",
+      "viewer-xp:public-update",
+      "viewer-xp:public-level-up"
+    ],
+    "socketEventsEmitted": [
+      "viewer-xp:public-profile:request",
+      "viewer-xp:public-leaderboard:request"
+    ],
+    "unresolvedDynamicDependencies": [
+      "Shared i18n /api/i18n/locales consumer is not invoked; only four fixed translation locales are intercepted",
+      "Production HTTP/Socket.IO transport and database-backed producers are not started; handlers are exercised with an in-memory plugin/socket double",
+      "Profile picture URLs are projected to null and no image/network dependency is loaded"
+    ],
+    "driverEvents": [
+      {
+        "event": "viewer-xp:public-profile",
+        "payload": {
+          "username": "Synthetic Viewer",
+          "level": 7,
+          "xp_progress": 11
+        },
+        "negativeCase": "private user identifiers, coin balance and settings are absent from projected public display data"
+      },
+      {
+        "event": "viewer-xp:public-leaderboard",
+        "payload": [
+          {
+            "username": "Synthetic <img>",
+            "title": "<b>Fixture</b>",
+            "level": 7,
+            "xp": 42,
+            "rank": 1
+          }
+        ],
+        "negativeCase": "hostile display text remains text; invalid style values are rejected"
+      },
+      {
+        "event": "viewer-xp:public-level-up",
+        "payload": {
+          "username": "Synthetic Viewer",
+          "oldLevel": 6,
+          "newLevel": 7
+        },
+        "negativeCase": "fixture uses no audio or external image URLs"
+      }
+    ],
+    "pluginControlProducer": "excluded; actual public handlers are called on an isolated prototype double with synthetic in-memory DB/socket; no plugin runtime or database is started",
+    "cleanup": "dispatch persisted pagehide/pageshow and non-persisted pagehide; assert all three original renderers restore, disconnect, ignore late callbacks, publish only when window.socket is empty, preserve foreign socket ownership, remove only their own socket reference, and close JSDOM"
+  }
+}

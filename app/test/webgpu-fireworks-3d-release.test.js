@@ -130,11 +130,12 @@ describe('WebGPU Fireworks 3D release contract', () => {
   });
 
   test('ships aligned app/plugin versions, active cache busters and source attribution', () => {
-    expect(JSON.parse(read('package.json')).version).toBe('1.4.1');
-    expect(JSON.parse(read('app/package.json')).version).toBe('1.4.1');
-    expect(JSON.parse(read('app/package-lock.json')).version).toBe('1.4.1');
-    expect(JSON.parse(read('app/package-lock.json')).packages[''].version).toBe('1.4.1');
-    expect(JSON.parse(read('version.json'))).toMatchObject({ version: '1.4.1', downloadVersion: '1.4.1' });
+    const currentVersion = JSON.parse(read('version.json')).version;
+    expect(JSON.parse(read('package.json')).version).toBe(currentVersion);
+    expect(JSON.parse(read('app/package.json')).version).toBe(currentVersion);
+    expect(JSON.parse(read('app/package-lock.json')).version).toBe(currentVersion);
+    expect(JSON.parse(read('app/package-lock.json')).packages[''].version).toBe(currentVersion);
+    expect(JSON.parse(read('version.json')).downloadVersion).toBe(currentVersion);
     expect(JSON.parse(read('app/plugins/webgpu-fireworks/plugin.json')).version).toBe('3.1.1');
 
     for (const relative of [

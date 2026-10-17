@@ -7,11 +7,22 @@ const Database = require('../modules/database');
 const Leaderboard = require('../modules/leaderboard');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
-const TEST_DB_PATH = '/tmp/test_scoped_profiles.db';
+let TEST_DIR;
+let TEST_DB_PATH;
 
 describe('Scoped User Profiles', () => {
   let db;
+
+  beforeAll(() => {
+    TEST_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-scoped-user-profiles-'));
+    TEST_DB_PATH = path.join(TEST_DIR, 'profiles.db');
+  });
+
+  afterAll(() => {
+    fs.rmSync(TEST_DIR, { recursive: true, force: true });
+  });
 
   beforeEach(() => {
     // Clean up test database

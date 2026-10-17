@@ -123,6 +123,28 @@ let config = {
     heart_balloon_test_count: 8
 };
 
+function applyOverlayOpacity(value) {
+    const opacity = Number(value);
+    if (!Number.isFinite(opacity) || opacity < 0 || opacity > 1) return false;
+    const container = document.getElementById('canvas-container');
+    if (!container) return false;
+    container.style.opacity = String(opacity);
+    return true;
+}
+
+async function loadOverlayOpacity() {
+    try {
+        const response = await fetch('/api/emoji-rain/overlay/state');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.success && data.state && Number.isFinite(Number(data.state.opacity))) {
+            applyOverlayOpacity(data.state.opacity);
+        }
+    } catch (error) {
+        console.warn('Failed to load emoji rain overlay opacity:', error);
+    }
+}
+
 // Toaster mode presets - applied when toaster_mode is enabled
 // NOTE: Keep in sync with TOASTER_MODE_PRESETS in emoji-rain-obs-hud.js
 const TOASTER_MODE_PRESETS = {
@@ -2533,6 +2555,10 @@ function initSocket() {
         }
     });
 
+    socket.on('emoji-rain:opacity', (data) => {
+        applyOverlayOpacity(data?.opacity);
+    });
+
     socket.on('emoji-rain:toggle', (data) => {
         config.enabled = data.enabled;
         console.log('🔄 Emoji rain ' + (data.enabled ? 'enabled' : 'disabled'));
@@ -2557,6 +2583,7 @@ async function init() {
     // Load config and user mappings
     await loadConfig();
     await loadUserEmojiMappings();
+    await loadOverlayOpacity();
 
     // Initialize physics
     initPhysics();

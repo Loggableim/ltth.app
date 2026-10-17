@@ -3,6 +3,7 @@ let currentSettings = {};
 let socket = null;
 let cachedPresets = { builtin: [], custom: [] };
 let multiStatusTimer = null;
+let fallbackConfirmationResolver = null;
 
 function translate(key, fallback, params = {}) {
   if (window.i18n?.initialized) {
@@ -493,6 +494,10 @@ function renderTabContent(dock, tabId) {
           <div class="checkbox-group">
             <input type="checkbox" id="showSubs" ${s.showSubs !== false ? 'checked' : ''}>
             <label for="showSubs">Show Subscriptions</label>
+          </div>
+          <div class="checkbox-group">
+            <input type="checkbox" id="showSuperFans" ${s.showSuperFans !== false ? 'checked' : ''}>
+            <label for="showSuperFans">Show SuperFan events</label>
           </div>
           <div class="checkbox-group">
             <input type="checkbox" id="showTreasureChests" ${s.showTreasureChests !== false ? 'checked' : ''}>
@@ -1122,6 +1127,7 @@ function collectCurrentFormValues(dock) {
         showLikes: getFieldValue('showLikes', 'checkbox'),
         showGifts: getFieldValue('showGifts', 'checkbox'),
         showSubs: getFieldValue('showSubs', 'checkbox'),
+        showSuperFans: getFieldValue('showSuperFans', 'checkbox'),
         showTreasureChests: getFieldValue('showTreasureChests', 'checkbox'),
         showJoins: getFieldValue('showJoins', 'checkbox'),
         layoutMode: getFieldValue('layoutMode'),
@@ -1262,6 +1268,7 @@ async function saveSettings() {
       showLikes: getFieldValue('showLikes', 'checkbox'),
       showGifts: getFieldValue('showGifts', 'checkbox'),
       showSubs: getFieldValue('showSubs', 'checkbox'),
+      showSuperFans: getFieldValue('showSuperFans', 'checkbox'),
       showTreasureChests: getFieldValue('showTreasureChests', 'checkbox'),
       showJoins: getFieldValue('showJoins', 'checkbox'),
       layoutMode: getFieldValue('layoutMode'),
@@ -1494,8 +1501,64 @@ function renderMultiStreamStatus(streams) {
     status.textContent = stream.lastError ? `${stream.status}: ${stream.lastError}` : stream.status;
     item.appendChild(label);
     item.appendChild(status);
+    if (stream.confirmationRequired) {
+      const confirmButton = document.createElement('button');
+      confirmButton.type = 'button';
+      confirmButton.textContent = runtimeText('fallback.confirm_button', 'Confirm use of fallback API key');
+      confirmButton.addEventListener('click', () => confirmMultiFallback(stream.index, confirmButton));
+      item.appendChild(confirmButton);
+    }
     container.appendChild(item);
   });
+}
+
+async function confirmMultiFallback(streamIndex, button) {
+  const accepted = await requestFallbackConfirmation();
+  if (!accepted) return;
+
+  button.disabled = true;
+  try {
+    const response = await fetch(`/api/clarityhud/multi/confirm-fallback/${streamIndex}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirmed: true })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `HTTP ${response.status}`);
+    }
+    renderMultiStreamStatus(data.streams);
+  } catch (error) {
+    button.disabled = false;
+    showToast(runtimeError('fallback.confirm_failed', error.message, 'Could not confirm fallback key use'), 'error');
+  }
+}
+
+function requestFallbackConfirmation() {
+  const dialog = document.getElementById('fallback-confirmation-dialog');
+  const cancelButton = document.getElementById('fallback-confirmation-cancel');
+  if (!dialog || typeof dialog.showModal !== 'function' || fallbackConfirmationResolver) {
+    return Promise.resolve(false);
+  }
+
+  return new Promise(resolve => {
+    fallbackConfirmationResolver = resolve;
+    dialog.returnValue = '';
+    try {
+      dialog.showModal();
+      cancelButton?.focus();
+    } catch (error) {
+      fallbackConfirmationResolver = null;
+      resolve(false);
+      console.error('Could not open fallback confirmation dialog:', error);
+    }
+  });
+}
+
+function settleFallbackConfirmation(confirmed) {
+  const resolve = fallbackConfirmationResolver;
+  fallbackConfirmationResolver = null;
+  resolve?.(confirmed);
 }
 
 // Reset to defaults
@@ -1592,6 +1655,16 @@ document.getElementById('reset-defaults-btn').addEventListener('click', resetToD
 document.getElementById('cancel-settings-btn').addEventListener('click', closeSettings);
 document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
 document.getElementById('close-setup-wizard').addEventListener('click', closeSetupWizard);
+
+document.getElementById('fallback-confirmation-cancel').addEventListener('click', () => {
+  document.getElementById('fallback-confirmation-dialog').close('cancel');
+});
+document.getElementById('fallback-confirmation-confirm').addEventListener('click', () => {
+  document.getElementById('fallback-confirmation-dialog').close('confirm');
+});
+document.getElementById('fallback-confirmation-dialog').addEventListener('close', event => {
+  settleFallbackConfirmation(event.currentTarget.returnValue === 'confirm');
+});
 
 document.addEventListener('click', function(event) {
   const wizardButton = event.target.closest('[data-wizard-preset]');

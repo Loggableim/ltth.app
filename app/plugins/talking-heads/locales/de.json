@@ -16,7 +16,8 @@
             "manual_sets": "MANUELLE SETS",
             "local_cache": "LOKALER CACHE",
             "viewer_bar": "ZUSCHAUERLEISTE / LOKAL",
-            "diagnostics": "DIAGNOSE"
+            "diagnostics": "DIAGNOSE",
+            "nameplate_style": "NAMENSCHILD & ANIMATIONEN"
           },
           "sections": {
             "playback_health": "Wiedergabe-Gesundheit",
@@ -27,7 +28,8 @@
             "manual_workflows": "Eigene Frame-Workflows behalten",
             "generated_frames": "Erzeugte Avatar-Frames",
             "viewer_bar": "Zuschauerleiste verfuegbar halten",
-            "local_log": "Lokales Plugin-Protokoll"
+            "local_log": "Lokales Plugin-Protokoll",
+            "nameplate_style": "Benutzer-Namensschild und Animationsstil"
           },
           "labels": {
             "talking_heads": "Talking Heads",
@@ -63,7 +65,21 @@
             "avatar_size": "Avatar-Groesse",
             "sprite_mode": "Sprite-Modus",
             "manual_fallback": "Manueller Fallback auf Assets",
-            "debug_logging": "Ausfuehrliches lokales Protokoll"
+            "debug_logging": "Ausfuehrliches lokales Protokoll",
+            "nameplate_position": "Position des Namensschilds",
+            "nameplate_font_family": "Schriftfamilie",
+            "nameplate_font_size": "Schriftgröße (px)",
+            "nameplate_font_color": "Schriftfarbe",
+            "nameplate_background_color": "Hintergrundfarbe",
+            "nameplate_background_opacity": "Hintergrunddeckkraft",
+            "nameplate_text_shadow": "Textschatten",
+            "nameplate_text_stroke": "Textkontur",
+            "head_entrance_animation": "Kopf-Erscheinungsanimation",
+            "head_exit_animation": "Kopf-Ausblendungsanimation",
+            "nameplate_entrance_animation": "Namensschild-Erscheinungsanimation",
+            "nameplate_exit_animation": "Namensschild-Ausblendungsanimation",
+            "nameplate_preview": "LIVE-MINI-VORSCHAU",
+            "preview_head": "Vorschau des Avatarkopfs"
           },
           "options": {
             "all_tts_users": "Alle TTS-Nutzer",
@@ -72,7 +88,23 @@
             "subscribers": "Abonnenten",
             "asset_library": "Asset-Bibliothek",
             "manual_only": "Nur manuell",
-            "hybrid": "Hybrid"
+            "hybrid": "Hybrid",
+            "position_below": "Unter dem Avatar",
+            "position_above": "Über dem Avatar",
+            "position_hidden": "Ausgeblendet",
+            "shadow_subtle": "Dezent",
+            "shadow_none": "Keiner",
+            "shadow_medium": "Mittel",
+            "shadow_glow": "Leuchten",
+            "stroke_none": "Keine",
+            "stroke_1px_black": "1px schwarz",
+            "stroke_2px_black": "2px schwarz",
+            "stroke_1px_white": "1px weiß",
+            "anim_slide_up": "Nach oben gleiten",
+            "anim_slide_down": "Nach unten gleiten",
+            "anim_pop": "Aufploppen",
+            "anim_bounce": "Hüpfen",
+            "anim_fade": "Überblenden"
           },
           "actions": {
             "refresh_health": "Gesundheit aktualisieren",
@@ -160,6 +192,17 @@
             "assigned_avatar": "Zugewiesener Avatar",
             "your_avatar": "DEIN AVATAR",
             "avatar": "Avatar"
+          },
+          "preview_speaker": "Streamer",
+          "fonts": {
+            "inter": "Inter",
+            "roboto": "Roboto",
+            "montserrat": "Montserrat",
+            "poppins": "Poppins",
+            "impact": "Impact",
+            "arial": "Arial",
+            "comic_sans": "Comic Sans MS",
+            "press_start_2p": "Press Start 2P"
           }
         },
         "local_assets": {

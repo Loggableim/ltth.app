@@ -9,6 +9,7 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 
 // Mock dependencies
 const mockDb = {
@@ -423,6 +424,17 @@ describe('Plinko Test Mode', () => {
 });
 
 describe('Test Mode API Validation', () => {
+  test('keeps the refreshed total bet out of static i18n replacement', () => {
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'ui.html'), 'utf8');
+    const totalBetElement = ui.match(/<div[^>]*id="test-total-bet"[^>]*>(.*?)<\/div>/s);
+    const loadStats = ui.match(/async function loadTestStats\(\) \{([\s\S]*?)\n    \}/);
+
+    expect(totalBetElement).not.toBeNull();
+    expect(totalBetElement[0]).not.toMatch(/data-i18n=/);
+    expect(loadStats).not.toBeNull();
+    expect(loadStats[1]).toContain("getElementById('test-total-bet').textContent = `${stats.totalBet || 0} XP`");
+  });
+
   test('bet amount validation rules', () => {
     const validBets = [10, 100, 1000, 10000];
     const invalidBets = [0, -10, 10001, 50000];

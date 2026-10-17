@@ -28,7 +28,7 @@ function main() {
   const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
   if (manifest.version !== spec.version) throw new Error(`Manifest version ${manifest.version} does not match ${spec.version}`);
   if (manifest.failures?.length) throw new Error(`${manifest.failures.length} capture failures remain`);
-  if (manifest.outputs?.length !== 304) throw new Error(`Expected 304 outputs, found ${manifest.outputs?.length || 0}`);
+  if (manifest.outputs?.length !== 292) throw new Error(`Expected 292 outputs, found ${manifest.outputs?.length || 0}`);
 
   const problems = [];
   for (const locale of LOCALES) {

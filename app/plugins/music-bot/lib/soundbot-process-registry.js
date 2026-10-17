@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const { buildMusicBotChildEnv } = require('./child-process-env');
 
 const SOUND_BOT_PROCESS_MARKER = 'ltth-soundbot-mpv-v1';
 const SOUND_BOT_IPC_PREFIX = 'ltth-soundbot-mpv-v1-';
@@ -54,6 +55,7 @@ class SoundbotProcessRegistry {
   constructor(api = {}, options = {}) {
     this.api = api || {};
     this.platform = options.platform || process.platform;
+    this.environment = options.environment || process.env;
     this._spawn = options.spawn || spawn;
     this._processKill = options.processKill || process.kill.bind(process);
     this._listProcessesOverride = options.listProcesses || null;
@@ -85,7 +87,8 @@ class SoundbotProcessRegistry {
     const entries = await this._settleWithin(
       listOperation,
       boundedTimeoutMs,
-      new Error('Soundbot process scan timed out')
+      new Error('Soundbot process scan timed out'),
+      MAX_PROCESS_SCAN_MS
     );
     if (entries instanceof Error) throw entries;
     return (Array.isArray(entries) ? entries : [])
@@ -149,8 +152,8 @@ class SoundbotProcessRegistry {
     return Math.max(0, Math.min(deadline - this._now(), MAX_CLEANUP_MS));
   }
 
-  _settleWithin(operation, timeoutMs, timeoutValue) {
-    const boundedTimeoutMs = Math.max(0, Math.min(Number(timeoutMs) || 0, MAX_CLEANUP_MS));
+  _settleWithin(operation, timeoutMs, timeoutValue, maxTimeoutMs = MAX_CLEANUP_MS) {
+    const boundedTimeoutMs = Math.max(0, Math.min(Number(timeoutMs) || 0, maxTimeoutMs));
     if (boundedTimeoutMs <= 0) return Promise.resolve(timeoutValue);
     return new Promise((resolve) => {
       let settled = false;
@@ -208,7 +211,7 @@ class SoundbotProcessRegistry {
       const result = await this._runProcess(
         'taskkill.exe',
         ['/PID', String(entry.pid), '/T', '/F'],
-        { timeoutMs }
+        { timeoutMs, kind: 'taskkill' }
       );
       return result.code === 0;
     }
@@ -259,15 +262,19 @@ class SoundbotProcessRegistry {
     });
   }
 
-  _runProcess(executable, args, { timeoutMs }) {
+  _runProcess(executable, args, { timeoutMs, kind = 'process-probe' }) {
     return new Promise((resolve, reject) => {
       let child;
       try {
-        child = this._spawn(executable, args, {
+        const spawnOptions = {
           stdio: ['ignore', 'pipe', 'pipe'],
           windowsHide: true,
           shell: false
-        });
+        };
+        if (this.platform === 'win32') {
+          spawnOptions.env = buildMusicBotChildEnv(kind, this.environment, this.platform);
+        }
+        child = this._spawn(executable, args, spawnOptions);
       } catch (error) {
         reject(error);
         return;

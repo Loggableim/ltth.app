@@ -17,6 +17,7 @@ class I18nClient {
         this.currentLocale = 'de';
         this.defaultLocale = 'de';
         this.translations = {};
+        this._localeRequestId = 0;
         this.listeners = [];
         this.initialized = false;
         this.onLanguageChangeCallbacks = [];
@@ -67,7 +68,7 @@ class I18nClient {
     /**
      * Load translations from server
      */
-    async loadTranslations(locale) {
+    async loadTranslations(locale, isCurrentRequest = () => true) {
         locale = this.normalizeLocale(locale);
         try {
             const configuredBase = document.querySelector('meta[name="ltth-i18n-base"]')
@@ -82,7 +83,7 @@ class I18nClient {
             }
             
             const data = await response.json();
-            if (this._disposed) return false;
+            if (this._disposed || !isCurrentRequest()) return false;
             this.translations[locale] = data;
             this.currentLocale = locale;
             if (document && document.documentElement) {
@@ -110,6 +111,7 @@ class I18nClient {
     async changeLanguage(locale) {
         if (this._disposed) return false;
         locale = this.normalizeLocale(locale);
+        const requestId = ++this._localeRequestId;
         console.log(`[i18n] changeLanguage called: ${this.currentLocale} -> ${locale}`);
         
         if (this.currentLocale === locale) {
@@ -117,8 +119,8 @@ class I18nClient {
             return true;
         }
 
-        const success = await this.loadTranslations(locale);
-        if (this._disposed) return false;
+        const success = await this.loadTranslations(locale, () => requestId === this._localeRequestId);
+        if (this._disposed || requestId !== this._localeRequestId) return false;
         
         if (success) {
             console.log(`[i18n] Translations loaded successfully for: ${locale}`);
@@ -242,14 +244,15 @@ class I18nClient {
      */
     async setLocale(locale) {
         locale = this.normalizeLocale(locale);
+        const requestId = ++this._localeRequestId;
         if (locale === this.currentLocale) {
             return true;
         }
 
         // Load translations if not already loaded
         if (!this.translations[locale]) {
-            const success = await this.loadTranslations(locale);
-            if (!success) {
+            const success = await this.loadTranslations(locale, () => requestId === this._localeRequestId);
+            if (!success || requestId !== this._localeRequestId) {
                 return false;
             }
         } else {

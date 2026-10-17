@@ -102,18 +102,18 @@ function updateDebugEvents() {
 document.addEventListener('DOMContentLoaded', () => {
   HUD_LOG.debug('[CHAT HUD] 🚀 DOMContentLoaded - Starting initialization...');
   updateDebugStatus('DOM Ready');
-  
+
   // Get DOM elements
   STATE.messagesContainer = document.getElementById('messages');
-  
+
   if (!STATE.messagesContainer) {
     HUD_LOG.error('[CHAT HUD] ❌ CRITICAL ERROR: #messages container not found in DOM!');
     updateDebugStatus('ERROR: #messages not found!');
     return;
   }
-  
+
   HUD_LOG.debug('[CHAT HUD] ✅ DOM elements found');
-  
+
   // Initialize systems
   initializeSystems();
 
@@ -131,10 +131,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Connect to socket
   connectSocket();
-  
+
   // Detect system preference for reduced motion
   detectSystemPreferences();
-  
+
   // Enable debug console toggle with Ctrl+D
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'd') {
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
-  
+
   HUD_LOG.debug('[CHAT HUD] Initialization complete, waiting for socket connection...');
 });
 
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function initializeSystems() {
   HUD_LOG.debug('[CHAT HUD] Initializing subsystems...');
-  
+
   try {
     // Animation system
     if (typeof AnimationRegistry !== 'undefined') {
@@ -164,7 +164,7 @@ function initializeSystems() {
     } else {
       HUD_LOG.warn('[CHAT HUD] ⚠️ AnimationRegistry not available');
     }
-    
+
     // Accessibility manager
     if (typeof AccessibilityManager !== 'undefined') {
       STATE.accessibilityManager = new AccessibilityManager(document.body);
@@ -172,7 +172,7 @@ function initializeSystems() {
     } else {
       HUD_LOG.warn('[CHAT HUD] ⚠️ AccessibilityManager not available');
     }
-    
+
     // Emoji parser
     if (typeof EmojiParser !== 'undefined') {
       STATE.emojiParser = new EmojiParser();
@@ -180,7 +180,7 @@ function initializeSystems() {
     } else {
       HUD_LOG.warn('[CHAT HUD] ⚠️ EmojiParser not available');
     }
-    
+
     // Badge renderer
     if (typeof BadgeRenderer !== 'undefined') {
       STATE.badgeRenderer = new BadgeRenderer(STATE.settings);
@@ -188,7 +188,7 @@ function initializeSystems() {
     } else {
       HUD_LOG.warn('[CHAT HUD] ⚠️ BadgeRenderer not available');
     }
-    
+
     // Message parser
     if (typeof MessageParser !== 'undefined') {
       STATE.messageParser = new MessageParser();
@@ -196,7 +196,7 @@ function initializeSystems() {
     } else {
       HUD_LOG.warn('[CHAT HUD] ⚠️ MessageParser not available');
     }
-    
+
     HUD_LOG.debug('[CHAT HUD] All subsystems initialized successfully');
   } catch (error) {
     HUD_LOG.error('[CHAT HUD] ❌ Error initializing subsystems:', error);
@@ -209,7 +209,7 @@ function initializeSystems() {
 function connectSocket() {
   HUD_LOG.debug('[CHAT HUD] Initializing Socket.IO connection...');
   updateDebugStatus('Connecting to Socket.IO...');
-  
+
   STATE.socket = io();
   // Expose the renderer-owned socket for the shared locale synchronizer.
   // Preserve a socket already published by the host page.
@@ -221,19 +221,19 @@ function connectSocket() {
     updateDebugStatus('Connected, loading settings...');
     init();
   });
-  
+
   STATE.socket.on('disconnect', () => {
     HUD_LOG.debug('[CHAT HUD] ⚠️ DISCONNECTED from server');
     updateDebugSocket('Disconnected ⚠️');
     updateDebugStatus('Disconnected from server');
   });
-  
+
   STATE.socket.on('connect_error', (error) => {
     HUD_LOG.error('[CHAT HUD] ❌ CONNECTION ERROR:', error);
     updateDebugSocket('Error ❌');
     updateDebugStatus(`Connection Error: ${error.message}`);
   });
-  
+
   // Listen for chat updates
   STATE.socket.on('clarityhud.update.chat', (chatData) => {
     HUD_LOG.debug('[CHAT HUD] 📨 EVENT RECEIVED - clarityhud.update.chat:', chatData);
@@ -245,13 +245,13 @@ function connectSocket() {
     }
     addMessage(chatData);
   });
-  
+
   // Listen for settings updates
   STATE.socket.on('clarityhud.settings.chat', (newSettings) => {
     HUD_LOG.debug('[CHAT HUD] ⚙️ SETTINGS UPDATE:', newSettings);
     applySettings(newSettings);
   });
-  
+
   HUD_LOG.debug('[CHAT HUD] Socket listeners registered');
 }
 
@@ -270,7 +270,7 @@ function detectSystemPreferences() {
     }
     document.body.classList.add('reduce-motion');
   }
-  
+
   // Listen for changes
   motionQuery.addEventListener('change', (e) => {
     if (!STATE.settings.reduceMotion) {
@@ -323,7 +323,7 @@ function init() {
 async function _initOnce() {
   HUD_LOG.debug('[CHAT HUD] 📡 Loading settings from server...');
   updateDebugStatus('Loading settings...');
-  
+
   // Load settings
   const settingsResponse = await fetch('/api/clarityhud/settings/chat');
   const settingsData = await settingsResponse.json();
@@ -412,12 +412,13 @@ function initializeVirtualScrolling() {
   }
 
   const container = document.getElementById('chat-container');
-  
+
   STATE.virtualScroller = new VirtualScroller(container, {
     itemHeight: parseInt(STATE.settings.fontSize) * STATE.settings.lineHeight * 2.5,
     maxItems: STATE.settings.maxMessages * 2, // Keep double for smooth scrolling
     renderCallback: renderVirtualMessageElement
   });
+  STATE.virtualScroller.setItems(STATE.messages);
 
   // Replace messages container with virtual scroller
   STATE.messagesContainer.style.display = 'none';
@@ -459,7 +460,7 @@ function applySettings(newSettings) {
   if (typeof STATE.settings.transparency !== 'undefined') {
     const opacity = STATE.settings.transparency / 100;
     root.style.setProperty('--chat-opacity', opacity);
-    
+
     // Also apply to background opacity if backgroundColor is rgba
     if (STATE.settings.backgroundColor) {
       const bgOpacity = opacity;
@@ -594,7 +595,7 @@ function normalizeMessage(chatData) {
  */
 function renderMessageElement(messageData, index) {
   HUD_LOG.debug('[CHAT HUD] Rendering message element:', messageData);
-  
+
   try {
     // Create message element
     const messageEl = document.createElement('div');
@@ -708,7 +709,7 @@ function renderMessageElement(messageData, index) {
  */
 function renderMessage(messageData) {
   HUD_LOG.debug('[CHAT HUD] 🎨 Rendering message to DOM:', messageData);
-  
+
   try {
     const messageEl = renderMessageElement(messageData);
 
@@ -802,7 +803,7 @@ function trimMessagesFromDOM() {
   if (messageElements.length > maxMessages) {
     for (let i = 0; i < messageElements.length - maxMessages; i++) {
       const messageEl = messageElements[i];
-      
+
       // Animate out then remove
       STATE.animationRenderer.animateOut(
         messageEl,

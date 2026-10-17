@@ -83,6 +83,75 @@
   let winnerRevealTimeout = null;
   let pyramidWinnerTimeout = null; // Track timeout for cleanup
   let pyramidPostMatchTimeout = null;
+  let destroyed = false;
+  let hasObservedSocketConnection = false;
+  const socketHandlers = [];
+  const ownedTimeouts = new Set();
+  const ownedIntervals = new Set();
+  let parentThemeObserver = null;
+  let storageListener = null;
+
+  function scheduleTimeout(callback, delay, ...args) {
+    let timerId;
+    timerId = window.setTimeout(() => {
+      ownedTimeouts.delete(timerId);
+      if (!destroyed) callback(...args);
+    }, delay);
+    ownedTimeouts.add(timerId);
+    return timerId;
+  }
+
+  function scheduleInterval(callback, delay, ...args) {
+    const timerId = window.setInterval(() => {
+      if (!destroyed) callback(...args);
+    }, delay);
+    ownedIntervals.add(timerId);
+    return timerId;
+  }
+
+  function clearOwnedInterval(timerId) {
+    window.clearInterval(timerId);
+    ownedIntervals.delete(timerId);
+  }
+
+  function registerSocketHandler(event, handler) {
+    const guardedHandler = (...args) => {
+      if (!destroyed) handler(...args);
+    };
+    socket.on(event, guardedHandler);
+    socketHandlers.push({ event, handler: guardedHandler });
+  }
+
+  function requestCurrentState() {
+    socket.emit('coinbattle:get-state');
+    if (config.pyramidMode) socket.emit('pyramid:get-state');
+  }
+
+  function destroy() {
+    if (destroyed) return;
+    destroyed = true;
+    if (parentThemeObserver) {
+      parentThemeObserver.disconnect();
+      parentThemeObserver = null;
+    }
+    if (storageListener) {
+      window.removeEventListener('storage', storageListener);
+      storageListener = null;
+    }
+    for (const { event, handler } of socketHandlers) {
+      socket.off?.(event, handler);
+    }
+    socketHandlers.length = 0;
+    ownedTimeouts.forEach(timerId => window.clearTimeout(timerId));
+    ownedIntervals.forEach(timerId => window.clearInterval(timerId));
+    ownedTimeouts.clear();
+    ownedIntervals.clear();
+    socket.disconnect?.();
+  }
+
+  window.addEventListener('pagehide', event => {
+    if (!event.persisted) destroy();
+  });
 
   function clearPyramidDisplayTimers() {
     if (pyramidWinnerTimeout) {
@@ -118,7 +187,8 @@
 
     // Listen for theme changes from parent dashboard (iframe context)
     // The parent sets data-theme on the html element
-    const parentThemeObserver = new MutationObserver((mutations) => {
+    parentThemeObserver = new MutationObserver((mutations) => {
+      if (destroyed) return;
       mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
           const newTheme = document.documentElement.getAttribute('data-theme');
@@ -136,12 +206,14 @@
 
     // Also listen for localStorage changes (cross-window sync)
     try {
-      window.addEventListener('storage', (e) => {
+      storageListener = (e) => {
+        if (destroyed) return;
         if (e.key === 'dashboard-theme' && e.newValue) {
           config.theme = normalizeTheme(e.newValue);
           applyTheme();
         }
-      });
+      };
+      window.addEventListener('storage', storageListener);
     } catch (e) {
       // storage event not available
     }
@@ -238,117 +310,125 @@
    * Connect to Socket.io
    */
   function connectSocket() {
+    // io() may connect before DOMContentLoaded invokes init() and registers handlers.
+    hasObservedSocketConnection = socket.connected === true;
+
     // Match state updates
-    socket.on('coinbattle:match-state', (state) => {
+    registerSocketHandler('coinbattle:match-state', (state) => {
       handleMatchState(state);
     });
 
     // Timer updates
-    socket.on('coinbattle:timer-update', (data) => {
+    registerSocketHandler('coinbattle:timer-update', (data) => {
       updateTimer(data);
     });
 
     // Leaderboard updates
-    socket.on('coinbattle:leaderboard-update', (data) => {
+    registerSocketHandler('coinbattle:leaderboard-update', (data) => {
       updateLeaderboard(data);
     });
 
     // Match events
-    socket.on('coinbattle:match-ended', (data) => {
+    registerSocketHandler('coinbattle:match-ended', (data) => {
       showWinnerReveal(data);
     });
 
     // Post-match display event
-    socket.on('coinbattle:post-match', (data) => {
+    registerSocketHandler('coinbattle:post-match', (data) => {
       handlePostMatchDisplay(data);
     });
 
     // Multiplier events
-    socket.on('coinbattle:multiplier-activated', (data) => {
+    registerSocketHandler('coinbattle:multiplier-activated', (data) => {
       showMultiplier(data);
     });
 
-    socket.on('coinbattle:multiplier-ended', () => {
+    registerSocketHandler('coinbattle:multiplier-ended', () => {
       hideMultiplier();
     });
 
     // Gift events
-    socket.on('coinbattle:gift-received', (data) => {
+    registerSocketHandler('coinbattle:gift-received', (data) => {
       showGiftAnimation(data);
     });
 
     // Badge events
-    socket.on('coinbattle:badges-awarded', (data) => {
+    registerSocketHandler('coinbattle:badges-awarded', (data) => {
       showBadgeNotification(data);
     });
     
     // Team names updated
-    socket.on('coinbattle:team-names-updated', (data) => {
+    registerSocketHandler('coinbattle:team-names-updated', (data) => {
       updateTeamNames(data);
     });
 
     // Config updated (real-time design changes)
-    socket.on('coinbattle:config-updated', (newConfig) => {
+    registerSocketHandler('coinbattle:config-updated', (newConfig) => {
       handleConfigUpdate(newConfig);
     });
 
     // ==================== PYRAMID MODE EVENTS ====================
     
     // Pyramid round started
-    socket.on('pyramid:round-started', (data) => {
+    registerSocketHandler('pyramid:round-started', (data) => {
       handlePyramidStart(data);
     });
 
     // Pyramid state (hydration)
-    socket.on('pyramid:state', (data) => {
+    registerSocketHandler('pyramid:state', (data) => {
       handlePyramidState(data);
     });
 
     // Pyramid round ended
-    socket.on('pyramid:round-ended', (data) => {
+    registerSocketHandler('pyramid:round-ended', (data) => {
       handlePyramidEnd(data);
     });
 
     // Pyramid timer update
-    socket.on('pyramid:timer-update', (data) => {
+    registerSocketHandler('pyramid:timer-update', (data) => {
       updatePyramidTimer(data);
     });
 
     // Pyramid leaderboard update
-    socket.on('pyramid:leaderboard-update', (data) => {
+    registerSocketHandler('pyramid:leaderboard-update', (data) => {
       updatePyramidLeaderboard(data);
     });
 
     // Pyramid player joined
-    socket.on('pyramid:player-joined', (data) => {
+    registerSocketHandler('pyramid:player-joined', (data) => {
       handlePyramidPlayerJoined(data);
     });
 
     // Pyramid points update
-    socket.on('pyramid:points-update', (data) => {
+    registerSocketHandler('pyramid:points-update', (data) => {
       handlePyramidPointsUpdate(data);
     });
 
     // Pyramid knockout
-    socket.on('pyramid:knockout', (data) => {
+    registerSocketHandler('pyramid:knockout', (data) => {
       showKnockoutAnimation(data);
     });
 
     // Pyramid round extended
-    socket.on('pyramid:round-extended', (data) => {
+    registerSocketHandler('pyramid:round-extended', (data) => {
       handlePyramidExtension(data);
     });
 
     // Pyramid config updated (row count changes, etc.)
-    socket.on('pyramid:config-updated', (data) => {
+    registerSocketHandler('pyramid:config-updated', (data) => {
       handlePyramidConfigUpdate(data);
     });
 
+    registerSocketHandler('connect', () => {
+      if (hasObservedSocketConnection) {
+        requestCurrentState();
+        return;
+      }
+      hasObservedSocketConnection = true;
+    });
+
     // Request initial state after listeners are registered
-    socket.emit('coinbattle:get-state');
-    if (config.pyramidMode) {
-      socket.emit('pyramid:get-state');
-    }
+    requestCurrentState();
   }
 
   /**
@@ -795,29 +875,29 @@
 
     // Clear existing interval
     if (multiplierInterval) {
-      clearInterval(multiplierInterval);
+      clearOwnedInterval(multiplierInterval);
     }
 
     // Update countdown
     if (data.endTime) {
-      multiplierInterval = setInterval(() => {
+      multiplierInterval = scheduleInterval(() => {
         const remaining = Math.max(0, Math.floor((data.endTime - Date.now()) / 1000));
         time.textContent = `${remaining}s`;
         
         if (remaining === 0) {
-          clearInterval(multiplierInterval);
+          clearOwnedInterval(multiplierInterval);
           multiplierInterval = null;
           hideMultiplier();
         }
       }, 1000);
     } else if (data.duration) {
       let remaining = data.duration;
-      multiplierInterval = setInterval(() => {
+      multiplierInterval = scheduleInterval(() => {
         remaining--;
         time.textContent = `${remaining}s`;
         
         if (remaining === 0) {
-          clearInterval(multiplierInterval);
+          clearOwnedInterval(multiplierInterval);
           hideMultiplier();
         }
       }, 1000);
@@ -832,7 +912,7 @@
     container.style.display = 'none';
     
     if (multiplierInterval) {
-      clearInterval(multiplierInterval);
+      clearOwnedInterval(multiplierInterval);
       multiplierInterval = null;
     }
   }
@@ -858,7 +938,7 @@
     container.appendChild(particle);
 
     // Remove after animation
-    setTimeout(() => {
+    scheduleTimeout(() => {
       particle.remove();
     }, 3000);
   }
@@ -882,7 +962,7 @@
 
       container.style.display = 'block';
 
-      setTimeout(() => {
+      scheduleTimeout(() => {
         container.style.display = 'none';
       }, 5000);
     }
@@ -930,7 +1010,7 @@
     }
 
     // Hide after 10 seconds
-    winnerRevealTimeout = setTimeout(() => {
+    winnerRevealTimeout = scheduleTimeout(() => {
       winnerRevealTimeout = null;
       container.style.display = 'none';
     }, 10000);
@@ -944,7 +1024,7 @@
     const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#45b7d1', '#f7b731'];
 
     for (let i = 0; i < 100; i++) {
-      setTimeout(() => {
+      scheduleTimeout(() => {
         const confetti = document.createElement('div');
         confetti.className = 'confetti-piece';
         confetti.style.left = `${Math.random() * 100}%`;
@@ -953,7 +1033,7 @@
         
         container.appendChild(confetti);
 
-        setTimeout(() => {
+        scheduleTimeout(() => {
           confetti.remove();
         }, 3000);
       }, i * 30);
@@ -1163,11 +1243,11 @@
     const increment = range / (duration / 16);
     let current = start;
 
-    const timer = setInterval(() => {
+    const timer = scheduleInterval(() => {
       current += increment;
       if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
         current = end;
-        clearInterval(timer);
+        clearOwnedInterval(timer);
       }
       element.textContent = Math.floor(current).toLocaleString();
     }, 16);
@@ -1177,7 +1257,7 @@
    * Start heartbeat to keep connection alive
    */
   function startHeartbeat() {
-    setInterval(() => {
+    scheduleInterval(() => {
       if (!currentState.active) {
         socket.emit('coinbattle:get-state');
       }
@@ -1325,7 +1405,7 @@
       }));
 
       // Wait for winner reveal (10 seconds) before showing post-match
-      pyramidPostMatchTimeout = setTimeout(async () => {
+      pyramidPostMatchTimeout = scheduleTimeout(async () => {
         pyramidPostMatchTimeout = null;
         // Hide pyramid display before showing post-match
         hidePyramidMode();
@@ -1359,7 +1439,7 @@
       }, 10000);
     } else {
       // Reset after showing winner (if no post-match)
-      pyramidPostMatchTimeout = setTimeout(() => {
+      pyramidPostMatchTimeout = scheduleTimeout(() => {
         pyramidPostMatchTimeout = null;
         if (!pyramidState.active) {
           hidePyramidMode();
@@ -1479,10 +1559,10 @@
     if (prevPosition !== -1 && prevPosition !== currentPosition) {
       if (prevPosition > currentPosition) {
         slotEl.classList.add('moving-up');
-        setTimeout(() => slotEl.classList.remove('moving-up'), 500);
+        scheduleTimeout(() => slotEl.classList.remove('moving-up'), 500);
       } else {
         slotEl.classList.add('moving-down');
-        setTimeout(() => slotEl.classList.remove('moving-down'), 500);
+        scheduleTimeout(() => slotEl.classList.remove('moving-down'), 500);
       }
     }
     
@@ -1576,7 +1656,7 @@
       const container = document.getElementById('pyramid-container');
       if (container) {
         container.classList.add('player-joined-flash');
-        setTimeout(() => container.classList.remove('player-joined-flash'), 500);
+        scheduleTimeout(() => container.classList.remove('player-joined-flash'), 500);
       }
     }
   }
@@ -1615,7 +1695,7 @@
     knockoutEl.style.display = 'block';
     knockoutEl.classList.add('knockout-animate');
     
-    setTimeout(() => {
+    scheduleTimeout(() => {
       knockoutEl.style.display = 'none';
       knockoutEl.classList.remove('knockout-animate');
     }, 3000);
@@ -1629,7 +1709,7 @@
     const timerEl = document.getElementById('pyramid-timer');
     if (timerEl) {
       timerEl.classList.add('timer-extended');
-      setTimeout(() => timerEl.classList.remove('timer-extended'), 1000);
+      scheduleTimeout(() => timerEl.classList.remove('timer-extended'), 1000);
     }
   }
 
@@ -1694,7 +1774,7 @@
     
     // Store timeout ID for cleanup
     // Previous timeout is cleared above before setting new one
-    pyramidWinnerTimeout = setTimeout(() => {
+    pyramidWinnerTimeout = scheduleTimeout(() => {
       container.style.display = 'none';
     }, 10000);
   }
@@ -1741,7 +1821,7 @@
         // 500ms delay ensures the config update event is fully processed
         // before triggering the reload
         const RELOAD_DELAY_MS = 500;
-        setTimeout(() => {
+        scheduleTimeout(() => {
           location.reload();
         }, RELOAD_DELAY_MS);
       }
@@ -1832,7 +1912,7 @@
       }
       
       // Hide after duration
-      setTimeout(() => {
+      scheduleTimeout(() => {
         container.style.display = 'none';
         resolve();
       }, scrollDuration * 1000);
@@ -1949,7 +2029,7 @@
       container.style.display = 'flex';
       
       // Hide after duration
-      setTimeout(() => {
+      scheduleTimeout(() => {
         container.style.display = 'none';
         resolve();
       }, (duration || 15) * 1000);

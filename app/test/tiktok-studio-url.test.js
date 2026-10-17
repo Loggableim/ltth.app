@@ -176,11 +176,18 @@ describe('LTTHTikTokStudioUrl.copy', () => {
     });
   });
 
-  test('keeps temporary Quick Tunnel copy as an explicit separate path', async () => {
-    const deps = dependencies();
+  test('copies an approved XP-bar URL with the allowlisted username query', async () => {
+    const deps = dependencies({
+      fetchImpl: jest.fn().mockResolvedValue(response({
+        success: true,
+        tunnelURL: 'https://quiet-river.trycloudflare.com',
+        publicURL: 'https://quiet-river.trycloudflare.com/overlay/viewer-xp/xp-bar?username=viewer-7',
+        reused: false
+      }))
+    });
 
     const copied = await copyTemporary(
-      'http://localhost:3000/goals/overlay?id=goal-1',
+      'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer-7',
       deps
     );
 
@@ -190,14 +197,86 @@ describe('LTTHTikTokStudioUrl.copy', () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          overlayURL: 'http://localhost:3000/goals/overlay?id=goal-1'
+          overlayURL: 'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer-7'
         })
       }
     );
     expect(copied).toBe(
-      'https://quiet-river.trycloudflare.com/goals/overlay?id=goal-1'
+      'https://quiet-river.trycloudflare.com/overlay/viewer-xp/xp-bar?username=viewer-7'
     );
     expect(deps.accountAccess.getFreshToken).not.toHaveBeenCalled();
+  });
+
+  test('does not request a tunnel or copy a credential-like query key', async () => {
+    const deps = dependencies();
+
+    await expect(copyTemporary(
+      'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer&access_token=secret-canary',
+      deps
+    )).rejects.toMatchObject({
+      name: 'TikTokStudioUrlError',
+      code: 'OVERLAY_URL_QUERY_INVALID'
+    });
+    expect(deps.fetchImpl).not.toHaveBeenCalled();
+    expect(deps.writeText).not.toHaveBeenCalled();
+  });
+
+  test('does not copy a tunnel response whose public query differs from the validated local URL', async () => {
+    const deps = dependencies({
+      fetchImpl: jest.fn().mockResolvedValue(response({
+        success: true,
+        publicURL: 'https://quiet-river.trycloudflare.com/overlay/viewer-xp/xp-bar?username=viewer&token=secret-canary'
+      }))
+    });
+
+    await expect(copyTemporary(
+      'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer',
+      deps
+    )).rejects.toMatchObject({
+      name: 'TikTokStudioUrlError',
+      code: 'OVERLAY_TUNNEL_RESPONSE_INVALID'
+    });
+    expect(deps.writeText).not.toHaveBeenCalled();
+  });
+
+  test('does not copy a public URL from a lookalike tunnel hostname', async () => {
+    const deps = dependencies({
+      fetchImpl: jest.fn().mockResolvedValue(response({
+        success: true,
+        publicURL: 'https://quiet-river.trycloudflare.com.attacker.example/overlay/viewer-xp/xp-bar?username=viewer'
+      }))
+    });
+
+    await expect(copyTemporary(
+      'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer',
+      deps
+    )).rejects.toMatchObject({
+      name: 'TikTokStudioUrlError',
+      code: 'OVERLAY_TUNNEL_RESPONSE_INVALID'
+    });
+    expect(deps.writeText).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    ['http://localhost:3000/overlay/sidekick/hud?position=bottom-left&minimal=true&events=false&maxEvents=10', 'https://quiet-river.trycloudflare.com/overlay/sidekick/hud?position=bottom-left&minimal=true&events=false&maxEvents=10'],
+    ['http://localhost:3000/overlay/sidekick/hud?position=top;display:none', 'https://quiet-river.trycloudflare.com/overlay/sidekick/hud?position=top;display:none'],
+    ['http://localhost:3000/overlay/sidekick/hud?maxEvents=11', 'https://quiet-river.trycloudflare.com/overlay/sidekick/hud?maxEvents=11']
+  ])('only copies bounded Sidekick settings from %s', async (localURL, publicURL) => {
+    const deps = dependencies({
+      fetchImpl: jest.fn().mockResolvedValue(response({ success: true, publicURL }))
+    });
+
+    if (localURL.includes('display:none') || localURL.includes('maxEvents=11')) {
+      await expect(copyTemporary(localURL, deps)).rejects.toMatchObject({
+        code: 'OVERLAY_URL_QUERY_INVALID'
+      });
+      expect(deps.fetchImpl).not.toHaveBeenCalled();
+      expect(deps.writeText).not.toHaveBeenCalled();
+      return;
+    }
+
+    await expect(copyTemporary(localURL, deps)).resolves.toBe(publicURL);
+    expect(deps.writeText).toHaveBeenCalledWith(publicURL);
   });
 
   test('copies intentional external HTTPS controls only through the external path', async () => {

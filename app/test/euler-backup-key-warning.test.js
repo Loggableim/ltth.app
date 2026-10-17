@@ -2,6 +2,7 @@ const EventEmitter = require('events');
 
 const FALLBACK_KEY = 'a'.repeat(64);
 const USER_KEY = 'b'.repeat(64);
+const CANARY_KEY = 'SYNTHETIC-CANARY-EULER-KEY-DO-NOT-LOG-9F3A7C21';
 
 function createMockDb(initialSettings = {}) {
   const settings = { ...initialSettings };
@@ -35,7 +36,8 @@ function loadAdapterWithMockedNetwork(options = {}) {
   const {
     createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket'),
     deserializeWebSocketMessage = jest.fn(),
-    SchemaVersion = {}
+    SchemaVersion = {},
+    axios = { get: jest.fn().mockResolvedValue({ status: 200 }) }
   } = options;
 
   class MockWebSocket extends EventEmitter {
@@ -60,8 +62,20 @@ function loadAdapterWithMockedNetwork(options = {}) {
     deserializeWebSocketMessage,
     SchemaVersion
   }));
+  jest.doMock('axios', () => axios);
 
   return require('../modules/adapters/EulerstreamAdapter');
+}
+
+function expectKeyMaterialAbsent(value, key) {
+  const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+  for (const fragment of [key, key.slice(0, 8), key.slice(-4)]) {
+    expect(serialized).not.toContain(fragment);
+  }
+}
+
+function expectNoCanary(value) {
+  expectKeyMaterialAbsent(value, CANARY_KEY);
 }
 
 async function finishConnect(adapter, connectPromise) {
@@ -89,7 +103,6 @@ describe('Eulerstream fallback key consent', () => {
     jest.resetModules();
     jest.useFakeTimers();
     process.env = {
-      ...originalEnv,
       EULER_FALLBACK_API_KEY: FALLBACK_KEY,
       EULER_BACKUP_API_KEY: FALLBACK_KEY
     };
@@ -106,6 +119,7 @@ describe('Eulerstream fallback key consent', () => {
     jest.useRealTimers();
     jest.dontMock('ws');
     jest.dontMock('@eulerstream/euler-websocket-sdk');
+    jest.dontMock('axios');
     process.env = originalEnv;
   });
 
@@ -119,9 +133,7 @@ describe('Eulerstream fallback key consent', () => {
       createMockLogger()
     );
 
-    await expect(adapter.connect('testuser')).rejects.toThrow(
-      'No Eulerstream API key is configured. Set one in Dashboard Settings'
-    );
+    await expect(adapter.connect('testuser')).rejects.toThrow('No API key configured.');
     expect(createWebSocketUrl).not.toHaveBeenCalled();
     expect(adapter.getEulerApiKeyInfo()).toEqual(expect.objectContaining({
       configured: false,
@@ -222,8 +234,9 @@ describe('Eulerstream fallback key consent', () => {
     const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
     const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
     const io = { emit: jest.fn() };
+    const logger = createMockLogger();
 
-    adapter = new EulerstreamAdapter(io, createMockDb(), createMockLogger());
+    adapter = new EulerstreamAdapter(io, createMockDb(), logger);
     adapter.fetchRoomInfo = jest.fn(async () => null);
     adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
 
@@ -235,6 +248,102 @@ describe('Eulerstream fallback key consent', () => {
       apiKey: FALLBACK_KEY
     }));
     expect(io.emit).not.toHaveBeenCalledWith('fallback-key-warning', expect.any(Object));
+    const diagnostics = await adapter.runDiagnostics('testuser');
+    const health = await adapter.getConnectionHealth();
+    const logCalls = Object.values(logger).flatMap(method => method.mock.calls);
+    expect(diagnostics.eulerApiKey).toEqual({
+      activeKey: null,
+      activeSource: 'Fallback Key',
+      configured: true,
+      usingFallback: true
+    });
+    expect(logCalls.flat().join(' ')).toContain('Eulerstream fallback key selected: true');
+    expectKeyMaterialAbsent({ diagnostics, health, logCalls }, FALLBACK_KEY);
+  });
+
+  test('manual disconnect expires fallback consent and blocks reconnect without fresh confirmation', async () => {
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
+    adapter = new EulerstreamAdapter({ emit: jest.fn() }, createMockDb(), createMockLogger());
+    adapter.fetchRoomInfo = jest.fn(async () => null);
+    adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
+
+    const connectPromise = adapter.connect('testuser', { fallbackKeyConfirmed: true });
+    await finishConnect(adapter, connectPromise);
+    expect(adapter._fallbackKeySessionConfirmed).toBe(true);
+
+    adapter.disconnect();
+
+    expect(adapter._fallbackKeySessionConfirmed).toBe(false);
+    expect(adapter._resumeConfirmedSession).toBe(false);
+    await expect(adapter.connect('testuser', { resumeConfirmedSession: true })).rejects.toMatchObject({
+      connectionStatus: 'fallback_confirmation_required'
+    });
+    await expect(adapter.connect('testuser')).rejects.toMatchObject({
+      connectionStatus: 'fallback_confirmation_required'
+    });
+    expect(createWebSocketUrl).toHaveBeenCalledTimes(1);
+  });
+
+  test('confirmed fallback session cannot resume for a different username', async () => {
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl });
+    adapter = new EulerstreamAdapter({ emit: jest.fn() }, createMockDb(), createMockLogger());
+    adapter.fetchRoomInfo = jest.fn(async () => null);
+    adapter.updateGiftCatalog = jest.fn(async () => ({ message: 'skipped' }));
+
+    const connectPromise = adapter.connect('testuser', { fallbackKeyConfirmed: true });
+    await finishConnect(adapter, connectPromise);
+
+    await expect(adapter.connect('anotheruser', { resumeConfirmedSession: true })).rejects.toMatchObject({
+      connectionStatus: 'fallback_confirmation_required'
+    });
+    expect(createWebSocketUrl).toHaveBeenCalledTimes(1);
+  });
+
+  test('key errors, logs, and connection diagnostics never expose key material', async () => {
+    process.env.EULER_API_KEY = CANARY_KEY;
+    const createWebSocketUrl = jest.fn(() => 'ws://eulerstream.test/socket');
+    const axios = { get: jest.fn().mockRejectedValue(new Error(`diagnostic transport failed for ${CANARY_KEY}`)) };
+    const logger = createMockLogger();
+    const db = createMockDb();
+    db.getSetting.mockImplementation(key => {
+      if (key === 'tiktok_connect_with_unique_id') return null;
+      throw new Error(`synthetic database failure ${CANARY_KEY}`);
+    });
+    db.getAllSettings.mockImplementation(() => {
+      throw new Error(`synthetic settings failure ${CANARY_KEY}`);
+    });
+    const EulerstreamAdapter = loadAdapterWithMockedNetwork({ createWebSocketUrl, axios });
+    adapter = new EulerstreamAdapter({ emit: jest.fn() }, db, logger);
+    adapter.on('error', () => {});
+
+    const connectPromise = adapter.connect('testuser');
+    adapter.ws.emit('error', new Error(`WebSocket handshake failed for ${CANARY_KEY}`));
+    const connectError = await connectPromise.catch(error => error);
+    const disconnected = [];
+    adapter._connectedEventEmitted = true;
+    adapter.on('disconnected', event => disconnected.push(event));
+    adapter._handleSocketClose(adapter._activeGeneration, 4000, CANARY_KEY);
+    adapter._logConnectionAttempt('testuser', false, 'WEBSOCKET_ERROR', `failed with ${CANARY_KEY}`);
+    const analysis = adapter.analyzeConnectionError(new Error(`Unexpected transport failure ${CANARY_KEY}`));
+    const keyErrorAnalysis = adapter.analyzeConnectionError(new Error(`401 Sign Error: API Key is invalid ${CANARY_KEY}`));
+    const keyInfo = adapter.getEulerApiKeyInfo();
+    const health = await adapter.getConnectionHealth();
+    const diagnostics = await adapter.runDiagnostics('testuser');
+    const logCalls = Object.values(logger).flatMap(method => method.mock.calls);
+
+    expect(connectError).toBeInstanceOf(Error);
+    expect(connectError.message).toBe('Eulerstream WebSocket connection failed.');
+    expect(keyInfo).toEqual({
+      activeKey: null,
+      activeSource: 'Environment Variable (EULER_API_KEY)',
+      configured: true,
+      usingFallback: false
+    });
+    expect(diagnostics.eulerApiKey.activeKey).toBeNull();
+    expect(adapter.connectionAttempts[0]).not.toHaveProperty('errorMessage');
+    expectNoCanary({ connectError: connectError.message, analysis, keyErrorAnalysis, keyInfo, health, diagnostics, logCalls, disconnected });
   });
 
   test('tries the remaining random fallback keys after authentication failures and then stops', async () => {
@@ -363,5 +472,25 @@ describe('Eulerstream fallback key consent', () => {
     await jest.advanceTimersByTimeAsync(30000);
 
     expect(reconnectSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('manual Euler key diagnostic redaction', () => {
+  test('logs backup-key status only and keeps backup and fallback names distinct', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const manualSource = fs.readFileSync(path.join(__dirname, 'euler-backup-key-warning.manual.js'), 'utf8');
+    const adapterSource = fs.readFileSync(path.join(__dirname, '../modules/adapters/EulerstreamAdapter.js'), 'utf8');
+    const keyLogLines = manualSource.split(/\r?\n/).filter(line =>
+      /\bconsole\.(?:log|info|warn|error)\s*\(/.test(line) && /\b(?:backupKey|fallbackKey)\b/i.test(line)
+    );
+
+    expect(keyLogLines).toEqual([]);
+    expect(manualSource).not.toMatch(/\b(?:backupKey|fallbackKey)\.(?:substring|slice)\s*\(/i);
+    expect(manualSource).toContain('Backup key configured: ${configured}');
+    expect(manualSource).toContain('process.env.EULER_BACKUP_API_KEY');
+    expect(manualSource).toContain('process.env.EULER_FALLBACK_API_KEY');
+    expect(adapterSource).toContain('process.env.EULER_FALLBACK_API_KEY');
+    expect(adapterSource).not.toContain('EULER_BACKUP_API_KEY');
   });
 });

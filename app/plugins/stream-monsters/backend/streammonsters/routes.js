@@ -52,6 +52,15 @@ const ART_LAB_ROUTES = Object.freeze([
   ['POST', '/api/streammonsters/local-runtime/stop'],
   ['POST', '/api/streammonsters/local-runtime/verify']
 ]);
+const DOCS_CAPTURE_READ_ROUTES = new Set([
+  'GET:/stream-monsters/ui',
+  'GET:/api/streammonsters/creator-state',
+  'GET:/api/streammonsters/creator-catalog',
+  'GET:/api/streammonsters/gift-catalog',
+  'GET:/api/streammonsters/gift-mappings',
+  'GET:/api/streammonsters/monster-catalog',
+  'GET:/api/streammonsters/leaderboard'
+]);
 const PORTRAIT_OVERLAY_PROFILE = Object.freeze({
   preset: 'tiktok-live-studio-1080x1920',
   width: 1080,
@@ -111,6 +120,10 @@ class StreamMonstersRoutes {
     })
   }) {
     this.api = api;
+    Object.defineProperty(this, 'isDocsCapture', {
+      value: api?.isDocsCapture === true,
+      enumerable: true
+    });
     this.pluginDir = pluginDir;
     this.dataDir = dataDir || pluginDir;
     this.store = store;
@@ -139,6 +152,15 @@ class StreamMonstersRoutes {
   }
 
   registerRoute(method, routePath, handler) {
+    const normalizedPath = routePath.replace(
+      /^\/api\/stream-monsters\//,
+      '/api/streammonsters/'
+    );
+    const allowedInDocsCapture = !this.isDocsCapture ||
+      DOCS_CAPTURE_READ_ROUTES.has(`${method}:${normalizedPath}`);
+    const registeredHandler = allowedInDocsCapture
+      ? handler
+      : (_req, res) => res.status(404).json({ error: 'docs_capture_route_disabled' });
     const paths = [routePath];
     if (routePath.startsWith('/api/streammonsters/')) {
       paths.push(routePath.replace('/api/streammonsters/', '/api/stream-monsters/'));
@@ -149,7 +171,7 @@ class StreamMonstersRoutes {
     for (const candidatePath of paths) {
       const key = `${method}:${candidatePath}`;
       if (this.registeredRoutes.has(key)) continue;
-      const result = this.api.registerRoute(method, candidatePath, handler);
+      const result = this.api.registerRoute(method, candidatePath, registeredHandler);
       if (result === false) {
         const error = new Error('STREAM_MONSTERS_ROUTE_REGISTRATION_FAILED');
         error.code = error.message;
@@ -389,7 +411,9 @@ class StreamMonstersRoutes {
         eggStage: this.eggStageSnapshot(this.engine.streamKey || 'offline'),
         viewer: userId ? this.viewerState(userId) : null,
         giftMappings: this.store.getGiftMappings(),
-        hype: this.store.getStreamHype(this.engine.streamKey),
+        hype: this.isDocsCapture
+          ? this.readDocsCaptureHype(this.engine.streamKey)
+          : this.store.getStreamHype(this.engine.streamKey),
         dex: userId ? (this.collection?.getCatalogState(userId).dex || null) : null,
         heartChain: this.collection?.getHeartChain(this.engine.streamKey || 'offline') || null,
         streamMission: this.collection?.peekStreamMission?.(this.engine.streamKey || 'offline') || null,
@@ -1313,6 +1337,19 @@ class StreamMonstersRoutes {
         entries: entries.map(entry => this.publicLeaderboardEntry(entry, type))
       });
     });
+  }
+
+  readDocsCaptureHype(streamKey = null) {
+    const key = streamKey || 'offline';
+    const row = this.store.db.prepare(`
+      SELECT * FROM streammonsters_hype WHERE stream_key = ?
+    `).get(key);
+    return row || {
+      stream_key: key,
+      points: 0,
+      charged_eggs: 0,
+      updated_at_ms: 0
+    };
   }
 
   protectAdmin(handler) {

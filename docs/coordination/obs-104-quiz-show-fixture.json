@@ -1,0 +1,193 @@
+{
+  "runnerContract": {
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)",
+      "/api/quiz-show/hud-config",
+      "/api/quiz-show/brand-kit",
+      "/api/quiz-show/state"
+    ],
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "socketEventsConsumed": [
+      "connect",
+      "disconnect",
+      "quiz-show:state-update",
+      "quiz-show:time-update",
+      "quiz-show:round-ended",
+      "quiz-show:joker-activated",
+      "quiz-show:stopped",
+      "quiz-show:hud-config-updated",
+      "quiz-show:play-sound",
+      "quiz-show:quiz-ended",
+      "quiz-show:brand-kit-updated",
+      "quiz-show:error",
+      "quiz-show:hide-timer",
+      "quiz-show:show-leaderboard",
+      "quiz-show:hide-leaderboard",
+      "quiz-show:leaderboard-updated",
+      "quiz-show:layout-updated",
+      "quiz-show:config-updated",
+      "quiz-show:slot-machine-start",
+      "quiz-show:slot-machine-stop",
+      "quiz-show:category-vote-started",
+      "quiz-show:category-vote-update",
+      "quiz-show:category-vote-ended",
+      "quiz-show:duel-update",
+      "quiz-show:duel-ended",
+      "quiz-show:achievement-unlocked"
+    ],
+    "socketEventsEmitted": [
+      "quiz-show:get-public-state"
+    ],
+    "unresolvedDynamicDependencies": [
+      "Conditional GET /api/quiz-show/layouts/${activeLayoutId} and custom layout payload/rendering when /api/quiz-show/state enables an active layout",
+      "Fixture does not invoke GET /api/quiz-show/leaderboard?type=round; the exact-query read-only producer and public HTTP allowlist are verified in dedicated owner tests",
+      "Runtime brand-kit primary_color/secondary_color updates and logo_path, voter profilePictureUrl, and joker giftIcon image URLs",
+      "quiz-show:play-sound filePath and Audio playback",
+      "Shared i18n /api/i18n/locales consumer; it is not invoked in the fixture",
+      "Real /api/quiz-show/state producer calls checkSeasonAutomation(); backend route side effects were not exercised"
+    ],
+    "productProfileOrCredentialData": "excluded",
+    "externalNetwork": "blocked",
+    "pluginControlProducer": "excluded; fixed synthetic GET responses and two in-memory Quiz Show renderer events; no Quiz Show backend/database/producer; Audio constructor is blocked and no sound event is driven",
+    "listenerStarted": false,
+    "driverEvents": [
+      {
+        "event": "quiz-show:state-update",
+        "negativeCase": "no sound event, user-provided logo, voter image, joker image or active layout is driven",
+        "payload": {
+          "votersPerAnswer": {
+            "0": [],
+            "1": [],
+            "2": [],
+            "3": []
+          },
+          "hiddenAnswers": [],
+          "isRunning": true,
+          "totalRounds": 2,
+          "currentRound": 1,
+          "voterIconsConfig": {
+            "enabled": false
+          },
+          "currentQuestion": {
+            "answers": [
+              "Synthetic answer A",
+              "Synthetic answer B",
+              "Synthetic answer C",
+              "Synthetic answer D"
+            ],
+            "question": "Synthetic question?",
+            "category": "Fixture"
+          }
+        }
+      },
+      {
+        "event": "quiz-show:time-update",
+        "payload": {
+          "timeRemaining": 20,
+          "totalTime": 30
+        },
+        "negativeCase": "countdown is driven through its dedicated time-update consumer, separately from public question state"
+      }
+    ],
+    "assetGetRoutes": [
+      {
+        "source": "app/public/css/themes.css; imported by pinned quiz-show stylesheet",
+        "path": "/css/themes.css"
+      },
+      {
+        "source": "app/public/js/i18n-client.js",
+        "path": "/js/i18n-client.js"
+      },
+      {
+        "source": "app/public/js/public-overlay-render-mode.js",
+        "path": "/js/public-overlay-render-mode.js"
+      },
+      {
+        "source": "app/plugins/quiz-show/quiz_show_overlay.css",
+        "path": "/quiz-show/quiz_show_overlay.css"
+      },
+      {
+        "source": "app/plugins/quiz-show/quiz_show_overlay.js",
+        "path": "/quiz-show/quiz_show_overlay.js"
+      },
+      {
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture",
+        "path": "/socket.io/socket.io.js"
+      }
+    ],
+    "cleanup": "dispatch non-persisted pagehide, assert socket disconnect, handler removal, timers and animation frames canceled, and close JSDOM",
+    "transport": "in-process-jsdom-interceptor"
+  },
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "caseCount": 4,
+  "fixtureId": "quiz-show-source-fixture-v1",
+  "files": [
+    {
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "role": "browser-socket-client-source",
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "bytes": 155836
+    },
+    {
+      "sha256": "c34622f863da3a3775ae9f0702fdbf8914bbc534a8fb1a25f9b80d2d2f40cc45",
+      "role": "renderer-stylesheet",
+      "path": "app/plugins/quiz-show/quiz_show_overlay.css",
+      "bytes": 80912
+    },
+    {
+      "sha256": "9c83b32e5addd63576acb78e8b516946ee857bcb48c834f0fa2c846389864480",
+      "role": "renderer-entry",
+      "path": "app/plugins/quiz-show/quiz_show_overlay.html",
+      "bytes": 13719
+    },
+    {
+      "sha256": "2b6de2ce836e8897b22a7042dd3ac830ef6ef02bf76dc067b3466fb288b2e2ca",
+      "role": "renderer-script",
+      "path": "app/plugins/quiz-show/quiz_show_overlay.js",
+      "bytes": 99093
+    },
+    {
+      "sha256": "edad3559b6592cdc0f43fe92906bb793aeffa51b62e60be118959740f3a0f10b",
+      "role": "shared-theme-stylesheet",
+      "path": "app/public/css/themes.css",
+      "bytes": 61156
+    },
+    {
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "role": "shared-i18n-client",
+      "path": "app/public/js/i18n-client.js",
+      "bytes": 24907
+    },
+    {
+      "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143",
+      "role": "shared-render-mode-script",
+      "path": "app/public/js/public-overlay-render-mode.js",
+      "bytes": 1513
+    },
+    {
+      "sha256": "ea2f2cf8cdcc4f42d3c2e79f8d91ce7983456d3ce883a709c85fe3018f5e10f0",
+      "role": "plugin-locale",
+      "path": "app/plugins/quiz-show/locales/de.json",
+      "bytes": 44917
+    },
+    {
+      "sha256": "254cd4b3447add7b0cf5448cc5dff3475fb7a4f6ed2b5ae2b4d6e0e26d0fa693",
+      "role": "plugin-locale",
+      "path": "app/plugins/quiz-show/locales/en.json",
+      "bytes": 42998
+    },
+    {
+      "sha256": "1d8cd78696eb95e040a18f6f5f162d0d58fe2e5dcd2b67c324d8ff5b1893ef0a",
+      "role": "plugin-locale",
+      "path": "app/plugins/quiz-show/locales/es.json",
+      "bytes": 47191
+    },
+    {
+      "sha256": "05db7dccce91148ae532e2a7f2f51adcd16f33add12024c163a63c07bc5b291c",
+      "role": "plugin-locale",
+      "path": "app/plugins/quiz-show/locales/fr.json",
+      "bytes": 47328
+    }
+  ],
+  "schemaVersion": 1
+}

@@ -1,0 +1,469 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-10-07T05:37:53.856Z",
+  "scope": "nine curated renderer CPU-fixture families; not the complete 26-family renderer inventory or a runtime package closure",
+  "decision": {
+    "status": "BLOCKED",
+    "releaseReady": false,
+    "transferReady": false,
+    "isoStageAllowed": false,
+    "freezeContract": "HOLD",
+    "reasons": [
+      "webgpu-weather-control: shared source review pending for app/modules/public-overlay-payload-projection.js",
+      "live backend witnesses: 0/9",
+      "real OBS acceptance: 0/104",
+      "release/transfer authorization requires a separate owner-approved gate; this CPU readiness report never enables staging",
+      "real OBS acceptance is not checked; source fixtures do not satisfy Browser Source or visual review"
+    ]
+  },
+  "summary": {
+    "curatedFamilies": 9,
+    "staticManifestsPassed": 9,
+    "fixtureEvidencePassed": 9,
+    "actualOriginalConsumerFourLocaleCoverage": "8/9",
+    "sharedSourceReviewsPending": 1,
+    "liveBackendWitnessesObserved": 0,
+    "realObsCasesChecked": 0,
+    "realObsCasesExpected": 104
+  },
+  "gates": {
+    "sourceFixtureReady": {
+      "status": "PASS"
+    },
+    "staticClosure": {
+      "status": "PASS"
+    },
+    "originalConsumerFixtures": {
+      "status": "PASS"
+    },
+    "originalConsumerFourLocaleCoverage": {
+      "status": "PARTIAL"
+    },
+    "liveBackendWitness": {
+      "status": "NOT_OBSERVED"
+    },
+    "sharedSourceReviews": {
+      "status": "BLOCKED"
+    },
+    "realObs": {
+      "status": "NOT_CHECKED",
+      "casesChecked": 0,
+      "casesExpected": 104
+    }
+  },
+  "families": [
+    {
+      "id": "advanced-timer",
+      "manifestPath": "docs/coordination/obs-104-advanced-timer-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-renderer-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 8,
+        "bytes": 288581,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "0ffd5f48e4208ca7d9bba8ff909ff551bd25659f13c555950ac3aaeebe9d1ba6",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 288581
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 22,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; runner returns fixed synthetic GET responses and drives the renderer socket shim only",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "stt-ticker",
+      "manifestPath": "docs/coordination/obs-104-stt-ticker-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-stt-ticker-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 7,
+        "bytes": 275488,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "380e7cf6156b254f9f9cecb20e382e6f42b315ba276e33a90f03ad83cfeac35c",
+        "files": 7,
+        "localeFiles": 4,
+        "bytes": 275488
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 9,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; speech recognition, audio capture, provider services and STT plugin runtime are not started or connected",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "goals",
+      "manifestPath": "docs/coordination/obs-104-goals-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-goals-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 8,
+        "bytes": 275523,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "e450d6384c7366d18ef7fffd78280f362d7fb64b8e78e2b3084217e8a8a05361",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 275523
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 7,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; runner uses fixed synthetic GET responses and an in-memory socket shim, with no Goals plugin backend or database",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "spotlight",
+      "manifestPath": "docs/coordination/obs-104-spotlight-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-spotlight-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 12,
+        "bytes": 275823,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "f677503cd13bc7f995800f964afe8cba77389178977f3ad00ef7174610b80932",
+        "files": 12,
+        "localeFiles": 4,
+        "bytes": 275823
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 5,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; runner provides synthetic chatter settings/users and an in-memory socket shim; no Spotlight backend, TikTok producer or database is started",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "quiz-show",
+      "manifestPath": "docs/coordination/obs-104-quiz-show-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-quiz-show-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 11,
+        "bytes": 614600,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "22643333a3463a69cb73389a9222198365aabbaf8f9f1f3eb9e5d3d99d4ea701",
+        "files": 11,
+        "localeFiles": 4,
+        "bytes": 614600
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 4,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; fixed synthetic GET responses and one in-memory state-update event; no Quiz Show backend/database/producer; Audio constructor is blocked and no sound event is driven",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "toptier",
+      "manifestPath": "docs/coordination/obs-104-toptier-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-toptier-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 11,
+        "bytes": 298673,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "c072abb2c715c14e7c8307a111c3463e3c5548b7f6876b088e0ced1b3910d5d4",
+        "files": 11,
+        "localeFiles": 4,
+        "bytes": 298673
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 4,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; fixed synthetic in-memory toptier:update event and Socket.IO shim only; no TopTier backend/database/producer; profile_picture_url is empty and only the fixed local placeholder is referenced",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "interactive-story",
+      "manifestPath": "docs/coordination/obs-104-interactive-story-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-interactive-story-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 8,
+        "bytes": 341846,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "17a9182bd25d2c98861ee934432dcb42f10fe8c09b68e119efc12feb39c226c8",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 341846
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 4,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; synthetic fixed GET responses and one in-memory chapter-display event; no Interactive Story backend, database, LLM/image/TTS provider or audio playback",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "viewerxp",
+      "manifestPath": "docs/coordination/obs-104-viewerxp-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-viewerxp-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 10,
+        "bytes": 502279,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "051a4de18245aa807f18404ef313d5c0f9cf3517ab7217c8a0424e2dc1785a04",
+        "files": 10,
+        "localeFiles": 4,
+        "bytes": 502279
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 16,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "PASS",
+        "locales": [
+          "de",
+          "en",
+          "es",
+          "fr"
+        ]
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; actual public handlers are called on an isolated prototype double with synthetic in-memory DB/socket; no plugin runtime or database is started",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "CLEAR"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    },
+    {
+      "id": "webgpu-weather-control",
+      "manifestPath": "docs/coordination/obs-104-webgpu-weather-control-fixture.json",
+      "evidencePath": "docs/coordination/obs-104-webgpu-weather-control-fixture-evidence.json",
+      "staticClosure": {
+        "status": "PASS",
+        "files": 8,
+        "bytes": 274572,
+        "localeFiles": 4
+      },
+      "evidence": {
+        "status": "PASS",
+        "sha256": "bdc8656d91fb70a7a19c32aa54c9b7a27ed17eb188f37f3c961f5fca94dbe733",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 274572
+      },
+      "originalConsumerFixture": {
+        "status": "PASS",
+        "testSuitesPassed": 1,
+        "testsPassed": 1,
+        "testsFailed": 0
+      },
+      "actualOriginalConsumerLocales": {
+        "status": "NOT_COVERED",
+        "locales": [],
+        "pinnedLocaleFiles": 4
+      },
+      "liveBackendWitness": {
+        "status": "NOT_OBSERVED",
+        "fixtureProducerScope": "excluded; original renderer and actual weather engine run with synthetic fetch/socket doubles, but no weather plugin runtime, database or GPU device is started",
+        "note": "A CPU fixture producer description is not evidence of a live backend/database witness."
+      },
+      "sharedSourceReview": {
+        "status": "PENDING",
+        "path": "app/modules/public-overlay-payload-projection.js",
+        "reason": "not-pinned; active Arena three-surface projection work changes this shared file",
+        "gate": "await Arena owner final report, then CEO-reviewed Weather compatibility regression and pin the final shared-module SHA before claiming complete source-bound evidence"
+      },
+      "obsAcceptance": {
+        "status": "NOT_CHECKED",
+        "cases": 0
+      },
+      "failures": []
+    }
+  ]
+}\n

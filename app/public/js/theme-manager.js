@@ -1,7 +1,7 @@
 /**
  * Theme Manager
  * Handles theme switching and persistence
- * Corporate branding color: #12a116
+ * Brand palette: green, off-white, and violet.
  */
 
 class ThemeManager {
@@ -19,21 +19,21 @@ class ThemeManager {
             cid: {
                 name: 'Cid',
                 icon: 'sparkles',
-                description: 'Neutral dark brand theme with green and violet accents',
+                description: 'Green-tinted dark brand theme with off-white and violet accents',
                 badge: 'Brand',
-                swatches: ['#166534', '#ffffff', '#7c3aed']
+                swatches: ['#4ade80', '#f5f7f2', '#7c3aed']
             },
             night: {
                 name: 'Night Mode',
                 icon: 'moon',
-                description: 'Legacy dark theme',
-                swatches: ['#3b82f6', '#8b5cf6', '#12a116']
+                description: 'Dark brand theme with green and violet accents',
+                swatches: ['#4ade80', '#f5f7f2', '#7c3aed']
             },
             day: {
                 name: 'Day Mode',
                 icon: 'sun',
-                description: 'Bright light theme',
-                swatches: ['#ffffff', '#2563eb', '#12a116']
+                description: 'Light brand theme with green and violet accents',
+                swatches: ['#166534', '#ffffff', '#7c3aed']
             },
             contrast: {
                 name: 'High Contrast',

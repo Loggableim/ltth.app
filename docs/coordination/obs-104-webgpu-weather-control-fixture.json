@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "fixtureId": "webgpu-weather-control-source-fixture-v1",
+  "caseCount": 1,
+  "files": [
+    { "path": "app/plugins/webgpu-weather-control/overlay.html", "role": "renderer-entry", "bytes": 9427, "sha256": "9eeded141cbd7803ba671837926cc9d52f99ae636983ec44836b9c2ad64d128e" },
+    { "path": "app/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js", "role": "renderer-script", "bytes": 13337, "sha256": "03c03b0a7950ace56c40f5b76bd2dff42adedd9a51b0f421c717f298bfb1dd88" },
+    { "path": "app/plugins/webgpu-weather-control/gpu/weather-framegraph.js", "role": "renderer-library", "bytes": 31899, "sha256": "6c8231afe6b6cd44b91934e949d70cf7216c079c5d84d99585fd6b051e8ed27c" },
+    { "path": "app/node_modules/socket.io/client-dist/socket.io.js", "role": "browser-socket-client-source", "bytes": 155836, "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954" },
+    { "path": "app/plugins/webgpu-weather-control/locales/de.json", "role": "plugin-locale", "bytes": 15361, "sha256": "4ad33bad71cf8d74145d3b8d7b3022f6c7201dc0ad908bc4def2230ea88ac589" },
+    { "path": "app/plugins/webgpu-weather-control/locales/en.json", "role": "plugin-locale", "bytes": 15035, "sha256": "da66c5692d19c1538fb60ce8a5cadd55b7169e1455b1fc53013e1e836e4741e8" },
+    { "path": "app/plugins/webgpu-weather-control/locales/es.json", "role": "plugin-locale", "bytes": 16517, "sha256": "405768e10026c0467382d8ede8bb2f8e28d05371a268378341af7452d240a68a" },
+    { "path": "app/plugins/webgpu-weather-control/locales/fr.json", "role": "plugin-locale", "bytes": 17160, "sha256": "8e73fed9c7c0a6a148e17cd2e368bb1ecfcc5082f8ee2bd75752e68042fb9403" }
+  ],
+  "runnerContract": {
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "externalNetwork": "blocked",
+    "productProfileOrCredentialData": "excluded",
+    "listenerStarted": false,
+    "assetGetRoutes": [
+      { "path": "/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js", "source": "app/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js" },
+      { "path": "/plugins/webgpu-weather-control/gpu/weather-framegraph.js", "source": "app/plugins/webgpu-weather-control/gpu/weather-framegraph.js imported by the pinned weather engine" },
+      { "path": "/socket.io/socket.io.js", "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture" }
+    ],
+    "apiGetPatterns": ["/api/webgpu-weather/overlay-config"],
+    "socketEventsConsumed": [
+      "connect", "webgpu-weather:config-changed", "webgpu-weather:gamification-state",
+      "webgpu-weather:stop", "webgpu-weather:stop-effect", "webgpu-weather:trigger"
+    ],
+    "socketEventsEmitted": [
+      "webgpu-weather:client-ready", "webgpu-weather:overlay-state", "webgpu-weather:request-permanent-effects"
+    ],
+    "unresolvedDynamicDependencies": [
+      "The CPU fixture injects a synthetic GET response; the live plugin/backend producer and real HTTP transport are not started",
+      "WebGPU is intentionally unavailable in JSDOM; GPU rendering, device behavior, audio and visual output are untested",
+      "The four pinned plugin locale catalogs are not loaded by this renderer entry and are not translation coverage"
+    ],
+    "driverEvents": [
+      { "event": "webgpu-weather:trigger", "payload": { "action": "rain", "intensity": 0.7, "duration": 5000, "permanent": false, "options": { "layer": 32, "wind": 0.4, "opacity": 0.75, "particleScale": 0.9 } }, "negativeCase": "only the actual public projection is passed to the renderer and the unsupported engine reports synthetic effect state without a GPU" },
+      { "event": "webgpu-weather:config-changed", "payload": {}, "negativeCase": "duplicate/stale config reads are controlled; new valid config wins and the connect path does not duplicate the initial GET" },
+      { "event": "webgpu-weather:gamification-state", "payload": { "communityMeter": { "current": 6, "max": 10 }, "quest": { "active": { "title": "Rain goal" } }, "streaks": { "current": 3 }, "rewards": { "history": [{ "label": "Umbrella" }] } }, "negativeCase": "only projected synthetic display fields reach the renderer" }
+    ],
+    "pluginControlProducer": "excluded; original renderer and actual weather engine run with synthetic fetch/socket doubles, but no weather plugin runtime, database or GPU device is started",
+    "cleanup": "exercise BFCache pagehide/pageshow and final non-persisted pagehide; assert animation loop stops/restores, handlers disconnect, late events are ignored, and JSDOM closes"
+  }
+}

@@ -48,7 +48,7 @@ describe('Interactive Story provider configuration', () => {
 
     expect(config).toEqual(expect.objectContaining({
       llmProvider: 'ollama',
-      ollamaBaseUrl: 'https://api.ollama.com/v1',
+      ollamaBaseUrl: 'https://ollama.com/v1',
       ollamaModel: 'qwen3.5:cloud',
       autoGenerateImages: false,
       ttsEngine: 'fishaudio',
@@ -73,5 +73,14 @@ describe('Interactive Story provider configuration', () => {
     expect(config.llmProvider).toBe('openrouter');
     expect(config.ttsEngine).toBe('elevenlabs');
     expect(config.autoGenerateImages).toBe(true);
+  });
+
+  test('normalizes the retired API hostname to Ollama Cloud official base URLs without changing stored config', () => {
+    const plugin = createPlugin({ savedConfig: { ollamaBaseUrl: 'https://api.ollama.com/v1' } });
+
+    expect(plugin._normalizeOllamaBaseUrl()).toBe('https://ollama.com/v1');
+    expect(plugin._normalizeOllamaBaseUrl('https://api.ollama.com/v1/')).toBe('https://ollama.com/v1');
+    expect(plugin._isOllamaCloudUrl(plugin._normalizeOllamaBaseUrl('https://api.ollama.com/v1'))).toBe(true);
+    expect(plugin.api.setConfig).not.toHaveBeenCalled();
   });
 });

@@ -100,7 +100,8 @@ class FriendChallengeSystem {
    * Handle /challenge command from GCCE
    */
   async handleChallengeCommand(args, context) {
-    const challenger = context.user;
+    const challenger = this._getCommandUser(context);
+    if (!challenger) return { success: false, message: 'Unable to identify challenger' };
     const targetUsername = args[0].replace('@', '');
     const stake = args[1] ? parseInt(args[1]) : this.config.minStake;
     
@@ -137,7 +138,8 @@ class FriendChallengeSystem {
    * Handle /accept command from GCCE
    */
   async handleAcceptCommand(args, context) {
-    const accepter = context.user;
+    const accepter = this._getCommandUser(context);
+    if (!accepter) return { success: false, message: 'Unable to identify accepter' };
     
     // Find pending challenge for this user
     let targetChallenge = null;
@@ -175,7 +177,8 @@ class FriendChallengeSystem {
    * Handle /decline command from GCCE
    */
   async handleDeclineCommand(args, context) {
-    const decliner = context.user;
+    const decliner = this._getCommandUser(context);
+    if (!decliner) return { success: false, message: 'Unable to identify decliner' };
     
     // Find pending challenge for this user
     let targetChallenge = null;
@@ -200,6 +203,13 @@ class FriendChallengeSystem {
       success: true,
       message: 'Challenge declined'
     };
+  }
+
+  _getCommandUser(context = {}) {
+    const userId = context.userId || context.uniqueId || context.user?.userId;
+    const nickname = context.nickname || context.username || context.user?.nickname;
+    if (!userId || !nickname) return null;
+    return { userId, nickname };
   }
 
   /**
@@ -305,8 +315,9 @@ class FriendChallengeSystem {
     }
     
     // Start 1v1 match
+    let match = null;
     try {
-      const match = this.gameEngine.startMatch('1v1', this.config.matchDuration);
+      match = this.gameEngine.startMatch('1v1', this.config.matchDuration);
       
       // Add both players to match
       this.gameEngine.addPlayerToMatch(challenge.challengerUserId, challenge.challengerNickname);
@@ -340,7 +351,7 @@ class FriendChallengeSystem {
       
       return { success: true, matchId: match.id };
     } catch (error) {
-      if (this.gameEngine.currentMatch && this.gameEngine.currentMatch.id === match.id) {
+      if (match && this.gameEngine.currentMatch && this.gameEngine.currentMatch.id === match.id) {
         try {
           this.gameEngine.endMatch({ skipAutoReset: true });
         } catch (cleanupError) {

@@ -480,21 +480,23 @@ class ChessGame {
    * Restore game state from saved data
    */
   restoreState(state) {
+    const restoredChess = new Chess();
     const savedPgn = typeof state.pgn === 'string' ? state.pgn.trim() : '';
     if (savedPgn) {
-      const restoredChess = new Chess();
       restoredChess.loadPgn(savedPgn);
       if (restoredChess.fen() !== state.fen) {
         throw new Error('Invalid chess state: PGN does not match FEN');
       }
-      this.chess = restoredChess;
     } else {
-      this.chess.load(state.fen);
+      restoredChess.load(state.fen);
     }
-    const sideToMove = this.chess.turn() === 'w' ? 'white' : 'black';
+    const sideToMove = restoredChess.turn() === 'w' ? 'white' : 'black';
     if (state.currentPlayer !== sideToMove) {
       throw new Error('Invalid chess state: current player does not match FEN');
     }
+
+    // Validate and construct the board before mutating this game instance.
+    this.chess = restoredChess;
     this.currentPlayer = state.currentPlayer;
     this.timers = { ...state.timers };
     this.timeControl = state.timeControl ? { ...state.timeControl } : this.timeControl;

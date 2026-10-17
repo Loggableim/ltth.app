@@ -1,0 +1,732 @@
+{
+  "entries": [
+    {
+      "id": "dashboard",
+      "group": "core",
+      "label": "Dashboard",
+      "labels": {
+        "de": "Dashboard",
+        "en": "Dashboard",
+        "es": "Panel",
+        "fr": "Tableau de Bord"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "clarityhud",
+      "group": "core",
+      "label": "ClarityHUD",
+      "labels": {
+        "de": "ClarityHUD",
+        "en": "ClarityHUD",
+        "es": "ClarityHUD",
+        "fr": "ClarityHUD"
+      },
+      "plugin": "clarityhud",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "sidekick",
+      "group": "core",
+      "label": "Sidekick",
+      "labels": {
+        "de": "Sidekick",
+        "en": "Sidekick",
+        "es": "Sidekick",
+        "fr": "Sidekick"
+      },
+      "plugin": "sidekick",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "spotlight",
+      "group": "core",
+      "label": "Spotlight",
+      "labels": {
+        "de": "Spotlight",
+        "en": "Spotlight",
+        "es": "Spotlight",
+        "fr": "Spotlight"
+      },
+      "plugin": "spotlight",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "events",
+      "group": "automations-goals",
+      "label": "Ereignisse",
+      "labels": {
+        "de": "Ereignisse",
+        "en": "Events",
+        "es": "Eventos",
+        "fr": "Événements"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "flows",
+      "group": "automations-goals",
+      "label": "Abläufe",
+      "labels": {
+        "de": "Abläufe",
+        "en": "Flows",
+        "es": "Flujos",
+        "fr": "Flux"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "goals",
+      "group": "automations-goals",
+      "label": "Ziele",
+      "labels": {
+        "de": "Ziele",
+        "en": "Goals",
+        "es": "Objetivos",
+        "fr": "Objectifs"
+      },
+      "plugin": "goals",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "advanced-timer",
+      "group": "automations-goals",
+      "label": "Erweiterter Timer",
+      "labels": {
+        "de": "Erweiterter Timer",
+        "en": "Advanced Timer",
+        "es": "Temporizador Avanzado",
+        "fr": "Minuteur Avancé"
+      },
+      "plugin": "advanced-timer",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "tts",
+      "group": "audio-voice",
+      "label": "TTS",
+      "labels": {
+        "de": "TTS",
+        "en": "TTS",
+        "es": "TTS",
+        "fr": "TTS"
+      },
+      "plugin": "tts",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "music-bot",
+      "group": "audio-voice",
+      "label": "Music Bot",
+      "labels": {
+        "de": "Music Bot",
+        "en": "Music Bot",
+        "es": "Bot de Música",
+        "fr": "Bot Musical"
+      },
+      "plugin": "music-bot",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "soundboard",
+      "group": "audio-voice",
+      "label": "Soundboard",
+      "labels": {
+        "de": "Soundboard",
+        "en": "Soundboard",
+        "es": "Mesa de Sonido",
+        "fr": "Table de Mixage"
+      },
+      "plugin": "soundboard",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "talking-heads",
+      "group": "audio-voice",
+      "label": "Talking Heads",
+      "labels": {
+        "de": "Talking Heads",
+        "en": "Talking Heads",
+        "es": "Cabezas Parlantes",
+        "fr": "Têtes Parlantes"
+      },
+      "plugin": "talking-heads",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "stt-ticker",
+      "group": "audio-voice",
+      "label": "STT-Ticker",
+      "labels": {
+        "de": "STT-Ticker",
+        "en": "STT Ticker",
+        "es": "Ticker STT",
+        "fr": "Ticker STT"
+      },
+      "plugin": "stt-ticker",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "emoji-rain",
+      "group": "visual-fx",
+      "label": "Emoji-Regen",
+      "labels": {
+        "de": "Emoji-Regen",
+        "en": "Emoji Rain",
+        "es": "Lluvia de Emojis",
+        "fr": "Pluie d'Emojis"
+      },
+      "plugin": "emoji-rain",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "schnorrbecher",
+      "group": "visual-fx",
+      "label": "Schnorrbecher",
+      "labels": {
+        "de": "Schnorrbecher",
+        "en": "Schnorrbecher",
+        "es": "Schnorrbecher",
+        "fr": "Schnorrbecher"
+      },
+      "plugin": "schnorrbecher",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "webgpu-emoji-rain",
+      "group": "visual-fx",
+      "label": "Emoji Rain",
+      "labels": {
+        "de": "Emoji Rain",
+        "en": "Emoji Rain",
+        "es": "Emoji Rain",
+        "fr": "Emoji Rain"
+      },
+      "plugin": "webgpu-emoji-rain",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "fireworks",
+      "group": "visual-fx",
+      "label": "Feuerwerk",
+      "labels": {
+        "de": "Feuerwerk",
+        "en": "Fireworks",
+        "es": "Fuegos Artificiales",
+        "fr": "Feux d'Artifice"
+      },
+      "plugin": "fireworks",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "webgpu-fireworks",
+      "group": "visual-fx",
+      "label": "WebGPU Fireworks",
+      "labels": {
+        "de": "WebGPU Fireworks",
+        "en": "WebGPU Fireworks",
+        "es": "WebGPU Fireworks",
+        "fr": "WebGPU Fireworks"
+      },
+      "plugin": "webgpu-fireworks",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "flame-overlay",
+      "group": "visual-fx",
+      "label": "Visual FX Frame",
+      "labels": {
+        "de": "Visual FX Frame",
+        "en": "Visual FX Frame",
+        "es": "Visual FX Frame",
+        "fr": "Visual FX Frame"
+      },
+      "plugin": "flame-overlay",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "visual-fx-frame-webgpu",
+      "group": "visual-fx",
+      "label": "Visual FX Frame WEBGPU",
+      "labels": {
+        "de": "Visual FX Frame WEBGPU",
+        "en": "Visual FX Frame WEBGPU",
+        "es": "Visual FX Frame WEBGPU",
+        "fr": "Visual FX Frame WEBGPU"
+      },
+      "plugin": "visual-fx-frame-webgpu",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "quiz-show",
+      "group": "games-engagement",
+      "label": "Quiz-Show",
+      "labels": {
+        "de": "Quiz-Show",
+        "en": "Quiz Show",
+        "es": "Programa de Concurso",
+        "fr": "Jeu Quiz"
+      },
+      "plugin": "quiz-show",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "interactive-story",
+      "group": "games-engagement",
+      "label": "Interaktive Story",
+      "labels": {
+        "de": "Interaktive Story",
+        "en": "Interactive Story",
+        "es": "Historia Interactiva",
+        "fr": "Histoire Interactive"
+      },
+      "plugin": "interactive-story",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "coinbattle",
+      "group": "games-engagement",
+      "label": "CoinBattle",
+      "labels": {
+        "de": "CoinBattle",
+        "en": "CoinBattle",
+        "es": "CoinBattle",
+        "fr": "CoinBattle"
+      },
+      "plugin": "coinbattle",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "game-engine",
+      "group": "games-engagement",
+      "label": "Spielmaschine",
+      "labels": {
+        "de": "Spielmaschine",
+        "en": "Game Engine",
+        "es": "Motor de Juegos",
+        "fr": "Moteur de Jeu"
+      },
+      "plugin": "game-engine",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "milestone-leaderboard",
+      "group": "games-engagement",
+      "label": "Viewer XP",
+      "labels": {
+        "de": "Viewer XP",
+        "en": "Viewer XP",
+        "es": "Viewer XP",
+        "fr": "Viewer XP"
+      },
+      "plugin": "milestone-leaderboard",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "gift-milestone",
+      "group": "games-engagement",
+      "label": "Geschenk-Meilenstein",
+      "labels": {
+        "de": "Geschenk-Meilenstein",
+        "en": "Gift Milestone",
+        "es": "Hito de Regalo",
+        "fr": "Jalon de Cadeau"
+      },
+      "plugin": "milestone-leaderboard",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "gift-catalog",
+      "group": "games-engagement",
+      "label": "Entwicklerleitfäden",
+      "labels": {
+        "de": "Entwicklerleitfäden",
+        "en": "Developer Guides",
+        "es": "Guías para desarrolladores",
+        "fr": "Guides développeur"
+      },
+      "plugin": "gift-catalog",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "toptier",
+      "group": "games-engagement",
+      "label": "Top Tier",
+      "labels": {
+        "de": "Top Tier",
+        "en": "Top Tier",
+        "es": "Nivel Superior",
+        "fr": "Niveau Supérieur"
+      },
+      "plugin": "toptier",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "multi-guest",
+      "group": "integrations",
+      "label": "VDO.Ninja",
+      "labels": {
+        "de": "VDO.Ninja",
+        "en": "VDO.Ninja",
+        "es": "VDO.Ninja",
+        "fr": "VDO.Ninja"
+      },
+      "plugin": "vdoninja",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "multicam",
+      "group": "integrations",
+      "label": "Multi-Cam",
+      "labels": {
+        "de": "Multi-Cam",
+        "en": "Multi-Cam",
+        "es": "Multi-Cámara",
+        "fr": "Multi-Caméra"
+      },
+      "plugin": "multicam",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "osc-bridge",
+      "group": "integrations",
+      "label": "OSC-Brücke",
+      "labels": {
+        "de": "OSC-Brücke",
+        "en": "OSC-Bridge",
+        "es": "Puente OSC",
+        "fr": "Pont OSC"
+      },
+      "plugin": "osc-bridge",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "openshock",
+      "group": "integrations",
+      "label": "Hybridshock",
+      "labels": {
+        "de": "Hybridshock",
+        "en": "Hybridshock",
+        "es": "Hybridshock",
+        "fr": "Hybridshock"
+      },
+      "plugin": "openshock",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "weather-control",
+      "group": "integrations",
+      "label": "Wetterkontrolle",
+      "labels": {
+        "de": "Wetterkontrolle",
+        "en": "Weather Control",
+        "es": "Control del Clima",
+        "fr": "Contrôle Météo"
+      },
+      "plugin": "weather-control",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "webgpu-weather-control",
+      "group": "integrations",
+      "label": "WebGPU-Wetterkontrolle",
+      "labels": {
+        "de": "WebGPU-Wetterkontrolle",
+        "en": "WebGPU Weather Control",
+        "es": "Control meteorológico WebGPU",
+        "fr": "Contrôle météo WebGPU"
+      },
+      "plugin": "webgpu-weather-control",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "stream-monsters",
+      "group": "integrations",
+      "label": "Stream Monsters",
+      "labels": {
+        "de": "Stream Monsters",
+        "en": "Stream Monsters",
+        "es": "Stream Monsters",
+        "fr": "Stream Monsters"
+      },
+      "plugin": "stream-monsters",
+      "alias": "streamalchemy",
+      "closedBeta": true
+    },
+    {
+      "id": "gcce",
+      "group": "integrations",
+      "label": "Globale Chat-Befehls-Engine",
+      "labels": {
+        "de": "Globale Chat-Befehls-Engine",
+        "en": "Global Chat Command Engine",
+        "es": "Motor de Comandos de Chat Global",
+        "fr": "Moteur de Commandes de Chat Global"
+      },
+      "plugin": "gcce",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "thermal-printer",
+      "group": "integrations",
+      "label": "Thermaldrucker",
+      "labels": {
+        "de": "Thermaldrucker",
+        "en": "Thermal Printer",
+        "es": "Impresora Térmica",
+        "fr": "Imprimante Thermique"
+      },
+      "plugin": "thermal-printer",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "animazingpal",
+      "group": "integrations",
+      "label": "AnimazingPal",
+      "labels": {
+        "de": "AnimazingPal",
+        "en": "AnimazingPal",
+        "es": "AnimazingPal",
+        "fr": "AnimazingPal"
+      },
+      "plugin": "animazingpal",
+      "alias": null,
+      "closedBeta": true
+    },
+    {
+      "id": "config-import",
+      "group": "integrations",
+      "label": "Konfiguration Importieren",
+      "labels": {
+        "de": "Konfiguration Importieren",
+        "en": "Config Import",
+        "es": "Importar Configuración",
+        "fr": "Importer la Configuration"
+      },
+      "plugin": "config-import",
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "plugins",
+      "group": "management",
+      "label": "App Store",
+      "labels": {
+        "de": "App Store",
+        "en": "App Store",
+        "es": "App Store",
+        "fr": "App Store"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "wiki",
+      "group": "management",
+      "label": "Wiki",
+      "labels": {
+        "de": "Wiki",
+        "en": "Wiki",
+        "es": "Wiki",
+        "fr": "Wiki"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    },
+    {
+      "id": "settings",
+      "group": "management",
+      "label": "Einstellungen",
+      "labels": {
+        "de": "Einstellungen",
+        "en": "Settings",
+        "es": "Configuración",
+        "fr": "Paramètres"
+      },
+      "plugin": null,
+      "alias": null,
+      "closedBeta": false
+    }
+  ],
+  "groups": {
+    "core:de": "Kernfunktionen",
+    "core:en": "Core Functions",
+    "core:es": "Funciones Principales",
+    "core:fr": "Fonctions Principales",
+    "automations-goals:de": "Automationen & Ziele",
+    "automations-goals:en": "Automations & Goals",
+    "automations-goals:es": "Automatizaciones y Objetivos",
+    "automations-goals:fr": "Automatisations et Objectifs",
+    "audio-voice:de": "Audio & Sprache",
+    "audio-voice:en": "Audio & Voice",
+    "audio-voice:es": "Audio y Voz",
+    "audio-voice:fr": "Audio et Voix",
+    "visual-fx:de": "Visuelle Effekte",
+    "visual-fx:en": "Visual FX",
+    "visual-fx:es": "Efectos Visuales",
+    "visual-fx:fr": "Effets Visuels",
+    "games-engagement:de": "Spiele & Engagement",
+    "games-engagement:en": "Games & Engagement",
+    "games-engagement:es": "Juegos y Participación",
+    "games-engagement:fr": "Jeux et Engagement",
+    "integrations:de": "Integrationen",
+    "integrations:en": "Integrations",
+    "integrations:es": "Integraciones",
+    "integrations:fr": "Intégrations",
+    "management:de": "Verwaltung",
+    "management:en": "Management",
+    "management:es": "Gestión",
+    "management:fr": "Gestion"
+  },
+  "taskGroups": [
+    {
+      "id": "stream-start",
+      "label": {
+        "de": "Stream & Ziele",
+        "en": "Stream & goals",
+        "es": "Directo y objetivos",
+        "fr": "Stream et objectifs"
+      },
+      "views": [
+        "dashboard",
+        "events",
+        "goals",
+        "milestone-leaderboard",
+        "gift-milestone",
+        "toptier",
+        "gift-catalog"
+      ]
+    },
+    {
+      "id": "automation-interaction",
+      "label": {
+        "de": "Automationen & Interaktion",
+        "en": "Automation & interaction",
+        "es": "Automatización e interacción",
+        "fr": "Automatisation et interaction"
+      },
+      "views": [
+        "flows",
+        "advanced-timer",
+        "quiz-show",
+        "interactive-story",
+        "coinbattle",
+        "game-engine",
+        "gcce",
+        "stream-monsters"
+      ]
+    },
+    {
+      "id": "audio-voice",
+      "label": {
+        "de": "Audio & Sprache",
+        "en": "Audio & voice",
+        "es": "Audio y voz",
+        "fr": "Audio et voix"
+      },
+      "views": [
+        "tts",
+        "music-bot",
+        "soundboard",
+        "talking-heads",
+        "stt-ticker"
+      ]
+    },
+    {
+      "id": "visual-stage",
+      "label": {
+        "de": "Visuals & Bühne",
+        "en": "Visuals & stage",
+        "es": "Visuales y escenario",
+        "fr": "Visuels et scène"
+      },
+      "views": [
+        "emoji-rain",
+        "schnorrbecher",
+        "webgpu-emoji-rain",
+        "fireworks",
+        "webgpu-fireworks",
+        "flame-overlay",
+        "visual-fx-frame-webgpu",
+        "clarityhud",
+        "spotlight",
+        "animazingpal"
+      ]
+    },
+    {
+      "id": "control-integrations",
+      "label": {
+        "de": "Steuerung & Integrationen",
+        "en": "Control & integrations",
+        "es": "Control e integraciones",
+        "fr": "Contrôle et intégrations"
+      },
+      "views": [
+        "multi-guest",
+        "multicam",
+        "osc-bridge",
+        "openshock",
+        "weather-control",
+        "webgpu-weather-control",
+        "thermal-printer",
+        "sidekick"
+      ]
+    },
+    {
+      "id": "library-admin",
+      "label": {
+        "de": "Bibliothek & Verwaltung",
+        "en": "Library & management",
+        "es": "Biblioteca y administración",
+        "fr": "Bibliothèque et gestion"
+      },
+      "views": [
+        "plugins",
+        "wiki",
+        "settings",
+        "config-import"
+      ]
+    }
+  ]
+}

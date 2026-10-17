@@ -114,15 +114,37 @@
         document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
       }
 
+      let themeDisposed = false;
+      const parentThemeObservers = [];
+      window.__sttTickerParentThemeObservers = parentThemeObservers;
+      function syncThemeIfActive() {
+        if (!themeDisposed) syncTheme();
+      }
+      function onVisibilityChange() {
+        if (!themeDisposed && !document.hidden) syncTheme();
+      }
+      function disposeThemeSync() {
+        if (themeDisposed) return;
+        themeDisposed = true;
+        window.removeEventListener('focus', syncThemeIfActive);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        for (const observer of parentThemeObservers) observer.disconnect();
+        parentThemeObservers.length = 0;
+        window.removeEventListener('pagehide', disposeThemeSync);
+      }
+
       syncTheme();
-      window.addEventListener('focus', syncTheme);
-      document.addEventListener('visibilitychange', () => { if (!document.hidden) syncTheme(); });
+      window.addEventListener('focus', syncThemeIfActive);
+      document.addEventListener('visibilitychange', onVisibilityChange);
+      window.addEventListener('pagehide', disposeThemeSync, { once: true });
       try {
         if (window.parent && window.parent !== window) {
-          new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+          const parentThemeObserver = new MutationObserver(syncThemeIfActive);
+          parentThemeObserver.observe(window.parent.document.documentElement, {
             attributes: true,
             attributeFilter: ['data-theme']
           });
+          parentThemeObservers.push(parentThemeObserver);
         }
       } catch (error) {}
     })();
@@ -267,6 +289,41 @@
     let ringFilled = 0;
     let lastSeenSegId = null;
     let interimText = '';
+    let disposed = false;
+    let socket = null;
+    let publishedSocketForI18n = false;
+    const ownedSocketHandlers = [];
+    const ownedObservers = [];
+
+    function listen(eventName, handler) {
+      const guardedHandler = (...args) => {
+        if (disposed) return;
+        handler(...args);
+      };
+      socket.on(eventName, guardedHandler);
+      ownedSocketHandlers.push([eventName, guardedHandler]);
+    }
+
+    function disposeOverlay(event) {
+      if (event?.persisted === true) return;
+      if (disposed) return;
+      disposed = true;
+      for (const [eventName, handler] of ownedSocketHandlers) {
+        if (typeof socket.off === 'function') socket.off(eventName, handler);
+        else if (typeof socket.removeListener === 'function') socket.removeListener(eventName, handler);
+      }
+      ownedSocketHandlers.length = 0;
+      for (const observer of ownedObservers) observer.disconnect();
+      ownedObservers.length = 0;
+      document.removeEventListener('keydown', onTestKeydown);
+      window.removeEventListener('pagehide', disposeOverlay);
+      const parentThemeObservers = window.__sttTickerParentThemeObservers || [];
+      for (const observer of parentThemeObservers) observer.disconnect();
+      parentThemeObservers.length = 0;
+      window.__sttTickerParentThemeObservers = null;
+      if (publishedSocketForI18n && window.socket === socket) delete window.socket;
+      if (typeof socket.disconnect === 'function') socket.disconnect();
+    }
     function getThemeStyles(theme) {
       const isDay = theme === 'day';
       const isHighContrast = theme === 'contrast' || theme === 'vision-impaired';
@@ -471,7 +528,8 @@
     }
 
     function renderInterim(data) {
-      const text = String(data?.text || '').trim();
+      if (!data || typeof data.text !== 'string') return;
+      const text = data.text.trim();
       if (data?.isFinal || !text) {
         const classicWasVisible = linesContainer.style.display !== 'none';
         interimText = '';
@@ -483,6 +541,7 @@
     }
 
     function clearAll() {
+      if (disposed) return;
       ring[0] = ring[1] = ring[2] = '';
       ringFilled = 0;
       lastSeenSegId = null;
@@ -545,8 +604,9 @@
       const currentHTML = multiContainer.innerHTML;
       let newHTML = '';
       for (const line of lines) {
-        const langLabel = (line.language || '').toUpperCase();
-        const text = line.text || '';
+        if (!line || typeof line.language !== 'string' || typeof line.text !== 'string') continue;
+        const langLabel = line.language.toUpperCase();
+        const text = line.text;
         const color = line.color || '#FFFFFF';
         newHTML += `<div class="multi-line">
           <span class="lang-label" style="color:${color}">${langLabel}</span>
@@ -574,15 +634,18 @@
     }
 
     // ===== Socket.IO =====
-    const socket = io({ transports: ['websocket', 'polling'] });
-    socket.on('connect', () => console.log('[stt-ticker] connected'));
-    socket.on('disconnect', () => console.log('[stt-ticker] disconnected'));
+    socket = io({ transports: ['websocket', 'polling'] });
+    publishedSocketForI18n = !window.socket;
+    if (publishedSocketForI18n) window.socket = socket;
+    listen('connect', () => console.log('[stt-ticker] connected'));
+    listen('disconnect', () => console.log('[stt-ticker] disconnected'));
 
-    socket.on('stt-ticker:transcript', (data) => {
+    listen('stt-ticker:transcript', (data) => {
       if (!data) return;
 
       // PRIO 1: Multi-Language Output (N Zeilen)
-      if (data.multi && data.multi.lines && data.multi.lines.length > 0) {
+      if (data.multi && data.multi.lines !== undefined && !Array.isArray(data.multi.lines)) return;
+      if (data.multi && Array.isArray(data.multi.lines) && data.multi.lines.length > 0) {
         renderMulti(data.multi.lines);
         return;
       }
@@ -597,7 +660,7 @@
       setActiveMode('classic');
 
       if (Array.isArray(data.segments) && data.segments.length > 0) {
-        const segs = data.segments;
+        const segs = data.segments.filter(segment => segment && typeof segment.text === 'string');
         let startIdx = 0;
         for (let i = segs.length - 1; i >= 0; i--) {
           if (segs[i].id !== undefined && segs[i].id === lastSeenSegId) {
@@ -626,23 +689,33 @@
       }
     });
 
-    socket.on('stt-ticker:interim', renderInterim);
+    listen('stt-ticker:interim', (data) => {
+      if (!data || typeof data.text !== 'string') return;
+      renderInterim(data);
+    });
 
-    socket.on('stt-ticker:clear', () => clearAll());
+    listen('stt-ticker:clear', () => clearAll());
 
     applyThemeStyles();
-    new MutationObserver(applyThemeStyles).observe(document.documentElement, {
+    const themeObserver = new MutationObserver(() => {
+      if (!disposed) applyThemeStyles();
+    });
+    themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme']
     });
+    ownedObservers.push(themeObserver);
 
     // Tastatur-Shortcut für Testen
-    document.addEventListener('keydown', (e) => {
+    function onTestKeydown(e) {
+      if (disposed) return;
       if (e.key === 't' || e.key === 'T') {
         const fake = 'Test Satz ' + Date.now();
         pushLine(fake);
       }
-    });
+    }
+    document.addEventListener('keydown', onTestKeydown);
+    window.addEventListener('pagehide', disposeOverlay);
   })();
   </script>
 </body>

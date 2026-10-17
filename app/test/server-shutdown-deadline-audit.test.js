@@ -5,8 +5,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 const SQLite = require('better-sqlite3');
 const DatabaseManager = require('../modules/database');
+const { runBoundedShutdownStage } = require('../modules/launcher-shutdown-stage');
+const { unloadPluginsForShutdown } = require('../modules/plugin-shutdown');
 
-test.each([false, true])('original timeout persists queued events or preserves them on actual SQLite lock (locked=%s)', async locked => {
+test.each([false, true])('plugin cleanup has no pre-persistence force-exit deadline (locked=%s)', async locked => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-shutdown-deadline-audit-'));
   const databasePath = path.join(directory, 'owned.sqlite');
   const quiet = jest.spyOn(console, 'log').mockImplementation(() => {});
@@ -21,16 +23,29 @@ test.each([false, true])('original timeout persists queued events or preserves t
   let releaseCleanup;
   const cleanupGate = new Promise(resolve => { releaseCleanup = resolve; });
   let forceCallback;
+  let databaseCloseStarted = false;
+  const originalDbClose = db.close.bind(db);
+  db.close = () => {
+    databaseCloseStarted = true;
+    return originalDbClose();
+  };
   const processDouble = { exit: jest.fn() };
   const server = { close: jest.fn(callback => callback()) };
   const context = vm.createContext({
     db, server, process: processDouble,
     logger: { info() {}, warn() {}, error() {}, debug() {} },
     stableOverlayRoutingLifecycle: { shutdown: async () => {} },
+    runBoundedShutdownStage,
+    unloadPluginsForShutdown,
     pluginLoader: { plugins: new Map([['owned-slow-plugin', {}]]), unloadPlugin: jest.fn(() => cleanupGate) },
     tiktok: { isActive: () => false }, obs: { isConnected: () => false },
     cloudSync: { shutdown: async () => {} }, io: { disconnectSockets() {} },
-    setTimeout(callback, ms) { expect(ms).toBe(5000); forceCallback = callback; return { unref() {} }; },
+    setTimeout(callback, ms) {
+      expect(ms).toBe(5000);
+      expect(databaseCloseStarted).toBe(true);
+      forceCallback = callback;
+      return { unref() {} };
+    },
     clearTimeout() {}
   });
   vm.runInContext(source.slice(start, end), context);
@@ -40,36 +55,35 @@ test.each([false, true])('original timeout persists queued events or preserves t
     await new Promise(resolve => setImmediate(resolve));
     expect(context.pluginLoader.unloadPlugin).toHaveBeenCalled();
     // An adapter/plugin can still enqueue an event while unload awaits.
-    // Its normal five-second batch deadline begins later than server force-exit.
+    // The server must not arm a force-exit while plugin cleanup still owns the queue.
     db.logEvent('owned-late-shutdown-event', 'synthetic-user', {});
     expect(db.eventBatchQueue).toHaveLength(1);
     expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(0);
     if (locker) { db.db.pragma('busy_timeout = 10'); locker.exec('BEGIN IMMEDIATE'); }
-    forceCallback(); // Controlled server deadline; never exits the host process.
+    expect(forceCallback).toBeUndefined();
     expect(server.close).not.toHaveBeenCalled();
-    if (locked) {
-      expect(processDouble.exit).not.toHaveBeenCalled();
-      expect(processDouble.exitCode).toBe(1);
-      expect(db.db.open).toBe(true);
-      expect(db.eventBatchQueue).toHaveLength(1);
-      expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(0);
-      locker.exec('ROLLBACK');
-    } else {
-      expect(processDouble.exit).toHaveBeenCalledWith(1);
-      expect(db.db.open).toBe(true);
-      expect(db.eventBatchQueue).toHaveLength(0);
-      expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(1);
-    }
-    // Release the await only for safe process-double cleanup/recovery.
+    expect(processDouble.exit).not.toHaveBeenCalled();
+    expect(db.db.open).toBe(true);
+    expect(db.eventBatchQueue).toHaveLength(1);
+    expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(0);
+
     releaseCleanup(true);
     await shutdown;
     if (locked) {
       expect(server.close).not.toHaveBeenCalled();
       expect(processDouble.exit).not.toHaveBeenCalled();
       expect(vm.runInContext('_isShuttingDown', context)).toBe(false);
+      expect(db.db.open).toBe(true);
+      expect(db.eventBatchQueue).toHaveLength(1);
+      expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(0);
+      locker.exec('ROLLBACK');
       await context.gracefulShutdown('OWNED_RECOVERY');
       expect(server.close).toHaveBeenCalledTimes(1);
       expect(processDouble.exit).toHaveBeenCalledWith(0);
+    } else {
+      expect(server.close).toHaveBeenCalledTimes(1);
+      expect(processDouble.exit).toHaveBeenCalledWith(0);
+      expect(db.db.open).toBe(false);
     }
     expect(reader.prepare('SELECT count(*) AS n FROM event_logs').get().n).toBe(1);
   } finally {

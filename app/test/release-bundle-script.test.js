@@ -25,6 +25,15 @@ function findPythonCommand() {
   throw new Error('Python 3 is required for the LTTH release bundle test.');
 }
 
+function writeZip(filename, entries) {
+  const python = findPythonCommand();
+  fs.mkdirSync(path.dirname(filename), { recursive: true });
+  const result = spawnSync(python.command, [...python.args, '-c',
+    'import json,sys,zipfile; z=zipfile.ZipFile(sys.argv[1],"w"); [z.writestr(k,v) for k,v in json.loads(sys.argv[2]).items()]; z.close()',
+    filename, JSON.stringify(entries)], { encoding: 'utf8' });
+  if (result.status !== 0) throw new Error(result.stderr || 'ZIP fixture failed');
+}
+
 function createTempRepo() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-release-bundle-'));
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
@@ -35,10 +44,10 @@ function createTempRepo() {
     path.join(root, 'app', 'config', 'plugin-release-policy.json')
   );
   const releasePolicy = JSON.parse(fs.readFileSync(path.join(root, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
-  for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
-    const assetPath = path.join(root, 'app', 'public', asset.slice(1));
-    fs.mkdirSync(path.dirname(assetPath), { recursive: true });
-    fs.writeFileSync(assetPath, 'synthetic-public-asset');
+  for (const assetPath of Object.keys(releasePolicy.publicAssetPathOwners || {})) {
+    const publicFile = path.join(root, 'app', 'public', assetPath.replace(/^\//, ''));
+    fs.mkdirSync(path.dirname(publicFile), { recursive: true });
+    fs.writeFileSync(publicFile, 'closed-beta static asset');
   }
   for (const id of releasePolicy.closedBeta) {
     const dir = path.join(root, 'app', 'plugins', id);
@@ -48,11 +57,22 @@ function createTempRepo() {
   }
   fs.mkdirSync(path.join(root, 'app', 'plugins', 'goals'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', 'plugins', 'goals', 'plugin.json'), '{"id":"goals"}');
+  fs.mkdirSync(path.join(root, 'app', 'plugins', 'gift-catalog'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'gift-catalog', 'plugin.json'), '{"id":"gift-catalog"}');
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'gift-catalog', 'main.js'), 'module.exports = {};');
+  fs.mkdirSync(path.join(root, 'app', 'modules'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'modules', 'public-overlay-payload-projection.js'), 'module.exports = { projectSidekickHudPayload() {} };');
+  fs.writeFileSync(path.join(root, 'app', 'modules', 'public-overlay-registry.js'), "module.exports = { route: '/overlay/sidekick/hud' };\n");
   const nestedClosedDir = path.join(root, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT');
   fs.mkdirSync(nestedClosedDir, { recursive: true });
   fs.writeFileSync(path.join(root, 'app', 'plugins', 'public-wrapper', 'plugin.json'), '{"id":"public-wrapper"}');
   fs.writeFileSync(path.join(nestedClosedDir, 'plugin.json'), '{"id":"public-helper"}');
   for (const [directory, manifest] of [
+    ['chatango', { id: 'chatango' }],
+    ['Ｃｈａｔａｎｇｏ', { id: 'harmless-path-fixture' }],
+    ['%63hatango', { id: 'harmless-path-fixture' }],
+    ['%2563hatango', { id: 'harmless-path-fixture' }],
+    ['renamed-chatango', { id: 'chatango' }],
     ['renamed-beta', { id: 'music-bot' }],
     ['renamed-alias', { id: 'other-id', aliases: ['streamalchemy'] }]
   ]) {
@@ -61,6 +81,10 @@ function createTempRepo() {
     fs.writeFileSync(path.join(dir, 'plugin.json'), JSON.stringify(manifest));
     fs.writeFileSync(path.join(dir, 'main.js'), 'module.exports = {};');
   }
+
+  fs.mkdirSync(path.join(root, 'app', 'public', 'js'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'public', 'js', 'chatango-theme-adapter.js'), 'synthetic-retired-adapter');
+  fs.writeFileSync(path.join(root, 'app', 'plugins', 'chatango', 'local-state.json'), '{"keep":"developer"}');
 
   const sourceScript = path.join(__dirname, '..', '..', 'scripts', 'build_release_bundle.py');
   const targetScript = path.join(root, 'scripts', 'build_release_bundle.py');
@@ -108,6 +132,10 @@ function createTempRepo() {
     }, null, 2)
   );
   fs.writeFileSync(path.join(root, 'app', 'ltth_latest.zip'), Buffer.from('old-latest'));
+  fs.writeFileSync(path.join(root, 'app', '.config_path'), Buffer.from('C:\\Users\\fixture\\AppData\\Roaming\\LTTH\\config\r\n', 'utf8'));
+  fs.mkdirSync(path.join(root, 'app', 'config', 'examples'), { recursive: true });
+  fs.writeFileSync(path.join(root, 'app', 'config', 'examples', '.env.example'), 'synthetic-placeholder-only');
+  fs.writeFileSync(path.join(root, 'app', 'config', 'examples', 'README.md'), 'safe example documentation');
   fs.mkdirSync(path.join(root, 'app', 'plugins', 'streamalchemy'), { recursive: true });
   fs.writeFileSync(path.join(root, 'app', 'plugins', 'streamalchemy', '.env.production'), 'synthetic-nested-environment');
   fs.writeFileSync(
@@ -127,9 +155,20 @@ function createTempRepo() {
     fs.writeFileSync(path.join(root, 'app', directory, 'private-test-artifact.json'), '{}');
   }
   const profilesRoot = path.join(root, 'app', 'user_configs');
-  for (const name of ['.env', '.env.local', '.env.production', '.env.example']) {
+  for (const name of ['.env', '.env.local', '.env.production']) {
     fs.writeFileSync(path.join(root, 'app', name), 'synthetic-environment');
   }
+  fs.writeFileSync(
+    path.join(root, 'app', '.env.example'),
+    [
+      'PORT=3000',
+      'EULER_BACKUP_API_KEY=your_euler_backup_api_key_here',
+      'EULER_FALLBACK_API_KEY=your_euler_fallback_api_key_here',
+      'SYNTHETIC_TOKEN=replace_me',
+      'SYNTHETIC_SECRET=placeholder_secret',
+      'SYNTHETIC_PASSWORD=change_this_password'
+    ].join('\n') + '\n'
+  );
   const userDataRoot = path.join(root, 'app', 'user_data');
   fs.mkdirSync(userDataRoot, { recursive: true });
   fs.writeFileSync(path.join(userDataRoot, 'tiktok_session.json'), 'synthetic-session');
@@ -210,6 +249,43 @@ function readZipEntries(filePath) {
   });
 }
 
+function readZipEntry(filePath, entryName) {
+  return new Promise((resolve, reject) => {
+    yauzl.open(filePath, { lazyEntries: true }, (error, archive) => {
+      if (error) return reject(error);
+      archive.on('entry', entry => {
+        if (entry.fileName !== entryName) {
+          archive.readEntry();
+          return;
+        }
+        archive.openReadStream(entry, (streamError, stream) => {
+          if (streamError) return reject(streamError);
+          const chunks = [];
+          stream.on('data', chunk => chunks.push(chunk));
+          stream.on('error', reject);
+          stream.on('end', () => {
+            archive.close();
+            resolve(Buffer.concat(chunks).toString('utf8'));
+          });
+        });
+      });
+      archive.on('end', () => reject(new Error(`Missing synthetic ZIP entry: ${entryName}`)));
+      archive.on('error', reject);
+      archive.readEntry();
+    });
+  });
+}
+
+function hasOnlyPlaceholderCredentials(source) {
+  const placeholder = /^(?:|<[^>]+>|\$\{[^}]+\}|\{[^}]+\}|__[^_]+__|(?:your|replace|change|insert|enter|example|placeholder|dummy|sample|todo|changeme|not[_-]?a[_-]?real)[\w.-]*|(?:x{3,}|\*{3,}|\.{3,})|(?:your[_-].+[_-]here))$/i;
+  return source.split(/\r?\n/).every(line => {
+    const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
+    if (!match || !/(?:API_KEY|_TOKEN|_SECRET|_PASSWORD)$/i.test(match[1])) return true;
+    const value = match[2].replace(/^(['"])(.*)\1$/, '$2');
+    return placeholder.test(value);
+  });
+}
+
 describe('Release bundle script', () => {
   let tempRoot;
 
@@ -220,7 +296,7 @@ describe('Release bundle script', () => {
     }
   });
 
-  it('builds the versioned patch bundle and changelog for release automation', () => {
+  it('builds the versioned patch bundle and changelog for release automation', async () => {
     const python = findPythonCommand();
     tempRoot = createTempRepo();
 
@@ -241,6 +317,8 @@ describe('Release bundle script', () => {
     const versionDir = path.join(tempRoot, 'new_patch', 'ltth_1.3.24');
     const zipPath = path.join(versionDir, 'ltth_1.3.24.zip');
     const changelogPath = path.join(versionDir, 'changelog.txt');
+    const configPathPointer = path.join(tempRoot, 'app', '.config_path');
+    const originalConfigPathPointer = fs.readFileSync(configPathPointer);
 
     expect(fs.existsSync(zipPath)).toBe(true);
     expect(fs.existsSync(changelogPath)).toBe(true);
@@ -259,21 +337,35 @@ describe('Release bundle script', () => {
 
     expect(inspect.status).toBe(0);
     const names = JSON.parse(inspect.stdout.trim());
-    expect(names).toContain('ltth_1.3.24/launcher.exe');
+    expect(names).not.toContain('ltth_1.3.24/launcher.exe');
     expect(names).toContain('ltth_1.3.24/app/package.json');
+    expect(names).toContain('ltth_1.3.24/app/config/examples/README.md');
+    expect(names).not.toContain('ltth_1.3.24/app/config/examples/.env.example');
     expect(names).toContain('ltth_1.3.24/app/config/distribution-mode.json');
     expect(names).toContain('ltth_1.3.24/app/plugins/goals/plugin.json');
-    const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
-    for (const asset of Object.keys(releasePolicy.publicAssetPathOwners)) {
-      expect(names).not.toContain(`ltth_1.3.24/app/public${asset}`);
-      expect(fs.existsSync(path.join(tempRoot, 'app', 'public', asset.slice(1)))).toBe(true);
+    expect(names).toContain('ltth_1.3.24/app/modules/public-overlay-payload-projection.js');
+    expect(names).toContain('ltth_1.3.24/app/modules/public-overlay-registry.js');
+    expect(names.some(name => name.startsWith('ltth_1.3.24/app/plugins/sidekick/'))).toBe(false);
+    expect(names.some(name => name.startsWith('ltth_1.3.24/app/plugins/gift-catalog/'))).toBe(false);
+    expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', 'gift-catalog', 'plugin.json'))).toBe(true);
+    for (const directory of ['chatango', 'Ｃｈａｔａｎｇｏ', '%63hatango', '%2563hatango', 'renamed-chatango']) {
+      expect(names.some(name => name.startsWith(`ltth_1.3.24/app/plugins/${directory}/`))).toBe(false);
+      expect(fs.readFileSync(path.join(tempRoot, 'app', 'plugins', directory, 'main.js'), 'utf8')).toBe('module.exports = {};');
     }
+    expect(names).not.toContain('ltth_1.3.24/app/public/js/chatango-theme-adapter.js');
+    expect(fs.readFileSync(path.join(tempRoot, 'app', 'public', 'js', 'chatango-theme-adapter.js'), 'utf8')).toBe('synthetic-retired-adapter');
+    expect(fs.readFileSync(path.join(tempRoot, 'app', 'plugins', 'chatango', 'local-state.json'), 'utf8')).toBe('{"keep":"developer"}');
     expect(names.some(name => name.includes('/plugins/renamed-beta/') || name.includes('/plugins/renamed-alias/'))).toBe(false);
     expect(names.some(name => name.includes('/plugins/public-wrapper/'))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', 'public-wrapper', 'vendor', 'MUSIC-BOT', 'plugin.json'))).toBe(true);
+    const releasePolicy = JSON.parse(fs.readFileSync(path.join(tempRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
     for (const id of [...releasePolicy.closedBeta, ...Object.keys(releasePolicy.aliases)]) {
       expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/plugins/${id}/`))).toEqual([]);
       expect(fs.existsSync(path.join(tempRoot, 'app', 'plugins', id, 'plugin.json'))).toBe(true);
+    }
+    for (const assetPath of Object.keys(releasePolicy.publicAssetPathOwners)) {
+      expect(names).not.toContain(`ltth_1.3.24/app/public${assetPath}`);
+      expect(fs.existsSync(path.join(tempRoot, 'app', 'public', assetPath.replace(/^\//, '')))).toBe(true);
     }
     expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_configs/'))).toEqual([]);
     expect(names.filter(name => name.startsWith('ltth_1.3.24/app/user_data/'))).toEqual([]);
@@ -281,6 +373,11 @@ describe('Release bundle script', () => {
       expect(names.filter(name => name.startsWith(`ltth_1.3.24/app/${directory}/`))).toEqual([]);
     }
     expect(names).toContain('ltth_1.3.24/app/.env.example');
+    const envExample = await readZipEntry(zipPath, 'ltth_1.3.24/app/.env.example');
+    expect(hasOnlyPlaceholderCredentials(envExample)).toBe(true);
+    expect(envExample).toContain('PORT=3000');
+    expect(names).not.toContain('ltth_1.3.24/app/.config_path');
+    expect(fs.readFileSync(configPathPointer).equals(originalConfigPathPointer)).toBe(true);
     expect(names).not.toContain('ltth_1.3.24/app/plugins/streamalchemy/.env.production');
     for (const name of ['.env', '.env.local', '.env.production']) {
       expect(names).not.toContain(`ltth_1.3.24/app/${name}`);
@@ -611,6 +708,8 @@ describe('Release bundle script', () => {
     });
 
     const entries = await readZipEntries(firstZip);
+    expect(entries.map(entry => entry.name)).not.toContain('ltth_1.3.24/launcher.exe');
+    expect(entries.map(entry => entry.name)).toContain('ltth_1.3.24/app/package.json');
     expect(entries.map(entry => entry.name)).not.toContain(
       'ltth_1.3.24/app/plugins/streamalchemy/plugin.json'
     );
@@ -631,7 +730,8 @@ describe('Release bundle script', () => {
     fs.writeFileSync(path.join(tempRoot, 'app', 'CURRENT_VERSION.txt'), '1.3.24\n');
     const patchRoot = path.join(tempRoot, 'new_patch', 'ltth_1.3.24');
     fs.mkdirSync(patchRoot, { recursive: true });
-    fs.writeFileSync(path.join(patchRoot, 'ltth_1.3.24.zip'), Buffer.from('new-bundle'));
+    const patchZip = path.join(patchRoot, 'ltth_1.3.24.zip');
+    writeZip(patchZip, { 'ltth_1.3.24/app/plugins/goals/plugin.json': '{"id":"goals"}' });
     fs.writeFileSync(path.join(patchRoot, 'changelog.txt'), 'Stable 1.3.24\n');
 
     const result = spawnSync(
@@ -646,8 +746,48 @@ describe('Release bundle script', () => {
 
     expect(result.stderr).toBe('');
     expect(result.status).toBe(0);
-    expect(fs.readFileSync(path.join(tempRoot, 'app', 'ltth_latest.zip'))).toEqual(Buffer.from('new-bundle'));
+    expect(fs.readFileSync(path.join(tempRoot, 'app', 'ltth_latest.zip'))).toEqual(
+      fs.readFileSync(path.join(tempRoot, 'released_patches', 'ltth_1.3.24', 'ltth_1.3.24.zip'))
+    );
     expect(fs.existsSync(path.join(tempRoot, 'app', 'archive', 'ltth_1.3.24.zip'))).toBe(false);
     expect(fs.existsSync(path.join(tempRoot, 'released_patches', 'ltth_1.3.24', 'ltth_1.3.24.zip'))).toBe(true);
+  });
+
+  it.each([
+    ['case-folded directory', { 'ltth_1.3.25/app/plugins/Chatango/main.js': 'retired source' }],
+    ['NFKC directory', { 'ltth_1.3.25/app/plugins/Ｃｈａｔａｎｇｏ/main.js': 'retired source' }],
+    ['percent-encoded directory', { 'ltth_1.3.25/app/plugins/%63hatango/main.js': 'retired source' }],
+    ['double-percent-encoded directory', { 'ltth_1.3.25/app/plugins/%2563hatango/main.js': 'retired source' }],
+    ['renamed directory manifest ID', { 'ltth_1.3.25/app/plugins/renamed/plugin.json': '{"id":"chatango"}' }],
+    ['manifest alias', { 'ltth_1.3.25/app/plugins/renamed/plugin.json': '{"id":"community-chat","aliases":["Chatango"]}' }],
+    ['manifest replacement', { 'ltth_1.3.25/app/plugins/renamed/plugin.json': '{"id":"community-chat","replaces":["chatango"]}' }],
+    ['invalid ZIP', null]
+  ])('refuses a patch ZIP with %s before staging', (_caseName, entries) => {
+    const python = findPythonCommand();
+    tempRoot = createTempRepo();
+    const scriptPath = path.join(__dirname, '..', '..', 'scripts', 'release_from_new_patch.py');
+    fs.copyFileSync(scriptPath, path.join(tempRoot, 'scripts', 'release_from_new_patch.py'));
+    fs.writeFileSync(path.join(tempRoot, 'app', 'CURRENT_VERSION.txt'), '1.3.24\n');
+    const currentZip = Buffer.from('existing-public-bundle');
+    fs.writeFileSync(path.join(tempRoot, 'app', 'ltth_latest.zip'), currentZip);
+    const patchRoot = path.join(tempRoot, 'new_patch', 'ltth_1.3.25');
+    fs.mkdirSync(patchRoot, { recursive: true });
+    const patchZip = path.join(patchRoot, 'ltth_1.3.25.zip');
+    if (entries) writeZip(patchZip, entries);
+    else fs.writeFileSync(patchZip, 'not a ZIP');
+    fs.writeFileSync(path.join(patchRoot, 'changelog.txt'), 'Synthetic test fixture\n');
+
+    const result = spawnSync(python.command, [...python.args, path.join(tempRoot, 'scripts', 'release_from_new_patch.py')], {
+      cwd: tempRoot,
+      encoding: 'utf8',
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toMatch(/could not be safely validated|retired app plugin/);
+    expect(fs.readFileSync(path.join(tempRoot, 'app', 'ltth_latest.zip'))).toEqual(currentZip);
+    expect(fs.existsSync(path.join(tempRoot, 'app', 'archive', 'ltth_1.3.24.zip'))).toBe(false);
+    expect(fs.existsSync(patchRoot)).toBe(true);
+    expect(fs.existsSync(path.join(tempRoot, 'released_patches', 'ltth_1.3.25'))).toBe(false);
   });
 });

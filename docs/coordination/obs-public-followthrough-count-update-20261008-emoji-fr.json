@@ -1,0 +1,17 @@
+{
+  "date": "2026-10-08",
+  "sourceBase": "d65a54891f6ba1d055e95fda70d0df696d5299f0",
+  "kind": "incremental CPU-fixture supplement, no full current re-audit",
+  "publicCases": 68,
+  "directCpuFollowthrough": 53,
+  "partialCpuFollowthrough": 2,
+  "missingCpuFollowthrough": 13,
+  "addedCase": "emoji-rain:fr",
+  "previousSupplement": "obs-public-followthrough-count-update-20261008-fr.json",
+  "obsPassed": 0,
+  "obsDocumented": 104,
+  "test": "app/test/emoji-rain-fr-followthrough-fixture.test.js",
+  "testSha256": "3e11ff857df7495708165fd6a2ea89cfc788c67216a44d047c1ba220b62e52d7",
+  "result": "1 suite / 1 test PASS",
+  "limits": "FR document locale seeded; DOM-only render, no translations/pixels/OBS/live"
+}

@@ -57,10 +57,11 @@ const testSuites = [
                 // The actual key value comes from environment variable EULER_BACKUP_API_KEY
                 const backupKey = process.env.EULER_BACKUP_API_KEY;
                 
-                if (backupKey) {
+                const configured = typeof backupKey === 'string' && backupKey.length > 0;
+                if (configured) {
                     assert.ok(typeof backupKey === 'string', 'Backup key should be a string');
                     assert.ok(backupKey.length > 0, 'Backup key should not be empty');
-                    console.log(`     ℹ️  Backup key configured: ${backupKey.substring(0, 8)}...${backupKey.substring(backupKey.length - 4)}`);
+                    console.log(`     ℹ️  Backup key configured: ${configured}`);
                 } else {
                     console.log('     ⚠️  EULER_BACKUP_API_KEY not set in environment - test skipped');
                 }

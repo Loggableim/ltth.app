@@ -365,6 +365,33 @@ describe('PluginStore', () => {
     }
   });
 
+  it('does not promote an update while the loaded owner still needs cleanup', async () => {
+    writePlugin(tempDir, 'tts', '1.0.0');
+    const beforeFiles = fs.readdirSync(path.join(tempDir, 'tts')).sort();
+    const { zipPath, sha256 } = await createPluginPackage(tempDir, 'tts', '2.0.0');
+    const plugin = {
+      id: 'tts', name: { en: 'TTS' }, description: { en: 'Speech' },
+      version: '2.0.0', packageUrl: 'https://example.com/tts.zip', sha256
+    };
+    const loadPlugin = jest.fn(async () => ({ id: 'tts' }));
+    const store = createStore(tempDir, {}, {
+      fetchImpl: createInstallFetch(zipPath, plugin),
+      pluginLoader: {
+        plugins: new Map([['tts', { instance: { cleanupPending: true } }]]),
+        unloadPlugin: jest.fn(async () => false),
+        loadPlugin
+      }
+    });
+
+    await assert.rejects(() => store.installPlugin('official', 'tts'), /Failed to unload existing plugin tts/);
+
+    const manifest = JSON.parse(fs.readFileSync(path.join(tempDir, 'tts', 'plugin.json'), 'utf8'));
+    assert.strictEqual(manifest.version, '1.0.0');
+    assert.deepStrictEqual(fs.readdirSync(path.join(tempDir, 'tts')).sort(), beforeFiles);
+    assert.strictEqual(loadPlugin.mock.calls.length, 0);
+    assert.strictEqual(fs.readdirSync(tempDir).some(name => name.startsWith('.store-transaction-')), false);
+  });
+
   it('rolls files and state back when rename, saveState or loading v2 fails', async () => {
     for (const failure of ['rename', 'save', 'load']) {
       const caseDir = path.join(tempDir, failure);
@@ -423,10 +450,7 @@ describe('PluginStore', () => {
 
     assert.strictEqual(result.errors.length, 0);
     assert.strictEqual(result.notices[0].fallback, 'bundled');
-    assert.strictEqual(emojiRain.name, 'WebGPU EmojiRain');
-    assert.strictEqual(emojiRain.installed, true);
-    assert(emojiRain.packageUrl.startsWith('https://ltth.app/plugin-store/packages/'));
-    assert.deepStrictEqual(emojiRain.pricing, { type: 'free', amount: 0, currency: 'EUR' });
+    assert.strictEqual(emojiRain, undefined, 'closed-beta plugins must stay out of the public bundled fallback');
   });
 
   it('preserves stable manifest status when generating the local fallback registry', () => {

@@ -4,8 +4,8 @@ const {
   isOutgoingSocketEventAllowed
 } = require('./public-overlay-registry');
 const { projectPublicOverlayPayload } = require('./public-overlay-payload-projection');
-
 const { createPublicReleaseEventGuard } = require('./public-overlay-release-event-policy');
+const { isPublicClarityEventAllowed } = require('./public-overlay-event-policy');
 
 const PUBLIC_QUICK_TUNNEL_ROOM = '__ltth_public_quick_tunnel__';
 
@@ -39,38 +39,54 @@ function isApplicationEventAllowed(packet) {
   if (typeof eventName !== 'string') {
     return true;
   }
-  return isOutgoingSocketEventAllowed(eventName);
+  return isOutgoingSocketEventAllowed(eventName) && isPublicClarityEventAllowed(eventName);
 }
 
 function createPublicOverlayAdapter(BaseAdapter, { pluginReleasePolicy } = {}) {
-  const releaseEventAllowed = createPublicReleaseEventGuard(pluginReleasePolicy);
+  const releaseEventGuard = createPublicReleaseEventGuard(pluginReleasePolicy);
   return class PublicOverlayAdapter extends BaseAdapter {
     broadcast(packet, options) {
-      if (!isApplicationEventAllowed(packet) || !releaseEventAllowed('outgoing', packet?.data?.[0])) {
+      if (!isApplicationEventAllowed(packet)) {
         return super.broadcast(packet, restrictedOptions(options));
       }
 
+      if (!targetsPublicRoom(options)) {
+        return super.broadcast(packet, options);
+      }
+
       const eventName = packet?.data?.[0];
+      if (!releaseEventGuard('outgoing', eventName)) {
+        return super.broadcast(packet, restrictedOptions(options));
+      }
       const projection = typeof eventName === 'string'
         ? projectPublicOverlayPayload(eventName, packet.data[1])
         : undefined;
-      if (projection === undefined) return super.broadcast(packet, options);
+      if (projection === undefined || projection === null || packet.data.length !== 2) {
+        return super.broadcast(packet, restrictedOptions(options));
+      }
 
       // Local clients retain the full application payload. Only the public
       // Quick Tunnel room receives the renderer-specific field projection.
       const localResult = super.broadcast(packet, restrictedOptions(options));
-      if (projection !== null && targetsPublicRoom(options)) {
-        const publicPacket = {
-          ...packet,
-          data: [eventName, projection]
-        };
-        super.broadcast(publicPacket, publicOnlyOptions(options));
-      }
+      const publicPacket = {
+        ...packet,
+        data: [eventName, projection]
+      };
+      super.broadcast(publicPacket, publicOnlyOptions(options));
       return localResult;
     }
 
     broadcastWithAck(packet, options, clientCountCallback, ack) {
-      if (!isApplicationEventAllowed(packet) || !releaseEventAllowed('outgoing', packet?.data?.[0])) {
+      if (!isApplicationEventAllowed(packet)) {
+        return super.broadcastWithAck(packet, restrictedOptions(options), clientCountCallback, ack);
+      }
+      if (!targetsPublicRoom(options)) {
+        return super.broadcastWithAck(packet, options, clientCountCallback, ack);
+      }
+
+      // Public-room acknowledgements have no reviewed response contract, so
+      // none of them may carry an unprojected packet to the tunnel.
+      if (!releaseEventGuard('outgoing', packet?.data?.[0])) {
         return super.broadcastWithAck(packet, restrictedOptions(options), clientCountCallback, ack);
       }
 
@@ -80,7 +96,7 @@ function createPublicOverlayAdapter(BaseAdapter, { pluginReleasePolicy } = {}) {
         : undefined;
       // These public events have no repository acknowledgement consumers. Fail
       // closed for ack broadcasts until their split-room ack contract is defined.
-      const broadcastOptions = projection === undefined ? options : restrictedOptions(options);
+      const broadcastOptions = restrictedOptions(options);
       return super.broadcastWithAck(packet, broadcastOptions, clientCountCallback, ack);
     }
   };

@@ -54,11 +54,6 @@ class TimerDatabase {
             const dbPath = path.join(pluginDataDir, 'timers.db');
             this.api.log(`Using database at: ${dbPath}`, 'info');
             
-            // Check if old database exists in plugin directory (migration needed after tables are created)
-            // _pendingMigrationPath is read by initialize() once the schema is ready.
-            const oldDbPath = path.join(this.api.getPluginDir(), 'data', 'timers.db');
-            this._pendingMigrationPath = (fs.existsSync(oldDbPath) && !fs.existsSync(dbPath)) ? oldDbPath : null;
-            
             // Open database
             this.db = new Database(dbPath);
             this.db.pragma('journal_mode = WAL');
@@ -237,12 +232,6 @@ class TimerDatabase {
 
             // Add new flat per-interaction columns (idempotent)
             this.upgradeSchema();
-
-            // Migrate old data if needed (must happen after tables are created)
-            if (this._pendingMigrationPath) {
-                this.migrateOldDatabase(this._pendingMigrationPath);
-                this._pendingMigrationPath = null;
-            }
 
             // Migrate simple timer_events entries into per_* columns
             this.migrateSimpleEventsToPerFields();

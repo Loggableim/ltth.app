@@ -175,6 +175,7 @@
       for (const [eventName, handler] of socketHandlers) {
         state.socket.off?.(eventName, handler);
       }
+      if (global.socket === state.socket) global.socket = null;
       state.socket.disconnect?.();
     }
 
@@ -184,6 +185,7 @@
     }
 
     state.socket = io();
+    if (!global.socket) global.socket = state.socket;
     bindSocket('connect', () => {
       console.log('Connected to server');
       loadOverlayState();

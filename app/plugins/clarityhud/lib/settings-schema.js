@@ -50,6 +50,7 @@
     showLikes: true,
     showGifts: true,
     showSubs: true,
+    showSuperFans: true,
     showTreasureChests: true,
     showJoins: true,
     layoutMode: 'singleStream',
@@ -76,6 +77,7 @@
     showLikes: false,
     showGifts: true,
     showSubs: true,
+    showSuperFans: true,
     showTreasureChests: true,
     showJoins: false,
     slotChat: 'slot-right-rail',
@@ -622,9 +624,6 @@
     if (!isPlainObject(profile.settings)) {
       errors.push('Profile settings must be an object');
     }
-    if (Object.prototype.hasOwnProperty.call(profile, 'customPresets') && !Array.isArray(profile.customPresets)) {
-      errors.push('Profile customPresets must be an array');
-    }
 
     const settings = {};
     if (isPlainObject(profile.settings)) {
@@ -645,7 +644,6 @@
     return {
       valid: errors.length === 0,
       settings,
-      customPresetsProvided: Object.prototype.hasOwnProperty.call(profile, 'customPresets'),
       customPresets: normalizeCustomPresets(profile.customPresets),
       errors
     };

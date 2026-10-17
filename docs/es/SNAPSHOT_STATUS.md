@@ -1,5 +1,7 @@
 # Snapshot Status
 
+> **Beta cerrada — solo desarrollo local; no disponible para descarga pública:** Estas aplicaciones no están disponibles para descarga pública. Aplicaciones actuales en beta cerrada: `animazingpal`, `interactive-story`, `music-bot`, `osc-bridge`, `schnorrbecher`, `sidekick`, `stream-monsters`, `talking-heads`, `visual-fx-frame-webgpu`, `webgpu-emoji-rain`, `webgpu-weather-control`.
+
 Last reviewed: 2026-07-26
 
 ## Scope
@@ -78,14 +80,14 @@ The root package has no dependency tree on purpose. It only forwards commands in
 
 The plugin store was introduced in v1.3.9 and remains part of the current snapshot:
 
-- **Registry:** `plugin-store.json` (root) — 35 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
+- **Registry:** `plugin-store.json` (root) — 24 plugin entries with multilingual descriptions (en/de/es/fr), SHA-256 checksums, package URLs, pricing, and badges.
 - **Packages:** `plugin-store/packages/` — 36 pre-packaged `.zip` files, one per plugin.
 - **Backend:** `app/modules/plugin-store.js` (563 lines) — `PluginStore` class with HTTPS URL validation, SHA-256 checksum verification, safe ZIP extraction, community-source opt-in.
 - **Routes:** `app/routes/plugin-routes.js` — 6 store-specific API endpoints under `/api/plugin-store`.
 - **Frontend:** `app/public/js/plugin-manager.js` (1590 lines) — `PluginManager` class with `store` and `installed` tabs, category filters, dev-status filters, badges, and one-click install flow.
 - **Tests:** `plugin-store.test.js`, `plugin-store-registry.test.js`, `plugin-store-routes.test.js`.
 - **Design docs:** `docs/superpowers/plans/2026-07-04-plugin-store*.md` + `docs/superpowers/specs/2026-07-04-plugin-store-appstore-ui-design.md`.
-- **Preinstalled plugins** (enabled by default in store): `chatango`, `goals`, `lastevent-spotlight`, `soundboard`, `toptier`, `tts`, `webgpu-emoji-rain`.
+- **Preinstalled plugins** (enabled by default in store): `goals`, `lastevent-spotlight`, `soundboard`, `toptier`, `tts`.
 
 Community plugin repositories are supported behind explicit user opt-in (`POST /api/plugin-store/community/enable`).
 
@@ -180,12 +182,11 @@ Key modules in `app/modules/`:
 
 ## Plugin Inventory
 
-The workspace currently contains 37 plugin manifests in `app/plugins/`:
+The workspace currently contains 36 plugin manifests in `app/plugins/`:
 
 - advanced-timer
-- animazingpal
+- animazingpal — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - api-bridge
-- chatango
 - clarityhud
 - coinbattle
 - config-import
@@ -196,29 +197,29 @@ The workspace currently contains 37 plugin manifests in `app/plugins/`:
 - gcce
 - gift-catalog
 - goals
-- interactive-story (v1.0.0, enabled by default)
+- interactive-story (v1.0.0; Beta cerrada; solo desarrollo local; no disponible para descarga pública)
 - milestone-leaderboard
 - minecraft-connect
 - multicam
-- music-bot
+- music-bot — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - openshock
-- osc-bridge
+- osc-bridge — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - quiz-show
-- schnorrbecher
+- schnorrbecher — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - soundboard
 - spotlight
 - streamalchemy (Stream Monsters 1.11.1, Estable)
 - stt-ticker
-- talking-heads
+- talking-heads — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - thermal-printer
 - toptier
 - tts
 - vdoninja
-- visual-fx-frame-webgpu
+- visual-fx-frame-webgpu — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - weather-control
-- webgpu-emoji-rain
+- webgpu-emoji-rain — Beta cerrada; solo desarrollo local; no disponible para descarga pública
 - webgpu-fireworks
-- webgpu-weather-control (1.0.0 open beta)
+- webgpu-weather-control (1.0.0; Beta cerrada; solo desarrollo local; no disponible para descarga pública)
 
 `fireworks-dev/` was deleted and consolidated into `fireworks/` (v2.0.1, `devStatus: stable`). Its stale package archive has also been removed from the plugin store.
 

@@ -1251,37 +1251,46 @@ func TestSelectReleaseForUpdateChannel(t *testing.T) {
 
 func TestPruneUpdateBackupsKeepsNewestTwo(t *testing.T) {
 	backupRoot := t.TempDir()
-	for _, name := range []string{
-		"2026-07-05_10-00-00-v1.3.20",
-		"2026-07-06_10-00-00-v1.3.21",
-		"2026-07-07_10-00-00-v1.3.22",
-	} {
-		if err := os.MkdirAll(filepath.Join(backupRoot, name, "app"), 0755); err != nil {
+	want := map[string][]byte{
+		"2026-07-05_10-00-00-v1.3.20": nil,
+		"2026-07-06_10-00-00-v1.3.21": nil,
+		"2026-07-07_10-00-00-v1.3.22": nil,
+	}
+	for name := range want {
+		appDir := filepath.Join(backupRoot, name, "app")
+		if err := os.MkdirAll(appDir, 0755); err != nil {
 			t.Fatalf("failed to create backup %s: %v", name, err)
+		}
+		want[name] = []byte("synthetic backup payload: " + name)
+		if err := os.WriteFile(filepath.Join(appDir, "fixture.txt"), want[name], 0600); err != nil {
+			t.Fatalf("failed to write backup fixture %s: %v", name, err)
 		}
 	}
 
-	if err := pruneUpdateBackups(backupRoot, 2); err != nil {
-		t.Fatalf("pruneUpdateBackups failed: %v", err)
+	err := pruneUpdateBackups(backupRoot, 2)
+	if err == nil || !strings.Contains(err.Error(), "no backups removed") {
+		t.Fatalf("expected fail-closed pruning error, got %v", err)
 	}
 
 	entries, err := os.ReadDir(backupRoot)
 	if err != nil {
 		t.Fatalf("failed to read backup root: %v", err)
 	}
-	if len(entries) != 2 {
-		t.Fatalf("expected 2 backups to remain, got %d", len(entries))
+	if len(entries) != len(want) {
+		t.Fatalf("expected all %d backups to remain, got %d", len(want), len(entries))
 	}
-
-	if _, err := os.Stat(filepath.Join(backupRoot, "2026-07-05_10-00-00-v1.3.20")); !os.IsNotExist(err) {
-		t.Fatalf("oldest backup should be removed, got err=%v", err)
-	}
-	for _, name := range []string{
-		"2026-07-06_10-00-00-v1.3.21",
-		"2026-07-07_10-00-00-v1.3.22",
-	} {
-		if _, err := os.Stat(filepath.Join(backupRoot, name)); err != nil {
-			t.Fatalf("expected backup %s to remain: %v", name, err)
+	for _, entry := range entries {
+		name := entry.Name()
+		payload, ok := want[name]
+		if !ok || !entry.IsDir() {
+			t.Fatalf("unexpected backup entry after fail-closed pruning: %q", name)
+		}
+		got, err := os.ReadFile(filepath.Join(backupRoot, name, "app", "fixture.txt"))
+		if err != nil {
+			t.Fatalf("backup payload %s was not preserved: %v", name, err)
+		}
+		if !bytes.Equal(got, payload) {
+			t.Fatalf("backup payload %s changed: got %q, want %q", name, got, payload)
 		}
 	}
 }

@@ -24,6 +24,7 @@ class SocketAuthorization {
 
   isAdmin(socket) {
     if (!socket?.handshake) return true;
+    if (['loopback-admin', 'admin'].includes(socket.data?.ltthSocketAccess)) return true;
     return socket.handshake.auth?.role === 'admin' &&
       (isLoopbackAddress(this.getSocketAddress(socket)) || this.hasValidAdminToken(socket));
   }

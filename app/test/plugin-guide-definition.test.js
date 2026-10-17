@@ -12,7 +12,7 @@ describe('plugin guide definitions', () => {
   test('requires complete, localized guide contracts instead of renderer-generated prose', () => {
     const guides = buildGuides(repoRoot);
 
-    expect(guides).toHaveLength(38);
+    expect(guides).toHaveLength(39);
     for (const guide of guides) {
       expect(guide.definition).toEqual(expect.objectContaining({
         metadata: expect.objectContaining({
@@ -232,6 +232,19 @@ describe('plugin guide definitions', () => {
       expect.objectContaining({ type: 'prepare', name: 'open-minecraft-setup-tab' }),
       expect.objectContaining({ type: 'set-demo-value', selector: '#overlayEnabled' })
     ]));
+  });
+
+  test('documents Sidekick as a separate local status surface without triggering connections', () => {
+    const sidekick = buildGuides(repoRoot).find((guide) => guide.id === 'sidekick');
+    const statusStep = sidekick.steps.find((step) => step.id === 'status-view');
+
+    expect(sidekick.definition.activation.route).toBe('/plugins/sidekick/ui.html');
+    expect(statusStep.capture.assertVisible).toBe('#tab-status');
+    expect(statusStep.capture.action.type).toBe('open-plugin-surface');
+    for (const locale of LOCALES) {
+      expect(sidekick.copy[locale].safety).toMatch(/connect|verbinde|conect|connectez|connecter/i);
+      expect(statusStep.copy[locale].body).toMatch(/LIVE|connection|Verbindung|conex|connexion/i);
+    }
   });
 
   test('classifies every raw inventory value as an explicit technical exception', () => {

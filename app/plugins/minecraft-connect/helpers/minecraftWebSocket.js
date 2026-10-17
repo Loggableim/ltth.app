@@ -7,6 +7,7 @@
 
 const WebSocket = require('ws');
 const EventEmitter = require('events');
+const { getWebSocketBindPolicy } = require('./websocketBindPolicy');
 
 class MinecraftWebSocketServer extends EventEmitter {
     constructor(config, logger) {
@@ -36,7 +37,14 @@ class MinecraftWebSocketServer extends EventEmitter {
 
         try {
             const port = this.config.websocket?.port || 25560;
-            const host = this.config.websocket?.host || 'localhost';
+            const bindPolicy = getWebSocketBindPolicy(this.config.websocket?.host);
+            if (!bindPolicy.allowed) {
+                const error = new Error(bindPolicy.warning);
+                error.code = 'MINECRAFT_CONNECT_LOOPBACK_ONLY';
+                throw error;
+            }
+
+            const host = bindPolicy.bindHost;
 
             this.wss = new WebSocket.Server({ 
                 host,

@@ -26,6 +26,7 @@ module.exports = Object.freeze(applySafeWorkflowContracts([
   require('./osc-bridge'),
   require('./quiz-show'),
   require('./schnorrbecher'),
+  require('./sidekick'),
   require('./soundboard'),
   require('./spotlight'),
   require('./stream-monsters'),

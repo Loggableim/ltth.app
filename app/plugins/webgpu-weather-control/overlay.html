@@ -18,16 +18,41 @@
   <canvas id="webgpuCanvas" aria-hidden="true"></canvas>
   <aside id="diagnostics" hidden aria-live="polite"></aside>
   <aside id="communityHud" hidden aria-live="polite">
-    <strong>Community Weather</strong>
-    <div class="hud-row" id="hudMeter" hidden><span>Meter</span><span id="hudMeterValue">0</span></div>
-    <div class="hud-row" id="hudQuest" hidden><span>Quest</span><span id="hudQuestValue">—</span></div>
-    <div class="hud-row" id="hudStreak" hidden><span>Streak</span><span id="hudStreakValue">0</span></div>
-    <div class="hud-row" id="hudRewardFeed" hidden><span>Reward</span><span id="hudRewardValue">—</span></div>
+    <strong data-i18n="plugins.webgpu-weather-control.labels.community_weather">Community Weather</strong>
+    <div class="hud-row" id="hudMeter" hidden><span data-i18n="plugins.webgpu-weather-control.ui.overlay.meter">Meter</span><span id="hudMeterValue">0</span></div>
+    <div class="hud-row" id="hudQuest" hidden><span data-i18n="plugins.webgpu-weather-control.ui.overlay.quest">Quest</span><span id="hudQuestValue">—</span></div>
+    <div class="hud-row" id="hudStreak" hidden><span data-i18n="plugins.webgpu-weather-control.ui.overlay.streak">Streak</span><span id="hudStreakValue">0</span></div>
+    <div class="hud-row" id="hudRewardFeed" hidden><span data-i18n="plugins.webgpu-weather-control.runtime.overlay.reward">Reward</span><span id="hudRewardValue">—</span></div>
   </aside>
   <script src="/socket.io/socket.io.js"></script>
   <script src="/plugins/webgpu-weather-control/gpu/weather-framegraph.js"></script>
   <script src="/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js"></script>
   <script>
+    const supportedOverlayLocales = new Set(['de', 'en', 'es', 'fr']);
+    const requestedOverlayLocale = new URLSearchParams(window.location.search).get('lang');
+    const overlayLocale = supportedOverlayLocales.has(requestedOverlayLocale) ? requestedOverlayLocale : 'en';
+    document.documentElement.lang = overlayLocale;
+
+    function applyOverlayTranslations(catalog) {
+      const lookup = (key) => key.split('.').reduce((value, part) => value && value[part], catalog);
+      document.querySelectorAll('[data-i18n]').forEach((element) => {
+        const translation = lookup(element.getAttribute('data-i18n'));
+        if (typeof translation === 'string') element.textContent = translation;
+      });
+    }
+
+    async function loadOverlayTranslations() {
+      try {
+        const response = await fetch(`/api/i18n/translations/${overlayLocale}`);
+        if (!response.ok) return;
+        applyOverlayTranslations(await response.json());
+      } catch (_) {
+        // Keep the English text from the HTML when the optional locale read fails.
+      }
+    }
+
+    void loadOverlayTranslations();
+
     const diagnostics = document.querySelector('#diagnostics');
     const debug = new URLSearchParams(location.search).get('debug') === '1';
     const canvas = document.querySelector('#webgpuCanvas');

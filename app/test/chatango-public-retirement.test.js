@@ -20,7 +20,9 @@ test('current user wiki no longer offers Chatango integration or its removed API
 });
 test('retirement keeps historical state protection and genuine removal regressions', () => {
   const loader = fs.readFileSync(path.join(root, 'app', 'modules', 'plugin-loader.js'), 'utf8');
-  expect(loader).toContain("PRESERVED_REMOVED_PLUGIN_STATE_IDS = new Set(['chatango'])");
+  const retirement = fs.readFileSync(path.join(root, 'app', 'modules', 'plugin-retirement.js'), 'utf8');
+  expect(loader).toMatch(/isRetiredPluginId\(pluginId\)/);
+  expect(retirement).toMatch(/RETIRED_PLUGIN_IDS = new Set\(\['chatango'\]\)/);
   expect(fs.existsSync(path.join(__dirname, 'chatango-backend-removal.test.js'))).toBe(true);
   expect(fs.existsSync(path.join(__dirname, 'chatango-frontend-removal.test.js'))).toBe(true);
 });

@@ -1,0 +1,64 @@
+{
+  "status": "Dashboard brand render checked in day/night/CID; full distribution removal integration still in progress",
+  "request": "Remove Chatango completely from active product and use logo green/white/purple with corresponding day/night surfaces",
+  "gates": [
+    {
+      "id": "runtime",
+      "proof": "No Chatango plugin code, route registrations, store builtin listing or external CSP origins in active backend; targeted tests pass"
+    },
+    {
+      "id": "frontend",
+      "proof": "No dashboard community embed, floating widget, script include, navigation or plugin-manager listing; no empty embed column"
+    },
+    {
+      "id": "distribution",
+      "proof": "No active website/store/guide/localization/build-command offers or regeneration source that reintroduces Chatango; historical evidence remains distinguishable"
+    },
+    {
+      "id": "visual",
+      "proof": "Rendered dashboard day/night/CID shows neutral surfaces, green primary actions, purple accents, legible labels; matching dimensions and saved-theme behavior checked"
+    },
+    {
+      "id": "contrast",
+      "proof": "Actual foreground/background normal text contrast at least 4.5; large text 3; focus and disabled states reviewed separately"
+    },
+    {
+      "id": "running-instance",
+      "proof": "Current user-started server is unchanged until an authorized restart; source removal alone does not prove routes unloaded from an already running process"
+    }
+  ],
+  "preserve": [
+    "User profiles and historical databases",
+    "Foreign source hunks",
+    "High contrast and vision-impaired themes",
+    "Published immutable 1.4.4 artifacts"
+  ],
+  "initialKnownActiveSurfaces": [
+    "app/server.js",
+    "app/modules/plugin-store.js",
+    "app/public/dashboard.html",
+    "app/public/js/navigation.js",
+    "app/public/js/plugin-manager.js",
+    "app/public/js/chatango-theme-adapter.js",
+    "app/locales/{de,en,es,fr}.json",
+    "scripts/plugin-guides/index.js",
+    "scripts/product-screenshot-spec.js",
+    "scripts/plugin-tutorial-catalog.js",
+    "package.json"
+  ],
+  "ceoRenderEvidence": {
+    "observed": "Real browser Tab17, separate from user Tab16; neutral surfaces, green actions, violet navigation, no Chatango dashboard; original CID selection restored",
+    "limitation": "Running backend not restarted; active distribution generator cleanup not yet fully accepted",
+    "testedColors": {
+      "dayButton": "white/#166534",
+      "navigation": "white/#7c3aed",
+      "nightQuickAction": "#40c671/#1b1e24",
+      "dayQuickAction": "#166534/white"
+    },
+    "screenshots": [
+      "output/playwright/brand/dashboard-day.jpg",
+      "output/playwright/brand/dashboard-night.jpg",
+      "output/playwright/brand/dashboard-cid.jpg"
+    ]
+  }
+}

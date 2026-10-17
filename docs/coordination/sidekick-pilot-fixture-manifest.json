@@ -1,0 +1,76 @@
+{
+  "manifestVersion": 1,
+  "generatedAt": "2026-10-07T00:10:17.000Z",
+  "purpose": "Read-only transfer integrity inventory for the deterministic Sidekick public-overlay pilot fixture.",
+  "status": "fixture-only-no-server-no-VM-no-OBS",
+  "scopeNote": "Hashes identify the exact shared-workspace file versions used by the fixture. Some source files contain parallel/coordinator changes; do not cherry-pick partial line edits from this manifest.",
+  "verification": {
+    "command": "runtime\\node\\node.exe app\\node_modules\\jest\\bin\\jest.js plugins/sidekick/test/pilot-public-overlay-harness.test.js plugins/sidekick/test/hud-availability.test.js plugins/sidekick/test/public-status-projection.test.js --runInBand --detectOpenHandles (cwd: app)",
+    "result": "3 suites / 8 tests passed; no open-handle warning",
+    "nodeVersion": "v22.14.0",
+    "packageVersions": {
+      "jest": "29.7.0",
+      "jsdom": "29.0.2",
+      "socketIoServer": "4.8.3",
+      "socketIoParser": "4.2.6"
+    }
+  },
+  "transferInstructions": [
+    "Copy only these listed files into a disposable guest checkout; do not copy runtime configuration, databases, user profiles, logs, credentials, or existing OBS data.",
+    "Verify every SHA-256 and byte length before running the listed Jest command.",
+    "The in-process fixture opens no TCP/HTTP/Socket.IO listener and starts no application or OBS process.",
+    "A pass validates source contracts and the in-process Socket.IO packet parser/server client path only; it does not prove Engine.IO transport, Chromium rendering, WebGPU, OBS screenshots, or live readiness."
+  ],
+  "files": [
+    {
+      "path": "app\\plugins\\sidekick\\overlay\\sidekick-hud.html",
+      "bytes": 10696,
+      "sha256": "bc3d024f67cc28a8d0d9dbe31cb32530b6014bfd835772b194e29d367cec42cc"
+    },
+    {
+      "path": "app\\plugins\\sidekick\\main.js",
+      "bytes": 42901,
+      "sha256": "7608d10210fc4fc3297664c4c43a10e72f698aec218c52083cc9692cc690ae49"
+    },
+    {
+      "path": "app\\plugins\\sidekick\\backend\\public-status.js",
+      "bytes": 1378,
+      "sha256": "2ab5d43e678f4bee311ddbb28b5944309f55dc430820879c7ece1503f7bbe2a3"
+    },
+    {
+      "path": "app\\modules\\public-overlay-registry.js",
+      "bytes": 29689,
+      "sha256": "87a3cf1d66f69bd990054c85ec8898fc8c90bc08ca58e1842fee0ccd8fbc01fb"
+    },
+    {
+      "path": "app\\modules\\public-overlay-access.js",
+      "bytes": 3638,
+      "sha256": "5e437c8c800a49d8253c3cf0a6120ff1d247dc4a10c4848106d16d9cc68840a2"
+    },
+    {
+      "path": "app\\plugins\\sidekick\\test\\hud-availability.test.js",
+      "bytes": 3698,
+      "sha256": "85a44816dc1472ce22c9d9312dd7d4333ad5d7a4588c740c221282a4dc9b1ab4"
+    },
+    {
+      "path": "app\\plugins\\sidekick\\test\\pilot-public-overlay-harness.test.js",
+      "bytes": 16968,
+      "sha256": "c21c35950472281bb4550cfc94e64193c84571b76469ffa9cfe915a0c6dc57d5"
+    },
+    {
+      "path": "app\\plugins\\sidekick\\test\\public-status-projection.test.js",
+      "bytes": 3743,
+      "sha256": "c6e966813584b7e2ed510fe06461cb30db1710a6dc00f807c008687a7e613868"
+    },
+    {
+      "path": "app\\package.json",
+      "bytes": 3051,
+      "sha256": "133f30d4b3651e16fdae21312384cc740b3f60ae50533a06344846cedde10a09"
+    },
+    {
+      "path": "app\\package-lock.json",
+      "bytes": 534051,
+      "sha256": "eff811ac8e412af80cb71927575ee080df84d0073a5106f67057b31ab314698d"
+    }
+  ]
+}

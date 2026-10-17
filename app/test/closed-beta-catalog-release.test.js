@@ -39,6 +39,20 @@ describe('closed-beta public catalog release unit', () => {
     }
   });
 
+  test('keeps withdrawn IDs out of public store and package download links', () => {
+    const store = readJson('plugin-store.json');
+    const page = fs.readFileSync(path.join(ROOT, 'plugins.html'), 'utf8');
+    const withdrawnIds = [...policy.closedBeta, ...Object.keys(policy.aliases), 'chatango'];
+    const downloadLinks = [...page.matchAll(/href="([^"]+\.zip(?:\?[^"]*)?)"/gi)]
+      .map((match) => match[1].toLowerCase());
+
+    for (const id of withdrawnIds) {
+      expect(store.plugins.some((plugin) => plugin.id === id)).toBe(false);
+      expect(page).not.toMatch(new RegExp(`data-plugin-id="${id}"`, 'i'));
+      expect(downloadLinks.some((href) => href.includes(id))).toBe(false);
+    }
+  });
+
   test('excludes Chatango after the backend source prerequisite is present', () => {
     const catalog = loadPublishedPluginCatalog(ROOT);
     const publicIds = publicIdsFor(catalog);

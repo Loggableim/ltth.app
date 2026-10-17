@@ -25,20 +25,22 @@ Es gibt zwei Varianten:
 
 | Variante | Plugin | Technologie | Status |
 |----------|--------|-------------|--------|
-| **WebGPU Emoji Rain** | `webgpu-emoji-rain` | WebGPU (GPU-beschleunigt) | 🔴 Early Beta |
+| **WebGPU Emoji Rain** | `webgpu-emoji-rain` | WebGPU | Beta cerrada |
 | **Emoji Rain v2.0** | `emoji-rain` | Canvas + Matter.js (CPU) | 🟢 Alpha |
 
-Beide Varianten sind unabhängig voneinander und können gleichzeitig installiert sein. Für beste Performance wird die WebGPU-Version empfohlen, sofern ein kompatibler Browser/GPU vorhanden ist.
+> **Beta cerrada:** WebGPU Emoji Rain no está disponible públicamente. Los pasos de configuración siguientes se aplican solo a Emoji Rain v2.0 (Canvas).
+
+Las variantes son independientes. La configuración siguiente describe la versión pública Canvas (`emoji-rain`).
 
 ---
 
 ## Versionen
 
-### WebGPU Emoji Rain (Empfohlen)
+### WebGPU Emoji Rain (Beta cerrada)
 
 **Plugin-ID:** `webgpu-emoji-rain`  
 **Version:** 2.0.0  
-**Status:** 🔴 Early Beta
+**Status:** Beta cerrada — no disponible públicamente
 
 GPU-beschleunigtes Rendering mit WebGPU Instanced Drawing. Ideal für leistungsstarke Setups mit modernem Browser.
 
@@ -75,7 +77,7 @@ Physikbasierte Canvas-Version mit Matter.js-Engine. Funktioniert in allen modern
 ### Schritt 1: Plugin aktivieren
 
 1. Dashboard öffnen: `http://localhost:3000`
-2. **Plugins** → gewünschtes Emoji-Rain-Plugin suchen
+2. **Plugins** → Emoji Rain v2.0 (Canvas, `emoji-rain`) suchen
 3. Plugin **aktivieren** (Toggle-Switch)
 4. Seite neu laden, falls notwendig
 
@@ -99,12 +101,9 @@ Physikbasierte Canvas-Version mit Matter.js-Engine. Funktioniert in allen modern
 
 ## OBS Overlay-URLs
 
-### WebGPU Emoji Rain
+### WebGPU Emoji Rain (Closed Beta)
 
-| Verwendung | URL |
-|------------|-----|
-| Standard (Responsiv) | `http://localhost:3000/webgpu-emoji-rain/overlay` |
-| OBS HUD (1920×1080) | `http://localhost:3000/webgpu-emoji-rain/obs-hud` |
+> WebGPU Emoji Rain está en beta cerrada. Las URL de overlay y los pasos de configuración no están disponibles públicamente.
 
 ### Emoji Rain v2.0 (Canvas)
 
@@ -225,10 +224,4 @@ Browser-Check:
 
 ## OBS WebGPU para LTTH
 
-La versión GPU de Emoji Rain funciona mejor con la compilación OBS WebGPU mantenida por Loggableim. Puedes instalarla junto a tu instalación normal de OBS.
-
-1. [Descarga OBS WebGPU](https://github.com/Loggableim/obs-studio-webgpu/releases)
-2. Inicia LTTH y activa **WebGPU Emoji Rain**.
-3. Añade la URL del overlay de LTTH como fuente de navegador en una escena de OBS WebGPU.
-
-> La [landing page WebGPU de ltth.app](/obs-webgpu.html) explica la instalación, las versiones y los plugins LTTH compatibles.
+WebGPU Emoji Rain está en beta cerrada y no está disponible públicamente. Por eso se han retirado los pasos para descargar OBS WebGPU y activar el plugin.

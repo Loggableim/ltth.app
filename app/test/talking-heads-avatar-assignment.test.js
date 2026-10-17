@@ -43,9 +43,9 @@ function createPlugin() {
 }
 
 describe('Talking Heads persistent avatar assignment', () => {
-  test('assigns and persists a cross-pack avatar on an assigned-voice user first playback', async () => {
+  test('assigns and persists a Boba avatar on an assigned-voice user first playback', async () => {
     const { plugin } = createPlugin();
-    plugin.assetSpriteLibrary.getRandomSelection.mockReturnValue(kenney);
+    plugin.assetSpriteLibrary.getRandomSelection.mockReturnValue(fox);
     plugin.avatarLotteryManager = {
       getAssignment: jest.fn(() => null),
       assign: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
@@ -60,14 +60,85 @@ describe('Talking Heads persistent avatar assignment', () => {
     });
 
     const result = prepareSpy.mock.results[0].value;
-    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith('voice-user', 'Voice User', kenney);
+    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith('voice-user', 'Voice User', fox);
     expect(result).toMatchObject({ created: true, reason: 'assigned-voice' });
-    expect(result.selection).toEqual(kenney);
+    expect(result.selection).toEqual(fox);
     expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
       'voice-user',
       'Voice User',
-      { idle_neutral: '/sprites/blueA.svg' },
+      { idle_neutral: '/sprites/Fox.svg' },
       1000
+    );
+  });
+
+  test('auto-migrates a legacy non-Boba assignment to Boba upon next speech event in _handleTTSEvent', async () => {
+    const { plugin } = createPlugin();
+    const legacyAssignment = {
+      userId: 'legacy-kenney-user',
+      username: 'Legacy Kenney User',
+      selection: kenney,
+      state: 'kept'
+    };
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => legacyAssignment),
+      assign: jest.fn((userId, username, selection) => ({
+        userId,
+        username,
+        selection,
+        state: 'kept'
+      }))
+    };
+    plugin.assetSpriteLibrary.getRandomSelection.mockReturnValue(fox);
+
+    await plugin._handleTTSEvent({
+      userId: 'legacy-kenney-user',
+      username: 'Legacy Kenney User',
+      duration: 1000,
+      userData: { hasAssignedVoice: true }
+    });
+
+    expect(plugin.assetSpriteLibrary.getRandomSelection).toHaveBeenCalled();
+    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith(
+      'legacy-kenney-user',
+      'Legacy Kenney User',
+      fox
+    );
+    expect(plugin.animationController.startAnimation).toHaveBeenCalledWith(
+      'legacy-kenney-user',
+      'Legacy Kenney User',
+      { idle_neutral: '/sprites/Fox.svg' },
+      1000
+    );
+  });
+
+  test('auto-migrates a legacy non-Boba assignment in prepareAvatarAssignment', () => {
+    const { plugin } = createPlugin();
+    plugin.avatarLotteryManager = {
+      getAssignment: jest.fn(() => ({
+        userId: 'legacy-rgs-user',
+        username: 'Legacy RGS User',
+        selection: { packId: 'rgs', characterId: 'head1', options: {} },
+        state: 'kept'
+      })),
+      assign: jest.fn((userId, username, selection) => ({ userId, username, selection, state: 'kept' }))
+    };
+    plugin.assetSpriteLibrary.getRandomSelection.mockReturnValue(fox);
+
+    const result = plugin.prepareAvatarAssignment({
+      userId: 'legacy-rgs-user',
+      username: 'Legacy RGS User',
+      hasAssignedVoice: true
+    });
+
+    expect(result).toMatchObject({
+      created: false,
+      selection: fox,
+      reason: 'migrated'
+    });
+    expect(plugin.avatarLotteryManager.assign).toHaveBeenCalledWith(
+      'legacy-rgs-user',
+      'Legacy RGS User',
+      fox
     );
   });
 

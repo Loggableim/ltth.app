@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "manifest": {
+    "path": "docs/coordination/obs-104-goals-fixture.json",
+    "sha256": "392c5ea80c43cac5fe6511c1cf66b8e98bc325477b4f0d017d88fd402ac99613",
+    "files": 8,
+    "localeFiles": 4,
+    "bytes": 278409
+  },
+  "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-timer-goals-renderer-fixtures.test.js",
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 29,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "recordedAt": "2026-10-07"
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-timer-goals-renderer-fixtures.test.js",
+      "sha256": "3d54faee0e7a6305f7dd5b1d81003aeb4663d11e9035c3cd58d896f6f479dc6f"
+    },
+    {
+      "path": "app/test/helpers/obs-overlay-jsdom-fixture.js",
+      "sha256": "a0afff33d4a32203a73f7199b24878ced5583b0c8e42bde598745b9a372387a9"
+    }
+  ],
+  "transport": {
+    "origin": "http://127.0.0.1:3000 as synthetic JSDOM URL only",
+    "requestHandling": "in-process JSDOM interceptor and injected fetch; no TCP listener",
+    "socketHandling": "synthetic in-memory Socket.IO shim; browser Socket.IO bundle pinned in manifest but not executed",
+    "producer": "excluded; Goals backend and database are not started"
+  },
+  "coverage": {
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "initial": "Synthetic fixture-goal-{locale} subscription displays 25 / 100 with no product database read.",
+    "update": "Matching goals:value-changed updates the display to 40 / 100; a nonmatching goalId is ignored.",
+    "recovery": "Synthetic not-found/service errors render localized state; a later matching subscription recovers without stale data.",
+    "cleanup": "pagehide disconnects the shim, removes listeners, and prevents queued socket/animation callbacks from rendering or emitting.",
+    "syntheticIds": "reserved fixture-goal-* identifiers only",
+    "socketLanguageSync": "Original goals entry and i18n-client consume locale-changed {locale} on the same existing renderer socket; current fixture verifies the four locale catalogs, preserves the user goal name, handles late i18n readiness, and remains empty after deletion."
+  },
+  "notProven": [
+    "real Socket.IO/browser transport or product route/backend",
+    "OBS Browser Source output or screenshot review",
+    "the shared i18n-client /api/i18n/locales discovery route (not requested by this family fixture)",
+    "the synthetic fixture does not start the LTTH server, database, public Quick Tunnel or OBS"
+  ],
+  "history": [
+    {
+      "recordedAt": "2026-10-07",
+      "status": "source-hash-bound-cpu-jsdom-fixture-run",
+      "manifest": {
+        "path": "docs/coordination/obs-104-goals-fixture.json",
+        "sha256": "5374f33741c8d4d1e146add2f112961adffcf4e8b98a53345fc3d9ab51f91beb",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 278267
+      },
+      "result": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 26,
+        "testsFailed": 0,
+        "testsSkipped": 0,
+        "recordedAt": "2026-10-07"
+      },
+      "sourceWitnesses": [
+        {
+          "path": "app/test/obs-timer-goals-renderer-fixtures.test.js",
+          "sha256": "26a74de52fd9410d41fe9f8b0cb3b02e773812b681a534f995840013c6690ec0"
+        },
+        {
+          "path": "app/test/helpers/obs-overlay-jsdom-fixture.js",
+          "sha256": "a65c95b18c550b6d384ff86f64a3876743dd3cf79ce502f1e0651e9f80a08ae8"
+        }
+      ]
+    }
+  ]
+}

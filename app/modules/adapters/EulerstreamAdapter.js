@@ -3,6 +3,8 @@ const EventEmitter = require('events');
 const WebSocket = require('ws');
 const BaseAdapter = require('./BaseAdapter');
 const axios = require('axios');
+const { projectSuperFanDisplayMessage } = require('../../plugins/clarityhud/lib/superfan-classifier');
+const { projectViewerXpAvatarUrl } = require('../public-overlay-payload-projection');
 
 const ENV_FALLBACK_API_KEYS = String(process.env.EULER_FALLBACK_API_KEY || '')
     .split(/[\s,]+/)
@@ -10,6 +12,8 @@ const ENV_FALLBACK_API_KEYS = String(process.env.EULER_FALLBACK_API_KEY || '')
     .filter(Boolean);
 const FALLBACK_API_KEYS = Object.freeze(ENV_FALLBACK_API_KEYS);
 
+// Maximum number of milliseconds a gift event timestamp may be in the future before it
+// is rejected as invalid in _generateEventHash(). Prevents hash collisions from skewed clocks.
 const MAX_FUTURE_TIMESTAMP_MS = 60000;
 
 /**
@@ -29,8 +33,15 @@ const MAX_FUTURE_TIMESTAMP_MS = 60000;
  * timer from showing software start time instead of real stream duration.
  */
 class EulerstreamAdapter extends BaseAdapter {
-    constructor(io, db, logger = console) {
+    constructor(io, db, logger = console, context = {}) {
         super(io, db, logger);
+        if (context.mode === 'secondary' && !/^[a-z0-9_-]{1,40}$/i.test(String(context.sourceId || ''))) {
+            throw new Error('Secondary EulerstreamAdapter context requires a valid sourceId');
+        }
+        this.context = Object.freeze({
+            mode: context.mode === 'secondary' ? 'secondary' : 'primary',
+            sourceId: context.mode === 'secondary' ? context.sourceId : null
+        });
         this.ws = null;
         this._restFallbackConnection = null;
 
@@ -63,6 +74,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._fallbackKeyOrder = null;
         this._fallbackKeyIndex = 0;
         this._fallbackKeySessionConfirmed = false;
+        this._fallbackKeySessionUsername = null;
         this._connectionKeySelection = null;
         this._missedPongs = 0;
         this._streamWatchdogTimer = null;
@@ -73,7 +85,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._streamWatchdogGeneration = 0;
 
         // Stats tracking - Load from database if available
-        const savedStats = this.db.loadStreamStats();
+        const savedStats = this.context.mode === 'secondary' ? null : this.db.loadStreamStats();
         this.stats = savedStats ? {
             viewers: savedStats.viewers || 0,
             likes: savedStats.likes || 0,
@@ -220,7 +232,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
         if (this.roomId !== roomId) {
             this.roomId = roomId;
-            this.logger.debug?.(`Captured room ID from ${source}: ${this.roomId}`);
+            this.logger.debug?.('Captured stream room ID from incoming metadata');
         }
 
         return this.roomId;
@@ -237,10 +249,26 @@ class EulerstreamAdapter extends BaseAdapter {
             }));
     }
 
+    _emitGlobal(eventName, payload) {
+        if (this.context.mode === 'secondary') return false;
+        this.io.emit(eventName, payload);
+        return true;
+    }
+
+    _logDatabaseEvent(...args) {
+        if (this.context.mode === 'secondary') return false;
+        return this.db.logEvent(...args);
+    }
+
+    _updateGiftCatalog(...args) {
+        if (this.context.mode === 'secondary') return 0;
+        return this.db.updateGiftCatalog(...args);
+    }
+
     _mergeSessionGiftsIntoCatalog() {
         const sessionCatalog = this._getSessionGiftCatalog();
         if (sessionCatalog.length === 0) return 0;
-        return this.db.updateGiftCatalog(sessionCatalog);
+        return this._updateGiftCatalog(sessionCatalog);
     }
 
     _normalizeLocaleCode(value) {
@@ -399,7 +427,8 @@ class EulerstreamAdapter extends BaseAdapter {
 
         const keyPreview = this._resolveEulerApiKey();
         const confirmedFallbackReconnect = options.resumeConfirmedSession === true &&
-            this._fallbackKeySessionConfirmed === true;
+            this._fallbackKeySessionConfirmed === true &&
+            this._fallbackKeySessionUsername === normalizedUsername;
         if (keyPreview.usingFallback && !options.fallbackKeyConfirmed && !confirmedFallbackReconnect) {
             throw this._createConnectionError(
                 'Fallback-Key-Bestätigung erforderlich. Bitte bestätige die Verwendung im Dashboard.',
@@ -412,15 +441,15 @@ class EulerstreamAdapter extends BaseAdapter {
             );
         }
 
-        if (keyPreview.usingFallback && options.fallbackKeyConfirmed === true && !confirmedFallbackReconnect) {
-            this._startFallbackKeySession(keyPreview);
-        }
-
         if (this._connectPromise) {
             this.disconnect();
         }
         if (this.isConnected) {
             this.disconnect();
+        }
+
+        if (keyPreview.usingFallback && options.fallbackKeyConfirmed === true && !confirmedFallbackReconnect) {
+            this._startFallbackKeySession(keyPreview, normalizedUsername);
         }
 
         this._clearPendingReconnectTimers();
@@ -492,16 +521,16 @@ class EulerstreamAdapter extends BaseAdapter {
             this._connectionKeySelection = keySelection;
             
             if (!apiKey) {
-                const errorMsg = 'No Eulerstream API key is configured. Set one in Dashboard Settings, ' +
-                    'or use EULER_API_KEY / EULER_FALLBACK_API_KEY environment variables.\n' +
+                const errorMsg = 'No API key configured. Please set your Eulerstream API key either:\n' +
+                    '1. In the Dashboard Settings UI, or\n' +
+                    '2. Via EULER_API_KEY environment variable.\n' +
                     'Get your free API key at https://www.eulerstream.com';
                 this.logger.error('❌ ' + errorMsg);
                 throw new Error(errorMsg);
             }
 
             if (usingFallback) {
-                this.logger.warn(`⚠️  Using confirmed Eulerstream fallback key ${this._fallbackKeyIndex + 1}/${this._fallbackKeyOrder.length}`);
-                this.logger.warn('⚠️  This is a temporary solution. Please get your own free API key at https://www.eulerstream.com');
+                this.logger.info('Eulerstream fallback key selected: true');
             }
              
             // Validate key format
@@ -513,18 +542,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             this.logger.info(`🔄 Verbinde mit TikTok LIVE: @${username}...`);
             this.logger.info(`⚙️  Connection Mode: Eulerstream WebSocket API`);
-            this.logger.info(`🔑 Authentication Key configured (${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)})`);
             
-            // Log key type for debugging
-            if (apiKey.startsWith('euler_')) {
-                this.logger.info(`   Key Type: REST API Key (starts with "euler_")`);
-                this.logger.info(`   If connection fails: Try using Webhook Secret instead.`);
-            } else if (/^[a-fA-F0-9]{64}$/.test(apiKey)) {
-                this.logger.info(`   Key Type: Webhook Secret (64-char hexadecimal)`);
-            } else {
-                this.logger.warn(`   Key Type: Unknown format - connection may fail`);
-            }
-
             // Create WebSocket URL using Eulerstream SDK
             // Note: useEnterpriseApi requires Enterprise plan upgrade
             // Community plan users should NOT enable this feature
@@ -607,7 +625,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     this.logger.warn(`Eulerstream sign server failed before LIVE confirmation; trying REST fallback for room ${this.confirmedRoomId}`);
                     return await this._connectViaEulerstreamRestFallback(username, apiKey, generation);
                 } catch (fallbackError) {
-                    this.logger.warn(`Eulerstream REST fallback failed: ${fallbackError.message}`);
+                    this.logger.warn(`Eulerstream REST fallback failed: ${this._analyzeError(fallbackError).message}`);
                     error = fallbackError;
                 }
             }
@@ -621,7 +639,7 @@ class EulerstreamAdapter extends BaseAdapter {
             }
 
             // Log failure
-            this._logConnectionAttempt(username, false, errorInfo.type, errorInfo.message);
+            this._logConnectionAttempt(username, false, errorInfo.type);
 
             if (!error.connectionStatus) {
                 this.connectionState = 'connection_error';
@@ -633,8 +651,14 @@ class EulerstreamAdapter extends BaseAdapter {
                 this._terminateActiveSocket(generation);
             }
 
-            this._rejectPendingConnect(error);
-            throw error;
+            const safeError = new Error(errorInfo.message);
+            if (typeof error?.connectionStatus === 'string') safeError.connectionStatus = error.connectionStatus;
+            if (Number.isInteger(error?.code)) safeError.code = error.code;
+            if (error?.fallbackKey === true) safeError.fallbackKey = true;
+            if (Number.isFinite(error?.confirmationDelayMs)) safeError.confirmationDelayMs = error.confirmationDelayMs;
+            if (typeof error?.retryAllowedAt === 'string') safeError.retryAllowedAt = error.retryAllowedAt;
+            this._rejectPendingConnect(safeError);
+            throw safeError;
         }
     }
 
@@ -687,11 +711,12 @@ class EulerstreamAdapter extends BaseAdapter {
 
         this.ws.on('error', (err) => {
             if (generation !== this._activeGeneration) return;
-            this.logger.error('❌ WebSocket error:', err);
+            const safeError = this._analyzeError(err);
+            this.logger.error('❌ Eulerstream WebSocket transport error:', safeError.type);
             
             // Emit error event for IFTTT engine
             this.emit('error', {
-                error: err.message || String(err),
+                error: safeError.message,
                 module: 'eulerstream-websocket',
                 timestamp: new Date().toISOString()
             });
@@ -743,7 +768,7 @@ class EulerstreamAdapter extends BaseAdapter {
                     this.logger.debug?.(`🎉 Processing ${parsedData.messages.length} messages from WebSocket`);
                     for (const message of messages) {
                         if (!message.type || !message.data) {
-                            this.logger.warn(`Message missing type or data: ${JSON.stringify(message).substring(0, 100)}`);
+                            this.logger.warn('Message missing type or data; payload omitted');
                             continue;
                         }
 
@@ -773,20 +798,13 @@ class EulerstreamAdapter extends BaseAdapter {
                         this._dispatchEulerstreamMessage(message);
                     }
                 } else {
-                    this.logger.warn(`⚠️ Parsed data does not contain messages array. Keys: ${JSON.stringify(Object.keys(parsedData || {}))}`);
-                    this.logger.warn(`Data preview: ${JSON.stringify(parsedData).substring(0, 200)}`);
+                    this.logger.warn('Parsed WebSocket frame does not contain messages; payload omitted');
                 }
-            } catch (error) {
-                // Log comprehensive error information in a single message
-                const errorDetails = {
-                    message: error.message || 'Unknown error',
-                    name: error.name || 'Error',
-                    stack: error.stack ? error.stack.split('\n').slice(0, 3).join(' | ') : 'No stack trace',
+            } catch {
+                this.logger.error('WebSocket message processing failed; payload omitted', {
                     dataLength: data ? data.length : 0,
-                    dataType: typeof data,
-                    dataPreview: data ? (typeof data === 'string' ? data.substring(0, 100) : Buffer.from(data).toString('utf-8', 0, 100)) : 'No data'
-                };
-                this.logger.error(`WebSocket message processing failed: ${JSON.stringify(errorDetails)}`);
+                    dataType: typeof data
+                });
             }
         });
 
@@ -804,6 +822,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
     _isEulerstreamRestFallbackError(error) {
         if (!error || Number(error.code) !== 1011) return false;
+        if (error.restFallbackEligible === true) return true;
         const text = [error.message, error.closeReason, error.reason]
             .filter(Boolean)
             .join(' ')
@@ -982,7 +1001,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this._emitConnectedOnce(connectedPayload);
         this.broadcastStatus('connected', connectedPayload);
         this._resolvePendingConnect(connectedPayload);
-        this._logConnectionAttempt(this.currentUsername, true, null, null);
+        this._logConnectionAttempt(this.currentUsername, true, null);
         this.logger.debug?.(`Confirmed TikTok LIVE: @${this.currentUsername} (${this.streamIdentity})`);
 
         if (this._identityPendingBuffer.length > 0) {
@@ -1048,7 +1067,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.processedEvents.clear();
             this._giftDedupeMap.clear();
             this.sessionGifts.clear();
-            this.db.resetStreamStats({
+            if (this.context.mode !== 'secondary') this.db.resetStreamStats({
                 username: this.confirmedUsername,
                 roomId: this.confirmedRoomId,
                 streamStartTime: this.streamStartTime
@@ -1082,7 +1101,7 @@ class EulerstreamAdapter extends BaseAdapter {
             this.streamStartTime = this._persistedStreamStart;
         }
 
-        this.db.setSetting('last_connected_username', this.confirmedUsername);
+        this._persistConnectedUsername();
         this._persistStreamStats();
         return { isNewStream, isReconnect, streamSessionId: this.streamSessionId };
     }
@@ -1182,6 +1201,11 @@ class EulerstreamAdapter extends BaseAdapter {
 
     _dispatchEulerstreamMessage(message) {
         if (!message || !message.type || !message.data) return;
+        if (message.type === 'WebcastBarrageMessage') {
+            const displayEvent = projectSuperFanDisplayMessage(message.data, projectViewerXpAvatarUrl);
+            if (displayEvent) this.emit('superfan-display', displayEvent);
+            return;
+        }
         if (message.type === 'roomInfo') {
             this.logger.info('📋 Received roomInfo event - extracting stream start time and stats');
             const extractedTime = this._extractStreamStartTime(message.data);
@@ -1229,12 +1253,18 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     _persistStreamStats() {
+        if (this.context.mode === 'secondary') return;
         this.db.saveStreamStats({
             ...this.stats,
             username: this.confirmedUsername,
             roomId: this.confirmedRoomId,
             streamStartTime: this.streamStartTime
         });
+    }
+
+    _persistConnectedUsername() {
+        if (this.context.mode === 'secondary') return;
+        this.db.setSetting('last_connected_username', this.confirmedUsername);
     }
 
     _schedulePostConnectTasks(generation) {
@@ -1341,7 +1371,7 @@ class EulerstreamAdapter extends BaseAdapter {
                             this.logger.info(`📅 Set stream start time from earliest event: ${new Date(this.streamStartTime).toISOString()}`);
                             
                             // Broadcast updated stream time info
-                            this.io.emit('tiktok:streamTimeInfo', {
+                            this._emitGlobal('tiktok:streamTimeInfo', {
                                 streamStartTime: this.streamStartTime,
                                 streamStartISO: new Date(this.streamStartTime).toISOString(),
                                 detectionMethod: this._streamTimeDetectionMethod,
@@ -1373,7 +1403,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('chat', eventData)) {
-                this.db.logEvent('chat', eventData.username, eventData);
+                this._logDatabaseEvent('chat', eventData.username, eventData);
             }
         });
 
@@ -1471,11 +1501,11 @@ class EulerstreamAdapter extends BaseAdapter {
                     
                     // Save to database immediately
                     try {
-                        this.db.updateGiftCatalog([normalizedGift]);
+                        this._updateGiftCatalog([normalizedGift]);
                         this.logger.info(`✅ [GIFT CATALOG] Added gift to catalog: ${normalizedGift.name} (ID: ${normalizedGift.id})`);
                         
                         // Emit event to notify frontend of new gift in catalog
-                        this.io.emit('gift-catalog:updated', {
+                        this._emitGlobal('gift-catalog:updated', {
                             gift: {
                                 id: normalizedGift.id,
                                 name: normalizedGift.name,
@@ -1562,7 +1592,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('gift', eventData)) {
-                    this.db.logEvent('gift', eventData.username, eventData);
+                    this._logDatabaseEvent('gift', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else {
@@ -1622,7 +1652,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.logger.info(`👤 [FOLLOW] New follower: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('follow', eventData)) {
-                    this.db.logEvent('follow', eventData.username, eventData);
+                    this._logDatabaseEvent('follow', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else if (isShare) {
@@ -1644,7 +1674,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 this.logger.info(`📢 [SHARE] User shared stream: ${eventData.username || eventData.nickname}`);
                 // Only log to database if event was not a duplicate
                 if (this.handleEvent('share', eventData)) {
-                    this.db.logEvent('share', eventData.username, eventData);
+                    this._logDatabaseEvent('share', eventData.username, eventData);
                 }
                 this.broadcastStats();
             } else {
@@ -1672,7 +1702,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('share', eventData)) {
-                this.db.logEvent('share', eventData.username, eventData);
+                this._logDatabaseEvent('share', eventData.username, eventData);
             }
             this.broadcastStats();
         });
@@ -1729,7 +1759,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('like', eventData)) {
-                this.db.logEvent('like', eventData.username, eventData);
+                this._logDatabaseEvent('like', eventData.username, eventData);
             }
             this.broadcastStats();
         });
@@ -1765,7 +1795,7 @@ class EulerstreamAdapter extends BaseAdapter {
 
             // Only log to database if event was not a duplicate
             if (this.handleEvent('subscribe', eventData)) {
-                this.db.logEvent('subscribe', eventData.username, eventData);
+                this._logDatabaseEvent('subscribe', eventData.username, eventData);
             }
         });
 
@@ -1790,7 +1820,7 @@ class EulerstreamAdapter extends BaseAdapter {
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('join', eventData)) {
-                this.db.logEvent('join', eventData.username, eventData);
+                this._logDatabaseEvent('join', eventData.username, eventData);
             }
         });
 
@@ -1819,7 +1849,7 @@ class EulerstreamAdapter extends BaseAdapter {
             
             // Only log to database if event was not a duplicate
             if (this.handleEvent('emote', eventData)) {
-                this.db.logEvent('emote', eventData.username, eventData);
+                this._logDatabaseEvent('emote', eventData.username, eventData);
             }
         });
     }
@@ -2459,9 +2489,18 @@ class EulerstreamAdapter extends BaseAdapter {
         if (errorMessage.includes('WebSocket')) {
             return {
                 type: 'WEBSOCKET_ERROR',
-                message: errorMessage,
+                message: 'Eulerstream WebSocket connection failed.',
                 suggestion: 'Check Eulerstream API key and connection settings',
                 retryable: true
+            };
+        }
+
+        if (errorMessage.includes('No API key configured')) {
+            return {
+                type: 'API_KEY_ERROR',
+                message: 'No API key configured.',
+                suggestion: 'Set an Eulerstream API key in Dashboard Settings or the supported environment variable.',
+                retryable: false
             };
         }
 
@@ -2491,8 +2530,8 @@ class EulerstreamAdapter extends BaseAdapter {
         // Generic error
         return {
             type: 'UNKNOWN_ERROR',
-            message: errorMessage,
-            suggestion: 'Check the console logs for more details. If the problem persists, report this error',
+            message: 'Connection failed due to an unexpected error.',
+            suggestion: 'Check the connection settings and try again later.',
             retryable: true
         };
     }
@@ -2510,13 +2549,12 @@ class EulerstreamAdapter extends BaseAdapter {
      * Log connection attempt for diagnostics
      * @private
      */
-    _logConnectionAttempt(username, success, errorType, errorMessage) {
+    _logConnectionAttempt(username, success, errorType) {
         const attempt = {
             timestamp: new Date().toISOString(),
             username,
             success,
-            errorType,
-            errorMessage
+            errorType
         };
 
         this.connectionAttempts.unshift(attempt);
@@ -2544,7 +2582,7 @@ class EulerstreamAdapter extends BaseAdapter {
         const savedUsername = this.currentUsername;
         const wasLive = this._connectionHadLive;
         const mayReconnect = wasLive || this._resumeConfirmedSession;
-        this.logger.info(`🔴 Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || reasonText}`);
+        this.logger.info(`🔴 Eulerstream WebSocket disconnected: ${code} - ${ClientCloseCode[code] || 'connection closed'}`);
         this._stopHeartbeat();
         this._stopStreamWatchdog();
         this._clearConnectionTimers();
@@ -2564,7 +2602,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 streamIdentity: this.streamIdentity,
                 streamSessionId: this.streamSessionId,
                 timestamp: new Date().toISOString(),
-                reason: disconnectReason || reasonText || ClientCloseCode[code] || 'Connection closed',
+                reason: disconnectReason || ClientCloseCode[code] || 'Connection closed',
                 code,
                 wasLive,
                 isTransient,
@@ -2622,16 +2660,20 @@ class EulerstreamAdapter extends BaseAdapter {
             });
             emitDisconnect('Too many connections');
         } else if ([1006, 1011, 4500].includes(code) && mayReconnect) {
-            error = this._createConnectionError('The LIVE connection was interrupted.', 'retry_wait', code);
+            const restFallbackEligible = code === 1011 && /ttwid|signing|room_info|ws state error/i.test(reasonText);
+            error = this._createConnectionError('The LIVE connection was interrupted.', 'retry_wait', code, {
+                restFallbackEligible
+            });
             emitDisconnect(error.message, true);
             this._scheduleBoundedReconnect(savedUsername, code);
         } else {
             this.connectionState = code === 1000 ? 'disconnected' : 'connection_error';
+            const restFallbackEligible = code === 1011 && /ttwid|signing|room_info|ws state error/i.test(reasonText);
             error = this._createConnectionError(
                 code === 1000 ? 'The connection closed normally.' : 'The connection closed before LIVE was confirmed.',
                 this.connectionState,
                 code,
-                { closeReason: reasonText }
+                { restFallbackEligible }
             );
             this.broadcastStatus(this.connectionState, { code, message: error.message, retryable: false });
             emitDisconnect(error.message);
@@ -2908,6 +2950,13 @@ class EulerstreamAdapter extends BaseAdapter {
         this._pauseLiveTracking();
         this._identityPendingBuffer = [];
         this._identityResolutionInFlight = null;
+        this._fallbackKeySessionConfirmed = false;
+        this._fallbackKeySessionUsername = null;
+        this._resumeConfirmedSession = false;
+        this._fallbackKeyOrder = null;
+        this._fallbackKeyIndex = 0;
+        this._connectionKeySelection = null;
+        this._connectionHadLive = false;
         this._rejectPendingConnect(
             this._createConnectionError('Connection cancelled manually.', 'disconnected', 1000)
         );
@@ -2931,7 +2980,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.connectionState = 'disconnected';
         this.currentUsername = null;
         this.broadcastStatus('disconnected');
-        this.logger.info('⚫ Disconnected from TikTok LIVE; confirmed session state preserved');
+        this.logger.info('⚫ Disconnected from TikTok LIVE; fallback-key confirmation cleared');
     }
 
     /**
@@ -3062,7 +3111,7 @@ class EulerstreamAdapter extends BaseAdapter {
         this.emit(eventType, data);
 
         // Broadcast event to frontend
-        this.io.emit('tiktok:event', {
+        this._emitGlobal('tiktok:event', {
             type: eventType,
             data: data
         });
@@ -3071,7 +3120,7 @@ class EulerstreamAdapter extends BaseAdapter {
     }
 
     broadcastStatus(status, data = {}) {
-        this.io.emit('tiktok:status', {
+        this._emitGlobal('tiktok:status', {
             status,
             username: this.currentUsername,
             ...data
@@ -3085,7 +3134,7 @@ class EulerstreamAdapter extends BaseAdapter {
             ? Math.floor((Date.now() - this.streamStartTime) / 1000)
             : 0;
 
-        this.io.emit('tiktok:stats', {
+        this._emitGlobal('tiktok:stats', {
             ...this.stats,
             streamDuration: streamDuration
         });
@@ -3104,7 +3153,7 @@ class EulerstreamAdapter extends BaseAdapter {
             gifts: 0
         };
         // Persist reset to database
-        this.db.resetStreamStats({
+        if (this.context.mode !== 'secondary') this.db.resetStreamStats({
             username: this.confirmedUsername,
             roomId: this.confirmedRoomId,
             streamStartTime: this.streamStartTime
@@ -3261,7 +3310,7 @@ class EulerstreamAdapter extends BaseAdapter {
                         
                         // Broadcast updated stream time info
                         if (this.io) {
-                            this.io.emit('tiktok:streamTimeInfo', {
+                            this._emitGlobal('tiktok:streamTimeInfo', {
                                 streamStartTime: this.streamStartTime,
                                 streamStartISO: new Date(this.streamStartTime).toISOString(),
                                 detectionMethod: this._streamTimeDetectionMethod,
@@ -3355,8 +3404,8 @@ class EulerstreamAdapter extends BaseAdapter {
 
                 if (giftsToSave.length > 0) {
                     const savedCount = localeCode !== null
-                        ? this.db.updateGiftCatalog(giftsToSave, localeCode)
-                        : this.db.updateGiftCatalog(giftsToSave);
+                        ? this._updateGiftCatalog(giftsToSave, localeCode)
+                        : this._updateGiftCatalog(giftsToSave);
 
                     this.logger.info(`✅ Gift catalog updated with ${savedCount} gifts from TikTok API`);
 
@@ -3415,8 +3464,8 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (value !== null && value !== undefined) {
                     return value;
                 }
-            } catch (error) {
-                this.logger.warn(`Failed to read setting "${key}" via getSetting: ${error.message}`);
+            } catch {
+                this.logger.warn(`Failed to read setting "${key}" via getSetting.`);
             }
         }
 
@@ -3426,8 +3475,8 @@ class EulerstreamAdapter extends BaseAdapter {
                 if (settings && settings[key] !== null && settings[key] !== undefined) {
                     return settings[key];
                 }
-            } catch (error) {
-                this.logger.warn(`Failed to read setting "${key}" via getAllSettings: ${error.message}`);
+            } catch {
+                this.logger.warn(`Failed to read setting "${key}" via getAllSettings.`);
             }
         }
 
@@ -3507,13 +3556,14 @@ class EulerstreamAdapter extends BaseAdapter {
         return shuffled;
     }
 
-    _startFallbackKeySession(keySelection) {
+    _startFallbackKeySession(keySelection, username) {
         const candidates = keySelection.fallbackCandidates?.length > 0
             ? keySelection.fallbackCandidates
             : FALLBACK_API_KEYS;
         this._fallbackKeyOrder = this._shuffleFallbackKeys(candidates);
         this._fallbackKeyIndex = 0;
         this._fallbackKeySessionConfirmed = true;
+        this._fallbackKeySessionUsername = this._normalizeUsername(username);
     }
 
     _shouldTryNextFallbackKey(error, generation) {
@@ -3548,26 +3598,12 @@ class EulerstreamAdapter extends BaseAdapter {
     
     /**
      * Get Euler API key configuration information
-     * @returns {Object} Object with activeKey, activeSource, and configured flag
+     * @returns {Object} Safe configuration metadata without key material
      */
     getEulerApiKeyInfo() {
         const keySelection = this._resolveEulerApiKey();
-        const activeKey = keySelection.activeKey;
-        
-        // Mask the key for security - only show first 8 and last 4 chars
-        let maskedKey = null;
-        if (activeKey) {
-            if (activeKey.length >= 12) {
-                maskedKey = `${activeKey.substring(0, 8)}...${activeKey.substring(activeKey.length - 4)}`;
-            } else if (activeKey.length >= 8) {
-                maskedKey = `${activeKey.substring(0, 4)}...${activeKey.substring(activeKey.length - 2)}`;
-            } else {
-                maskedKey = '***'; // Key too short, just show asterisks
-            }
-        }
-        
         return {
-            activeKey: maskedKey,
+            activeKey: null,
             activeSource: keySelection.activeSource,
             configured: keySelection.configured,
             usingFallback: keySelection.usingFallback
@@ -3592,7 +3628,7 @@ class EulerstreamAdapter extends BaseAdapter {
             tiktokApiTest.success = response.status >= 200 && response.status < 500;
             tiktokApiTest.responseTime = Date.now() - startTime;
         } catch (error) {
-            tiktokApiTest.error = error.message;
+            tiktokApiTest.error = this._analyzeError(error).message;
         }
         
         // Test Euler API connectivity (basic health check)
@@ -3612,7 +3648,7 @@ class EulerstreamAdapter extends BaseAdapter {
                 eulerWebSocketTest.success = response.status >= 200 && response.status < 500;
                 eulerWebSocketTest.responseTime = Date.now() - startTime;
             } catch (error) {
-                eulerWebSocketTest.error = error.message;
+                eulerWebSocketTest.error = this._analyzeError(error).message;
             }
         } else {
             eulerWebSocketTest.error = 'No API key configured';

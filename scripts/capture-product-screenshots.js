@@ -6,9 +6,26 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
+const {
+  createStartupOutputCollector,
+  formatEarlyExitDiagnostic,
+  formatStartupOutput,
+  reportCaptureFailures,
+  reportNoCaptureOutputs,
+  resolveBundledNode,
+  validateNodeRuntime
+} = require('./lib/capture-startup-diagnostics');
+const { createDocsCaptureChildEnvironment } = require('./lib/docs-capture-child-env');
+const { screenshotClipForAnchor } = require('./lib/capture-framing');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
-const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
+const { parseDocsCapturePluginIds, prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
+const { seedSidekickDocsCaptureProfile } = require('./lib/docs-capture-sidekick-seed');
+const { seedStreamMonstersDocsCaptureProfile } = require('./lib/docs-capture-stream-monsters-seed');
+const { loadCaptureBrowserAdapter } = require('./lib/capture-browser-adapter');
+const { mergePartialCaptureOutputs, writeCaptureManifest } = require('./lib/capture-manifest');
+const { writeCaptureAtomically } = require('./lib/capture-atomic-output');
+const { createCaptureLifecycleReporter, formatFatalCaptureError, runCapturePhase } = require('./lib/capture-lifecycle-report');
 const { assertNoBlockedNetworkAttempts, createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
 const {
   assertWorkflowOperationsExecuted,
@@ -66,20 +83,6 @@ const SUPPORTED_LOCAL_PREPARATIONS = new Set([
   'start-local-manual-game',
   'start-local-quiz'
 ]);
-
-function loadPuppeteer() {
-  const candidates = [
-    path.join(REPO_ROOT, 'app', 'node_modules', 'puppeteer'),
-    path.join(REPO_ROOT, 'app', 'node_modules', 'puppeteer-core'),
-    'puppeteer',
-    'puppeteer-core'
-  ];
-  let lastError;
-  for (const candidate of candidates) {
-    try { return require(candidate); } catch (error) { lastError = error; }
-  }
-  throw lastError;
-}
 
 function browserExecutablePath() {
   if (process.env.PUPPETEER_EXECUTABLE_PATH) return process.env.PUPPETEER_EXECUTABLE_PATH;
@@ -175,13 +178,38 @@ function freePort() {
   });
 }
 
-function waitForServer(child, baseUrl) {
+function waitForServer(child, baseUrl, getStartupOutput, lifecycle, lifecycleDetails = {}) {
   return new Promise((resolve, reject) => {
     const started = Date.now();
+    let childExit = null;
+    let settled = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(timer);
+      child.off('close', onClose);
+      child.off('error', onError);
+      if (error) reject(error);
+      else resolve();
+    };
+    const onClose = (code, signal) => {
+      childExit = { code, signal };
+    };
+    const onError = (error) => {
+      lifecycle?.record({ component: 'app', event: 'process-error', phase: 'server', ...lifecycleDetails, pid: child.pid ?? null, error: error.message });
+      finish(new Error(`Could not start isolated LTTH app: ${error.message}`));
+    };
+    child.once('close', onClose);
+    child.once('error', onError);
     const timer = setInterval(async () => {
-      if (child.exitCode !== null) {
-        clearInterval(timer);
-        reject(new Error(`App exited before capture started (code ${child.exitCode})`));
+      if (childExit) {
+        const error = new Error(formatEarlyExitDiagnostic({
+          ...childExit,
+          output: getStartupOutput?.() || {}
+        }));
+        error.captureExitCode = childExit.code;
+        error.captureSignal = childExit.signal;
+        finish(error);
         return;
       }
       try {
@@ -190,22 +218,20 @@ function waitForServer(child, baseUrl) {
         const response = await fetch(`${baseUrl}/api/health`, { signal: controller.signal });
         clearTimeout(timeout);
         if (response.ok) {
-          clearInterval(timer);
-          resolve();
+          finish();
           return;
         }
       } catch (_) {
         // The isolated app is still starting.
       }
       if (Date.now() - started > 90000) {
-        clearInterval(timer);
-        reject(new Error('Timed out waiting for the isolated LTTH app'));
+        finish(new Error('Timed out waiting for the isolated LTTH app'));
       }
     }, 500);
   });
 }
 
-async function startIsolatedApp(profileName, guideId = null) {
+async function startIsolatedApp(profileName, guideId = null, lifecycle = null, lifecycleScope = {}) {
   if (COLLECTION === 'docs' && !START_APP) {
     throw new Error('Documentation screenshots require an isolated local LTTH process');
   }
@@ -213,56 +239,116 @@ async function startIsolatedApp(profileName, guideId = null) {
     if (!EXTERNAL_BASE_URL) throw new Error('SCREENSHOT_BASE_URL is required when SCREENSHOT_START_APP=false');
     return { baseUrl: EXTERNAL_BASE_URL, child: null, profileDir: null };
   }
-  const port = await freePort();
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
-  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
-  const child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
-    cwd: path.join(REPO_ROOT, 'app'),
-    env: {
-      ...process.env,
-      LOCALAPPDATA: profileDir,
-      LTTH_PORT: String(port),
-      LTTH_DOCS_CAPTURE: 'true',
-      LTTH_DOCS_SAFE_MODE: 'true',
-      LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
-      LTTH_NO_BROWSER: 'true',
-      DISABLE_SWAGGER: 'true',
-      LTTH_BIND_ADDRESS: '127.0.0.1',
-      ...(docsCapturePluginDir ? { LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir } : {})
-    },
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
-  let startupLog = '';
-  const appendStartupLog = (chunk) => {
-    startupLog = `${startupLog}${chunk.toString()}`.slice(-16000);
-  };
-  child.stdout.on('data', appendStartupLog);
-  child.stderr.on('data', appendStartupLog);
-  const baseUrl = `http://127.0.0.1:${port}`;
+  const captureNode = resolveBundledNode(REPO_ROOT);
+  const docsCaptureAllowedPluginIds = COLLECTION === 'docs' && guideId
+    ? parseDocsCapturePluginIds([guideId])
+    : [];
+  const port = await runCapturePhase(lifecycle, {
+    component: 'app', phase: 'port-allocation', ...lifecycleScope
+  }, freePort);
+  lifecycle?.record({ component: 'app', event: 'port-assigned', phase: 'port-allocation', ...lifecycleScope, port });
+  const profileDir = await runCapturePhase(lifecycle, {
+    component: 'app', phase: 'temp-profile-create', ...lifecycleScope,
+    resultDetails: () => ({ tempProfile: 'created' })
+  }, () => fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`)));
+  let child = null;
+  let getStartupOutput = () => ({ stdout: '', stderr: '' });
   try {
-    await waitForServer(child, baseUrl);
-      return { baseUrl, child, profileDir, getStartupLog: () => startupLog };
+    const profilePreparation = await runCapturePhase(lifecycle, {
+      component: 'app', phase: 'profile-prepare', ...lifecycleScope,
+      resultDetails: (value) => ({
+        status: value?.pluginDir ? 'fixture-ready' : 'fixture-skipped',
+        ...(value?.seedReceipt?.receiptSha256
+          ? { seedReceiptSha256: value.seedReceipt.receiptSha256 }
+          : {})
+      })
+    }, async () => {
+      const pluginDir = COLLECTION === 'docs'
+        ? prepareDocsPluginFixture(REPO_ROOT, profileDir, docsCaptureAllowedPluginIds)
+        : null;
+      let seedReceipt = null;
+      if (docsCaptureAllowedPluginIds.includes('sidekick')) {
+        seedReceipt = seedSidekickDocsCaptureProfile(REPO_ROOT, profileDir, docsCaptureAllowedPluginIds);
+      }
+      if (docsCaptureAllowedPluginIds.includes('stream-monsters')) {
+        seedReceipt = seedStreamMonstersDocsCaptureProfile(REPO_ROOT, profileDir, docsCaptureAllowedPluginIds);
+      }
+      return { pluginDir, seedReceipt };
+    });
+    const childEnvironment = createDocsCaptureChildEnvironment({
+      profileDir,
+      port,
+      allowedPluginIds: docsCaptureAllowedPluginIds,
+      pluginDir: profilePreparation?.pluginDir
+    });
+    child = await runCapturePhase(lifecycle, {
+      component: 'app', phase: 'server-spawn', ...lifecycleScope, port,
+      resultDetails: (processChild) => ({ pid: processChild.pid ?? null, status: 'spawned' })
+    }, () => spawn(captureNode.executablePath, [path.join(REPO_ROOT, 'app', 'server.js')], {
+      cwd: path.join(REPO_ROOT, 'app'),
+      env: childEnvironment,
+      stdio: ['ignore', 'pipe', 'pipe']
+    }));
+    child.once('exit', (code, signal) => lifecycle?.record({
+      component: 'app', event: 'process-exit', phase: 'server', ...lifecycleScope,
+      pid: child.pid ?? null, port, exitCode: code, signal
+    }));
+    child.once('close', (code, signal) => lifecycle?.record({
+      component: 'app', event: 'process-close', phase: 'server', ...lifecycleScope,
+      pid: child.pid ?? null, port, exitCode: code, signal
+    }));
+    getStartupOutput = createStartupOutputCollector(child);
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await runCapturePhase(lifecycle, {
+      component: 'app', phase: 'health-check', ...lifecycleScope, pid: child.pid ?? null, port,
+      resultDetails: () => ({ status: 'healthy' })
+    }, () => waitForServer(child, baseUrl, getStartupOutput, lifecycle, { ...lifecycleScope, port }));
+    return {
+      baseUrl,
+      child,
+      profileDir,
+      getStartupOutput,
+      port,
+      lifecycleScope,
+      docsCaptureSeedReceipt: profilePreparation?.seedReceipt || null
+    };
   } catch (error) {
     let cleanupDiagnostic = '';
     try {
-      await stopIsolatedApp({ child, profileDir }, profileName);
+      await stopIsolatedApp({ child, profileDir, port, lifecycleScope }, profileName, lifecycle);
     } catch (cleanupError) {
       cleanupDiagnostic = `\nStartup cleanup failed: ${cleanupError.message}`;
     }
-    throw new Error(`${error.message}${cleanupDiagnostic}\n${startupLog || 'No startup output was emitted.'}`);
+    const startupOutput = /(?:stdout|stderr) tail:/.test(error.message)
+      ? ''
+      : formatStartupOutput(getStartupOutput());
+    const outputDiagnostic = startupOutput ? `\n${startupOutput}` : '';
+    const startupError = new Error(`${error.message}${cleanupDiagnostic}${outputDiagnostic}`);
+    startupError.captureExitCode = error.captureExitCode;
+    startupError.captureSignal = error.captureSignal;
+    throw startupError;
   }
 }
 
-async function stopIsolatedApp(app, label = 'isolated LTTH app') {
+async function stopIsolatedApp(app, label = 'isolated LTTH app', lifecycle = null) {
   let cleanupError = null;
   try {
-    await stopCaptureAppChild(app.child, { label, timeoutMs: LIFECYCLE_TIMEOUT_MS });
+    await runCapturePhase(lifecycle, {
+      component: 'app', phase: 'process-cleanup', ...app.lifecycleScope,
+      pid: app.child?.pid ?? null, port: app.port ?? null,
+      resultDetails: () => ({ status: app.child ? 'stopped' : 'not-started', exitCode: app.child?.exitCode, signal: app.child?.signalCode })
+    }, () => stopCaptureAppChild(app.child, { label, timeoutMs: LIFECYCLE_TIMEOUT_MS }));
   } catch (error) {
     cleanupError = error;
   }
   try {
     if (app.profileDir && app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) {
-      fs.rmSync(app.profileDir, { recursive: true, force: true });
+      await runCapturePhase(lifecycle, {
+        component: 'app', phase: 'temp-profile-cleanup', ...app.lifecycleScope,
+        tempProfile: 'created', resultDetails: () => ({ tempProfile: 'removed' })
+      }, () => fs.rmSync(app.profileDir, { recursive: true, force: true }));
+    } else {
+      lifecycle?.record({ component: 'app', event: 'success', phase: 'temp-profile-cleanup', ...app.lifecycleScope, tempProfile: 'not-created' });
     }
   } catch (error) {
     if (!cleanupError) cleanupError = error;
@@ -982,26 +1068,6 @@ async function prepareGoalsOverlay(page, baseUrl, asset, locale) {
   };
 }
 
-function screenshotClipForAnchor(viewport, anchorRect, crop = null) {
-  const requestedWidth = crop?.width || 640;
-  const requestedHeight = crop?.height || 560;
-  const width = Math.min(viewport.clientWidth, requestedWidth);
-  const height = Math.min(viewport.height, requestedHeight);
-  const anchorCenterX = viewport.scrollX + anchorRect.left + (anchorRect.width / 2);
-  const anchorCenter = viewport.scrollY + anchorRect.top + (anchorRect.height / 2);
-  const maxX = Math.max(0, viewport.scrollWidth - width);
-  const maxY = Math.max(0, viewport.scrollHeight - height);
-  return {
-    // Each capture is a direct crop of the shipped UI around its real anchor.
-    // It makes the documented control readable without injecting focus chrome
-    // or modifying the page's natural scroll/layout state.
-    x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX))),
-    y: Math.round(Math.max(0, Math.min(anchorCenter - (height / 2), maxY))),
-    width,
-    height
-  };
-}
-
 async function captureAsset(page, baseUrl, asset, locale) {
   // A browser page is reused inside one isolated plugin process. Console
   // evidence belongs to this workflow step only, never to a prior step.
@@ -1060,18 +1126,33 @@ async function captureAsset(page, baseUrl, asset, locale) {
   // and immediately before language evidence is recorded.
   await synchronizeCaptureLocale(page, locale);
   debugCapturePhase(`${captureLabel}: inspect-anchor`);
-  const preparation = [...(advancedTimerOverlay?.preparation || []), ...(goalsOverlay?.preparation || []), tabPreparation].filter(Boolean);
+  const seedReceipt = page.__docsCaptureSeedReceipt;
+  const seedPreparation = seedReceipt?.receiptSha256 ? [{
+    type: 'isolated-temp-profile-seed',
+    plugin: seedReceipt.plugin,
+    receiptFile: seedReceipt.receiptFile,
+    receiptSha256: seedReceipt.receiptSha256,
+    synthetic: seedReceipt.synthetic,
+    writes: seedReceipt.writes
+  }] : [];
+  const preparation = [...seedPreparation, ...(advancedTimerOverlay?.preparation || []), ...(goalsOverlay?.preparation || []), tabPreparation].filter(Boolean);
   const focus = await assertRenderedAnchor(page, asset.selector);
   await new Promise((resolve) => setTimeout(resolve, 100));
+  const clipFocus = asset.clipSelector && asset.clipSelector !== asset.selector
+    ? await assertRenderedAnchor(page, asset.clipSelector)
+    : null;
   const observedSelectors = [...new Set([
     asset.selector,
+    asset.clipSelector,
     asset.action?.inputSelector,
     ...asset.workflow.operations.map((operation) => operation.selector),
     ...asset.workflow.postconditions.map((condition) => condition.selector)
   ].filter(Boolean))];
-  const state = await page.evaluate((lang, anchorSelector, selectors) => {
+  const state = await page.evaluate((lang, anchorSelector, frameSelector, selectors) => {
     const anchor = document.querySelector(anchorSelector);
     const rect = anchor && anchor.getBoundingClientRect();
+    const frameAnchor = frameSelector ? document.querySelector(frameSelector) : null;
+    const frameRect = frameAnchor && frameAnchor !== anchor ? frameAnchor.getBoundingClientRect() : null;
     const controlState = (selector) => {
       const element = document.querySelector(selector);
       const controlRect = element && element.getBoundingClientRect();
@@ -1097,6 +1178,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
       controls: Object.fromEntries(selectors.map((selector) => {
         return [selector, controlState(selector)];
       })),
+      clipRect: frameRect ? { left: frameRect.left, top: frameRect.top, width: frameRect.width, height: frameRect.height } : null,
               viewport: {
             scrollX: window.scrollX,
             scrollY: window.scrollY,
@@ -1107,11 +1189,14 @@ async function captureAsset(page, baseUrl, asset, locale) {
       },
       anchorRect: rect ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
     };
-  }, locale, asset.selector, observedSelectors);
+  }, locale, asset.selector, asset.clipSelector || null, observedSelectors);
   debugCapturePhase(`${captureLabel}: verify-workflow`);
   if (state.lang !== locale) throw new Error(`Document language is ${state.lang || 'unset'}, expected ${locale}`);
   if (state.theme !== 'cid') throw new Error(`Theme is ${state.theme || 'unset'}, expected cid`);
   if (!state.anchorRect) throw new Error(`Capture anchor has no rendered geometry: ${asset.selector}`);
+  if (asset.clipSelector && asset.clipSelector !== asset.selector && !state.clipRect) {
+    throw new Error(`Capture clip anchor has no rendered geometry: ${asset.clipSelector}`);
+  }
   const executedOperations = assertWorkflowOperationsExecuted({
     workflow: asset.workflow,
     state: {
@@ -1124,12 +1209,17 @@ async function captureAsset(page, baseUrl, asset, locale) {
     interactions: page.__docsCaptureInteractions,
     preparation
   });
-  const screenshotClip = screenshotClipForAnchor(state.viewport, state.anchorRect, asset.workflow.captureRule.imageCrop);
+  const screenshotClip = screenshotClipForAnchor(
+    state.viewport,
+    state.clipRect || state.anchorRect,
+    asset.workflow.captureRule.imageCrop
+  );
   const target = outputPath(asset, locale);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  await page.screenshot({ path: target, type: 'png', clip: screenshotClip });
+  return writeCaptureAtomically(target, async (temporaryPath) => {
+  await page.screenshot({ path: temporaryPath, type: 'png', clip: screenshotClip });
   debugCapturePhase(`${captureLabel}: record-receipt`);
-  const bytes = fs.readFileSync(target);
+  const bytes = fs.readFileSync(temporaryPath);
   if (asset.action && asset.action.cleanupSelector === '#end-manual-game') {
     const cleanupConfirmation = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => reject(new Error('Game Engine local cleanup confirmation did not open')), 2000);
@@ -1190,6 +1280,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
     path: path.relative(REPO_ROOT, target).replace(/\\/g, '/'),
     route: asset.route,
     selector: asset.selector,
+    ...(asset.clipSelector ? { clipSelector: asset.clipSelector, clipFocus } : {}),
     action: asset.action,
     workflow: asset.workflow,
     executedOperations,
@@ -1223,6 +1314,7 @@ async function captureAsset(page, baseUrl, asset, locale) {
     throw new Error(`Workflow postconditions failed for ${asset.guideId}/${asset.stepId}: ${JSON.stringify(failedPostconditions)}`);
   }
   return output;
+  });
 }
 
 async function captureFailureContext(page, label) {
@@ -1243,8 +1335,30 @@ async function captureFailureContext(page, label) {
   });
 }
 
+function browserProcessHandle(browser) {
+  try {
+    return typeof browser?.process === 'function' ? browser.process() : browser?.process || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function observeCaptureProcess(processHandle, lifecycle, event) {
+  if (!processHandle) {
+    lifecycle?.record({ ...event, event: 'process-observation', phase: 'launch', pid: null, status: 'pid-unavailable' });
+    return;
+  }
+  lifecycle?.record({ ...event, event: 'process-start', phase: 'launch', pid: processHandle.pid ?? null, status: 'started' });
+  processHandle.once?.('exit', (exitCode, signal) => lifecycle?.record({
+    ...event, event: 'process-exit', phase: 'runtime', pid: processHandle.pid ?? null, exitCode, signal
+  }));
+  processHandle.once?.('close', (exitCode, signal) => lifecycle?.record({
+    ...event, event: 'process-close', phase: 'runtime', pid: processHandle.pid ?? null, exitCode, signal
+  }));
+}
+
 async function captureDocs(spec, assets, locales) {
-  const puppeteer = loadPuppeteer();
+  const captureBrowser = loadCaptureBrowserAdapter(REPO_ROOT);
   const executablePath = browserExecutablePath();
   const outputs = [];
   const failures = [];
@@ -1274,33 +1388,52 @@ async function captureDocs(spec, assets, locales) {
       const guideLabel = `${locale}/${guideId}`;
       let app;
       let browser;
+      let browserProcess = null;
       let page;
+      let phase = 'session-setup';
+      const lifecycleScope = { locale, guideId };
+      const lifecycle = createCaptureLifecycleReporter();
       try {
         console.log(`Capturing ${guideLabel} (${guideAssets.length} steps)`);
-        app = await startIsolatedApp(`${guideId}-${locale}`, guideId);
-        browser = await runWithTimeout(() => puppeteer.launch({
+        phase = 'app-startup';
+        app = await startIsolatedApp(`${guideId}-${locale}`, guideId, lifecycle, lifecycleScope);
+        phase = 'browser-launch';
+        browser = await runCapturePhase(lifecycle, {
+          component: 'browser', phase: 'launch', ...lifecycleScope, tempProfile: 'browser-managed',
+          resultDetails: (launchedBrowser) => {
+            browserProcess = browserProcessHandle(launchedBrowser);
+            observeCaptureProcess(browserProcess, lifecycle, { component: 'browser', ...lifecycleScope, browserPort: launchedBrowser.browserPort ?? null });
+            return { pid: browserProcess?.pid ?? null, browserPort: launchedBrowser.browserPort ?? null, status: browserProcess ? 'started' : 'started-pid-unavailable' };
+          }
+        }, () => runWithTimeout(() => captureBrowser.launch({
           headless: 'new',
           ...(executablePath ? { executablePath } : {}),
           args: ['--no-sandbox', '--disable-setuid-sandbox']
         }), {
           label: `starting capture browser for ${guideLabel}`,
           timeoutMs: LIFECYCLE_TIMEOUT_MS
-        });
-        page = await createCapturePage(browser, locale, guideLabel);
+        }));
+        phase = 'page-setup';
+        page = await runCapturePhase(lifecycle, {
+          component: 'browser', phase: 'page-setup', ...lifecycleScope,
+          pid: browserProcess?.pid ?? null, browserPort: browser?.browserPort ?? null, appPort: app.port
+        }, () => createCapturePage(browser, locale, guideLabel));
+        page.__docsCaptureSeedReceipt = app.docsCaptureSeedReceipt || null;
         for (const asset of guideAssets) {
           try {
-            outputs.push(await withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`));
+            phase = 'asset-capture';
+            outputs.push(await runCapturePhase(lifecycle, {
+              component: 'browser', phase: 'navigate-and-capture', ...lifecycleScope,
+              id: asset.id, pid: browserProcess?.pid ?? null, browserPort: browser?.browserPort ?? null, appPort: app.port
+            }, () => withTimeout(captureAsset(page, app.baseUrl, asset, locale), `${locale}/${asset.id}`)));
           } catch (error) {
             const timedOut = isCaptureTimeout(error);
             const context = timedOut ? [] : await captureFailureContext(page, `${locale}/${asset.id}`);
             const diagnostic = context.length ? ` Visible page message: ${context.join(' | ')}` : '';
-            const startupLog = app?.getStartupLog?.() || '';
-            const relevantLog = startupLog.split(/\r?\n/)
-              .filter((line) => /plugin|config-import|error|failed/i.test(line))
-              .slice(-30)
-              .join(' | ');
-            const startupDiagnostic = relevantLog ? ` Startup log: ${relevantLog}` : '';
-            failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `${error.message}${diagnostic}${startupDiagnostic}` });
+            const startupOutput = app?.getStartupOutput?.() || {};
+            const formattedStartupOutput = formatStartupOutput(startupOutput);
+            const startupDiagnostic = formattedStartupOutput ? ` Startup output: ${formattedStartupOutput}` : '';
+            failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, phase: 'asset-capture', exitCode: error.captureExitCode, signal: error.captureSignal, error: `${error.message}${diagnostic}${startupDiagnostic}` });
             if (timedOut) {
               page = await recoverCapturePage({
                 closePage: () => page.close(),
@@ -1312,39 +1445,46 @@ async function captureDocs(spec, assets, locales) {
           }
         }
       } catch (error) {
-        for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Capture guide session failed: ${error.message}` });
+        for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, phase, exitCode: error.captureExitCode, signal: error.captureSignal, error: `Capture guide session failed: ${error.message}` });
       } finally {
         const cleanupErrors = [];
         if (page) {
           try {
-            await closeCapturePage(() => page.close(), {
+            await runCapturePhase(lifecycle, {
+              component: 'browser', phase: 'page-cleanup', ...lifecycleScope,
+              pid: browserProcess?.pid ?? null, browserPort: browser?.browserPort ?? null, appPort: app?.port
+            }, () => closeCapturePage(() => page.close(), {
               label: guideLabel,
               timeoutMs: LIFECYCLE_TIMEOUT_MS
-            });
+            }));
           } catch (error) {
             cleanupErrors.push(error);
           }
         }
         if (browser) {
           try {
-            await closeCaptureBrowser(browser, {
+            await runCapturePhase(lifecycle, {
+              component: 'browser', phase: 'process-cleanup', ...lifecycleScope,
+              pid: browserProcess?.pid ?? null, browserPort: browser?.browserPort ?? null, appPort: app?.port, tempProfile: 'browser-managed',
+              resultDetails: () => ({ status: 'closed', exitCode: browserProcess?.exitCode, signal: browserProcess?.signalCode, tempProfile: 'removed' })
+            }, () => closeCaptureBrowser(browser, {
               label: guideLabel,
               timeoutMs: LIFECYCLE_TIMEOUT_MS
-            });
+            }));
           } catch (error) {
             cleanupErrors.push(error);
           }
         }
         if (app) {
           try {
-            await stopIsolatedApp(app, guideLabel);
+            await stopIsolatedApp(app, guideLabel, lifecycle);
           } catch (error) {
             cleanupErrors.push(error);
           }
         }
         if (cleanupErrors.length) {
           const lifecycleError = cleanupErrors.map((error) => error.message).join(' | ');
-          for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, error: `Capture lifecycle cleanup failed: ${lifecycleError}` });
+          for (const asset of guideAssets) failures.push({ locale, id: asset.id, guideId, stepId: asset.stepId, route: asset.route, selector: asset.selector, phase: 'cleanup', error: `Capture lifecycle cleanup failed: ${lifecycleError}` });
         }
       }
     }
@@ -1355,10 +1495,10 @@ async function captureDocs(spec, assets, locales) {
 async function captureProduct(spec, assets, locales) {
   // The product collection retains the historical shared-process behavior;
   // docs always use captureDocs above because each guide must be isolated.
-  const puppeteer = loadPuppeteer();
+  const captureBrowser = loadCaptureBrowserAdapter(REPO_ROOT);
   const executablePath = browserExecutablePath();
   const app = await startIsolatedApp('product');
-  const browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  const browser = await captureBrowser.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}), args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   const outputs = [];
   const failures = [];
   try {
@@ -1378,55 +1518,17 @@ async function captureProduct(spec, assets, locales) {
   return { outputs, failures };
 }
 
-function compatibleDocsOutput(output, expectedById) {
-  const asset = expectedById.get(output.id);
-  if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
-  const expectedClipWidth = Math.min(
-    output.state?.viewport?.clientWidth || 0,
-    asset.workflow.captureRule.imageCrop?.width || 640
-  );
-  return output.guideId === asset.guideId
-    && output.stepId === asset.stepId
-    && output.route === asset.route
-    && output.selector === asset.selector
-    && JSON.stringify(output.action) === JSON.stringify(asset.action)
-    && JSON.stringify(output.workflow) === JSON.stringify(asset.workflow)
-    && JSON.stringify(output.receipt?.operations) === JSON.stringify(asset.workflow.operations)
-    && Array.isArray(output.receipt?.executedOperations)
-    && output.receipt.executedOperations.length === asset.workflow.operations.length
-    && output.receipt.executedOperations.every((operation) => operation?.observed === true)
-    && output.receipt?.postconditions?.every((condition) => condition.passed === true)
-    && output.receipt?.schemaVersion === 2
-    && Array.isArray(output.receipt?.network)
-    && output.receipt.network.every((entry) => isAllowedCaptureNetworkUrl(entry.url))
-    && Array.isArray(output.receipt?.blockedNetwork)
-    && output.receipt.blockedNetwork.every((entry) => entry?.attempted === true
-      && entry.disposition === 'blocked'
-      && !isAllowedCaptureNetworkUrl(entry.url))
-    && Array.isArray(output.receipt?.console)
-        && output.receipt.console.length === 0
-        && output.focus?.selector === asset.selector
-        && output.screenshotClip
-        && output.screenshotClip.width === expectedClipWidth
-    && output.state?.lang === output.locale
-    && output.state?.i18n === output.locale
-    && output.state?.theme === 'cid';
-}
-
-function mergePartialDocsOutputs(spec, newOutputs) {
-  const expectedById = new Map(spec.assets.map((asset) => [asset.id, asset]));
-  const byKey = new Map();
+function mergePartialDocsOutputs(newOutputs) {
+  let existingOutputs = [];
   if (fs.existsSync(MANIFEST_PATH)) {
     const existing = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
-    for (const output of existing.outputs || []) {
-      if (compatibleDocsOutput(output, expectedById)) byKey.set(`${output.locale}:${output.id}`, output);
-    }
+    existingOutputs = existing.outputs || [];
   }
-  for (const output of newOutputs) byKey.set(`${output.locale}:${output.id}`, output);
-  return DOCS_LOCALES.flatMap((locale) => spec.assets.map((asset) => byKey.get(`${locale}:${asset.id}`)).filter(Boolean));
+  return mergePartialCaptureOutputs(existingOutputs, newOutputs);
 }
 
 async function capture() {
+  validateNodeRuntime({ version: process.version, modules: process.versions.modules });
   const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
   const locales = (process.env.SCREENSHOT_LANGS || (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).join(','))
     .split(',').map((value) => value.trim().toLowerCase()).filter((value) => (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).includes(value));
@@ -1438,9 +1540,16 @@ async function capture() {
   if (limit > 0) assets = assets.slice(0, limit);
   if (!assets.length) throw new Error('No capture assets selected');
 
+  // Validate the host before any capture-side effects (profile, DB seed, port,
+  // child process, browser or manifest). Native app modules must match this Node ABI.
   const result = COLLECTION === 'docs' ? await captureDocs(fullSpec, assets, locales) : await captureProduct(fullSpec, assets, locales);
+  if (!result.outputs.length) {
+    process.exitCode = reportNoCaptureOutputs(result.failures);
+    return;
+  }
+  if (result.failures.length) reportCaptureFailures(result.failures);
   const partialDocsCapture = COLLECTION === 'docs' && (requestedIds.length > 0 || limit > 0 || locales.length !== DOCS_LOCALES.length);
-  const outputs = partialDocsCapture ? mergePartialDocsOutputs(fullSpec, result.outputs) : result.outputs;
+  const outputs = partialDocsCapture ? mergePartialDocsOutputs(result.outputs) : result.outputs;
   const fullHash = specHash(fullSpec);
   const manifest = {
     ...fullSpec,
@@ -1453,13 +1562,13 @@ async function capture() {
     outputs,
     failures: result.failures
   };
-  fs.writeFileSync(MANIFEST_PATH, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+  writeCaptureManifest(MANIFEST_PATH, manifest, result.outputs);
   console.log(`Captured ${result.outputs.length} screenshots; ${result.failures.length} failed. Manifest now contains ${outputs.length} current captures.`);
   console.log(`Manifest: ${path.relative(REPO_ROOT, MANIFEST_PATH)}`);
   if (result.failures.length) process.exitCode = 1;
 }
 
 capture().catch((error) => {
-  console.error(`Fatal screenshot capture error: ${error.stack || error.message}`);
+  console.error(formatFatalCaptureError(error));
   process.exitCode = 1;
 });

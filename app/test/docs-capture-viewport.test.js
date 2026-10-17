@@ -2,22 +2,47 @@ const fs = require('fs');
 const path = require('path');
 
 describe('docs screenshot capture viewport', () => {
+  test('keeps screenshot clip coordinates within the viewport after scrolling', () => {
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    const viewport = {
+      scrollX: 0,
+      scrollY: 536,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 900,
+      scrollHeight: 13259
+    };
+    const anchorRect = { left: 84, top: 18.28125, width: 1272, height: 938 };
+
+    expect(screenshotClipForAnchor(viewport, anchorRect)).toEqual({
+      x: 400,
+      y: 207,
+      width: 640,
+      height: 560
+    });
+  });
+
   test('focuses an anchor vertically without horizontally panning the page', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+    const framingSource = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'lib', 'capture-framing.js'),
       'utf8'
     );
 
     expect(source).toContain("anchor.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' })");
     expect(source).toContain("window.scrollTo({ left: 0, top: window.scrollY, behavior: 'instant' })");
     expect(source).toContain("SCREENSHOT_WAIT_AFTER_LOAD_MS || 1500");
-    expect(source).toContain('function screenshotClipForAnchor');
-    expect(source).toContain('const requestedWidth = crop?.width || 640;');
-    expect(source).toContain('const requestedHeight = crop?.height || 560;');
-    expect(source).toContain('const width = Math.min(viewport.clientWidth, requestedWidth);');
+    expect(source).toContain("require('./lib/capture-framing')");
+    expect(framingSource).toContain('function screenshotClipForAnchor');
+    expect(framingSource).toContain('const requestedWidth = crop?.width || 640;');
+    expect(framingSource).toContain('const requestedHeight = crop?.height || 560;');
+    expect(framingSource).toContain('const width = Math.min(viewport.clientWidth, requestedWidth);');
     expect(source).toContain('asset.workflow.captureRule.imageCrop');
-    expect(source).toContain('x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX)))');
-    expect(source).toContain("await page.screenshot({ path: target, type: 'png', clip: screenshotClip })");
+    expect(framingSource).toContain('x: Math.round(Math.max(0, Math.min(anchorCenterX - (width / 2), maxX)))');
+    expect(source).toContain("await page.screenshot({ path: temporaryPath, type: 'png', clip: screenshotClip })");
   });
 
   test('defines the required 1440 by 900 product capture window for every guide action', () => {
@@ -25,7 +50,274 @@ describe('docs screenshot capture viewport', () => {
     const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
 
     expect(docs.viewport).toEqual({ width: 1440, height: 900, deviceScaleFactor: 1 });
-    expect(docs.assets.every((asset) => asset.viewport.width === 1440 && asset.viewport.height === 900)).toBe(true);
+    expect(docs.assets.every((asset) => Boolean(asset.viewport))).toBe(true);
+    expect(docs.assets.find((asset) => asset.id === 'stream-monsters__alchemy-card').viewport).toEqual({
+      width: 1440,
+      height: 1040,
+      deviceScaleFactor: 1
+    });
+    expect(docs.assets.find((asset) => asset.id === 'stream-monsters__retention-rules').viewport).toEqual({
+      width: 1440,
+      height: 1200,
+      deviceScaleFactor: 1
+    });
+    expect(docs.assets.find((asset) => asset.id === 'stream-monsters__automation-rule').viewport).toEqual({
+      width: 1440,
+      height: 3400,
+      deviceScaleFactor: 1
+    });
+    expect(docs.assets.find((asset) => asset.id === 'stream-monsters__action-chain').viewport).toEqual({
+      width: 1440,
+      height: 2300,
+      deviceScaleFactor: 1
+    });
+    expect(docs.assets.find((asset) => asset.id === 'stream-monsters__rule-reset').viewport).toEqual({
+      width: 1440,
+      height: 1600,
+      deviceScaleFactor: 1
+    });
+    expect(docs.assets.filter((asset) => !['stream-monsters__alchemy-card', 'stream-monsters__retention-rules', 'stream-monsters__automation-rule', 'stream-monsters__action-chain', 'stream-monsters__rule-dry-run', 'stream-monsters__rule-reset'].includes(asset.id))
+      .every((asset) => asset.viewport.width === 1440 && asset.viewport.height === 900)).toBe(true);
+  });
+
+  test('frames the whole portrait battle card with title and explanation without simulating it', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__rule-dry-run');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    // Source-based candidate only: card bounds are estimated from the fixed
+    // 300x533 preview CSS and its existing title/caption, not browser-measured.
+    const plannedCardBounds = { left: 728, top: 110, width: 628, height: 615 };
+    const previewBounds = { left: 892, top: 143, width: 300, height: 533 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 6400,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 820,
+      scrollHeight: 13259
+    }, previewBounds, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.selector).toBe('#portraitBattlePreview');
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#portraitBattlePreview',
+      viewport: { width: 1440, height: 820 },
+      imageCrop: { width: 760, height: 720 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 820, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 662, y: 50, width: 760, height: 720 });
+    expect(clip.x).toBeLessThanOrEqual(plannedCardBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedCardBounds.left + plannedCardBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedCardBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedCardBounds.top + plannedCardBounds.height);
+    expect(asset.workflow.operations).toEqual([
+      { type: 'goto', route: '/stream-monsters/ui' },
+      { type: 'open-plugin-surface', selector: '#portraitBattlePreview' }
+    ]);
+    expect(asset.workflow.operations.some((operation) => ['click', 'fill', 'run-local-preview'].includes(operation.type)))
+      .toBe(false);
+  });
+
+  test('separates the OBS URL workflow target from its OBS Browser Source card clip anchor', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__alchemy-overlay');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    const plannedCardBounds = { left: 512, top: 330, width: 415, height: 235 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 4700,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 900,
+      scrollHeight: 13259
+    }, plannedCardBounds, asset.workflow.captureRule.imageCrop);
+    const captureSource = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
+      'utf8'
+    );
+
+    expect(asset.selector).toBe('#overlayUrl');
+    expect(asset.clipSelector).toBe('.area#live-center .grid > .card:nth-child(2)');
+    expect(asset.workflow.operations).toEqual([
+      { type: 'goto', route: '/stream-monsters/ui' },
+      { type: 'open-plugin-surface', selector: '#overlayUrl' }
+    ]);
+    expect(asset.workflow.postconditions).toContainEqual({ type: 'visible', selector: '#overlayUrl' });
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#overlayUrl',
+      clipSelector: asset.clipSelector,
+      viewport: { width: 1440, height: 900 },
+      imageCrop: { width: 520, height: 440 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 900, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 460, y: 228, width: 520, height: 440 });
+    expect(clip.x).toBeLessThanOrEqual(plannedCardBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedCardBounds.left + plannedCardBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedCardBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedCardBounds.top + plannedCardBounds.height);
+    expect(docs.assets.filter((entry) => entry.id !== 'stream-monsters__alchemy-overlay')
+      .every((entry) => !entry.clipSelector)).toBe(true);
+    expect(captureSource).toContain('await assertRenderedAnchor(page, asset.clipSelector)');
+    expect(captureSource).toContain('state.clipRect || state.anchorRect');
+  });
+
+  test('frames the viewer, season badge, empty collection, and leaderboards without resetting viewer data', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__rule-reset');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    // Source-based envelope only: not measured in the browser. Covers the full-width
+    // community section plus its viewer, maintenance, and seasonal leaderboard rows.
+    const plannedSectionBounds = { left: 84, top: 55, width: 1272, height: 1450 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 9300,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 1600,
+      scrollHeight: 13259
+    }, plannedSectionBounds, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.selector).toBe('#community-seasons');
+    expect(asset.workflow.operations).toEqual([
+      { type: 'goto', route: '/stream-monsters/ui' },
+      { type: 'open-plugin-surface', selector: '#community-seasons' }
+    ]);
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#community-seasons',
+      viewport: { width: 1440, height: 1600 },
+      imageCrop: { width: 1400, height: 1560 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 1600, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 20, y: 0, width: 1400, height: 1560 });
+    expect(clip.x).toBeLessThanOrEqual(plannedSectionBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedSectionBounds.left + plannedSectionBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedSectionBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedSectionBounds.top + plannedSectionBounds.height);
+  });
+
+  test('frames the asset summary, bounded stage gallery, and complete dex in an unmeasured envelope', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__action-chain');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    // Source-derived planning envelope only. Browser CSS geometry is unmeasured.
+    const plannedSectionBounds = { left: 84, top: 100, width: 1272, height: 2100 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 7200,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 2300,
+      scrollHeight: 13259
+    }, plannedSectionBounds, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#asset-library',
+      viewport: { width: 1440, height: 2300 },
+      imageCrop: { width: 1400, height: 2260 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 2300, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 20, y: 20, width: 1400, height: 2260 });
+    expect(clip.x).toBeLessThanOrEqual(plannedSectionBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedSectionBounds.left + plannedSectionBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedSectionBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedSectionBounds.top + plannedSectionBounds.height);
+  });
+
+  test('frames the complete gift/mapping/alias section within an explicit unmeasured envelope', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__automation-rule');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    // Conservative source-planning bounds only. No browser geometry is claimed.
+    const plannedSectionBounds = { left: 84, top: 50, width: 1272, height: 3300 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 4200,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 3400,
+      scrollHeight: 13259
+    }, plannedSectionBounds, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#gifts-chat',
+      viewport: { width: 1440, height: 3400 },
+      imageCrop: { width: 1400, height: 3360 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 3400, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 20, y: 20, width: 1400, height: 3360 });
+    expect(clip.x).toBeLessThanOrEqual(plannedSectionBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedSectionBounds.left + plannedSectionBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedSectionBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedSectionBounds.top + plannedSectionBounds.height);
+  });
+
+  test('gives retention-rules a source-based full-section frame with explicit unmeasured geometry', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__retention-rules');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    // Conservative test envelope derived from the desktop section structure,
+    // deliberately synthetic: only a local browser run can supply actual CSS pixels.
+    const plannedSectionBounds = { left: 84, top: 50, width: 1272, height: 1100 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 4200,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 1200,
+      scrollHeight: 13259
+    }, plannedSectionBounds, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#gameplay',
+      viewport: { width: 1440, height: 1200 },
+      imageCrop: { width: 1400, height: 1160 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 1200, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 20, y: 20, width: 1400, height: 1160 });
+    expect(clip.x).toBeLessThanOrEqual(plannedSectionBounds.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(plannedSectionBounds.left + plannedSectionBounds.width);
+    expect(clip.y).toBeLessThanOrEqual(plannedSectionBounds.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(plannedSectionBounds.top + plannedSectionBounds.height);
+  });
+
+  test('frames the complete measured Live Center inside the selected viewport crop', () => {
+    const spec = require('../../scripts/docs-screenshot-spec');
+    const docs = spec.buildDocsSpec(path.join(__dirname, '..', '..'));
+    const asset = docs.assets.find((entry) => entry.id === 'stream-monsters__alchemy-card');
+    const { screenshotClipForAnchor } = require('../../scripts/lib/capture-framing');
+    const anchorRect = { left: 84, top: 51, width: 1272, height: 938 };
+    const clip = screenshotClipForAnchor({
+      scrollX: 0,
+      scrollY: 536,
+      scrollWidth: 1440,
+      clientWidth: 1440,
+      height: 1040,
+      scrollHeight: 13259
+    }, anchorRect, asset.workflow.captureRule.imageCrop);
+
+    expect(asset.workflow.captureRule).toMatchObject({
+      selector: '#live-center',
+      viewport: { width: 1440, height: 1040 },
+      imageCrop: { width: 1400, height: 1000 },
+      stateChange: false
+    });
+    expect(asset.viewport).toEqual({ width: 1440, height: 1040, deviceScaleFactor: 1 });
+    expect(clip).toEqual({ x: 20, y: 20, width: 1400, height: 1000 });
+    expect(clip.x).toBeLessThanOrEqual(anchorRect.left);
+    expect(clip.x + clip.width).toBeGreaterThanOrEqual(anchorRect.left + anchorRect.width);
+    expect(clip.y).toBeLessThanOrEqual(anchorRect.top);
+    expect(clip.y + clip.height).toBeGreaterThanOrEqual(anchorRect.top + anchorRect.height);
   });
 
   test('waits for a document root before applying capture locale and theme state', () => {
@@ -117,14 +409,18 @@ describe('docs screenshot capture viewport', () => {
     expect(interception).toContain("if (!isAllowedCaptureNetworkUrl(url)) {");
   });
 
-  test('keeps a partial-capture receipt when its guide declares a narrower real-panel crop', () => {
+  test('keeps unrelated receipts unchanged during a partial capture', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'scripts', 'capture-product-screenshots.js'),
       'utf8'
     );
+    const manifestSource = fs.readFileSync(
+      path.join(__dirname, '..', '..', 'scripts', 'lib', 'capture-manifest.js'),
+      'utf8'
+    );
 
-    expect(source).toContain('function compatibleDocsOutput(output, expectedById) {');
-    expect(source).toContain('asset.workflow.captureRule.imageCrop?.width || 640');
+    expect(source).toContain('return mergePartialCaptureOutputs(existingOutputs, newOutputs);');
+    expect(manifestSource).toContain('function mergePartialCaptureOutputs(existingOutputs, newOutputs) {');
   });
 
   test('does not rewrite shared font assets into plugin paths', () => {

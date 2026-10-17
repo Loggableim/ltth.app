@@ -43,4 +43,9 @@ describe('CSP Configuration for New Inline Event Handlers', () => {
         // The CSP should include 'unsafe-hashes' to allow hashed inline event handlers
         expect(serverJsContent).toContain("'unsafe-hashes'");
     });
+
+    test('Chatango embed permissions and blanket unsafe-eval are absent', () => {
+        expect(serverJsContent).not.toMatch(/chatango/i);
+        expect(serverJsContent).not.toContain("'unsafe-eval'");
+    });
 });

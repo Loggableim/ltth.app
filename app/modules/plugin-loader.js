@@ -30,6 +30,12 @@ const {
     valuesEqual
 } = require('./plugin-identity-sync');
 const { createPluginReleasePolicy } = require('./plugin-release-policy');
+const {
+    assertPluginManifestNotRetired,
+    assertPluginNotRetired,
+    isRetiredPluginId,
+    isRetiredPluginManifest
+} = require('./plugin-retirement');
 
 function parseJsonText(text) {
     const value = String(text || '');
@@ -41,9 +47,15 @@ const MUTUALLY_EXCLUSIVE_PLUGIN_GROUPS = Object.freeze([
     Object.freeze(['emoji-rain', 'webgpu-emoji-rain'])
 ]);
 
-// Keep this retired plugin's saved state opaque and untouched. Removing code
-// must not silently delete persisted user preferences during startup discovery.
-const PRESERVED_REMOVED_PLUGIN_STATE_IDS = new Set(['chatango']);
+// Keep retired plugins' saved state opaque and untouched. Removing code must
+// not silently delete persisted user preferences during startup discovery.
+// Public packages omit these local-development plugins. Keep their saved state
+// when returning to local/developer mode before their sources are restored.
+const PRESERVED_CLOSED_BETA_PLUGIN_STATE_IDS = new Set([
+    'animazingpal', 'interactive-story', 'music-bot', 'osc-bridge', 'schnorrbecher',
+    'sidekick', 'stream-monsters', 'talking-heads', 'visual-fx-frame-webgpu',
+    'webgpu-emoji-rain', 'webgpu-weather-control'
+]);
 
 function isPluginModule(pluginPath, modulePath) {
     const relativePath = path.relative(pluginPath, modulePath);
@@ -161,6 +173,7 @@ class PluginAPI {
         this.registeredIFTTTConditions = [];
         this.registeredIFTTTActions = [];
         this.registrationFailures = [];
+        this._unregistering = false;
 
         // Backup provider registration flag
         this.backupProviderRegistered = false;
@@ -236,8 +249,10 @@ class PluginAPI {
      * @param {function} callback - Event-Callback
      */
     registerSocket(event, callback) {
+        if (this._unregistering) return false;
         try {
             const wrappedCallback = async (socket, ...args) => {
+                if (this._unregistering) return;
                 try {
                     await callback(socket, ...args);
                 } catch (error) {
@@ -280,8 +295,10 @@ class PluginAPI {
      * @param {function} callback - Event-Callback
      */
     registerTikTokEvent(event, callback) {
+        if (this._unregistering) return false;
         try {
             const wrappedCallback = async (data) => {
+                if (this._unregistering) return;
                 try {
                     await callback(data);
                 } catch (error) {
@@ -690,35 +707,61 @@ class PluginAPI {
         return `/plugins/${this.pluginId}/${file}`;
     }
 
+    unregisterEventListeners() {
+        this._unregistering = true;
+        const errors = [];
+        const retainedSocketEvents = [];
+        const addError = (label, error) => {
+            const cleanupError = new Error(`Failed to unregister ${label}: ${error.message}`);
+            cleanupError.cause = error;
+            errors.push(cleanupError);
+            this.log(cleanupError.message, 'error');
+        };
+
+        for (const entry of this.registeredSocketEvents) {
+            const retainedBindings = new Map();
+            for (const [socket, boundCallback] of entry.bindings) {
+                try {
+                    socket.removeListener(entry.event, boundCallback);
+                } catch (error) {
+                    retainedBindings.set(socket, boundCallback);
+                    addError(`socket event ${entry.event}`, error);
+                }
+            }
+            entry.bindings = retainedBindings;
+            if (retainedBindings.size > 0) retainedSocketEvents.push(entry);
+            else this.log(`Unregistered socket event: ${entry.event}`);
+        }
+        this.registeredSocketEvents = retainedSocketEvents;
+
+        const retainedTikTokEvents = [];
+        for (const entry of this.registeredTikTokEvents) {
+            try {
+                if (!this.tiktok) throw new Error('TikTok event source is unavailable');
+                this.tiktok.removeListener(entry.event, entry.callback);
+                this.log(`Unregistered TikTok event: ${entry.event}`);
+            } catch (error) {
+                retainedTikTokEvents.push(entry);
+                addError(`TikTok event ${entry.event}`, error);
+            }
+        }
+        this.registeredTikTokEvents = retainedTikTokEvents;
+
+        try {
+            const connectionErrors = this.pluginLoader.unregisterPluginConnectionHandlers(this.pluginId);
+            if (Array.isArray(connectionErrors)) errors.push(...connectionErrors);
+        } catch (error) {
+            addError('plugin socket connection handlers', error);
+        }
+        return errors;
+    }
+
     /**
      * Entfernt alle registrierten Routes und Events
      */
-    unregisterAll() {
-        // Socket-Events deregistrieren
-        this.registeredSocketEvents.forEach(({ event, bindings }) => {
-            try {
-                bindings.forEach((boundCallback, socket) => socket.removeListener(event, boundCallback));
-                bindings.clear();
-                this.log(`Unregistered socket event: ${event}`);
-            } catch (error) {
-                this.log(`Failed to unregister socket event ${event}: ${error.message}`, 'error');
-            }
-        });
-
-        // TikTok-Events deregistrieren
-        // FIX: Remove actual event listeners from TikTok module to prevent duplicate handlers
-        this.registeredTikTokEvents.forEach(({ event, callback }) => {
-            try {
-                if (this.tiktok) {
-                    this.tiktok.removeListener(event, callback);
-                    this.log(`Unregistered TikTok event: ${event}`);
-                } else {
-                    this.log(`Cannot unregister TikTok event ${event}: TikTok module not available`, 'warn');
-                }
-            } catch (error) {
-                this.log(`Failed to unregister TikTok event ${event}: ${error.message}`, 'error');
-            }
-        });
+    unregisterAll(options = {}) {
+        const errors = [];
+        if (options.skipEventListeners !== true) errors.push(...this.unregisterEventListeners());
 
         // WARNUNG: Express-Routes können nicht entfernt werden (Memory-Leak bei häufigem Reload)
         if (this.registeredRoutes.length > 0) {
@@ -733,10 +776,7 @@ class PluginAPI {
         }
 
         this.pluginLoader.removePluginRouter(this.pluginId);
-        this.pluginLoader.unregisterPluginConnectionHandlers(this.pluginId);
         this.registeredRoutes = [];
-        this.registeredSocketEvents = [];
-        this.registeredTikTokEvents = [];
         this.registeredPluginEvents.forEach(({ event, callback }) => {
             try {
                 if (this.pluginLoader && typeof this.pluginLoader.removeListener === 'function') {
@@ -798,6 +838,7 @@ class PluginAPI {
         }
 
         this.log('All registrations cleared');
+        return errors;
     }
 
     /**
@@ -999,6 +1040,8 @@ class PluginLoader extends EventEmitter {
 
         // Geladene Plugins
         this.plugins = new Map();
+        // Shutdown retries must wait for a timed-out destroy on the same owner.
+        this._pluginUnloadTails = new Map();
 
         // Plugin-State-Datei (profil-spezifisch, mit Fallback auf Legacy-Pfad)
         this.legacyStateFile = path.join(pluginsDir, 'plugins_state.json');
@@ -1304,9 +1347,11 @@ class PluginLoader extends EventEmitter {
 
     resolvePluginInstallation(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (isRetiredPluginId(canonicalId)) return null;
         if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const loaded = this.plugins.get(canonicalId);
         if (loaded) {
+            if (isRetiredPluginManifest(loaded.runtimeManifest || loaded.manifest)) return null;
             return {
                 canonicalId,
                 directoryName: loaded.directoryName,
@@ -1315,7 +1360,8 @@ class PluginLoader extends EventEmitter {
                 manifest: loaded.runtimeManifest || loaded.manifest
             };
         }
-        return resolveInstalledPluginDirectory(this.pluginsDir, canonicalId);
+        const installed = resolveInstalledPluginDirectory(this.pluginsDir, canonicalId);
+        return isRetiredPluginManifest(installed?.manifest) ? null : installed;
     }
 
     getSupersedingPluginId(pluginId) {
@@ -1409,6 +1455,7 @@ class PluginLoader extends EventEmitter {
                     throw new Error('Missing required manifest fields');
                 }
                 const canonicalId = canonicalizePluginId(runtimeManifest.id);
+                if (isRetiredPluginManifest(runtimeManifest) || isRetiredPluginId(canonicalId)) continue;
                 if (this.releasePolicy.isClosedBetaId(runtimeManifest.id)) continue;
                 const identity = getPluginIdentity(canonicalId);
                 candidates.push({
@@ -1450,7 +1497,8 @@ class PluginLoader extends EventEmitter {
 
         const staleIds = Object.keys(this.state).filter(pluginId => {
             if (pluginId === STATE_SYNC_METADATA_KEY) return false;
-            if (PRESERVED_REMOVED_PLUGIN_STATE_IDS.has(pluginId)) return false;
+            if (isRetiredPluginId(pluginId)) return false;
+            if (PRESERVED_CLOSED_BETA_PLUGIN_STATE_IDS.has(canonicalizePluginId(pluginId))) return false;
             if (this.releasePolicy.isClosedBetaId(pluginId)) return false;
             if (getPluginIdentity(pluginId)) return false;
             return !installedPluginIds.has(pluginId);
@@ -1595,6 +1643,7 @@ class PluginLoader extends EventEmitter {
             }
 
             runtimeManifest = inventoryItem?.runtimeManifest || parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
+            assertPluginManifestNotRetired(runtimeManifest);
             this.releasePolicy.assertAllowed(runtimeManifest.id);
             const canonicalId = canonicalizePluginId(runtimeManifest.id);
             manifest = { ...runtimeManifest, id: canonicalId };
@@ -1763,35 +1812,76 @@ class PluginLoader extends EventEmitter {
      */
     async unloadPlugin(pluginId, context = {}) {
         const canonicalId = canonicalizePluginId(pluginId);
+        const previous = this._pluginUnloadTails.get(canonicalId) || Promise.resolve();
+        const operation = previous
+            .catch(() => {})
+            .then(() => this._unloadPluginOnce(canonicalId, context));
+        this._pluginUnloadTails.set(canonicalId, operation);
+        operation.finally(() => {
+            if (this._pluginUnloadTails.get(canonicalId) === operation) {
+                this._pluginUnloadTails.delete(canonicalId);
+            }
+        }).catch(() => {});
+        return operation;
+    }
+
+    async _unloadPluginOnce(canonicalId, context = {}) {
         const plugin = this.plugins.get(canonicalId);
         if (!plugin) return false;
 
         const errors = [];
+        let registrationCleanupPending = false;
+        let retainOwnerForRetry = false;
         try {
-            if (this.tiktok && plugin.api.registeredTikTokEvents) {
-                for (const { event, callback } of plugin.api.registeredTikTokEvents) {
-                    this.tiktok.removeListener(event, callback);
+            if (typeof plugin.api.unregisterEventListeners === 'function') {
+                try {
+                    const listenerErrors = plugin.api.unregisterEventListeners();
+                    if (Array.isArray(listenerErrors) && listenerErrors.length > 0) {
+                        errors.push(...listenerErrors);
+                        registrationCleanupPending = true;
+                    }
+                } catch (listenerError) {
+                    errors.push(listenerError);
+                    registrationCleanupPending = true;
                 }
             }
-            if (typeof plugin.instance.destroy === 'function') {
+            if (!plugin._destroyCompleted && typeof plugin.instance.destroy === 'function') {
                 await plugin.instance.destroy(context);
+                plugin._destroyCompleted = true;
             }
         } catch (error) {
             errors.push(error);
         } finally {
             try {
-                const cleanupErrors = plugin.api.unregisterAll();
-                if (Array.isArray(cleanupErrors)) errors.push(...cleanupErrors);
+                const cleanupErrors = plugin.api.unregisterAll({ skipEventListeners: true });
+                if (Array.isArray(cleanupErrors) && cleanupErrors.length > 0) {
+                    errors.push(...cleanupErrors);
+                    registrationCleanupPending = true;
+                }
             } catch (cleanupError) {
                 errors.push(cleanupError);
+                registrationCleanupPending = true;
             }
-            // A destroyed/cleaned plugin must never remain addressable through
-            // the loader, even when its own destroy hook reported an error.
-            this.plugins.delete(canonicalId);
+            // Shutdown remains blocked until cleanup succeeds; keep the same
+            // instance available for an explicit retry even if a plugin has
+            // no cleanupPending convention of its own.
+            const instanceCleanupPending = plugin.instance?.cleanupPending === true;
+            retainOwnerForRetry = instanceCleanupPending || registrationCleanupPending || (
+                context.reason === 'application-shutdown' && errors.length > 0
+            );
+            if (instanceCleanupPending && errors.length === 0) {
+                errors.push(new Error(`Plugin ${canonicalId} cleanup is still pending`));
+            }
+            if (!retainOwnerForRetry) {
+                this.plugins.delete(canonicalId);
+            }
         }
 
         if (errors.length) {
-            this.logger.error(`Unloaded plugin ${canonicalId} with ${errors.length} cleanup error(s): ${errors.map(error => error.message).join('; ')}`);
+            if (retainOwnerForRetry) {
+                this.logger.warn(`Plugin ${canonicalId} retains its owner for an explicit cleanup retry.`);
+            }
+            this.logger.error(`Plugin ${canonicalId} shutdown reported ${errors.length} cleanup error(s): ${errors.map(error => error.message).join('; ')}`);
             return false;
         }
 
@@ -1805,6 +1895,7 @@ class PluginLoader extends EventEmitter {
      */
     async enablePlugin(pluginId) {
         pluginId = canonicalizePluginId(pluginId);
+        assertPluginNotRetired(pluginId);
         this.releasePolicy.assertAllowed(pluginId);
         const installedOnDisk = resolveInstalledPluginDirectory(this.pluginsDir, pluginId);
         if (!installedOnDisk) {
@@ -1912,17 +2003,17 @@ class PluginLoader extends EventEmitter {
      */
     async _disablePluginLegacy(pluginId) {
         try {
-            // State aktualisieren
-            if (!this.state[pluginId]) {
-                this.state[pluginId] = {};
-            }
-            this.state[pluginId].enabled = false;
-            this.saveState();
-
             const safePluginId = assertPluginId(pluginId);
+            if (this.plugins.has(safePluginId) && !await this.unloadPlugin(safePluginId)) {
+                throw new Error(`Failed to unload plugin ${safePluginId}`);
+            }
 
-            // Plugin entladen
-            await this.unloadPlugin(safePluginId);
+            // State aktualisieren
+            if (!this.state[safePluginId]) {
+                this.state[safePluginId] = {};
+            }
+            this.state[safePluginId].enabled = false;
+            this.saveState();
 
             this.logger.info(`Disabled plugin: ${pluginId}`);
             this.emit('plugin:disabled', pluginId);
@@ -1938,7 +2029,9 @@ class PluginLoader extends EventEmitter {
      * Lädt ein Plugin neu
      */
     async disablePlugin(pluginId) {
+        assertPluginNotRetired(pluginId);
         const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
+        assertPluginNotRetired(safePluginId);
         const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
         const wasLoaded = this.plugins.has(safePluginId);
         const installed = this.resolvePluginInstallation(safePluginId);
@@ -1963,6 +2056,10 @@ class PluginLoader extends EventEmitter {
     async _reloadPluginLegacy(pluginId) {
         try {
             const safePluginId = assertPluginId(pluginId);
+            if (this.plugins.has(safePluginId) && !await this.unloadPlugin(safePluginId)) {
+                throw new Error(`Failed to unload plugin ${safePluginId}`);
+            }
+
             // Track Reload-Count für Memory-Leak-Warnung
             if (!this.state[safePluginId]) {
                 this.state[safePluginId] = {};
@@ -1976,8 +2073,6 @@ class PluginLoader extends EventEmitter {
             }
 
             this.saveState();
-
-            await this.unloadPlugin(safePluginId);
 
             const pluginPath = assertPathInside(
                 this.pluginsDir,
@@ -2009,7 +2104,9 @@ class PluginLoader extends EventEmitter {
      * Löscht ein Plugin
      */
     async reloadPlugin(pluginId) {
+        assertPluginNotRetired(pluginId);
         const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
+        assertPluginNotRetired(safePluginId);
         const originalState = this.state[safePluginId] ? { ...this.state[safePluginId] } : null;
         const installed = this.resolvePluginInstallation(safePluginId);
         if (!installed?.path) return false;
@@ -2036,13 +2133,17 @@ class PluginLoader extends EventEmitter {
     }
 
     async deletePlugin(pluginId) {
+        assertPluginNotRetired(pluginId);
         try {
             const safePluginId = assertPluginId(canonicalizePluginId(pluginId));
+            assertPluginNotRetired(safePluginId);
             const installed = this.resolvePluginInstallation(safePluginId);
             if (!installed) throw new Error(`Plugin directory not found: ${safePluginId}`);
 
-            // Plugin entladen
-            await this.unloadPlugin(safePluginId);
+            // Do not delete an installation while a loaded owner still needs cleanup.
+            if (this.plugins.has(safePluginId) && !await this.unloadPlugin(safePluginId)) {
+                throw new Error(`Failed to unload plugin ${safePluginId}`);
+            }
 
             // Verzeichnis löschen
             const pluginPath = assertPathInside(
@@ -2108,6 +2209,7 @@ class PluginLoader extends EventEmitter {
         const plugins = [];
 
         for (const [id, plugin] of this.plugins.entries()) {
+            if (isRetiredPluginId(id)) continue;
                 plugins.push({
                     id: plugin.manifest.id,
                     name: plugin.manifest.name,
@@ -2202,6 +2304,7 @@ class PluginLoader extends EventEmitter {
      */
     getPlugin(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (isRetiredPluginId(canonicalId)) return null;
         if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         return this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
     }
@@ -2211,6 +2314,7 @@ class PluginLoader extends EventEmitter {
      */
     getPluginInstance(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (isRetiredPluginId(canonicalId)) return null;
         if (this.releasePolicy.isClosedBetaId(canonicalId)) return null;
         const plugin = this.plugins.get(canonicalId) || this.plugins.get(this.getSupersedingPluginId(canonicalId) || '');
         return plugin ? plugin.instance : null;
@@ -2221,6 +2325,7 @@ class PluginLoader extends EventEmitter {
      */
     isPluginEnabled(pluginId) {
         const canonicalId = canonicalizePluginId(pluginId);
+        if (isRetiredPluginId(canonicalId)) return false;
         if (this.releasePolicy.isClosedBetaId(canonicalId)) return false;
         const state = this.state[canonicalId] || getIdentityCandidateIds(canonicalId)
             .map(candidateId => this.state[candidateId])
@@ -2278,7 +2383,7 @@ class PluginLoader extends EventEmitter {
         pluginId = canonicalizePluginId(pluginId);
         if (!this.pluginConnectionHandlers) this.pluginConnectionHandlers = new Map();
         const handlers = this.pluginConnectionHandlers.get(pluginId) || new Set();
-        const handler = { callback, bindings: new Map() };
+        const handler = { callback, bindings: new Map(), active: true };
         handlers.add(handler);
         this.pluginConnectionHandlers.set(pluginId, handlers);
         this.io?.sockets?.sockets?.forEach(socket => this.invokePluginConnectionHandler(handler, socket));
@@ -2286,7 +2391,7 @@ class PluginLoader extends EventEmitter {
     }
 
     invokePluginConnectionHandler(handler, socket) {
-        if (handler.bindings.has(socket)) return;
+        if (handler.active !== true || handler.bindings.has(socket)) return;
         const before = new Map((socket.eventNames?.() || []).map(event => [event, new Set(socket.listeners(event))]));
         handler.callback(socket);
         const bindings = [];
@@ -2301,15 +2406,33 @@ class PluginLoader extends EventEmitter {
 
     unregisterPluginConnectionHandlers(pluginId) {
         const handlers = this.pluginConnectionHandlers?.get(pluginId);
-        if (!handlers) return false;
+        if (!handlers) return [];
+        const errors = [];
+        const retainedHandlers = new Set();
         for (const handler of handlers) {
-            handler.bindings.forEach((bindings, socket) => {
-                bindings.forEach(({ event, listener }) => socket.removeListener(event, listener));
-            });
-            handler.bindings.clear();
+            handler.active = false;
+            const retainedBindings = new Map();
+            for (const [socket, bindings] of handler.bindings) {
+                const stillBound = [];
+                for (const binding of bindings) {
+                    try {
+                        socket.removeListener(binding.event, binding.listener);
+                    } catch (error) {
+                        stillBound.push(binding);
+                        const cleanupError = new Error(`Failed to unregister plugin connection socket event ${binding.event}: ${error.message}`);
+                        cleanupError.cause = error;
+                        errors.push(cleanupError);
+                    }
+                }
+                if (stillBound.length > 0) retainedBindings.set(socket, stillBound);
+            }
+            handler.bindings = retainedBindings;
+            if (retainedBindings.size > 0) retainedHandlers.add(handler);
         }
         pluginId = pluginId ? canonicalizePluginId(pluginId) : null;
-        return this.pluginConnectionHandlers.delete(pluginId);
+        if (retainedHandlers.size > 0) this.pluginConnectionHandlers.set(pluginId, retainedHandlers);
+        else this.pluginConnectionHandlers.delete(pluginId);
+        return errors;
     }
 
     /**

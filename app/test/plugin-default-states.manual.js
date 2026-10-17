@@ -21,7 +21,7 @@ console.log('==========================\n');
 console.log('Test 1: Verify plugin.json default states');
 console.log('-------------------------------------------');
 
-const expectedActive = ['chatango', 'goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
+const expectedActive = ['goals', 'spotlight', 'milestone-leaderboard', 'soundboard', 'toptier', 'tts', 'webgpu-emoji-rain', 'gcce', 'api-bridge', 'clarityhud'];
 const entries = fs.readdirSync(pluginsDir, { withFileTypes: true });
 
 let activeCount = 0;

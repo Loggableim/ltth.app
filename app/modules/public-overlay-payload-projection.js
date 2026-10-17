@@ -2,6 +2,7 @@
 
 const { randomUUID } = require('crypto');
 const claritySettingsSchema = require('../plugins/clarityhud/lib/settings-schema');
+const { retainRecentSuperFanEvents } = require('../plugins/clarityhud/lib/superfan-retention');
 const { isHttpAllowed } = require('./public-overlay-registry');
 
 const activeGoalTokens = new Map();
@@ -401,7 +402,7 @@ const FLAME_OVERLAY_TRIGGER_TYPES = new Set([
   'dramatic', 'intensity-boost', 'flash', 'pulse', 'effect-switch', 'color-flash', 'color-change'
 ]);
 const clarityRawTokens = new WeakMap();
-const CLARITY_QUEUE_TYPES = ['chat', 'follow', 'share', 'like', 'gift', 'subscribe', 'treasure', 'join'];
+const CLARITY_QUEUE_TYPES = ['chat', 'follow', 'share', 'like', 'gift', 'subscribe', 'superfan-display', 'treasure', 'join'];
 const CLARITY_LEGACY_CHAT_SETTINGS = new Set(['textAlign', 'userNameColor', 'textOutline', 'padding', 'messageSpacing', 'animationType', 'visionImpairedMode']);
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -649,6 +650,9 @@ function projectClaritySettings(dock, input) {
   const validated = claritySettingsSchema.validateSettings(dock, centralInput);
   if (!validated.valid) return null;
   const result = validated.sanitized;
+  // Local display preference only: public overlays receive SuperFan events
+  // only when this preference allows them, so it is not needed in their DTO.
+  if (dock === 'full') delete result.showSuperFans;
   if (result.lineHeight !== undefined) {
     const lineHeight = typeof result.lineHeight === 'number'
       ? result.lineHeight
@@ -741,6 +745,30 @@ function projectClarityEvent(eventType, event, { history = false } = {}) {
   return result;
 }
 
+function projectClaritySuperFanDisplay(event, { history = false } = {}) {
+  if (!isRecord(event)) return null;
+  const allowedKeys = new Set(['eventType', 'displayName', 'level', 'profilePictureUrl', ...(history ? ['type', 'timestamp'] : [])]);
+  if (Object.keys(event).some(key => !allowedKeys.has(key))) return null;
+  if (history && (event.type !== 'superfan-display' || !Number.isFinite(event.timestamp))) return null;
+  if (!['superfan', 'superfan-join'].includes(event.eventType) ||
+      typeof event.displayName !== 'string' || event.displayName.length < 1 ||
+      event.displayName.length > 80 || !event.displayName.trim() ||
+      /[\u0000-\u001f\u007f]/.test(event.displayName)) return null;
+
+  const result = {};
+  result.eventType = event.eventType;
+  result.displayName = event.displayName;
+  if (event.level !== undefined) {
+    if (!Number.isInteger(event.level) || event.level < 0 || event.level > 999) return null;
+    result.level = event.level;
+  }
+  if (event.profilePictureUrl !== undefined) {
+    const avatar = projectViewerXpAvatarUrl(event.profilePictureUrl);
+    if (avatar) result.profilePictureUrl = avatar;
+  }
+  return result;
+}
+
 function projectClarityMultiEvent(eventType, event) {
   if (!isRecord(event) || !Number.isInteger(event.streamIndex) || event.streamIndex < 0 || event.streamIndex > 5
     || !Number.isFinite(event.timestamp) || !/^stream[1-6]$/.test(event.sourceId || '')) return null;
@@ -782,10 +810,17 @@ function projectClarityStateResponse(dock, payload) {
   const events = {};
   const allowedQueues = dock === 'chat' ? ['chat'] : CLARITY_QUEUE_TYPES;
   for (const type of allowedQueues) {
-    const queue = payload.events[type];
+    let queue = payload.events[type];
     if (queue === undefined) continue;
-    if (!Array.isArray(queue) || queue.length > 500) return null;
-    events[type] = queue.map(item => projectClarityEvent(type, item, { history: true }));
+    if (!Array.isArray(queue)) return null;
+    if (type === 'superfan-display') {
+      queue = retainRecentSuperFanEvents(queue);
+      if (dock === 'full' && payload.settings.showSuperFans === false) queue = [];
+    }
+    if (queue.length > 500) return null;
+    events[type] = queue.map(item => type === 'superfan-display'
+      ? projectClaritySuperFanDisplay(item, { history: true })
+      : projectClarityEvent(type, item, { history: true }));
     if (events[type].some(item => !item)) return null;
   }
   return { success: true, dock, events, settings };
@@ -2075,118 +2110,51 @@ function projectCoinBattleGiftReceived(payload) {
   return isRecord(payload) ? {} : null;
 }
 
+function projectMusicBotProfileImageUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  const validatedUrl = projectViewerXpAvatarUrl(value);
+  if (!validatedUrl) return null;
+  try {
+    const url = new URL(validatedUrl);
+    // Query strings can carry signed image URLs or opaque credentials; fragments
+    // are not needed for a profile image. Neither is exposed by the public DTO.
+    if (url.search || url.hash) return null;
+    return url.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
 function projectMusicBotTrack(track, { allowNull = false, includePosition = false } = {}) {
   if (track === null && allowNull) return null;
   if (!isRecord(track)
-    || typeof track.id !== 'string' || track.id.length === 0 || track.id.length > 160
     || typeof track.title !== 'string' || track.title.length === 0 || track.title.length > 300) return null;
-  const projected = { id: track.id, title: track.title };
-  for (const key of ['artist', 'requestedBy', 'state']) {
-    if (track[key] === undefined) continue;
-    if (typeof track[key] !== 'string' || track[key].length > 300) return null;
-    projected[key] = track[key];
+  const projected = { title: track.title };
+  if (track.artist !== undefined) {
+    if (typeof track.artist !== 'string' || track.artist.length > 300) return null;
+    projected.artist = track.artist;
   }
-  for (const key of ['thumbnail', 'requesterAvatar']) {
-    if (track[key] === undefined) continue;
-    if (track[key] === null) {
-      projected[key] = null;
-      continue;
-    }
-    projected[key] = projectClarityUrl(track[key]);
-    if (projected[key] === null) return null;
+  if (track.requestedBy !== undefined) {
+    if (typeof track.requestedBy !== 'string' || track.requestedBy.length > 120) return null;
+    projected.requestedBy = track.requestedBy;
+  }
+  if (track.requesterAvatar !== undefined && track.requesterAvatar !== null) {
+    const avatar = projectMusicBotProfileImageUrl(track.requesterAvatar);
+    if (avatar) projected.requesterAvatar = avatar;
   }
   if (track.duration !== undefined && track.duration !== null) {
     if (!Number.isFinite(track.duration) || track.duration < 0 || track.duration > 604800) return null;
     projected.duration = track.duration;
-  } else if (track.duration === null) {
-    projected.duration = null;
   }
-  if (track.playbackId !== undefined && track.playbackId !== null) {
-    if (typeof track.playbackId !== 'string' || track.playbackId.length === 0 || track.playbackId.length > 160) return null;
-    projected.playbackId = track.playbackId;
-  } else if (track.playbackId === null) {
-    projected.playbackId = null;
-  }
-  if (track.startedAt !== undefined && track.startedAt !== null) {
-    if (!Number.isSafeInteger(track.startedAt) || track.startedAt < 0) return null;
-    projected.startedAt = track.startedAt;
-  } else if (track.startedAt === null) {
-    projected.startedAt = null;
+  if (track.state !== undefined) {
+    if (!['playing', 'paused', 'stopped'].includes(track.state)) return null;
+    projected.state = track.state;
   }
   if (includePosition && track.position !== undefined) {
     if (!Number.isFinite(track.position) || track.position < 0 || track.position > 604800) return null;
     projected.position = track.position;
   }
-  if (track.seekable !== undefined) {
-    if (typeof track.seekable !== 'boolean') return null;
-    projected.seekable = track.seekable;
-  }
   return projected;
-}
-
-function projectMusicBotQueue(payload) {
-  if (!isRecord(payload) || !Number.isSafeInteger(payload.length) || payload.length < 0 || payload.length > 10000) return null;
-  const projected = { length: payload.length };
-  if (payload.queue !== undefined) {
-    if (!Array.isArray(payload.queue) || payload.queue.length > 10000) return null;
-    const queue = [];
-    for (const track of payload.queue.slice(0, 3)) {
-      if (!isRecord(track) || typeof track.title !== 'string' || track.title.length === 0 || track.title.length > 300) return null;
-      const item = { title: track.title };
-      if (track.artist !== undefined) {
-        if (typeof track.artist !== 'string' || track.artist.length > 300) return null;
-        item.artist = track.artist;
-      }
-      queue.push(item);
-    }
-    projected.queue = queue;
-  }
-  return projected;
-}
-
-function projectMusicBotVote(payload) {
-  if (!isRecord(payload)) return null;
-  const projected = {};
-  if (payload.enabled !== undefined) {
-    if (typeof payload.enabled !== 'boolean') return null;
-    projected.enabled = payload.enabled;
-  }
-  if (payload.status !== undefined) {
-    if (!['idle', 'open', 'closed', 'cancelled'].includes(payload.status)) return null;
-    projected.status = payload.status;
-  }
-  if (payload.candidates !== undefined) {
-    if (!Array.isArray(payload.candidates) || payload.candidates.length > 2) return null;
-    projected.candidates = [];
-    for (const candidate of payload.candidates) {
-      if (!isRecord(candidate) || typeof candidate.title !== 'string' || candidate.title.length === 0 || candidate.title.length > 300) return null;
-      const item = { title: candidate.title };
-      if (candidate.artist !== undefined) {
-        if (typeof candidate.artist !== 'string' || candidate.artist.length > 300) return null;
-        item.artist = candidate.artist;
-      }
-      projected.candidates.push(item);
-    }
-  }
-  if (payload.votes !== undefined) {
-    if (!isRecord(payload.votes)) return null;
-    projected.votes = {};
-    for (const key of ['1', '2']) {
-      const value = payload.votes[key];
-      if (value === undefined) continue;
-      if (!Number.isSafeInteger(value) || value < 0 || value > 1000000) return null;
-      projected.votes[key] = value;
-    }
-  }
-  return projected;
-}
-
-function projectMusicBotVoteSkip(payload) {
-  if (!isRecord(payload)
-    || !Number.isSafeInteger(payload.votes) || payload.votes < 0 || payload.votes > 1000000
-    || !Number.isSafeInteger(payload.required) || payload.required < 1 || payload.required > 1000000
-    || typeof payload.skipped !== 'boolean') return null;
-  return { votes: payload.votes, required: payload.required, skipped: payload.skipped };
 }
 
 function projectSoundboardPlay(payload) {
@@ -2623,12 +2591,101 @@ function projectWeatherGamificationResponse(payload) {
   return gamification ? { success: true, gamification } : null;
 }
 
+function projectViewerXpAvatarUrl(value) {
+  if (typeof value !== 'string' || value.length > 2048) return null;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const allowedHosts = ['tiktokcdn.com', 'tiktokcdn-us.com', 'tiktokcdn-eu.com', 'ibytedtos.com', 'byteoversea.com'];
+    if (url.protocol !== 'https:' || url.username || url.password
+      || !allowedHosts.some(domain => host === domain || host.endsWith(`.${domain}`))) return null;
+    return url.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+function projectViewerXpProfile(payload) {
+  if (!isRecord(payload)) return null;
+  const safeNumber = value => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0;
+  return {
+    username: typeof payload.username === 'string' ? payload.username.slice(0, 80) : '',
+    name_color: typeof payload.name_color === 'string' && /^#[0-9a-f]{3,8}$/i.test(payload.name_color) ? payload.name_color : null,
+    title: typeof payload.title === 'string' ? payload.title.slice(0, 80) : '',
+    level: safeNumber(payload.level),
+    xp_progress: safeNumber(payload.xp_progress),
+    xp_for_next_level: safeNumber(payload.xp_for_next_level),
+    xp_progress_percent: Math.min(100, safeNumber(payload.xp_progress_percent)),
+    profilePictureUrl: projectViewerXpAvatarUrl(payload.profilePictureUrl)
+  };
+}
+
+function projectViewerXpLeaderboard(payload) {
+  if (!Array.isArray(payload) || payload.length > 50) return null;
+  const result = [];
+  for (let index = 0; index < payload.length; index += 1) {
+    const row = payload[index];
+    if (!isRecord(row)) return null;
+    const xp = typeof row.xp === 'number' && Number.isFinite(row.xp) ? Math.max(0, row.xp) : 0;
+    const projected = {
+      username: typeof row.username === 'string' ? row.username.slice(0, 80) : '',
+      name_color: typeof row.name_color === 'string' && /^#[0-9a-f]{3,8}$/i.test(row.name_color) ? row.name_color : null,
+      title: typeof row.title === 'string' ? row.title.slice(0, 80) : '',
+      level: typeof row.level === 'number' && Number.isFinite(row.level) ? Math.max(0, row.level) : 0,
+      xp,
+      rank: index + 1
+    };
+    if (row.xp_period !== undefined) projected.xp_period = xp;
+    result.push(projected);
+  }
+  return result;
+}
+
+function projectViewerXpLevelUp(payload) {
+  if (!isRecord(payload)) return null;
+  const safeText = value => typeof value === 'string' ? value.slice(0, 120) : '';
+  const safeNumber = value => typeof value === 'number' && Number.isFinite(value) ? Math.max(0, value) : 0;
+  const result = {
+    username: safeText(payload.username).slice(0, 80),
+    oldLevel: safeNumber(payload.oldLevel),
+    newLevel: safeNumber(payload.newLevel)
+  };
+  if (isRecord(payload.rewards)) {
+    const rewards = {};
+    if (typeof payload.rewards.title === 'string') rewards.title = payload.rewards.title.slice(0, 80);
+    if (typeof payload.rewards.name_color === 'string' && /^#[0-9a-f]{3,8}$/i.test(payload.rewards.name_color)) {
+      rewards.name_color = payload.rewards.name_color;
+    }
+    if (Object.keys(rewards).length) result.rewards = rewards;
+  }
+  return result;
+}
+
+function projectViewerXpUpdate(payload) {
+  if (!isRecord(payload) || !isRecord(payload.profile)) return null;
+  const profile = projectViewerXpProfile(payload.profile);
+  if (!profile) return null;
+  return {
+    username: typeof payload.username === 'string' ? payload.username.slice(0, 80) : '',
+    amount: typeof payload.amount === 'number' && Number.isFinite(payload.amount) ? Math.max(0, payload.amount) : 0,
+    profile
+  };
+}
+
 /**
  * Return undefined for events without a public projection, null for malformed
  * payloads that must be withheld publicly, or the projected public payload.
  */
 function projectPublicOverlayPayload(eventName, payload) {
   switch (eventName) {
+    case 'viewer-xp:public-profile':
+      return projectViewerXpProfile(payload);
+    case 'viewer-xp:public-update':
+      return projectViewerXpUpdate(payload);
+    case 'viewer-xp:public-level-up':
+      return projectViewerXpLevelUp(payload);
+    case 'viewer-xp:public-leaderboard':
+      return projectViewerXpLeaderboard(payload);
     // Wheel outputs carry raw setup, reward, spin, and SHOCK details. The
     // public wheel surface has no approved renderer DTO yet, so keep these
     // events local-only until one is reviewed and implemented.
@@ -2689,6 +2746,8 @@ function projectPublicOverlayPayload(eventName, payload) {
       const eventType = eventName.slice('clarityhud.update.'.length);
       return projectClarityEvent(eventType, payload);
     }
+    case 'clarityhud.update.superfan-display':
+      return projectClaritySuperFanDisplay(payload);
     case 'clarityhud:multi:chat':
       return projectClarityMultiEvent('chat', payload);
     case 'clarityhud:multi:gift':
@@ -2867,19 +2926,12 @@ function projectPublicOverlayPayload(eventName, payload) {
     case 'coinbattle:gift-received':
       return projectCoinBattleGiftReceived(payload);
     case 'musicbot:now-playing':
-      return projectMusicBotTrack(payload, { allowNull: true });
+      return projectMusicBotTrack(payload, { allowNull: true, includePosition: true });
     case 'musicbot:playback-sync':
       return projectMusicBotTrack(payload, { includePosition: true });
-    case 'musicbot:queue-update':
-      return projectMusicBotQueue(payload);
-    case 'musicbot:next-song-vote':
-      return projectMusicBotVote(payload);
-    case 'musicbot:vote-skip-update':
-      return projectMusicBotVoteSkip(payload);
     case 'musicbot:paused':
     case 'musicbot:playback-stopped':
     case 'musicbot:resumed':
-    case 'musicbot:volume-changed':
       return isRecord(payload) ? {} : null;
     case 'soundboard:play':
       return projectSoundboardPlay(payload);
@@ -2914,6 +2966,8 @@ function projectPublicOverlayPayload(eventName, payload) {
 
 module.exports = {
   projectPublicOverlayPayload,
+  projectViewerXpAvatarUrl,
+  projectClaritySuperFanDisplay,
   projectArenaPublicState,
   projectGameEngineConfigResponse,
   registerPublicZappieHellGoal,

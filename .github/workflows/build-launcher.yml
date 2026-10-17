@@ -2,29 +2,56 @@ name: Build Launcher
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Candidate version (X.Y.Z)
+        required: true
+        type: string
+      channel:
+        description: Candidate channel
+        required: true
+        type: choice
+        options:
+          - stable
+          - beta
   push:
     tags:
       - 'launcher-v*'
       - 'launcher-beta-v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
-    name: Validate launcher asset
+    name: Build and validate launcher source
     runs-on: windows-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Go 1.24.10
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff
+        with:
+          go-version: '1.24.10'
+          cache-dependency-path: build-src/go.sum
 
       - name: Detect launcher channel
         id: channel
-        if: startsWith(github.ref, 'refs/tags/launcher-')
         shell: bash
+        env:
+          CHANNEL_INPUT: ${{ inputs.channel }}
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/launcher-beta-v* ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]]; then
+            case "$CHANNEL_INPUT" in
+              stable|beta) ;;
+              *) echo "Unsupported launcher channel." >&2; exit 1 ;;
+            esac
+            echo "channel=$CHANNEL_INPUT" >> "$GITHUB_OUTPUT"
+          elif [[ "${GITHUB_REF}" == refs/tags/launcher-beta-v* ]]; then
             echo "channel=beta" >> "$GITHUB_OUTPUT"
           else
             echo "channel=stable" >> "$GITHUB_OUTPUT"
@@ -32,59 +59,103 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        if: startsWith(github.ref, 'refs/tags/launcher-')
         shell: bash
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+          CHANNEL_INPUT: ${{ inputs.channel }}
         run: |
-          TAG="${GITHUB_REF#refs/tags/}"
-          if [[ "$TAG" == launcher-beta-v* ]]; then
-            VERSION="${TAG#launcher-beta-v}"
+          if [[ "${GITHUB_EVENT_NAME}" == workflow_dispatch ]]; then
+            if [[ ! "$VERSION_INPUT" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "Version must be X.Y.Z." >&2
+              exit 1
+            fi
+            case "$CHANNEL_INPUT" in
+              stable|beta) ;;
+              *) echo "Unsupported launcher channel." >&2; exit 1 ;;
+            esac
+            VERSION="$VERSION_INPUT"
+          elif [[ "${GITHUB_REF_NAME}" == launcher-beta-v* ]]; then
+            VERSION="${GITHUB_REF_NAME#launcher-beta-v}"
           else
-            VERSION="${TAG#launcher-v}"
+            VERSION="${GITHUB_REF_NAME#launcher-v}"
+          fi
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must be X.Y.Z." >&2
+            exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Verify signed launcher asset
+      - name: Build launcher from source
+        working-directory: build-src
+        shell: powershell
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOFLAGS: '-mod=readonly'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $goVersion = (go version 2>&1 | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $goVersion -cne 'go version go1.24.10 windows/amd64') {
+            throw "Expected exact Go 1.24.10 windows/amd64, received: $goVersion"
+          }
+          $candidateDir = Join-Path $env:RUNNER_TEMP 'launcher-candidate'
+          New-Item -ItemType Directory -Force -Path $candidateDir | Out-Null
+          $candidatePath = Join-Path $candidateDir 'launcher.exe'
+          go build -trimpath -buildvcs=false -ldflags '-H windowsgui -s -w' -o $candidatePath .
+          if ($LASTEXITCODE -ne 0) { throw 'Source-built launcher candidate failed.' }
+
+      - name: Run launcher Go tests
+        working-directory: build-src
+        shell: powershell
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: '0'
+          GOFLAGS: '-mod=readonly'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go test ./...
+          if ($LASTEXITCODE -ne 0) { throw 'Launcher Go tests failed.' }
+
+      - name: Write unsigned source candidate manifest
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
-          if (-not (Test-Path launcher.exe)) {
-            throw 'Missing launcher.exe in repository root.'
-          }
-          $signature = Get-AuthenticodeSignature launcher.exe
-          if ($signature.Status -ne 'Valid') {
-            throw "launcher.exe is not signed correctly: $($signature.StatusMessage)"
-          }
+          $candidatePath = Join-Path $env:RUNNER_TEMP 'launcher-candidate\launcher.exe'
+          $releaseTag = if ($env:GITHUB_REF_NAME -match '^launcher-(?:beta-)?v') { $env:GITHUB_REF_NAME } elseif ('${{ steps.channel.outputs.channel }}' -eq 'beta') { 'launcher-beta-v${{ steps.version.outputs.version }}' } else { 'launcher-v${{ steps.version.outputs.version }}' }
+          & "$env:GITHUB_WORKSPACE\scripts\write-launcher-candidate-manifest.ps1" `
+            -CandidatePath $candidatePath `
+            -ManifestPath (Join-Path $env:RUNNER_TEMP 'launcher-candidate\launcher-candidate.json') `
+            -Version '${{ steps.version.outputs.version }}' `
+            -Tag $releaseTag `
+            -CommitSha $env:GITHUB_SHA `
+            -SourceRunId $env:GITHUB_RUN_ID `
+            -SourceWorkflow '.github/workflows/build-launcher.yml' `
+            -SourceEvent $env:GITHUB_EVENT_NAME `
+            -SourceRef $env:GITHUB_REF
+          if ($LASTEXITCODE -ne 0) { throw 'Unsigned launcher candidate manifest failed.' }
 
-      - name: Write launcher release metadata
+      - name: Preserve unsigned candidate for authorized local signing
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: launcher-candidate
+          path: |
+            ${{ runner.temp }}/launcher-candidate/launcher.exe
+            ${{ runner.temp }}/launcher-candidate/launcher-candidate.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Report commit-bound local handoff
         shell: bash
         run: |
-          cat > launcher-release.json <<EOF
           {
-            "component": "launcher.exe",
-            "channel": "${{ steps.channel.outputs.channel }}",
-            "version": "v${{ steps.version.outputs.version }}",
-            "tag": "${GITHUB_REF_NAME}"
-          }
-          EOF
-
-      - name: Upload launchers
-        uses: actions/upload-artifact@v4
-        with:
-          name: launcher-windows
-          path: launcher.exe
-
-      - name: Create release for launcher tag
-        if: startsWith(github.ref, 'refs/tags/launcher-')
-        uses: softprops/action-gh-release@v1
-        with:
-          name: Launcher ${{ steps.channel.outputs.channel }} release v${{ steps.version.outputs.version }}
-          body: |
-            Launcher channel: `${{ steps.channel.outputs.channel }}`
-            Version: `v${{ steps.version.outputs.version }}`
-          files: |
-            launcher.exe
-            launcher-release.json
-          draft: false
-          prerelease: ${{ steps.channel.outputs.channel == 'beta' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            echo '## Launcher signing handoff required'
+            echo
+            echo "Unsigned candidate artifact: launcher-candidate (source run $GITHUB_RUN_ID, commit $GITHUB_SHA)."
+            echo "Candidate tag: ${{ steps.version.outputs.version }} (${{ steps.channel.outputs.channel }})."
+            echo 'Create the source receipt with: python scripts/verify_launcher_source_run.py --repository Loggableim/ltth.app --run-id <source-run-id> --commit-sha <source-commit> --receipt-output launcher-source-run-receipt.json (GH_TOKEN required).'
+            echo 'The local signing helper requires that receipt and a clean pinned Go 1.24.10 source rebuild before it can call SignTool.'
+            echo 'After local signing, commit the staged handoff to a handoff ref and dispatch Publish Signed Launcher Handoff.'
+            echo 'This candidate workflow does not sign or publish a release.'
+          } >> "$GITHUB_STEP_SUMMARY"

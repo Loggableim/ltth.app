@@ -5,6 +5,7 @@
 const socket = io();
 let timers = [];
 let giftCatalog = [];
+let selectedLegacySource = null;
 
 // WeakSet for tracking event delegation attachments without memory leaks
 const _advEventsBoundContainers = new WeakSet();
@@ -219,15 +220,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const rows = Object.entries(preview.rows || {}).filter(([, count]) => count).map(([table, count]) => `${table}: ${count}`).join(', ') || tr('legacyNoRows');
             const frames = (preview.frames || []).join(', ') || tr('legacyNoFrames');
             const conflicts = (preview.frameConflicts || []).join(', ') || tr('legacyNoConflicts');
-            target.textContent = tr('legacyPreview', { profile: preview.targetProfile || tr('legacyActiveProfile'), rows, frames, conflicts });
+            target.textContent = preview.requiresSourceSelection
+                ? tr('legacyChooseSource')
+                : tr('legacyPreview', {
+                    source: tr(preview.sourceId === 'plugin_directory' ? 'legacySourcePluginDirectory' : 'legacySourceShared'),
+                    profile: preview.targetProfile || tr('legacyActiveProfile'), rows, frames, conflicts
+                });
         }
         const button = document.getElementById('advancedTimerLegacyImportBtn');
         if (button) button.disabled = !preview.canImport;
     });
+    document.getElementById('advancedTimerLegacySource')?.addEventListener('change', async event => {
+        selectedLegacySource = event.target.value || null;
+        document.getElementById('advancedTimerLegacyPreviewBtn')?.click();
+    });
     document.getElementById('advancedTimerLegacyImportBtn')?.addEventListener('click', async () => {
         if (!confirm(tr('legacyConfirm'))) return;
         const response = await fetch('/api/advanced-timer/legacy-data/import', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: true })
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ confirm: true, sourceId: selectedLegacySource })
         });
         const result = await response.json();
         if (!response.ok || !result.success) return alert(result.error || tr('legacyFailed'));
@@ -242,12 +253,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 async function loadLegacyTimerData(showPreview = false) {
     const endpoint = showPreview
-        ? '/api/advanced-timer/legacy-data/preview'
+        ? `/api/advanced-timer/legacy-data/preview${selectedLegacySource ? `?sourceId=${encodeURIComponent(selectedLegacySource)}` : ''}`
         : '/api/advanced-timer/legacy-data/status';
     const response = await fetch(endpoint);
     const data = await response.json();
     const panel = document.getElementById('advancedTimerLegacyPanel');
     if (panel) panel.hidden = !data.hasLegacyData;
+    const sourceSelect = document.getElementById('advancedTimerLegacySource');
+    const sourceLabel = document.getElementById('advancedTimerLegacySourceLabel');
+    const sourceChoices = data.availableSources || [];
+    if (data.sourceId) selectedLegacySource = data.sourceId;
+    if (sourceSelect) {
+        sourceLabel.hidden = sourceChoices.length < 2;
+        sourceSelect.hidden = sourceChoices.length < 2;
+        if (sourceChoices.length > 1) {
+            const priorSelection = selectedLegacySource;
+            sourceSelect.replaceChildren();
+            for (const sourceId of sourceChoices) {
+                const option = document.createElement('option');
+                option.value = sourceId;
+                option.textContent = tr(sourceId === 'plugin_directory' ? 'legacySourcePluginDirectory' : 'legacySourceShared');
+                sourceSelect.append(option);
+            }
+            if (sourceChoices.includes(priorSelection)) sourceSelect.value = priorSelection;
+            else sourceSelect.selectedIndex = -1;
+        } else if (sourceChoices.length === 1) {
+            selectedLegacySource = sourceChoices[0];
+        } else {
+            selectedLegacySource = null;
+        }
+    }
     const status = document.getElementById('advancedTimerLegacyStatus');
     if (status && data.hasLegacyData) status.textContent = tr('legacyFound');
     return data;

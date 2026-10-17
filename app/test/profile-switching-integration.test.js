@@ -4,27 +4,23 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const Database = require('../modules/database');
 const Leaderboard = require('../modules/leaderboard');
 
-const TEST_DB_DIR = '/tmp/test-profiles';
-const PROFILE1_PATH = path.join(TEST_DB_DIR, 'streamer1.db');
-const PROFILE2_PATH = path.join(TEST_DB_DIR, 'streamer2.db');
+let TEST_DB_DIR;
+let PROFILE1_PATH;
+let PROFILE2_PATH;
 
 describe('Profile Switching Integration', () => {
   beforeAll(() => {
-    // Clean up test directory
-    if (fs.existsSync(TEST_DB_DIR)) {
-      fs.rmSync(TEST_DB_DIR, { recursive: true, force: true });
-    }
-    fs.mkdirSync(TEST_DB_DIR, { recursive: true });
+    TEST_DB_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-profile-switching-'));
+    PROFILE1_PATH = path.join(TEST_DB_DIR, 'streamer1.db');
+    PROFILE2_PATH = path.join(TEST_DB_DIR, 'streamer2.db');
   });
 
   afterAll(() => {
-    // Clean up
-    if (fs.existsSync(TEST_DB_DIR)) {
-      fs.rmSync(TEST_DB_DIR, { recursive: true, force: true });
-    }
+    fs.rmSync(TEST_DB_DIR, { recursive: true, force: true });
   });
 
   test('should maintain separate viewer data when switching profiles', () => {

@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 'use strict';
 
-const { isClosedBetaPlugin } = require('./lib/published-plugin-catalog');
-
 const fs = require('fs');
 const path = require('path');
 
@@ -107,12 +105,9 @@ function projectManifest(root, contract) {
 function projectStore(root, contract) {
   const relativePath = 'plugin-store.json';
   const source = readText(root, relativePath);
-  if (isClosedBetaPlugin(root, contract.product.id)) {
-    return { relativePath, content: source };
-  }
   const registry = JSON.parse(source);
   const plugin = registry.plugins.find(entry => entry.id === contract.product.id);
-  if (!plugin) throw new Error(`Missing Store entry: ${contract.product.id}`);
+  if (!plugin) return { relativePath, content: source };
   plugin.name = Object.fromEntries(
     contract.locales.map(locale => [locale, contract.product.name])
   );
@@ -175,6 +170,15 @@ function projectStore(root, contract) {
     relativePath,
     content: `${source.slice(0, startIndex)}${rendered}${source.slice(endIndex)}`
   };
+}
+
+function isClosedBeta(root, pluginId) {
+  const { isClosedBetaPlugin } = require('./lib/published-plugin-catalog');
+  return isClosedBetaPlugin(root, pluginId);
+}
+
+function shouldProjectStore(root, contract) {
+  return !isClosedBeta(root, contract.product.id);
 }
 
 function projectGuideMetadata(root, contract) {
@@ -258,9 +262,6 @@ function projectPublicHtml(root, contract) {
     /<p class="sm-kicker" data-streammonsters-arena-label>[^<]*<\/p>/,
     `<p class="sm-kicker" data-streammonsters-arena-label>${projection.arenaLabel}</p>`
   );
-  content = content.replace(/\sdata-streammonsters-(?:access|package)="[^"]*"/g, '');
-  content = content.replace(/<a\b[^>]*id="(?:download-link|cta-download)"[^>]*>[\s\S]*?<\/a>/g, '');
-  content = content.replace(/<script\b[^>]*src="\/app\/plugins\/stream-monsters\/[^"]*"[^>]*>[\s\S]*?<\/script>/g, '');
   return { relativePath, content };
 }
 
@@ -307,7 +308,10 @@ function synchronize({ root, check }) {
   );
   const contract = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
   const drift = [];
-  for (const projection of buildProjections(root, contract)) {
+  const projections = buildProjections(root, contract).filter((projection) => (
+    projection.relativePath !== 'plugin-store.json' || shouldProjectStore(root, contract)
+  ));
+  for (const projection of projections) {
     const destination = path.join(root, projection.relativePath);
     const current = fs.readFileSync(destination, 'utf8').replace(/\r\n?/g, '\n');
     if (current === projection.content) continue;
@@ -346,7 +350,9 @@ if (require.main === module) main();
 
 module.exports = {
   buildProjections,
+  isClosedBeta,
   parseArguments,
   publicProjection,
+  shouldProjectStore,
   synchronize
 };

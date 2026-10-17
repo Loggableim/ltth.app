@@ -189,19 +189,14 @@ describe('Official plugin store registry', () => {
     assert.strictEqual(sourceFiles.length, 523);
   });
 
-  it('publishes the WebGPU Weather Control open beta as a source-identical 1080p package', async () => {
+  it('keeps the WebGPU Weather Control closed-beta package local and source-identical', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'webgpu-weather-control');
     const sourceDir = path.join(repoRoot, 'app', 'plugins', 'webgpu-weather-control');
     const sourceManifest = JSON.parse(fs.readFileSync(path.join(sourceDir, 'plugin.json'), 'utf8'));
 
-    assert(storePlugin, 'WebGPU Weather Control must exist in the official store registry');
+    assert.strictEqual(storePlugin, undefined, 'WebGPU Weather Control is closed beta and must not be publicly listed');
     assert.strictEqual(sourceManifest.version, '1.0.0');
-    assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.channel, 'open-beta');
-    assert(storePlugin.badges.includes('working-beta'));
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/webgpu-weather-control-1.0.0.zip');
-    assert.deepStrictEqual(storePlugin.screenshots, ['/screenshots/features/webgpu-weather-control.png']);
 
     const screenshot = fs.readFileSync(path.join(repoRoot, 'screenshots', 'features', 'webgpu-weather-control.png'));
     assert.strictEqual(screenshot.readUInt32BE(16), 1920, 'store screenshot must be 1080p wide');
@@ -210,7 +205,7 @@ describe('Official plugin store registry', () => {
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'webgpu-weather-control-1.0.0.zip');
     assert(fs.existsSync(packagePath), 'WebGPU Weather Control package must exist');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
-    assert.strictEqual(storePlugin.sha256, digest);
+    assert(digest);
 
     const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
     const sourceFiles = listSourceFiles(sourceDir).sort();
@@ -234,7 +229,7 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('keeps Stream Monsters 1.11.1 stable for LTTH 1.4.1 while the next source release is prepared', async () => {
+  it('keeps the historical Stream Monsters 1.11.1 package while the next source release is prepared', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'streamalchemy');
     const releaseMap = JSON.parse(fs.readFileSync(
@@ -248,17 +243,11 @@ describe('Official plugin store registry', () => {
       { cwd: repoRoot, encoding: 'utf8', windowsHide: true }
     ));
 
-    assert(storePlugin, 'Stream Monsters must exist in the official store registry');
+    assert.strictEqual(storePlugin, undefined, 'Stream Monsters is closed beta and must not have a public alias listing');
     assert.strictEqual(sourceManifest.id, 'streamalchemy');
     assert.strictEqual(sourceManifest.version, '1.11.1');
     assert.strictEqual(sourceManifest.devStatus, 'stable');
-    assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.minLtthVersion, '1.4.1');
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/streamalchemy-1.11.1.zip');
-    assert.strictEqual(storePlugin.channel, 'stable');
-    assert(storePlugin.badges.includes('subscriber-only'));
-    assert(!storePlugin.badges.includes('working-beta'));
-    assert.strictEqual(release.manifestVersion, storePlugin.version);
+    assert.strictEqual(release.manifestVersion, sourceManifest.version);
     assert.strictEqual(
       childProcess.execFileSync(
         'git',
@@ -288,7 +277,6 @@ describe('Official plugin store registry', () => {
       '46918c6c52bd0bcae123950e038e4db3feadd30fa1bc514758e8e411d00c3b60',
       'the historical Stream Monsters 1.11.1 archive must remain byte-identical'
     );
-    assert.strictEqual(storePlugin.sha256, digest);
     assert.strictEqual(release.sha256, digest);
 
     const entries = (await listZipEntries(packagePath)).map((entry) => entry.replace(/\\/g, '/'));
@@ -303,7 +291,7 @@ describe('Official plugin store registry', () => {
     );
   });
 
-  it('publishes the Schnorrbecher package with a matching manifest and checksum', async () => {
+  it('keeps the Schnorrbecher closed-beta package locally source-matched', async () => {
     const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
     const storePlugin = registry.plugins.find((plugin) => plugin.id === 'schnorrbecher');
     const sourceManifest = JSON.parse(fs.readFileSync(
@@ -311,14 +299,12 @@ describe('Official plugin store registry', () => {
       'utf8'
     ));
 
-    assert(storePlugin, 'Schnorrbecher must exist in the official store registry');
-    assert.strictEqual(storePlugin.version, sourceManifest.version);
-    assert.strictEqual(storePlugin.packageUrl, 'https://ltth.app/plugin-store/packages/schnorrbecher-1.0.0.zip');
+    assert.strictEqual(storePlugin, undefined, 'Schnorrbecher is closed beta and must not be publicly listed');
 
     const packagePath = path.join(repoRoot, 'plugin-store', 'packages', 'schnorrbecher-1.0.0.zip');
     assert(fs.existsSync(packagePath), 'Schnorrbecher package must exist');
     const digest = crypto.createHash('sha256').update(fs.readFileSync(packagePath)).digest('hex');
-    assert.strictEqual(storePlugin.sha256, digest);
+    assert(digest);
 
     const packagedManifest = JSON.parse((await readZipEntry(packagePath, 'plugin.json')).toString('utf8'));
     assert.strictEqual(packagedManifest.id, 'schnorrbecher');
@@ -370,7 +356,7 @@ describe('Official plugin store registry', () => {
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 
     assert.strictEqual(registry.source.id, 'official');
-    assert(registry.plugins.length >= 30, 'expected official registry to include LTTH plugins');
+    assert(registry.plugins.length >= 20, 'expected official registry to include public LTTH plugins');
 
     for (const plugin of registry.plugins) {
       assert(plugin.packageUrl.startsWith('https://ltth.app/plugin-store/packages/'), `${plugin.id} has no LTTH package URL`);
@@ -389,13 +375,12 @@ describe('Official plugin store registry', () => {
     }
   });
 
-  it('keeps both Stream Monsters identities out of the public catalog', () => {
-    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
-    for (const id of ['stream-monsters', 'streamalchemy']) {
-      assert(!registry.plugins.some(plugin => plugin.id === id), `${id} must remain local closed beta`);
-    }
-    const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app', 'plugins', 'stream-monsters', 'plugin.json'), 'utf8'));
-    assert.strictEqual(manifest.id, 'stream-monsters');
+  it('marks Stream Monsters as the stable official store release', () => {
+    const registryPath = path.join(repoRoot, 'plugin-store.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    const streamMonsters = registry.plugins.find((plugin) => plugin.id === 'stream-monsters');
+
+    assert.strictEqual(streamMonsters, undefined, 'Stream Monsters is closed beta and must not be publicly listed');
   });
 
   it('keeps every other official LTTH plugin open beta and all official plugins free', () => {
@@ -403,42 +388,55 @@ describe('Official plugin store registry', () => {
     const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
 
     for (const plugin of registry.plugins) {
-      if (plugin.id !== 'streamalchemy') {
-        assert.strictEqual(plugin.channel, 'open-beta', `${plugin.id} must be open-beta`);
-      }
+      assert.strictEqual(plugin.channel, 'open-beta', `${plugin.id} must be open-beta`);
       assert.strictEqual(plugin.pricing?.type, 'free', `${plugin.id} must be free`);
       assert.strictEqual(plugin.pricing?.amount, 0, `${plugin.id} free price amount must be 0`);
       assert.strictEqual(plugin.pricing?.currency, 'EUR', `${plugin.id} free price currency must be EUR`);
     }
   });
 
-  it('separates public catalog from preserved local closed-beta plugin inventory', () => {
-    const registry = JSON.parse(fs.readFileSync(path.join(repoRoot, 'plugin-store.json'), 'utf8'));
-    const policy = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8'));
-    const blocked = new Set([...policy.closedBeta, ...Object.keys(policy.aliases || {})]);
-    const byId = new Map(registry.plugins.map(plugin => [plugin.id, plugin]));
-    assert(!byId.has('chatango'), 'retired Chatango must not be offered');
-    for (const plugin of registry.plugins) {
-      assert(!blocked.has(plugin.id), `${plugin.id} closed beta must not be publicly listed`);
-      for (const alias of [...(plugin.aliases || []), ...(plugin.replaces || [])]) {
-        assert(!blocked.has(alias), `${alias} closed-beta alias must not be publicly listed`);
-      }
+  it('marks invite-only and admin-only store entries with access metadata', () => {
+    const registryPath = path.join(repoRoot, 'plugin-store.json');
+    const registry = JSON.parse(fs.readFileSync(registryPath, 'utf8'));
+    const byId = new Map(registry.plugins.map((plugin) => [plugin.id, plugin]));
+    const preinstalledIds = [
+      'goals',
+      'milestone-leaderboard',
+      'spotlight',
+      'soundboard',
+      'toptier',
+      'tts',
+      'emoji-rain',
+      'gcce',
+      'api-bridge',
+      'clarityhud'
+    ];
+    const closedBetaIds = require('../config/plugin-release-policy.json').closedBeta;
+    const subscriberIds = [
+      'vdoninja'
+    ];
+
+    for (const id of preinstalledIds) {
+      const plugin = byId.get(id);
+      assert(plugin, `${id} must exist in the official store registry`);
+      assert(plugin.badges.includes('preinstalled'), `${id} must include the preinstalled badge`);
     }
-    for (const id of policy.closedBeta) {
-      const manifest = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app', 'plugins', id, 'plugin.json'), 'utf8'));
-      assert.strictEqual(manifest.id, id, `${id} source must remain available for local development`);
-      assert(!byId.has(id));
+
+    for (const id of closedBetaIds) {
+      assert(!byId.has(id), `${id} must not be present in the public store registry`);
     }
-    for (const id of ['goals', 'milestone-leaderboard', 'spotlight', 'soundboard', 'toptier', 'tts', 'emoji-rain', 'gcce', 'api-bridge', 'clarityhud']) {
-      assert(byId.get(id)?.badges.includes('preinstalled'), `${id} public preinstalled metadata must remain`);
+
+    for (const id of subscriberIds) {
+      const plugin = byId.get(id);
+      assert(plugin, `${id} must exist in the official store registry`);
+      assert.strictEqual(plugin.access?.type, 'subscriber', `${id} must be subscriber-only`);
+      assert(plugin.badges.includes('subscriber-only'), `${id} must include the subscriber-only badge`);
     }
-    assert.strictEqual(byId.get('openshock')?.access?.type, 'closed-beta');
-    assert(byId.get('openshock')?.badges.includes('closed-beta'));
-    assert.strictEqual(byId.get('vdoninja')?.access?.type, 'subscriber');
-    assert(byId.get('vdoninja')?.badges.includes('subscriber-only'));
-    const admin = byId.get('store-admin');
-    assert.strictEqual(admin?.access?.type, 'admin');
-    assert.strictEqual(admin?.access?.hidden, true);
-    assert(admin?.badges.includes('admin-only'));
+
+    const adminPlugin = byId.get('store-admin');
+    assert(adminPlugin, 'store-admin must exist in the official store registry');
+    assert.strictEqual(adminPlugin.access?.type, 'admin');
+    assert.strictEqual(adminPlugin.access?.hidden, true);
+    assert(adminPlugin.badges.includes('admin-only'));
   });
 });

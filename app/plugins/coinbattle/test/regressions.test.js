@@ -188,6 +188,17 @@ describe('Pyramid XP callbacks', () => {
 });
 
 describe('Friend challenges', () => {
+  function createSqliteChallengeHarness() {
+    const rawDb = new Database(':memory:');
+    const db = new CoinBattleDatabase(rawDb, createLogger());
+    db.initializeTables();
+    db.getOrCreatePlayer({ userId: 'challenger', uniqueId: 'challenger', nickname: 'Challenger' });
+    db.getOrCreatePlayer({ userId: 'accepter', uniqueId: 'accepter', nickname: 'Accepter' });
+    db.addPlayerCoins('challenger', 100);
+    db.addPlayerCoins('accepter', 100);
+    return { rawDb, db };
+  }
+
   test('accepting a challenge starts a 1v1 match and locks both stakes', async () => {
     const db = {
       createMatch: jest.fn(() => 99),
@@ -213,6 +224,64 @@ describe('Friend challenges', () => {
 
     engine.destroy();
     challenges.destroy();
+  });
+
+  test('SQLite stakes are charged once for concurrent successful accepts', async () => {
+    const { rawDb, db } = createSqliteChallengeHarness();
+    const engine = new CoinBattleEngine(db, createIO(), createLogger());
+    engine.loadConfig({ matchDuration: 120, autoReset: false });
+    const challenges = new FriendChallengeSystem(db, createIO(), engine, createLogger());
+    try {
+      const created = await challenges.createChallenge('challenger', 'Challenger', 'Accepter', 10);
+      const results = await Promise.all([
+        challenges.acceptChallenge(created.challengeId, 'accepter', 'Accepter'),
+        challenges.acceptChallenge(created.challengeId, 'accepter', 'Accepter')
+      ]);
+
+      expect(results.filter(result => result.success)).toHaveLength(1);
+      expect(results.filter(result => !result.success)).toHaveLength(1);
+      expect(db.getPlayerCoins('challenger')).toBe(90);
+      expect(db.getPlayerCoins('accepter')).toBe(90);
+      expect(engine.players.size).toBe(2);
+    } finally {
+      challenges.destroy();
+      engine.destroy();
+      rawDb.close();
+    }
+  });
+
+  test('SQLite stakes are refunded after second-player insertion fails and a later retry charges once', async () => {
+    const { rawDb, db } = createSqliteChallengeHarness();
+    const engine = new CoinBattleEngine(db, createIO(), createLogger());
+    engine.loadConfig({ matchDuration: 120, autoReset: false });
+    const challenges = new FriendChallengeSystem(db, createIO(), engine, createLogger());
+    const addPlayer = engine.addPlayerToMatch.bind(engine);
+    let addCount = 0;
+    engine.addPlayerToMatch = (...args) => {
+      addCount++;
+      if (addCount === 2) throw new Error('injected second-player failure');
+      return addPlayer(...args);
+    };
+    try {
+      const created = await challenges.createChallenge('challenger', 'Challenger', 'Accepter', 10);
+      const failed = await challenges.acceptChallenge(created.challengeId, 'accepter', 'Accepter');
+
+      expect(failed).toEqual({ success: false, error: 'Failed to start match' });
+      expect(challenges.pendingChallenges.has(created.challengeId)).toBe(true);
+      expect(engine.currentMatch).toBeNull();
+      expect(db.getPlayerCoins('challenger')).toBe(100);
+      expect(db.getPlayerCoins('accepter')).toBe(100);
+
+      engine.addPlayerToMatch = addPlayer;
+      const retried = await challenges.acceptChallenge(created.challengeId, 'accepter', 'Accepter');
+      expect(retried.success).toBe(true);
+      expect(db.getPlayerCoins('challenger')).toBe(90);
+      expect(db.getPlayerCoins('accepter')).toBe(90);
+    } finally {
+      challenges.destroy();
+      engine.destroy();
+      rawDb.close();
+    }
   });
 });
 

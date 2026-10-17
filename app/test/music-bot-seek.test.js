@@ -234,7 +234,8 @@ describe('Music Bot backend seek', () => {
       [{ playbackId: 'old', positionSeconds: 2 }, 'PLAYBACK_STALE_ID', 409],
       [{ playbackId: 'current', positionSeconds: 2 }, 'PLAYBACK_SAFETY_LOCKED', 423],
       [{ playbackId: 'current', positionSeconds: 2 }, 'PLAYBACK_UNSEEKABLE', 422],
-      [{ playbackId: 'current', positionSeconds: 2 }, 'MPV_IPC_DISCONNECTED', 503]
+      [{ playbackId: 'current', positionSeconds: 2 }, 'MPV_IPC_DISCONNECTED', 503],
+      [{ playbackId: 'current', positionSeconds: 2 }, 'UNEXPECTED_INTERNAL_ERROR', 500]
     ];
     for (const [body, code, status] of cases) {
       plugin.playbackEngine.seek.mockImplementation(async () => {
@@ -260,6 +261,26 @@ describe('Music Bot backend seek', () => {
     await routes.get('post:/api/plugins/music-bot/seek')({ body: { playbackId: 'playback-1', positionSeconds: 42 } }, res);
 
     expect(res.statusCode).toBe(503);
+  });
+
+  test('seek route hides unexpected internal error details', async () => {
+    const { plugin, routes } = createPlugin();
+    const privateMessage = 'IPC failed at C:\\profiles\\private\\music.db CANARY';
+    const privateCode = 'PRIVATE_SEEK_CANARY';
+    plugin.playbackEngine = {
+      seek: jest.fn(async () => { throw Object.assign(new Error(privateMessage), { code: privateCode }); })
+    };
+    plugin._registerRoutes();
+
+    const res = createResponse();
+    await routes.get('post:/api/plugins/music-bot/seek')({
+      body: { playbackId: 'playback-1', positionSeconds: 42 }
+    }, res);
+
+    expect(res.statusCode).toBe(500);
+    expect(res.payload).toEqual({ success: false, error: 'Seek failed' });
+    expect(JSON.stringify(res.payload)).not.toContain(privateMessage);
+    expect(JSON.stringify(res.payload)).not.toContain(privateCode);
   });
 
   test.each([null, '', false, '42'])('seek route rejects a non-numeric JSON position %p without calling the engine', async (positionSeconds) => {

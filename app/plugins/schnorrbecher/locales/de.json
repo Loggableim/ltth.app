@@ -1,7 +1,36 @@
 {
   "plugins": {
     "schnorrbecher": {
-      "title": "Schnorrbecher"
+      "title": "Schnorrbecher",
+      "legacy": {
+        "title": "Gemeinsame Legacy-Daten",
+        "status": "Vorhandene gemeinsame Daten werden keinem Profil automatisch zugeordnet.",
+        "previewButton": "Legacy-Übernahme prüfen",
+        "config": "Konfiguration übernehmen",
+        "persistentState": "Persistenten Stand übernehmen (nur im persistenten Modus)",
+        "importButton": "Ausgewählte Daten in dieses Profil übernehmen",
+        "found": "Gemeinsame Legacy-Daten gefunden. Zielprofil: {profile}. Zieldateien: Konfiguration {config}, Zustand {state}. Originale bleiben erhalten.",
+        "activeProfile": "aktives Profil",
+        "yes": "ja",
+        "no": "nein",
+        "available": "verfügbar",
+        "conflict": "Ziel existiert oder Quelle ist ungültig",
+        "missing": "nicht vorhanden",
+        "stateValue": "{value} Coinwert. {note}",
+        "preview": "Konfiguration: {config}. Zustand: {state}.",
+        "selectAtLeastOne": "Wähle mindestens einen importierbaren Bereich aus.",
+        "confirm": "Ausgewählte gemeinsame Legacy-Daten in dieses Profil kopieren? Bestehende Zieldateien bleiben unangetastet; Originale werden nicht verändert.",
+        "complete": "Legacy-Daten übernommen. Originale bleiben erhalten."
+      },
+      "labels": {
+        "status": "Aktueller Status",
+        "subtitle": "TikTok-LIVE Geschenkeglas für OBS Browser Sources",
+        "connection": "Verbindung",
+        "livestream": "Livestream",
+        "totalValue": "Gesamtwert",
+        "physicalIcons": "Physische Icons",
+        "spawnQueue": "Spawn-Warteschlange"
+      }
     }
   }
 }

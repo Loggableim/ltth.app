@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "status": "cpu-jsdom-fixture-passed-static-manifest-pinned-shared-projector-reviewed",
+  "manifest": {
+    "path": "docs/coordination/obs-104-webgpu-weather-control-fixture.json",
+    "sha256": "bdc8656d91fb70a7a19c32aa54c9b7a27ed17eb188f37f3c961f5fca94dbe733",
+    "files": 8,
+    "localeFiles": 4,
+    "bytes": 274572
+  },
+  "testCommand": "cd app; ..\\\\runtime\\\\node\\\\node.exe node_modules\\\\jest\\\\bin\\\\jest.js --runInBand --no-cache --runTestsByPath test/webgpu-weather-control-overlay-lifecycle.test.js",
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 1,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "snapshots": 0,
+    "recordedAt": "2026-10-07T07:53:10.307Z"
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/webgpu-weather-control-overlay-lifecycle.test.js",
+      "sha256": "6e57aa75f231acb280c574f47db1a738434315ac7db7b27ea124022873ab53a1"
+    },
+    {
+      "path": "app/modules/public-overlay-registry.js",
+      "sha256": "70d3c6f123f237f70285027ca56f6ed27480325285ed7059f494a082236c894c"
+    },
+    {
+      "path": "app/modules/public-overlay-payload-projection.js",
+      "sha256": "ff9984481acf5b22862a21c8352698627fd810bdcb71b1f97d1f597924ae2647"
+    }
+  ],
+  "transport": {
+    "origin": "synthetic JSDOM URL only",
+    "requestHandling": "synthetic fetch responses; no TCP listener or live backend",
+    "socketHandling": "in-memory Socket.IO double; production browser bundle pinned by SHA but not executed",
+    "gpuHandling": "navigator.gpu is unavailable and canvas getContext returns null; actual engine remains unsupported"
+  },
+  "evidence": {
+    "entryAndAssets": "Original overlay.html, cinematic-weather-engine.js, weather-framegraph.js, Socket.IO client source hash and all four plugin locale catalogs are pinned",
+    "configLifecycle": "initial overlay-config GET is deduplicated across connect; config-changed replaces stale config and BFCache restoration refreshes it",
+    "publicEvents": "Actual allowlist and final hash-pinned shared public projector handle synthetic trigger, stop, config and gamification events; projected wind/opacity/layer/particleScale reach synthetic engine state. Final compatibility review is recorded separately below.",
+    "cleanup": "BFCache hide stops and restore restarts the loop; final pagehide destroys the engine, disconnects socket, clears handlers and ignores late events",
+    "localeFiles": "de/en/es/fr catalogs are hash-pinned as plugin resources; this renderer does not load them and no translation coverage is claimed"
+  },
+  "notProven": [
+    "real WebGPU device, frame rendering, visual quality, GPU resource behavior, audio or OBS Browser Source",
+    "live plugin/backend producer, database, actual HTTP or Socket.IO transport",
+    "locale-dependent overlay rendering; the entry does not consume the four pinned locale files",
+    "all 104 OBS matrix cases or human screenshot review"
+  ],
+  "sharedSourceCompatibilityReview": {
+    "recordedAt": "2026-10-07T06:29:05.104Z",
+    "scope": "CPU/JSDOM original lifecycle and synthetic public-projector compatibility only; no GPU, live backend, transport, browser or OBS acceptance",
+    "sharedSource": {
+      "path": "app/modules/public-overlay-payload-projection.js",
+      "sha256": "bf61475a476ab106ce4f8d18a94595e3cb27b34a5545875ef28279c7b3b5f446"
+    },
+    "sourceWitnesses": [
+      {
+        "path": "app/test/webgpu-weather-control-overlay-lifecycle.test.js",
+        "sha256": "6e57aa75f231acb280c574f47db1a738434315ac7db7b27ea124022873ab53a1"
+      },
+      {
+        "path": "app/test/weather-public-payload-renderer-fixture.test.js",
+        "sha256": "16b20255ae17751f8ce90cf36986ece865060ac7f9ea166cc7aa6d5ea908afd5"
+      },
+      {
+        "path": "app/test/webgpu-weather-public-projection.test.js",
+        "sha256": "73e96fd299ae04f081d95cc35f8e1861f9a91186edc63e0bb9784bd1d39c0273"
+      }
+    ],
+    "lifecycleRerun": {
+      "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/webgpu-weather-control-overlay-lifecycle.test.js",
+      "exitCode": 0,
+      "testSuitesPassed": 1,
+      "testsPassed": 1,
+      "testsFailed": 0
+    },
+    "compatibilityRerun": {
+      "command": "cd app; ..\\runtime\\node\\node.exe node_modules/jest/bin/jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/weather-public-payload-renderer-fixture.test.js test/webgpu-weather-public-projection.test.js",
+      "exitCode": 0,
+      "testSuitesPassed": 2,
+      "testsPassed": 3,
+      "testsFailed": 0
+    }
+  },
+  "history": [
+    {
+      "kind": "previous-verification-before-final-shared-projector-freeze",
+      "result": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 1,
+        "testsFailed": 0,
+        "snapshots": 0,
+        "recordedAt": "2026-10-07"
+      },
+      "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test\\webgpu-weather-control-overlay-lifecycle.test.js",
+      "sourceWitnesses": [
+        {
+          "path": "app/test/webgpu-weather-control-overlay-lifecycle.test.js",
+          "sha256": "6e57aa75f231acb280c574f47db1a738434315ac7db7b27ea124022873ab53a1"
+        },
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "sha256": "ce94de179543bc839b61bd91abb1b914ad1382a5f6274a0e97d24af3a82c2ef5"
+        },
+        {
+          "path": "app/modules/public-overlay-payload-projection.js",
+          "sha256": "4770968118bef51666280fa7ec3b26c59c4b574364f86d82ade36a3979d7abba"
+        }
+      ]
+    },
+    {
+      "kind": "previous-source-witnesses-before-public-overlay-hardening",
+      "recordedAt": "2026-10-07",
+      "note": "Prior focused renderer result retained; current registry/projector witnesses refreshed after owner-frozen privacy changes and focused regressions passed.",
+      "sourceWitnesses": [
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "sha256": "ce94de179543bc839b61bd91abb1b914ad1382a5f6274a0e97d24af3a82c2ef5"
+        },
+        {
+          "path": "app/modules/public-overlay-payload-projection.js",
+          "sha256": "4770968118bef51666280fa7ec3b26c59c4b574364f86d82ade36a3979d7abba"
+        }
+      ]
+    }
+  ]
+}

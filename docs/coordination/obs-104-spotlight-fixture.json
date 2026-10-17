@@ -1,0 +1,163 @@
+{
+  "runnerContract": {
+    "productProfileOrCredentialData": "excluded",
+    "socketEventsConsumed": [
+      "connect",
+      "disconnect",
+      "lastevent.update.chatter",
+      "lastevent.settings.chatter",
+      "lastevent.session.reset"
+    ],
+    "cleanup": "dispatch non-persisted pagehide, assert socket disconnect, handler removal and no active interval/animation timers, close JSDOM",
+    "driverEvents": [
+      {
+        "event": "lastevent.update.chatter",
+        "negativeCase": "wrong overlaySessionToken is ignored",
+        "payload": {
+          "eventType": "chat",
+          "nickname": "Synthetic Chatter",
+          "overlaySessionToken": "fixture-session"
+        }
+      },
+      {
+        "event": "lastevent.settings.chatter",
+        "negativeCase": "non-chatter route is denied; dynamic image URLs are absent",
+        "payload": {
+          "preloadImages": false,
+          "refreshIntervalSeconds": 0,
+          "showProfilePicture": false,
+          "outAnimationType": "none",
+          "inAnimationType": "none",
+          "usernameEffect": "none",
+          "showUsername": true,
+          "animationSpeed": "fast"
+        }
+      },
+      {
+        "event": "lastevent.session.reset",
+        "negativeCase": "stale session update is ignored",
+        "payload": {
+          "overlaySessionToken": "fixture-session-next"
+        }
+      }
+    ],
+    "transport": "in-process-jsdom-interceptor",
+    "assetGetRoutes": [
+      {
+        "path": "/fonts/exo-2.css",
+        "source": "app/public/fonts/exo-2.css; font files are not requested by JSDOM and no font bytes are pinned"
+      },
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/plugins/spotlight/lib/animations.js",
+        "source": "app/plugins/spotlight/lib/animations.js"
+      },
+      {
+        "path": "/plugins/spotlight/lib/text-effects.js",
+        "source": "app/plugins/spotlight/lib/text-effects.js"
+      },
+      {
+        "path": "/plugins/spotlight/lib/template-renderer.js",
+        "source": "app/plugins/spotlight/lib/template-renderer.js"
+      },
+      {
+        "path": "/plugins/spotlight/overlays/single-overlay.js",
+        "source": "app/plugins/spotlight/overlays/single-overlay.js"
+      },
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)",
+      "/api/lastevent/settings/chatter",
+      "/api/lastevent/last/chatter"
+    ],
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "externalNetwork": "blocked",
+    "listenerStarted": false,
+    "pluginControlProducer": "excluded; runner provides synthetic chatter settings/users and an in-memory socket shim; no Spotlight backend, TikTok producer or database is started"
+  },
+  "schemaVersion": 1,
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "caseCount": 4,
+  "files": [
+    {
+      "bytes": 1432,
+      "path": "app/plugins/spotlight/overlays/chatter.html",
+      "sha256": "6095c949d76e44ac405fae3d73f7eaa96a4f9411e68c865041f5986970bc491d",
+      "role": "renderer-entry"
+    },
+    {
+      "bytes": 8688,
+      "path": "app/plugins/spotlight/overlays/single-overlay.js",
+      "sha256": "ace7eda46fb84c9c85fbd430c3d08ac4c182846604377c82ad50b7eabf465d23",
+      "role": "renderer-script"
+    },
+    {
+      "bytes": 8974,
+      "path": "app/plugins/spotlight/lib/animations.js",
+      "sha256": "992352ef79cdba09a37021947821c71301c64d6ff07b6a017a5b390ef52db016",
+      "role": "renderer-library"
+    },
+    {
+      "bytes": 7832,
+      "path": "app/plugins/spotlight/lib/text-effects.js",
+      "sha256": "73cd87ea25f5cbf1e7479d1072abac7c98eca53a489fb48499306818c21dc08c",
+      "role": "renderer-library"
+    },
+    {
+      "bytes": 28267,
+      "path": "app/plugins/spotlight/lib/template-renderer.js",
+      "sha256": "1ad21e282678f9570da36ed56a994e09830c99dd8c6021f1b80e841e3deb7432",
+      "role": "renderer-library"
+    },
+    {
+      "bytes": 808,
+      "path": "app/public/fonts/exo-2.css",
+      "sha256": "099b9a4e7db8cf8c6afd091e440718c46b4560ae4e326f300705c173ddbd811c",
+      "role": "renderer-font-stylesheet"
+    },
+    {
+      "bytes": 24907,
+      "path": "app/public/js/i18n-client.js",
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "role": "shared-i18n-client"
+    },
+    {
+      "bytes": 155836,
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "role": "browser-socket-client-source"
+    },
+    {
+      "bytes": 9858,
+      "path": "app/plugins/spotlight/locales/de.json",
+      "sha256": "217ee135da5b24bc57100c1ca112927d855accc5691604b3cb16776104f8db6e",
+      "role": "plugin-locale"
+    },
+    {
+      "bytes": 9249,
+      "path": "app/plugins/spotlight/locales/en.json",
+      "sha256": "517ab6fd0ae58c4ecf5b14495b4962b13b6489274f5cc332fc6f22cde359e310",
+      "role": "plugin-locale"
+    },
+    {
+      "bytes": 9962,
+      "path": "app/plugins/spotlight/locales/es.json",
+      "sha256": "6149e3ed680e028c0f5855318e813a5ac7422cdfa9be0d626a583ec71f5ddc82",
+      "role": "plugin-locale"
+    },
+    {
+      "bytes": 10272,
+      "path": "app/plugins/spotlight/locales/fr.json",
+      "sha256": "f2cf04808d8ae69cf7e1b316a1f6b290423f8ffa6f0199f3176297740558067a",
+      "role": "plugin-locale"
+    }
+  ],
+  "fixtureId": "spotlight-chatter-source-fixture-v1"
+}

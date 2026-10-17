@@ -12,6 +12,12 @@ const path = require('path');
 /** Maximum total backup size accepted for import (10 GB). */
 const MAX_BACKUP_SIZE_BYTES = 10 * 1024 * 1024 * 1024;
 
+/** Maximum total size of extracted backup entries (10 GiB). */
+const MAX_BACKUP_UNCOMPRESSED_SIZE_BYTES = 10 * 1024 * 1024 * 1024;
+
+/** Maximum uncompressed size of any one backup entry (2 GiB). */
+const MAX_BACKUP_ENTRY_UNCOMPRESSED_SIZE_BYTES = 2 * 1024 * 1024 * 1024;
+
 /** Maximum number of files in a single backup archive. */
 const MAX_BACKUP_FILES = 10000;
 
@@ -22,7 +28,7 @@ const MAX_BACKUP_FILES = 10000;
  * @returns {{ valid: boolean, error?: string }}
  */
 function validateBackupSize(sizeBytes) {
-    if (typeof sizeBytes !== 'number' || sizeBytes < 0) {
+    if (!Number.isSafeInteger(sizeBytes) || sizeBytes < 0) {
         return { valid: false, error: 'Invalid backup size' };
     }
     if (sizeBytes > MAX_BACKUP_SIZE_BYTES) {
@@ -134,5 +140,7 @@ module.exports = {
     validateBackupPayload,
     sanitisePluginId,
     MAX_BACKUP_SIZE_BYTES,
+    MAX_BACKUP_UNCOMPRESSED_SIZE_BYTES,
+    MAX_BACKUP_ENTRY_UNCOMPRESSED_SIZE_BYTES,
     MAX_BACKUP_FILES
 };

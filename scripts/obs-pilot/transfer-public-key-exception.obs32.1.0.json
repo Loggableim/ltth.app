@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "policyVersion": "obs-public-rsa-internal-test-v1",
+  "sourceVersion": "32.1.0",
+  "sourceManifestSha256": "41e4bed8eb2fe413dfafd032a2708c51c1a0a7488741bd4716511ccd2728f8fa",
+  "obsExecutableSha256": "dda672742960c9e036b06675854e36ebced0f86656a6cfa5a50eea0df5c9c2e0",
+  "scope": "internal-isolated-vm-test-only; no external redistribution or release",
+  "entries": [
+    {
+      "sourcePath": "data/obs-studio/OBSPublicRSAKey.pem",
+      "path": "obs/data/obs-studio/OBSPublicRSAKey.pem",
+      "bytes": 814,
+      "sha256": "8cb9323b3e07c62c5298842aac70bfba50613f0319faa47369c99f176efd6ab2",
+      "pemType": "PUBLIC KEY",
+      "asymmetricKeyType": "rsa",
+      "modulusLengthBits": 4096
+    }
+  ]
+}

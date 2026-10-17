@@ -297,6 +297,58 @@ describe('music-bot combined catalog playback acceptance', () => {
     jest.useRealTimers();
   });
 
+  test('advances to the next queued track once from one registered track-end event', async () => {
+    const api = createApi();
+    const plugin = new MusicBotPlugin(api);
+    const engine = new IntegratedPlaybackEngine();
+    const first = {
+      id: 'advance-first', title: 'First fixture track', artist: 'Fixture Artist', requestedBy: 'alice',
+      provider: 'youtube', providerId: 'advance-first', url: 'https://youtu.be/advance-first', duration: 1
+    };
+    const second = {
+      id: 'advance-second', title: 'Second fixture track', artist: 'Fixture Artist', requestedBy: 'bob',
+      provider: 'youtube', providerId: 'advance-second', url: 'https://youtu.be/advance-second', duration: 1
+    };
+    const queue = [second];
+    plugin.playbackEngine = engine;
+    plugin.queueManager = {
+      addToHistory: jest.fn(),
+      markPlaying: jest.fn(),
+      removeSkipImmunity: jest.fn(),
+      resetVoteSkips: jest.fn(),
+      shiftNext: jest.fn(() => queue.shift() || null),
+      getQueue: jest.fn(() => queue)
+    };
+    plugin.autoDJ = { setPlaybackSeed: jest.fn(), markPlaybackFailed: jest.fn() };
+    plugin._checkBans = jest.fn(() => null);
+    plugin._emitNowPlaying = jest.fn();
+    plugin._emitQueue = jest.fn();
+    plugin._startPlaybackSync = jest.fn();
+    plugin._stopPlaybackSync = jest.fn();
+    plugin._scheduleCrossfadeTransition = jest.fn();
+    plugin._schedulePreCache = jest.fn();
+    plugin._clearCrossfadeTimer = jest.fn();
+    plugin._emitPlaybackStopped = jest.fn();
+    plugin._emitPlaybackAdvancing = jest.fn();
+    plugin._emitRuntimeHealth = jest.fn();
+    plugin._emitError = jest.fn();
+    plugin._playFallbackTrack = jest.fn(async () => null);
+    plugin._maybePlayAutoDJ = jest.fn(async () => null);
+    const trackStarts = jest.fn();
+    engine.on('track-start', trackStarts);
+    plugin._registerPlaybackEvents();
+
+    await engine.play(first);
+    engine.finish('ended');
+    await plugin._pendingTrackAdvance;
+
+    expect(plugin.queueManager.shiftNext).toHaveBeenCalledTimes(1);
+    expect(engine.nowPlaying).toEqual(expect.objectContaining({ id: second.id }));
+    expect(trackStarts.mock.calls.filter(([track]) => track?.id === second.id)).toHaveLength(1);
+    expect(plugin._maybePlayAutoDJ).not.toHaveBeenCalled();
+    api.db.close();
+  });
+
   test('keeps catalog identity on the track emitted by the playback engine', () => {
     const api = { log: jest.fn() };
     const engine = new PlaybackEngine({ crossfadeDuration: 0 }, api);

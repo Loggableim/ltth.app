@@ -736,6 +736,44 @@
       border-radius: 0 0 16px 16px;
     }
 
+    .fallback-confirmation-dialog {
+      width: min(94vw, 560px);
+      max-width: none;
+      max-height: 90vh;
+      margin: auto;
+      padding: 0;
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      background: var(--color-bg-card);
+      color: var(--color-text-primary);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    }
+
+    .fallback-confirmation-dialog::backdrop {
+      background: var(--color-modal-backdrop);
+      backdrop-filter: blur(4px);
+    }
+
+    .fallback-confirmation-dialog .modal-content {
+      width: 100%;
+      max-width: none;
+      max-height: none;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .fallback-confirmation-dialog .modal-body {
+      display: block;
+      padding: 24px 30px;
+      color: var(--color-text-secondary);
+      line-height: 1.5;
+    }
+
+    .fallback-confirmation-dialog .modal-footer {
+      justify-content: flex-end;
+      border-color: var(--color-border);
+    }
+
     /* Tabs */
     .tabs {
       display: flex;
@@ -1309,6 +1347,24 @@
       </div>
     </div>
   </div>
+
+  <dialog id="fallback-confirmation-dialog" class="fallback-confirmation-dialog"
+          aria-labelledby="fallback-confirmation-title"
+          aria-describedby="fallback-confirmation-message">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="fallback-confirmation-title" data-i18n="plugins.clarityhud.runtime.fallback.confirm_title">Confirm fallback API key use</h2>
+      </div>
+      <div class="modal-body" id="fallback-confirmation-message"
+           data-i18n="plugins.clarityhud.runtime.fallback.confirm_prompt">This additional stream will use an LTTH fallback API key. Continue only if you agree.</div>
+      <div class="modal-footer">
+        <button type="button" id="fallback-confirmation-cancel" class="btn btn-secondary" autofocus
+                data-i18n="plugins.clarityhud.runtime.fallback.cancel">Cancel</button>
+        <button type="button" id="fallback-confirmation-confirm" class="btn btn-primary"
+                data-i18n="plugins.clarityhud.runtime.fallback.confirm">Confirm</button>
+      </div>
+    </div>
+  </dialog>
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="/js/tiktok-studio-url.js"></script>

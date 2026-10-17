@@ -106,6 +106,13 @@ function appBundleFunctions() {
 function downloadSourceFunctions() {
   return [
     'Use-OfficialWindowsZipBootstrap',
+    'Get-AppBundleManifestUrl',
+    'Get-AppBundleZipUrl',
+    'Assert-ReleaseArtifactManifest',
+    'Assert-AppBundleReleaseManifest',
+    'Assert-ReleaseArtifactFile',
+    'Read-AppBundleZipJson',
+    'Assert-PublicAppBundleArchive',
     'Test-AppRootDirectory',
     'Test-AppDirectoryContainsPersistentData',
     'Assert-AppDirectorySafeForReplacement',
@@ -250,7 +257,9 @@ function runInstallLauncher({
   remoteManifest,
   downloadSource,
   manifestFails = false,
-  downloadFails = false
+  downloadFails = false,
+  installMode = 'latest',
+  requestedVersion = 'latest'
 }) {
   const manifestScript = manifestFails
     ? 'function Invoke-RestMethod { throw "network unavailable" }'
@@ -270,8 +279,8 @@ function runInstallLauncher({
     "$LTTHRepoOwner = 'Loggableim'",
     "$LTTHRepoName = 'ltth.app'",
     "$LTTHRepoBranch = 'main'",
-    "$script:LTTHInstallMode = 'latest'",
-    "$script:LTTHVersion = 'latest'",
+    `$script:LTTHInstallMode = '${installMode}'`,
+    `$script:LTTHVersion = '${requestedVersion}'`,
     "$LTTHQuiet = '1'",
     'function Log { param($msg) }',
     'function Ok { param($msg) }',
@@ -351,15 +360,50 @@ describe('Official launcher release contract', () => {
         "$LTTHRepoBranch = 'main'",
         "$script:LTTHInstallMode = 'latest'",
         "$script:LTTHVersion = 'latest'",
-        '[pscustomobject]@{ manifest = Get-LauncherReleaseManifestUrl; launcher = Get-LauncherDownloadUrl -ReleaseTag "v1.4.1" } | ConvertTo-Json -Compress'
+        '[pscustomobject]@{ manifest = Get-LauncherReleaseManifestUrl; launcher = Get-LauncherDownloadUrl -ReleaseTag "v1.4.1"; launcherTag = Get-LauncherDownloadUrl -ReleaseTag "launcher-v1.4.2" } | ConvertTo-Json -Compress'
       ].join('; ')
     );
 
     expect(result.status).toBe(0);
     expect(JSON.parse(result.stdout)).toEqual({
       manifest: 'https://github.com/Loggableim/ltth.app/releases/latest/download/launcher-release.json',
-      launcher: 'https://github.com/Loggableim/ltth.app/releases/download/v1.4.1/launcher.exe'
+      launcher: 'https://github.com/Loggableim/ltth.app/releases/download/v1.4.1/launcher.exe',
+      launcherTag: 'https://github.com/Loggableim/ltth.app/releases/download/launcher-v1.4.2/launcher.exe'
     });
+  });
+
+  test.each([
+    ['latest', 'latest', 'launcher-v1.4.1'],
+    ['pinned', '1.4.1', 'launcher-v1.4.1'],
+    ['latest', 'latest', 'launcher-beta-v1.4.1'],
+    ['pinned', '1.4.1', 'launcher-beta-v1.4.1']
+  ])('rejects %s routing for requested version %s when the manifest tag is %s', (installMode, requestedVersion, tag) => {
+    if (!hasWindowsPowerShell()) return;
+    const fixtureDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-launcher-wrong-release-tag-'));
+    try {
+      const sourcePath = path.join(fixtureDir, 'release-launcher.exe');
+      fs.writeFileSync(sourcePath, Buffer.from('synthetic-wrong-tag-launcher'));
+      const result = runInstallLauncher({
+        tempDir: fixtureDir,
+        remoteManifest: {
+          ...validManifest,
+          tag,
+          bytes: fs.statSync(sourcePath).size,
+          sha256: sha256Buffer(fs.readFileSync(sourcePath))
+        },
+        downloadSource: sourcePath,
+        installMode,
+        requestedVersion
+      });
+
+      expect(result.status).toBe(0);
+      const state = JSON.parse(result.stdout);
+      expect(state.result).toBeNull();
+      expect(state.installed).toBeNull();
+      expect(state.manifestExists).toBe(false);
+    } finally {
+      fs.rmSync(fixtureDir, { recursive: true, force: true });
+    }
   });
 
   test('keeps branch overrides on the explicit raw compatibility path', () => {
@@ -394,6 +438,16 @@ describe('Official launcher release contract', () => {
     const accepted = invokeManifestValidation(validManifest);
     expect(accepted.status).toBe(0);
     expect(JSON.parse(accepted.stdout)).toEqual(validManifest);
+
+    const launcherTagManifest = { ...validManifest, tag: 'launcher-v1.4.1' };
+    const acceptedLauncherTag = invokeManifestValidation(launcherTagManifest);
+    expect(acceptedLauncherTag.status).toBe(0);
+    expect(JSON.parse(acceptedLauncherTag.stdout)).toEqual(launcherTagManifest);
+
+    const betaLauncherTagManifest = { ...validManifest, tag: 'launcher-beta-v1.4.1' };
+    const acceptedBetaLauncherTag = invokeManifestValidation(betaLauncherTagManifest);
+    expect(acceptedBetaLauncherTag.status).toBe(0);
+    expect(JSON.parse(acceptedBetaLauncherTag.stdout)).toEqual(betaLauncherTagManifest);
 
     const invalidCases = [
       [{ ...validManifest, schema: 2 }, 'schema'],
@@ -453,6 +507,16 @@ describe('Verified launcher installation', () => {
     expect(Buffer.from(installed.installed, 'base64')).toEqual(newLauncher);
     expect(installed.result).toBe(path.join(tempDir, 'launcher.exe'));
     expect(installed.manifestExists).toBe(true);
+
+    const pinned = runInstallLauncher({
+      tempDir,
+      remoteManifest: manifest,
+      downloadSource: sourcePath,
+      installMode: 'pinned',
+      requestedVersion: '1.4.1'
+    });
+    expect(pinned.status).toBe(0);
+    expect(JSON.parse(pinned.stdout).result).toBe(path.join(tempDir, 'launcher.exe'));
   });
 
   test('never replaces an existing launcher with bytes that fail the release hash', () => {
@@ -677,6 +741,22 @@ describe('Verified Windows app ZIP bootstrap', () => {
     expect(state.markersUnchanged).toBe(true);
     expect(state.backupCount).toBe(0);
     expect(fs.readFileSync(markerPath, 'utf8')).toBe('synthetic-race-guard');
+  });
+
+  test('fails closed when official latest ZIP metadata is unavailable instead of switching to mutable branch source', () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-installer-no-latest-source-fallback-'));
+    const result = runDownloadSource({ tempDir, markerPaths: [] });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.error).toContain('kein sicherer GitHub-Latest-Source-Fallback');
+    expect(state.manifestCalls).toBe(1);
+    expect(state.downloadCalls).toBe(0);
+    expect(state.expandCalls).toBe(0);
+    expect(state.gitFallbackCalls).toBe(0);
+    expect(state.gitReplacementCalls).toBe(0);
+    expect(state.appRootValid).toBe(false);
   });
 
   test('blocks direct ZIP repair before the sidecar when app-local state exists', () => {

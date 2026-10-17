@@ -34,7 +34,8 @@ function createManager(overrides = {}) {
   const manager = new NetworkManager(createDb(), {
     spawnImpl,
     cloudflaredBinaryManager: binaryManager,
-    overlayTunnelTimeoutMs: overrides.overlayTunnelTimeoutMs || 60_000
+    overlayTunnelTimeoutMs: overrides.overlayTunnelTimeoutMs || 60_000,
+    overlayTunnelKillTimeoutMs: overrides.overlayTunnelKillTimeoutMs || 5_000
   });
   return { manager, child, spawnImpl, binaryManager };
 }
@@ -72,6 +73,50 @@ describe('NetworkManager overlay Quick Tunnel', () => {
         stdio: ['ignore', 'pipe', 'pipe']
       }
     );
+  });
+
+  test('fails cleanly when spawning cloudflared throws synchronously', async () => {
+    const spawnImpl = jest.fn(() => { throw new Error('synthetic spawn failure'); });
+    const { manager } = createManager({ spawnImpl });
+
+    await expect(manager.ensureOverlayQuickTunnel(3000)).rejects.toMatchObject({
+      code: 'OVERLAY_TUNNEL_START_FAILED'
+    });
+    expect(manager.overlayTunnelProcess).toBeNull();
+    expect(manager.overlayTunnelStarting).toBeNull();
+    expect(manager.overlayTunnelURL).toBeNull();
+  });
+
+  test('handles a child process error and clears its force-kill timer on close', async () => {
+    const { manager, child } = createManager({ overlayTunnelKillTimeoutMs: 250 });
+    const resultPromise = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    await Promise.resolve();
+    child.emit('error', new Error('synthetic child error'));
+
+    await expect(resultPromise).rejects.toMatchObject({
+      code: 'OVERLAY_TUNNEL_START_FAILED'
+    });
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+    expect(manager.overlayTunnelProcess).toBeNull();
+    child.emit('close', -1);
+  });
+
+  test('fails cleanly when cloudflared exits before publishing a URL', async () => {
+    const { manager, child } = createManager();
+    const resultPromise = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    await Promise.resolve();
+    child.exitCode = 1;
+    child.emit('exit', 1);
+
+    await expect(resultPromise).rejects.toMatchObject({
+      code: 'OVERLAY_TUNNEL_START_FAILED'
+    });
+    expect(child.kill).not.toHaveBeenCalled();
+    expect(manager.overlayTunnelProcess).toBeNull();
+    expect(manager.overlayTunnelStarting).toBeNull();
+    expect(manager.overlayTunnelURL).toBeNull();
   });
 
   test('reuses one active process for later ensure calls', async () => {
@@ -122,7 +167,7 @@ describe('NetworkManager overlay Quick Tunnel', () => {
 
   test('times out after 60 seconds, kills the child, and leaves retryable state', async () => {
     jest.useFakeTimers();
-    const { manager, child } = createManager();
+    const { manager, child } = createManager({ overlayTunnelKillTimeoutMs: 250 });
     const resultPromise = manager.ensureOverlayQuickTunnel(3000);
     await Promise.resolve();
     await Promise.resolve();
@@ -136,6 +181,10 @@ describe('NetworkManager overlay Quick Tunnel', () => {
     expect(manager.overlayTunnelProcess).toBeNull();
     expect(manager.overlayTunnelStarting).toBeNull();
     expect(manager.overlayTunnelLastError).toBe('Quick Tunnel start timed out');
+
+    jest.advanceTimersByTime(250);
+    expect(child.kill).toHaveBeenCalledTimes(2);
+    expect(child.kill).toHaveBeenLastCalledWith('SIGKILL');
   });
 
   test('clears active state when cloudflared exits after URL discovery', async () => {
@@ -168,6 +217,68 @@ describe('NetworkManager overlay Quick Tunnel', () => {
     expect(manualChild.kill).not.toHaveBeenCalled();
     expect(manager.tunnelURL).toBe('https://manual.example.com');
     expect(manager.overlayTunnelURL).toBeNull();
+    child.exitCode = 0;
+    child.emit('exit', 0);
+  });
+
+  test('escalates overlay stop to SIGKILL when SIGTERM does not exit the child', async () => {
+    jest.useFakeTimers();
+    const { manager, child } = createManager({ overlayTunnelKillTimeoutMs: 250 });
+    const resultPromise = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    child.stdout.write('https://stubborn-host.trycloudflare.com\n');
+    await resultPromise;
+
+    manager.stopOverlayQuickTunnel();
+    expect(child.kill).toHaveBeenCalledTimes(1);
+    expect(child.kill).toHaveBeenLastCalledWith('SIGTERM');
+    jest.advanceTimersByTime(250);
+    expect(child.kill).toHaveBeenCalledTimes(2);
+    expect(child.kill).toHaveBeenLastCalledWith('SIGKILL');
+  });
+
+  test('cancels force-kill escalation when the stopped child exits', async () => {
+    jest.useFakeTimers();
+    const { manager, child } = createManager({ overlayTunnelKillTimeoutMs: 250 });
+    const resultPromise = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    child.stdout.write('https://clean-stop.trycloudflare.com\n');
+    await resultPromise;
+
+    manager.stopOverlayQuickTunnel();
+    child.exitCode = 0;
+    child.emit('exit', 0);
+    jest.advanceTimersByTime(250);
+
+    expect(child.kill).toHaveBeenCalledTimes(1);
+    expect(child.kill).toHaveBeenLastCalledWith('SIGTERM');
+  });
+
+  test('late exit from a stopped tunnel cannot clear a newer tunnel', async () => {
+    const oldChild = createChildProcess();
+    const newChild = createChildProcess();
+    const spawnImpl = jest.fn()
+      .mockReturnValueOnce(oldChild)
+      .mockReturnValueOnce(newChild);
+    const { manager } = createManager({ spawnImpl });
+
+    const oldStart = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    oldChild.stderr.write('https://old-host.trycloudflare.com\n');
+    await oldStart;
+    manager.stopOverlayQuickTunnel();
+
+    const newStart = manager.ensureOverlayQuickTunnel(3000);
+    await Promise.resolve();
+    newChild.stderr.write('https://new-host.trycloudflare.com\n');
+    await newStart;
+    oldChild.exitCode = 0;
+    oldChild.emit('exit', 0);
+
+    expect(manager.overlayTunnelProcess).toBe(newChild);
+    expect(manager.overlayTunnelURL).toBe('https://new-host.trycloudflare.com');
+    newChild.exitCode = 0;
+    newChild.emit('exit', 0);
   });
 
   test('shutdown stops both manual and overlay processes', async () => {
@@ -184,6 +295,8 @@ describe('NetworkManager overlay Quick Tunnel', () => {
 
     expect(child.kill).toHaveBeenCalledWith('SIGTERM');
     expect(manualChild.kill).toHaveBeenCalledWith('SIGTERM');
+    child.exitCode = 0;
+    child.emit('exit', 0);
   });
 
   test('shutdown cancels an in-flight overlay start and rejects late publication', async () => {

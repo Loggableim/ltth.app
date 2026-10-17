@@ -66,6 +66,9 @@ class PlaybackController extends EventEmitter {
     this._timedDuckUntil = 0;
     this._heartbeatPromise = null;
     this._processReconcilePromise = null;
+    this._shutdownError = null;
+    this._shutdownPromise = null;
+    this._cleanupPendingSlots = new Map();
     this._lastProcessCleanup = { found: [], killed: [], remaining: [] };
     this._heartbeatState = {
       windowStartedAt: null,
@@ -135,6 +138,10 @@ class PlaybackController extends EventEmitter {
     this._liveSlots().forEach((slot) => this._suppressTerminalForSlot(slot));
     this._abortActiveTransition('stop');
     return this._enqueueIntent('stop', async () => {
+      if (this._cleanupPendingSlots.size > 0) {
+        const cleanupPending = [...this._cleanupPendingSlots.values()];
+        await Promise.all(cleanupPending.map((pendingSlot) => this._retireSlot(pendingSlot)));
+      }
       if (interruptedTransition) {
         await this._terminateAllSlots();
       } else {
@@ -397,16 +404,45 @@ class PlaybackController extends EventEmitter {
     if (this.lifecycle === 'destroyed') {
       return Promise.resolve();
     }
+    if (this._shutdownPromise) return this._shutdownPromise;
+    // A rejected shutdown stays fail-closed until the same owner is explicitly
+    // asked to retry. Keep the error for diagnostics, but do not make it sticky.
+    this._shutdownError = null;
     this.lifecycle = 'destroying';
     this._abortActiveTransition('shutdown');
-    return this._enqueueIntent('shutdown', async () => {
-      // Let each owned slot finish its acknowledged IPC quit before any
-      // requested application-wide orphan reconciliation.
-      await this._terminateAllSlots();
-      if (reconcileOrphans) await this._cleanupMarkedProcesses();
-      this.lifecycle = 'destroyed';
-      this.transportState = 'idle';
+    const operation = this._enqueueIntent('shutdown', async () => {
+      try {
+        // Let each owned slot finish its acknowledged IPC quit before any
+        // requested application-wide orphan reconciliation.
+        await this._terminateAllSlots();
+        if (reconcileOrphans) {
+          const cleanup = await this._cleanupMarkedProcesses();
+          if (cleanup?.error || !Array.isArray(cleanup?.remaining) || cleanup.remaining.length > 0) {
+            const error = new Error('Marked Soundbot MPV cleanup did not confirm that every process exited');
+            error.code = 'SOUNDBOT_PROCESS_CLEANUP_INCOMPLETE';
+            throw error;
+          }
+        }
+        this.lifecycle = 'destroyed';
+        this.transportState = 'idle';
+      } catch (error) {
+        this._shutdownError = error;
+        throw error;
+      }
     });
+    this._shutdownPromise = operation.then(
+      result => {
+        this._shutdownPromise = null;
+        this._shutdownError = null;
+        return result;
+      },
+      error => {
+        this._shutdownPromise = null;
+        this._shutdownError = error;
+        throw error;
+      }
+    );
+    return this._shutdownPromise;
   }
 
   resetPlayer({ remainLocked = this.safetyLock } = {}) {
@@ -747,6 +783,7 @@ class PlaybackController extends EventEmitter {
       state: 'idle',
       retired: false,
       retirePromise: null,
+      shutdownOperation: null,
       crashed: false,
       lastError: null,
       positionSeconds: 0,
@@ -973,15 +1010,23 @@ class PlaybackController extends EventEmitter {
 
   async _retireSlot(slot) {
     if (!slot) return;
-    if (slot.retirePromise) return slot.retirePromise;
+    if (slot.retirePromise) {
+      if (slot.state !== 'retire-failed') return slot.retirePromise;
+      slot.retirePromise = null;
+    }
     slot.retired = true;
     slot.state = 'retiring';
     if (this._slots[slot.name] === slot) {
       this._slots[slot.name] = null;
     }
-    const shutdown = Promise.resolve().then(() => slot.engine.shutdown?.());
+    const shutdown = slot.shutdownOperation || Promise.resolve().then(() => slot.engine.shutdown?.());
+    slot.shutdownOperation = shutdown;
+    shutdown.then(
+      () => { if (slot.shutdownOperation === shutdown) slot.shutdownOperation = null; },
+      () => { if (slot.shutdownOperation === shutdown) slot.shutdownOperation = null; }
+    );
     shutdown.catch(() => {});
-    slot.retirePromise = new Promise((resolve) => {
+    slot.retirePromise = new Promise((resolve, reject) => {
       let settled = false;
       const finish = (error = null) => {
         if (settled) return;
@@ -990,8 +1035,13 @@ class PlaybackController extends EventEmitter {
         if (error) {
           slot.lastError = error?.message || String(error);
           this._recordError(error, slot.transitionGeneration);
+          slot.state = 'retire-failed';
+          this._cleanupPendingSlots.set(slot.name, slot);
+          reject(error);
+          return;
         }
         slot.state = 'retired';
+        this._cleanupPendingSlots.delete(slot.name);
         resolve();
       };
       const timeout = this._timing.setTimeout(() => {
@@ -1003,7 +1053,9 @@ class PlaybackController extends EventEmitter {
   }
 
   async _terminateAllSlots() {
-    const slots = this._liveSlots();
+    const slotsByName = new Map(this._liveSlots().map(slot => [slot.name, slot]));
+    for (const [name, slot] of this._cleanupPendingSlots) slotsByName.set(name, slot);
+    const slots = [...slotsByName.values()];
     await Promise.all(slots.map((slot) => this._retireSlot(slot)));
     this._crossfade = null;
     this.activeSlot = null;

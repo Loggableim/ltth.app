@@ -245,8 +245,8 @@ class AnimationController {
   }
 
   /**
-   * Apply analysed dashboard audio intensity with a small hysteresis band so
-   * speech frames do not visibly flicker around one threshold.
+   * Apply analysed dashboard audio intensity with calibrated hysteresis bands
+   * and deduplicate socket frame emissions so sprites do not jitter or emit redundantly.
    */
   setMouthIntensity(userId, playbackId, level) {
     const animation = this.activeAnimations.get(userId);
@@ -260,24 +260,29 @@ class AnimationController {
     if (animation.fallbackMouthTimer) {
       clearInterval(animation.fallbackMouthTimer);
       animation.fallbackMouthTimer = null;
+      animation.mouthFrame = null;
     }
 
     const intensity = Math.max(0, Math.min(1, Number(level)));
     const lastFrame = animation.mouthFrame || 'speak_closed';
     let frame = lastFrame;
     if (lastFrame === 'speak_open') {
-      frame = intensity < 0.40 ? 'speak_mid' : 'speak_open';
+      frame = intensity < 0.38 ? 'speak_mid' : 'speak_open';
     } else if (lastFrame === 'speak_mid') {
-      frame = intensity >= 0.65 ? 'speak_open' : (intensity < 0.16 ? 'speak_closed' : 'speak_mid');
+      frame = intensity >= 0.55 ? 'speak_open' : (intensity < 0.14 ? 'speak_closed' : 'speak_mid');
     } else {
-      frame = intensity >= 0.65 ? 'speak_open' : (intensity >= 0.32 ? 'speak_mid' : 'speak_closed');
+      frame = intensity >= 0.55 ? 'speak_open' : (intensity >= 0.26 ? 'speak_mid' : 'speak_closed');
     }
+
+    const frameChanged = animation.mouthFrame !== frame;
     animation.mouthFrame = frame;
-    this.io.emit('talkingheads:animation:frame', {
-      userId,
-      frame,
-      playbackId: animation.playbackId
-    });
+    if (frameChanged) {
+      this.io.emit('talkingheads:animation:frame', {
+        userId,
+        frame,
+        playbackId: animation.playbackId
+      });
+    }
     return true;
   }
 

@@ -32,7 +32,8 @@ describe('Advanced Timer UI i18n', () => {
       path.join(repoRoot, 'app', 'plugins', pluginId, 'overlay', 'overlay.js')
     ].map((filePath) => fs.readFileSync(filePath, 'utf8')).join('\n');
     const keys = [...new Set([...sources.matchAll(/plugins\.advanced-timer\.[\w.-]+/g)]
-      .map((match) => match[0]))];
+      .map((match) => match[0])
+      .filter((key) => !key.endsWith('.')))];
     const localePath = path.join(repoRoot, 'app', 'plugins', pluginId, 'locales', `${locale}.json`);
     const values = flattenTranslations(JSON.parse(fs.readFileSync(localePath, 'utf8')));
 

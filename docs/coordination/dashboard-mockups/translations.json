@@ -1,0 +1,434 @@
+{
+  "Übersicht": {
+    "de": "Übersicht",
+    "en": "Overview",
+    "es": "Resumen",
+    "fr": "Vue d’ensemble"
+  },
+  "Cockpit": {
+    "de": "Cockpit",
+    "en": "Cockpit",
+    "es": "Cabina",
+    "fr": "Cockpit"
+  },
+  "Studio": {
+    "de": "Studio",
+    "en": "Studio",
+    "es": "Estudio",
+    "fr": "Studio"
+  },
+  "Creator": {
+    "de": "Creator",
+    "en": "Creator",
+    "es": "Creador",
+    "fr": "Créateur"
+  },
+  "Gaming": {
+    "de": "Gaming",
+    "en": "Gaming",
+    "es": "Videojuegos",
+    "fr": "Jeux vidéo"
+  },
+  "Just Chatting": {
+    "de": "Just Chatting",
+    "en": "Just Chatting",
+    "es": "Conversación",
+    "fr": "Discussion"
+  },
+  "LIVE WORKSPACE /": {
+    "de": "LIVE WORKSPACE /",
+    "en": "LIVE WORKSPACE /",
+    "es": "ESPACIO EN DIRECTO /",
+    "fr": "ESPACE EN DIRECT /"
+  },
+  "Dein Stream auf einen Blick": {
+    "de": "Dein Stream auf einen Blick",
+    "en": "Your stream at a glance",
+    "es": "Tu directo de un vistazo",
+    "fr": "Votre direct en un coup d’œil"
+  },
+  "Zuschauer": {
+    "de": "Zuschauer",
+    "en": "Viewers",
+    "es": "Espectadores",
+    "fr": "Spectateurs"
+  },
+  "Likes": {
+    "de": "Likes",
+    "en": "Likes",
+    "es": "Me gusta",
+    "fr": "J’aime"
+  },
+  "Münzen": {
+    "de": "Münzen",
+    "en": "Coins",
+    "es": "Monedas",
+    "fr": "Pièces"
+  },
+  "Diese Session": {
+    "de": "Diese Session",
+    "en": "This session",
+    "es": "Esta sesión",
+    "fr": "Cette session"
+  },
+  "Neue Follower": {
+    "de": "Neue Follower",
+    "en": "New followers",
+    "es": "Nuevos seguidores",
+    "fr": "Nouveaux abonnés"
+  },
+  "Live-Steuerung": {
+    "de": "Live-Steuerung",
+    "en": "Live controls",
+    "es": "Controles del directo",
+    "fr": "Commandes du direct"
+  },
+  "OBS · bereit": {
+    "de": "OBS · bereit",
+    "en": "OBS · ready",
+    "es": "OBS · listo",
+    "fr": "OBS · prêt"
+  },
+  "TTS pausieren": {
+    "de": "TTS pausieren",
+    "en": "Pause TTS",
+    "es": "Pausar síntesis de voz",
+    "fr": "Mettre la synthèse vocale en pause"
+  },
+  "TTS fortsetzen": {
+    "de": "TTS fortsetzen",
+    "en": "Resume TTS",
+    "es": "Reanudar síntesis de voz",
+    "fr": "Reprendre la synthèse vocale"
+  },
+  "Soundboard": {
+    "de": "Soundboard",
+    "en": "Soundboard",
+    "es": "Panel de sonidos",
+    "fr": "Table de sons"
+  },
+  "Overlays": {
+    "de": "Overlays",
+    "en": "Overlays",
+    "es": "Superposiciones",
+    "fr": "Superpositions"
+  },
+  "TTS-Warteschlange": {
+    "de": "TTS-Warteschlange",
+    "en": "TTS queue",
+    "es": "Cola de síntesis de voz",
+    "fr": "File de synthèse vocale"
+  },
+  "3 Nachrichten": {
+    "de": "3 Nachrichten",
+    "en": "3 messages",
+    "es": "3 mensajes",
+    "fr": "3 messages"
+  },
+  "Automationen": {
+    "de": "Automationen",
+    "en": "Automations",
+    "es": "Automatizaciones",
+    "fr": "Automatisations"
+  },
+  "8 aktiv": {
+    "de": "8 aktiv",
+    "en": "8 active",
+    "es": "8 activas",
+    "fr": "8 actives"
+  },
+  "Verbindung & Diagnose": {
+    "de": "Verbindung & Diagnose",
+    "en": "Connection & diagnostics",
+    "es": "Conexión y diagnóstico",
+    "fr": "Connexion et diagnostic"
+  },
+  "Demo: @creator · Ereignisse vor 2 Sekunden. Zugangsdaten liegen außerhalb dieser Vorschau.": {
+    "de": "Demo: @creator · Ereignisse vor 2 Sekunden. Zugangsdaten liegen außerhalb dieser Vorschau.",
+    "en": "Demo: @creator · Events 2 seconds ago. Credentials are outside this preview.",
+    "es": "Demo: @creator · Eventos hace 2 segundos. Las credenciales quedan fuera de esta vista previa.",
+    "fr": "Démo : @creator · Événements il y a 2 secondes. Les identifiants ne font pas partie de cet aperçu."
+  },
+  "Letzte Aktivitäten": {
+    "de": "Letzte Aktivitäten",
+    "en": "Recent activity",
+    "es": "Actividad reciente",
+    "fr": "Activité récente"
+  },
+  "✦ Mia · Rose × 5": {
+    "de": "✦ Mia · Rose × 5",
+    "en": "✦ Mia · Rose × 5",
+    "es": "✦ Mia · Rosa × 5",
+    "fr": "✦ Mia · Rose × 5"
+  },
+  "♡ Leon · Neuer Follower": {
+    "de": "♡ Leon · Neuer Follower",
+    "en": "♡ Leon · New follower",
+    "es": "♡ Leon · Nuevo seguidor",
+    "fr": "♡ Leon · Nouvel abonné"
+  },
+  "↗ Alex · Stream geteilt": {
+    "de": "↗ Alex · Stream geteilt",
+    "en": "↗ Alex · Shared the stream",
+    "es": "↗ Alex · Directo compartido",
+    "fr": "↗ Alex · Direct partagé"
+  },
+  "Tag / Nacht": {
+    "de": "Tag / Nacht",
+    "en": "Day / Night",
+    "es": "Día / Noche",
+    "fr": "Jour / Nuit"
+  },
+  "UI-KONZEPT · Ausschließlich fiktive Daten und lokale Simulationen": {
+    "de": "UI-KONZEPT · Ausschließlich fiktive Daten und lokale Simulationen",
+    "en": "UI CONCEPT · Fictional data and local simulations only",
+    "es": "CONCEPTO DE INTERFAZ · Solo datos ficticios y simulaciones locales",
+    "fr": "CONCEPT D’INTERFACE · Données fictives et simulations locales uniquement"
+  },
+  "Demo-Zustand": {
+    "de": "Demo-Zustand",
+    "en": "Demo state",
+    "es": "Estado de demostración",
+    "fr": "État de démonstration"
+  },
+  "Verbunden": {
+    "de": "Verbunden",
+    "en": "Connected",
+    "es": "Conectado",
+    "fr": "Connecté"
+  },
+  "Getrennt": {
+    "de": "Getrennt",
+    "en": "Disconnected",
+    "es": "Desconectado",
+    "fr": "Déconnecté"
+  },
+  "Lädt": {
+    "de": "Lädt",
+    "en": "Loading",
+    "es": "Cargando",
+    "fr": "Chargement"
+  },
+  "Fehler": {
+    "de": "Fehler",
+    "en": "Error",
+    "es": "Error",
+    "fr": "Erreur"
+  },
+  "Profil, Sprache, Design und Zustand sind lokal bedienbar. Modulaktionen zeigen ausschließlich Vorschaufeedback.": {
+    "de": "Profil, Sprache, Design und Zustand sind lokal bedienbar. Modulaktionen zeigen ausschließlich Vorschaufeedback.",
+    "en": "Profile, language, theme and state work locally. Module actions only show preview feedback.",
+    "es": "El perfil, el idioma, el tema y el estado funcionan localmente. Las acciones de los módulos solo muestran mensajes de vista previa.",
+    "fr": "Le profil, la langue, le thème et l’état fonctionnent localement. Les actions des modules affichent uniquement des messages d’aperçu."
+  },
+  "Willkommen in deinem Studio": {
+    "de": "Willkommen in deinem Studio",
+    "en": "Welcome to your studio",
+    "es": "Bienvenido a tu estudio",
+    "fr": "Bienvenue dans votre studio"
+  },
+  "Alles bereit für deinen nächsten Moment.": {
+    "de": "Alles bereit für deinen nächsten Moment.",
+    "en": "Everything ready for your next moment.",
+    "es": "Todo listo para tu próximo momento.",
+    "fr": "Tout est prêt pour votre prochain moment."
+  },
+  "Audio & Sprache": {
+    "de": "Audio & Sprache",
+    "en": "Audio & voice",
+    "es": "Audio y voz",
+    "fr": "Audio et voix"
+  },
+  "TTS aktiv · 3 Nachrichten warten": {
+    "de": "TTS aktiv · 3 Nachrichten warten",
+    "en": "TTS active · 3 messages waiting",
+    "es": "Síntesis de voz activa · 3 mensajes en espera",
+    "fr": "Synthèse vocale active · 3 messages en attente"
+  },
+  "Overlay Studio": {
+    "de": "Overlay Studio",
+    "en": "Overlay studio",
+    "es": "Estudio de superposiciones",
+    "fr": "Studio de superpositions"
+  },
+  "3 Szenen bereit · lokal": {
+    "de": "3 Szenen bereit · lokal",
+    "en": "3 scenes ready · local",
+    "es": "3 escenas listas · local",
+    "fr": "3 scènes prêtes · local"
+  },
+  "Szenen ansehen": {
+    "de": "Szenen ansehen",
+    "en": "View scenes",
+    "es": "Ver escenas",
+    "fr": "Voir les scènes"
+  },
+  "8 aktiv · zuletzt vor 2 Minuten": {
+    "de": "8 aktiv · zuletzt vor 2 Minuten",
+    "en": "8 active · last run 2 minutes ago",
+    "es": "8 activas · última ejecución hace 2 minutos",
+    "fr": "8 actives · dernière exécution il y a 2 minutes"
+  },
+  "Abläufe öffnen": {
+    "de": "Abläufe öffnen",
+    "en": "Open flows",
+    "es": "Abrir flujos",
+    "fr": "Ouvrir les flux"
+  },
+  "Community-Ziel": {
+    "de": "Community-Ziel",
+    "en": "Community goal",
+    "es": "Objetivo de la comunidad",
+    "fr": "Objectif de la communauté"
+  },
+  "Noch 660 bis zur nächsten Challenge.": {
+    "de": "Noch 660 bis zur nächsten Challenge.",
+    "en": "660 to go until the next challenge.",
+    "es": "Faltan 660 para el próximo reto.",
+    "fr": "Encore 660 avant le prochain défi."
+  },
+  "Bereit-Check": {
+    "de": "Bereit-Check",
+    "en": "Ready check",
+    "es": "Comprobación de preparación",
+    "fr": "Vérification de préparation"
+  },
+  "✓ OBS erreichbar": {
+    "de": "✓ OBS erreichbar",
+    "en": "✓ OBS reachable",
+    "es": "✓ OBS accesible",
+    "fr": "✓ OBS accessible"
+  },
+  "✓ Overlays bereit": {
+    "de": "✓ Overlays bereit",
+    "en": "✓ Overlays ready",
+    "es": "✓ Superposiciones listas",
+    "fr": "✓ Superpositions prêtes"
+  },
+  "○ Soundboard pausiert": {
+    "de": "○ Soundboard pausiert",
+    "en": "○ Soundboard paused",
+    "es": "○ Panel de sonidos pausado",
+    "fr": "○ Table de sons en pause"
+  },
+  "Dein Moment.": {
+    "de": "Dein Moment.",
+    "en": "Your moment.",
+    "es": "Tu momento.",
+    "fr": "Votre moment."
+  },
+  "Deine Community.": {
+    "de": "Deine Community.",
+    "en": "Your community.",
+    "es": "Tu comunidad.",
+    "fr": "Votre communauté."
+  },
+  "Just chatting mit @creator": {
+    "de": "Just chatting mit @creator",
+    "en": "Just chatting with @creator",
+    "es": "Conversación con @creator",
+    "fr": "Discussion avec @creator"
+  },
+  "Nächste TTS · Mia: „Hallo zusammen!“": {
+    "de": "Nächste TTS · Mia: „Hallo zusammen!“",
+    "en": "Next TTS · Mia: “Hello everyone!”",
+    "es": "Próxima voz · Mia: «¡Hola a todos!»",
+    "fr": "Prochaine voix · Mia : « Bonjour à tous ! »"
+  },
+  "ON AIR · 01:24:08": {
+    "de": "ON AIR · 01:24:08",
+    "en": "ON AIR · 01:24:08",
+    "es": "EN DIRECTO · 01:24:08",
+    "fr": "EN DIRECT · 01:24:08"
+  },
+  "Community-Puls": {
+    "de": "Community-Puls",
+    "en": "Community pulse",
+    "es": "Pulso de la comunidad",
+    "fr": "Pouls de la communauté"
+  },
+  "Zuschauer in den letzten 10 Minuten · Beispieldaten": {
+    "de": "Zuschauer in den letzten 10 Minuten · Beispieldaten",
+    "en": "Viewers over the last 10 minutes · Sample data",
+    "es": "Espectadores en los últimos 10 minutos · Datos de ejemplo",
+    "fr": "Spectateurs au cours des 10 dernières minutes · Données d’exemple"
+  },
+  "Zum Inhalt": {
+    "de": "Zum Inhalt",
+    "en": "Skip to content",
+    "es": "Saltar al contenido",
+    "fr": "Aller au contenu"
+  },
+  "Demo-Profil": {
+    "de": "Demo-Profil",
+    "en": "Demo profile",
+    "es": "Perfil de demostración",
+    "fr": "Profil de démonstration"
+  },
+  "Sprache": {
+    "de": "Sprache",
+    "en": "Language",
+    "es": "Idioma",
+    "fr": "Langue"
+  },
+  "Konzeptnavigation": {
+    "de": "Konzeptnavigation",
+    "en": "Concept navigation",
+    "es": "Navegación de conceptos",
+    "fr": "Navigation des concepts"
+  },
+  "Musikvorschau, kein Audio": {
+    "de": "Musikvorschau, kein Audio",
+    "en": "Music preview, no audio",
+    "es": "Vista previa musical, sin audio",
+    "fr": "Aperçu musical, sans audio"
+  },
+  "Simulierter Zuschauertrend steigt von 180 auf 248": {
+    "de": "Simulierter Zuschauertrend steigt von 180 auf 248",
+    "en": "Simulated viewer trend rises from 180 to 248",
+    "es": "La tendencia simulada de espectadores sube de 180 a 248",
+    "fr": "La tendance simulée des spectateurs passe de 180 à 248"
+  },
+  "Drei Wege zu einem klareren Dashboard.": {
+    "de": "Drei Wege zu einem klareren Dashboard.",
+    "en": "Three ways to a clearer dashboard.",
+    "es": "Tres caminos hacia un panel más claro.",
+    "fr": "Trois approches pour un tableau de bord plus clair."
+  },
+  "Lokale Mockups mit fiktiven Daten. Keine Backend-Verbindungen.": {
+    "de": "Lokale Mockups mit fiktiven Daten. Keine Backend-Verbindungen.",
+    "en": "Local mockups with fictional data. No backend connections.",
+    "es": "Maquetas locales con datos ficticios. Sin conexiones al servidor.",
+    "fr": "Maquettes locales avec des données fictives. Aucune connexion au serveur."
+  },
+  "Kompakte Arbeitsfläche · schnelle Kontrolle": {
+    "de": "Kompakte Arbeitsfläche · schnelle Kontrolle",
+    "en": "Compact workspace · quick control",
+    "es": "Espacio compacto · control rápido",
+    "fr": "Espace compact · contrôle rapide"
+  },
+  "Modulare Karten · entdecken und vorbereiten": {
+    "de": "Modulare Karten · entdecken und vorbereiten",
+    "en": "Modular cards · discover and prepare",
+    "es": "Tarjetas modulares · descubrir y preparar",
+    "fr": "Cartes modulaires · découvrir et préparer"
+  },
+  "Creator-Bühne · Fokus während des Streams": {
+    "de": "Creator-Bühne · Fokus während des Streams",
+    "en": "Creator stage · focus during the stream",
+    "es": "Escenario del creador · concentración durante el directo",
+    "fr": "Scène du créateur · concentration pendant le direct"
+  },
+  "LTTH.APP / DESIGN EXPLORATION": {
+    "de": "LTTH.APP / DESIGN EXPLORATION",
+    "en": "LTTH.APP / DESIGN EXPLORATION",
+    "es": "LTTH.APP / EXPLORACIÓN DE DISEÑO",
+    "fr": "LTTH.APP / EXPLORATION DU DESIGN"
+  },
+  "LTTH Dashboard Konzepte": {
+    "de": "LTTH Dashboard Konzepte",
+    "en": "LTTH dashboard concepts",
+    "es": "Conceptos del panel LTTH",
+    "fr": "Concepts de tableau de bord LTTH"
+  }
+}

@@ -1,0 +1,311 @@
+{
+  "schemaVersion": 1,
+  "status": "source-derived-locale-expectations-only",
+  "sourceDate": "2026-10-07",
+  "scope": {
+    "inventory": "docs/coordination/obs-104-source-inventory.json",
+    "inventoryOverlayCount": 26,
+    "locales": ["de", "en", "es", "fr"],
+    "records": 26,
+    "scopeNote": "These are the 26 overlay/documentation capture profile entries in the current source inventory. They are not a complete enumeration of every public registry path.",
+    "acceptanceNote": "Source inspection only. No browser, OBS, public, or 104-case locale acceptance is claimed."
+  },
+  "sharedI18nContract": {
+    "script": "app/public/js/i18n-client.js",
+    "sourceSha256": "aab1d9f00f2b1a8fef6d4fa31eeb65a55e071d72269de24b871fdf925387942c",
+    "queryParameter": "lang",
+    "precedence": "URL ?lang takes precedence over localStorage app_locale; otherwise localStorage then default de.",
+    "supportedLocales": ["de", "en", "es", "fr"],
+    "normalization": "Language tags are reduced to their base language; unsupported values fall back to de.",
+    "loader": "GET /api/i18n/translations/{locale}; server merges root and plugin locale catalogs.",
+    "socketSync": "Only uses an existing window.socket when io is already present; late socket retry is limited to 20 attempts at 100 ms and is cancelled on non-persisted pagehide. Persisted pagehide preserves the BFCache document state.",
+    "missingKeyBehavior": "The client does not silently borrow English for a supported locale; data-i18n preserves its original fallback text, while t() can return the key unless the caller supplies its own fallback.",
+    "coverageWarning": "A locale query and four JSON files prove a loading path, not that every runtime string is translated or rendered in that language."
+  },
+  "records": [
+    {
+      "plugin": "advanced-timer",
+      "inventoryEntrypoint": "/plugins/advanced-timer/overlay/index.html",
+      "sourceFiles": ["app/plugins/advanced-timer/overlay/index.html", "app/plugins/advanced-timer/overlay/overlay.js"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "Title and timer empty/not-found/recent-item labels use translation keys. Timer values/countdowns and configured timer names are data.",
+      "localeFiles": "app/plugins/advanced-timer/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "chatango",
+      "inventoryEntrypoint": "/plugins/chatango/ui.html",
+      "sourceFiles": ["app/plugins/chatango/ui.html", "app/plugins/chatango/main.js"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "The inventoried page is a settings/integration UI, not a pure chat overlay; its interface labels have translation keys. Chat content inside the third-party embed is provider data and is not localized by LTTH.",
+      "localeFiles": "app/plugins/chatango/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": ["https://st.chatango.com/js/gz/emb.js (third-party widget script; provider content/assets may also load externally)"]
+    },
+    {
+      "plugin": "clarityhud",
+      "inventoryEntrypoint": "/overlay/clarity/full",
+      "sourceFiles": ["app/plugins/clarityhud/overlays/full.html", "app/plugins/clarityhud/overlays/full.js", "app/plugins/clarityhud/lib/i18n-runtime.js"],
+      "localeQuery": "shared-i18n-client+runtime-helper",
+      "visibleTextExpectation": "Static labels plus runtime event/status/anonymous/gift strings call the ClarityHUD translation helper. Nicknames, chat text, gift names, and event data remain source data; helper fallbacks are English when a key is missing.",
+      "localeFiles": "app/plugins/clarityhud/locales/{de,en,es,fr}.json",
+      "fonts": "Same-origin /fonts/open-sans.css and /fonts/opendyslexic.css; these are local-font fallback shims, not downloaded webfonts.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "coinbattle",
+      "inventoryEntrypoint": "/plugins/coinbattle/overlay/overlay.html",
+      "sourceFiles": ["app/plugins/coinbattle/overlay/overlay.html", "app/plugins/coinbattle/overlay/overlay.js"],
+      "localeQuery": "shared-i18n-client+runtime-helper",
+      "visibleTextExpectation": "Static team/leaderboard labels and runtime winner, achievement, placement, and empty-state strings use translation keys. Player/team names and score, coin, timer, and XP values are data.",
+      "localeFiles": "app/plugins/coinbattle/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": ["Player avatar URLs may be supplied by runtime event/profile data; no static remote image is required by the entry HTML."]
+    },
+    {
+      "plugin": "emoji-rain",
+      "inventoryEntrypoint": "/emoji-rain/obs-hud",
+      "sourceFiles": ["app/plugins/emoji-rain/obs-hud.html", "app/public/js/i18n-client.js", "app/public/js/matter.min.js", "app/public/js/emoji-rain-obs-hud.js", "app/plugins/emoji-rain/main.js", "app/modules/public-overlay-registry.js"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "The title has a translation key. The canvas is empty and transparent before spawn; #perf-hud and #resolution-indicator are hidden by default. The renderer requests the read-only GET /api/emoji-rain/overlay/state, whose projection contains only opacity, and consumes emoji-rain:opacity events only when the payload contains exactly one finite numeric opacity in [0,1]. The current-state response is ignored if a valid opacity event arrived first. FPS/count/resolution diagnostics and effects are numeric/visual. The public registry allows this GET and the outgoing opacity event; the write-only POST opacity route is not a public overlay surface.",
+      "localeFiles": "app/plugins/emoji-rain/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; local Matter.js and same-origin renderer scripts; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "fireworks",
+      "inventoryEntrypoint": "/plugins/fireworks/overlay.html",
+      "sourceFiles": ["app/plugins/fireworks/overlay.html", "app/plugins/fireworks/gpu/engine.js"],
+      "localeQuery": "shared-i18n-client+runtime-translation-calls",
+      "visibleTextExpectation": "Title and follower thank-you copy use translation keys. Debug labels FPS, Particles, and Renderer remain hardcoded English; usernames/avatar are event data and the rest is visual effects.",
+      "localeFiles": "app/plugins/fireworks/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": ["Follower avatar URL may be supplied by event data; not a required static asset."]
+    },
+    {
+      "plugin": "flame-overlay",
+      "inventoryEntrypoint": "/flame-overlay/overlay",
+      "sourceFiles": ["app/plugins/flame-overlay/renderer/index.html", "app/plugins/flame-overlay/renderer/effects-engine.js"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "The document title has a translation key; the overlay surface is a canvas effect with no regular visible copy.",
+      "localeFiles": "app/plugins/flame-overlay/locales/{de,en,es,fr}.json",
+      "fonts": "No visible text font requirement; system defaults only.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "game-engine",
+      "inventoryEntrypoint": "/plugins/game-engine/overlay/game-hud.html",
+      "sourceFiles": ["app/plugins/game-engine/overlay/game-hud.html"],
+      "localeQuery": "shared-i18n-client+runtime-rerender",
+      "visibleTextExpectation": "Game names, HUD status, turns, player labels, and game-state copy use shared translation keys. Player names, moves, scores, and board state are data.",
+      "localeFiles": "app/plugins/game-engine/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; game assets/audio are same-origin routes; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "goals",
+      "inventoryEntrypoint": "/goals/overlay",
+      "sourceFiles": ["app/plugins/goals/overlay/index.html", "app/plugins/goals/overlay/overlay.js", "app/plugins/goals/templates-shared.js"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "Document title is localized, but template strings including 'remaining' and 'Goal Reached!' are hardcoded English in overlay renderers. Goal names/descriptions are configured content; current/target values are numbers.",
+      "localeFiles": "app/plugins/goals/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "interactive-story",
+      "inventoryEntrypoint": "/plugins/interactive-story/overlay.html",
+      "sourceFiles": ["app/plugins/interactive-story/overlay.html"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "Overlay chrome, vote instructions, timer, participant empty state, and generation status use translation keys. Story/chapter prose and answer text follow story configuration/model language, not the ?lang UI parameter.",
+      "localeFiles": "app/plugins/interactive-story/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; story images use same-origin plugin/API routes in the source contract; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "inventoryEntrypoint": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "sourceFiles": ["app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html", "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-i18n.js"],
+      "localeQuery": "shared-i18n-client+viewer-xp-helper",
+      "visibleTextExpectation": "Title, subtitle, loading/empty states, and last-days wording use shared locale keys/helper fallbacks. Viewer names, ranks, XP totals, and optional profile images are data.",
+      "localeFiles": "app/plugins/milestone-leaderboard/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": ["Profile image URLs can be TikTok CDN data; they are optional and not required for the text overlay."]
+    },
+    {
+      "plugin": "minecraft-connect",
+      "inventoryEntrypoint": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "sourceFiles": ["app/plugins/minecraft-connect/overlay/minecraft_overlay.html", "app/plugins/minecraft-connect/overlay/minecraft_overlay.js"],
+      "localeQuery": "shared-i18n-client+runtime-helper",
+      "visibleTextExpectation": "Action names, parameter labels, and 'triggered by' runtime copy resolve locale keys with English fallback strings. Minecraft usernames, entity/item identifiers, coordinates, counts, and durations are event data.",
+      "localeFiles": "app/plugins/minecraft-connect/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; same-origin overlay CSS/scripts; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "music-bot",
+      "inventoryEntrypoint": "/plugins/music-bot/overlay.html",
+      "sourceFiles": ["app/plugins/music-bot/overlay.html"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "Overlay title, waiting/idle labels, and queue labels have translation keys. Track title, artist, album art, queue names, and playback progress are provider/runtime data and are not translated by ?lang.",
+      "localeFiles": "app/plugins/music-bot/locales/{de,en,es,fr}.json",
+      "fonts": "Font families Inter/Orbitron/Rajdhani are declared with system fallbacks; no external font file is referenced.",
+      "externalAssets": ["Playback/cover media can be runtime URLs; exact source depends on the configured music provider and fixture data."]
+    },
+    {
+      "plugin": "openshock",
+      "inventoryEntrypoint": "/plugins/openshock/overlay/openshock_overlay.html",
+      "sourceFiles": ["app/plugins/openshock/overlay/openshock_overlay.html", "app/plugins/openshock/overlay/openshock_overlay.js"],
+      "localeQuery": "shared-i18n-client+runtime-helper",
+      "visibleTextExpectation": "Device/intensity/duration/pattern labels and runtime fallback copy use translation keys. Event type is currently uppercased from its canonical value; device names, percentages, durations, and event content are data.",
+      "localeFiles": "app/plugins/openshock/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "quiz-show",
+      "inventoryEntrypoint": "/plugins/quiz-show/quiz_show_overlay.html",
+      "sourceFiles": ["app/plugins/quiz-show/quiz_show_overlay.html", "app/plugins/quiz-show/quiz_show_overlay.js"],
+      "localeQuery": "shared-i18n-client+runtime-translation-calls",
+      "visibleTextExpectation": "Round/status/empty labels and timer chrome use locale keys. Question, answer, and category language is created/configured separately by the quiz language setting; ?lang changes interface copy only.",
+      "localeFiles": "app/plugins/quiz-show/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; local CSS/scripts; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "schnorrbecher",
+      "inventoryEntrypoint": "/overlay/coincup?transparent=1",
+      "sourceFiles": ["app/plugins/schnorrbecher/overlay/coincup.html", "app/plugins/schnorrbecher/overlay/coincup.js"],
+      "localeQuery": "ignored-no-i18n-client",
+      "visibleTextExpectation": "Static document/aria labels and 'Schnorr Becher' are German. The scene primarily displays a numeric counter, gift popup data, and coin animation; ?lang does not change it.",
+      "localeFiles": "app/plugins/schnorrbecher/locales/{de,en,es,fr}.json (present, but not loaded by this overlay entry)",
+      "fonts": "System defaults; no external font URL found.",
+      "externalAssets": ["Same-origin Matter.js and /plugins/schnorrbecher/assets/sounds/adriantnt_glass.mp3 are required local assets."]
+    },
+    {
+      "plugin": "spotlight",
+      "inventoryEntrypoint": "/plugins/spotlight/overlays/chatter.html",
+      "sourceFiles": ["app/plugins/spotlight/overlays/chatter.html", "app/plugins/spotlight/overlays/single-overlay.js", "app/plugins/spotlight/lib/template-renderer.js"],
+      "localeQuery": "shared-i18n-client+runtime-translator",
+      "visibleTextExpectation": "Template labels, waiting/empty messages, event labels, anonymous fallback, and coin wording use translations with source fallbacks. Viewer nicknames, gift names, and event details are data.",
+      "localeFiles": "app/plugins/spotlight/locales/{de,en,es,fr}.json",
+      "fonts": "Same-origin /fonts/exo-2.css local-font fallback shim; no external webfont request.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "stream-monsters",
+      "inventoryEntrypoint": "/stream-monsters/overlay",
+      "sourceFiles": ["app/plugins/stream-monsters/streammonsters-overlay.html", "app/plugins/stream-monsters/streammonsters-overlay-runtime.js", "app/plugins/stream-monsters/index.js"],
+      "localeQuery": "shared-i18n-client+overlay-config-override-and-rotation",
+      "visibleTextExpectation": "Brand/title/status and arena labels use local locale files. The shared ?lang is parsed initially, but overlay config primaryLocale/locales subsequently controls and can rotate the displayed locale; default config is de/en. Four locales are supported when selected in overlay config.",
+      "localeFiles": "app/plugins/stream-monsters/locales/{de,en,es,fr}.json",
+      "fonts": "Inter/Segoe UI/Arial fallback stack; no external font URL found.",
+      "externalAssets": ["Same-origin branding logo, game artwork, and audio cue assets; asset choice is runtime state."]
+    },
+    {
+      "plugin": "stt-ticker",
+      "inventoryEntrypoint": "/plugins/stt-ticker/overlay/ticker.html",
+      "sourceFiles": ["app/plugins/stt-ticker/overlay/ticker.html"],
+      "localeQuery": "shared-i18n-client",
+      "visibleTextExpectation": "The title is localized; visible ticker lines are incoming transcription text and are not translated by ?lang. Theme/size/position query values control presentation only.",
+      "localeFiles": "app/plugins/stt-ticker/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "talking-heads",
+      "inventoryEntrypoint": "/plugins/talking-heads/overlay.html",
+      "sourceFiles": ["app/plugins/talking-heads/overlay.html", "app/plugins/talking-heads/assets/overlay.js", "app/plugins/talking-heads/main.js"],
+      "localeQuery": "shared-i18n-client+custom-translation-base",
+      "visibleTextExpectation": "Stage headings, idle/loading states, and accessibility labels use localized keys via /api/talkingheads/overlay/translations/{locale}. Spoken/TTS content, speaker names, and avatar labels are content/state and not translated by ?lang.",
+      "localeFiles": "app/plugins/talking-heads/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; same-origin sprite/API assets; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "toptier",
+      "inventoryEntrypoint": "/plugins/toptier/overlay.html",
+      "sourceFiles": ["app/plugins/toptier/overlay.html", "app/plugins/toptier/assets/overlay.js"],
+      "localeQuery": "shared-i18n-client-title-only",
+      "visibleTextExpectation": "The document title is localized. Runtime board labels Likes/Gifts and rank/score copy are hardcoded English; usernames and scores are data. ?lang does not localize those renderer-generated labels.",
+      "localeFiles": "app/plugins/toptier/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; avatar placeholder is a same-origin SVG.",
+      "externalAssets": ["Avatar URLs may be runtime profile data; the static placeholder is local."]
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "inventoryEntrypoint": "/visual-fx-frame-webgpu/overlay",
+      "sourceFiles": ["app/plugins/visual-fx-frame-webgpu/renderer/index.html", "app/plugins/visual-fx-frame-webgpu/renderer/overlay-controller.js"],
+      "localeQuery": "shared-i18n-client-title-only",
+      "visibleTextExpectation": "Only the document title has a locale key. Main output is visual effects; optional ?debug=true status uses raw state/reason text and numeric metrics rather than translated copy.",
+      "localeFiles": "app/plugins/visual-fx-frame-webgpu/locales/{de,en,es,fr}.json",
+      "fonts": "System UI stack; local renderer textures/assets; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "weather-control",
+      "inventoryEntrypoint": "/plugins/weather-control/overlay.html",
+      "sourceFiles": ["app/plugins/weather-control/overlay.html", "app/plugins/weather-control/weather-engine.js"],
+      "localeQuery": "shared-i18n-client+runtime-helper",
+      "visibleTextExpectation": "Community/quest/streak/meter labels and connection/reward wording use shared locale keys. Quest/reward titles are configuration data; progress, streak, and meter values are numeric.",
+      "localeFiles": "app/plugins/weather-control/locales/{de,en,es,fr}.json",
+      "fonts": "System UI stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "inventoryEntrypoint": "/plugins/webgpu-emoji-rain/overlay.html",
+      "sourceFiles": ["app/plugins/webgpu-emoji-rain/overlay.html", "app/plugins/webgpu-emoji-rain/gpu/engine.js"],
+      "localeQuery": "shared-i18n-client-with-runtime-status-override",
+      "visibleTextExpectation": "HTML title/fallback copy is keyed, but gpu/engine.js overwrites runtime status labels with hardcoded German strings (READY · WEBGPU, WEBGPU NICHT VERFÜGBAR, WEBGPU-GERÄT VERLOREN, WEBGPU-FEHLER, INITIALISIERE WEBGPU). Thus ?lang does not localize runtime status. Main output is canvas effects.",
+      "localeFiles": "app/plugins/webgpu-emoji-rain/locales/{de,en,es,fr}.json",
+      "fonts": "Inter/Segoe UI fallback stack; no external font URL found.",
+      "externalAssets": []
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "inventoryEntrypoint": "/webgpu-fireworks/overlay",
+      "sourceFiles": ["app/plugins/webgpu-fireworks/overlay.html", "app/plugins/webgpu-fireworks/gpu/engine.js"],
+      "localeQuery": "shared-i18n-client+partial-runtime-copy",
+      "visibleTextExpectation": "Title and follower thank-you copy are keyed. Debug labels FPS/Particles/Renderer remain English; user name/avatar are event data and effects are visual.",
+      "localeFiles": "app/plugins/webgpu-fireworks/locales/{de,en,es,fr}.json",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": ["Follower avatar URL may be provided as runtime event data; not required static overlay content."]
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "inventoryEntrypoint": "/webgpu-weather-control/overlay",
+      "sourceFiles": ["app/plugins/webgpu-weather-control/overlay.html", "app/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js"],
+      "localeQuery": "ignored-no-i18n-client",
+      "visibleTextExpectation": "Visible community HUD labels (Community Weather, Meter, Quest, Streak, Reward) and optional debug diagnostics are hardcoded English; configured quest/reward names and metric values are data. ?lang is ignored.",
+      "localeFiles": "app/plugins/webgpu-weather-control/locales/{de,en,es,fr}.json (present, but not loaded by this overlay entry)",
+      "fonts": "System UI stack; same-origin WebGPU renderer scripts; no external font URL found.",
+      "externalAssets": []
+    }
+  ],
+  "supplemental": [
+    {
+      "plugin": "sidekick",
+      "entrypoint": "/overlay/sidekick/hud",
+      "sourceFiles": ["app/plugins/sidekick/overlay/sidekick-hud.html", "app/plugins/sidekick/main.js"],
+      "in26ProfileInventory": false,
+      "localeQuery": "ignored-no-i18n-client",
+      "htmlLang": "de",
+      "visibleTextExpectation": "The HUD does not read ?lang and does not load i18n-client.js. The title/stats mix English labels (Chat/Min, Gifts, Follows, Viewer); both availability strings are literal English: 'Sidekick status unavailable' and 'Event feed unavailable'. Sidekick admin locale JSON files do not localize this HUD.",
+      "localeFiles": "app/plugins/sidekick/locales/{de,en,es,fr}.json (admin UI catalog; not consumed by the HUD)",
+      "fonts": "System font stack; no external font URL found.",
+      "externalAssets": []
+    }
+  ],
+  "fontAndAssetSummary": {
+    "externalFontDownloadsFound": [],
+    "sameOriginFontStylesheets": [
+      "/fonts/open-sans.css (ClarityHUD; uses local installed-font fallbacks)",
+      "/fonts/opendyslexic.css (ClarityHUD; uses local installed-font fallbacks)",
+      "/fonts/exo-2.css (Spotlight; uses local installed-font fallbacks)"
+    ],
+    "externalStaticAssetFound": "Chatango embeds https://st.chatango.com/js/gz/emb.js; provider-side content/assets can load externally.",
+    "localAssets": "The other inspected entrypoints reference same-origin JS/CSS, local fonts/system stacks, local media, canvas/WebGPU output, or optional data-dependent images/audio. Runtime media URLs depend on fixture/application data and are not treated as required static font assets."
+  }
+}

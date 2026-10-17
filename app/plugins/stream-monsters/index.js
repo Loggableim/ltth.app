@@ -144,6 +144,10 @@ const DEFAULT_COMMAND_ALIASES = Object.freeze({
 class StreamMonstersPlugin {
   constructor(api) {
     this.api = api;
+    Object.defineProperty(this, 'isDocsCapture', {
+      value: api?.isDocsCapture === true,
+      enumerable: true
+    });
     this.pluginDir = api.pluginDir || __dirname;
     this.config = null;
     this.configRevision = 0;
@@ -162,11 +166,15 @@ class StreamMonstersPlugin {
   }
 
   async init() {
-    ensureHotReloadPublicEvents();
+    if (!this.isDocsCapture) ensureHotReloadPublicEvents();
     this.api.log('[STREAM MONSTERS] Initializing Portrait Arcade Rally runtime', 'info');
     const storedConfig = this.api.getConfig('config');
     this.configRevision = Number.isInteger(Number(storedConfig?.revision)) ? Number(storedConfig.revision) : 0;
     this.config = this.loadConfig(storedConfig);
+    if (this.isDocsCapture) {
+      this.initDocsCaptureRuntime();
+      return;
+    }
     this.persistSanitizedConfigIfNeeded(storedConfig);
 
     const logger = {
@@ -419,6 +427,52 @@ class StreamMonstersPlugin {
     }
 
     this.api.log('[STREAM MONSTERS] Portrait Arcade Rally runtime initialized', 'info');
+  }
+
+  initDocsCaptureRuntime() {
+    const logger = {
+      info: msg => this.api.log(msg, 'info'),
+      warn: msg => this.api.log(msg, 'warn'),
+      error: msg => this.api.log(msg, 'error'),
+      debug: msg => this.api.log(msg, 'debug')
+    };
+    this.streamMonstersGCCELifecycleListeners = [];
+    this.streamMonstersGCCERegistrationState = 'docs_capture';
+    this.streamMonstersGCCERegistrationError = null;
+    this.streamMonstersGCCERegistrationConflicts = [];
+    this.streamMonstersGCCERegisteredCommands = [];
+    this.streamMonstersGCCEUnavailableCommands = [];
+    const appDatabase = this.api.getDatabase();
+    if (typeof this.api.assertDocsCaptureDatabasePath !== 'function') {
+      const error = new Error('Documentation capture database path guard is unavailable');
+      error.code = 'DOCS_CAPTURE_DATABASE_PATH_DENIED';
+      throw error;
+    }
+    this.api.assertDocsCaptureDatabasePath(appDatabase?.dbPath);
+    this.streamMonstersStore = new StreamMonstersDatabase(appDatabase, { logger });
+    this.streamMonstersStore.initialize();
+    this.streamMonstersEngine = new StreamMonstersEngine({
+      store: this.streamMonstersStore,
+      config: this.config.streamMonsters,
+      emit: () => {}
+    });
+    this.streamMonstersRoutes = new StreamMonstersRoutes({
+      api: this.api,
+      pluginDir: this.pluginDir,
+      store: this.streamMonstersStore,
+      engine: this.streamMonstersEngine,
+      giftCatalogProvider: locale => this.getStreamMonstersGiftCatalog(locale),
+      gcceStateProvider: () => ({
+        commandPrefix: '!',
+        registrationState: 'docs_capture',
+        registrationError: null,
+        commandsRegistered: false,
+        registrationConflicts: []
+      }),
+      configProvider: this.createStreamMonstersConfigProvider()
+    });
+    this.streamMonstersRoutes.register();
+    this.api.log('[STREAM MONSTERS] Docs capture read-only runtime initialized', 'info');
   }
 
   loadConfig(storedConfig = this.api.getConfig('config')) {
@@ -872,6 +926,11 @@ class StreamMonstersPlugin {
   }
 
   updateConfig(updates = {}, options = {}) {
+    if (this.isDocsCapture) {
+      const error = new Error('Stream Monsters configuration writes are disabled in docs capture');
+      error.code = 'STREAM_MONSTERS_DOCS_CAPTURE_READ_ONLY';
+      throw error;
+    }
     const currentRevision = Number.isInteger(Number(this.configRevision))
       ? Number(this.configRevision)
       : Number(this.config?.revision || 0);

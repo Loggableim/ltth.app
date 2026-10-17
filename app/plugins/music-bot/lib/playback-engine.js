@@ -1,4 +1,5 @@
 const { spawn } = require('child_process');
+const { buildMusicBotChildEnv } = require('./child-process-env');
 const EventEmitter = require('events');
 const net = require('net');
 const fs = require('fs');
@@ -63,6 +64,9 @@ class PlaybackEngine extends EventEmitter {
     this._ownedPids = new Set();
     this._expectedProcessStops = new WeakSet();
     this._processRegistry = options.processRegistry || null;
+    this._spawn = options.spawnImpl || spawn;
+    this._childEnvironment = options.environment || process.env;
+    this._childPlatform = options.platform || process.platform;
     const timing = options.timing || options;
     this._now = typeof timing.now === 'function' ? timing.now : Date.now;
     this._setTimeout = typeof timing.setTimeout === 'function' ? timing.setTimeout : setTimeout;
@@ -309,6 +313,7 @@ class PlaybackEngine extends EventEmitter {
       stopError = error;
     } finally {
       if (stopError && child && this._isLiveChild(child)) {
+        this._expectedProcessStops.add(child);
         const socket = this.socket;
         if (socket) {
           socket.destroy();
@@ -321,7 +326,7 @@ class PlaybackEngine extends EventEmitter {
           waitForClose: true,
           timeoutMs: 2000
         });
-        if (this.process === child) {
+        if (terminated !== false && this.process === child) {
           this.process = null;
         }
         if (terminated !== false) stopError = null;
@@ -418,7 +423,6 @@ class PlaybackEngine extends EventEmitter {
 
   async shutdown() {
     if (this._destroyed) return;
-    this._destroyed = true;
     this._shuttingDown = true;
     if (this._duckReleaseTimer) {
       clearTimeout(this._duckReleaseTimer);
@@ -428,6 +432,7 @@ class PlaybackEngine extends EventEmitter {
     const socket = this.socket;
     const child = this.process;
     this._rejectPendingCommands(new Error('mpv playback engine was shut down'));
+    let shutdownError = null;
     if (child && this._isLiveChild(child)) {
       this._expectedProcessStops.add(child);
       const pid = Number(child.pid);
@@ -454,10 +459,21 @@ class PlaybackEngine extends EventEmitter {
 
       if (!closedGracefully && this._isLiveChild(child) && ownsChild) {
         const remainingMs = Math.max(1, shutdownDeadline - this._now());
-        await this._terminateProcess(child, { waitForClose: true, timeoutMs: remainingMs });
+        try {
+          const terminated = await this._terminateProcess(child, { waitForClose: true, timeoutMs: remainingMs });
+          if (terminated !== true && this._isLiveChild(child)) {
+            shutdownError = new Error(`Owned MPV process ${pid} did not close during shutdown`);
+            shutdownError.code = 'MPV_SHUTDOWN_TIMEOUT';
+          }
+        } catch (error) {
+          shutdownError = error;
+        }
+      } else if (!closedGracefully && this._isLiveChild(child) && !ownsChild) {
+        shutdownError = new Error(`Refusing to report shutdown while MPV process ${pid || 'unknown'} is still live and unowned`);
+        shutdownError.code = 'MPV_SHUTDOWN_UNOWNED_PROCESS';
       }
 
-      if (this.process === child) this.process = null;
+      if (this.process === child && !this._isLiveChild(child)) this.process = null;
     } else {
       if (this.process === child) {
         this.process = null;
@@ -468,10 +484,15 @@ class PlaybackEngine extends EventEmitter {
       this.socket = null;
       this._socketGeneration = 0;
     }
-    this._shuttingDown = false;
     if (this.ipcPath && fs.existsSync(this.ipcPath)) {
       fs.unlinkSync(this.ipcPath);
     }
+    if (shutdownError) {
+      this._shuttingDown = false;
+      throw shutdownError;
+    }
+    this._destroyed = true;
+    this._shuttingDown = false;
     this.nowPlaying = null;
     this.state = 'idle';
     this._crossfadeOutgoingTrack = null;
@@ -502,7 +523,12 @@ class PlaybackEngine extends EventEmitter {
     try {
       if (child && this._isLiveChild(child)) {
         this._expectedProcessStops.add(child);
-        await this._terminateProcess(child, { waitForClose: true });
+        const terminated = await this._terminateProcess(child, { waitForClose: true });
+        if (terminated !== true && this._isLiveChild(child)) {
+          const error = new Error(`Owned MPV process ${child.pid || 'unknown'} did not close during restart`);
+          error.code = 'MPV_RESTART_SHUTDOWN_UNCONFIRMED';
+          throw error;
+        }
       }
       if (this.process === child) {
         this.process = null;
@@ -578,7 +604,7 @@ class PlaybackEngine extends EventEmitter {
     }
 
     let terminatedByTaskkill = false;
-    if (process.platform === 'win32' && isOwnedPid) {
+    if (this._childPlatform === 'win32' && isOwnedPid) {
       terminatedByTaskkill = await new Promise((resolve) => {
         let settled = false;
         let timeout = null;
@@ -589,10 +615,14 @@ class PlaybackEngine extends EventEmitter {
           resolve(success);
         };
         try {
-          const killer = spawn(
+          const killer = this._spawn(
             'taskkill.exe',
             ['/PID', String(child.pid), '/T', '/F'],
-            { stdio: 'ignore', windowsHide: true }
+            {
+              stdio: 'ignore',
+              windowsHide: true,
+              env: buildMusicBotChildEnv('taskkill', this._childEnvironment, this._childPlatform)
+            }
           );
           killer.once('error', () => finish(false));
           killer.once('close', (code) => finish(code === 0));
@@ -943,7 +973,10 @@ class PlaybackEngine extends EventEmitter {
       `--audio-device=${this.config.audioDevice || 'auto'}`
     ];
 
-    const child = spawn(this._getMpvExecutablePath(), args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = this._spawn(this._getMpvExecutablePath(), args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: buildMusicBotChildEnv('mpv', this._childEnvironment, this._childPlatform)
+    });
     let childSocket = null;
     this.process = child;
     if (Number.isInteger(child.pid)) {
@@ -1231,7 +1264,10 @@ class PlaybackEngine extends EventEmitter {
   async getAvailableDevices() {
     return new Promise((resolve) => {
       try {
-        const proc = spawn(this.config.mpvPath, ['--audio-device=help'], { stdio: ['ignore', 'pipe', 'pipe'] });
+        const proc = this._spawn(this.config.mpvPath, ['--audio-device=help'], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+          env: buildMusicBotChildEnv('mpv', this._childEnvironment, this._childPlatform)
+        });
         let stdout = '';
         proc.stdout.on('data', (data) => {
           stdout += data.toString();

@@ -127,7 +127,6 @@ The following files were promoted from the local browser capture set into the ca
 - `music-bot.png`
 - `openshock.png`
 - `osc-bridge.png`
-- `plugin-chatango-dashboard.png`
 - `quiz-show.png`
 - `settings.png`
 - `soundboard.png`

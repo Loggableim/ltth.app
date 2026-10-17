@@ -1,5 +1,7 @@
 const childProcess = require('child_process');
+const { buildMusicBotChildEnv } = require('./child-process-env');
 const DEFAULT_MAX_OUTPUT_BYTES = 4 * 1024 * 1024;
+const DEFAULT_CHILD_CLOSE_TIMEOUT_MS = 2000;
 
 function abortError(message = 'yt-dlp operation aborted') {
   const error = new Error(message);
@@ -29,24 +31,32 @@ class YtDlpRunner {
     this.taskkillImpl = options.taskkillImpl || childProcess.spawn;
     this.processKill = options.processKill || process.kill.bind(process);
     this.platform = options.platform || process.platform;
+    this.environment = options.environment || process.env;
+    this.childCloseTimeoutMs = Math.max(
+      1,
+      Math.floor(Number(options.childCloseTimeoutMs) || DEFAULT_CHILD_CLOSE_TIMEOUT_MS)
+    );
     this.logger = options.logger || null;
     this.queue = [];
     this.active = new Map();
+    this.unconfirmedCloseJobs = new Set();
     this.nextId = 1;
     this.destroyed = false;
   }
 
   run(executable, args, options = {}) {
-    if (this.destroyed) return Promise.reject(abortError('yt-dlp runner is destroyed'));
+    if (this.destroyed) return this._rejectedRun(abortError('yt-dlp runner is destroyed'));
     if (this.queue.length + this.active.size >= this.maxQueue + this.maxConcurrent) {
-      return Promise.reject(new Error('yt-dlp queue is full'));
+      return this._rejectedRun(new Error('yt-dlp queue is full'));
     }
 
     const deadline = Number.isFinite(options.deadline) ? options.deadline : Date.now() + 45000;
-    if (deadline <= Date.now()) return Promise.reject(timeoutError());
-    if (options.signal?.aborted) return Promise.reject(abortError());
+    if (deadline <= Date.now()) return this._rejectedRun(timeoutError());
+    if (options.signal?.aborted) return this._rejectedRun(abortError());
 
-    return new Promise((resolve, reject) => {
+    let resolveChildClosed;
+    const childClosed = new Promise((resolve) => { resolveChildClosed = resolve; });
+    const result = new Promise((resolve, reject) => {
       const job = {
         id: this.nextId++,
         executable,
@@ -59,6 +69,7 @@ class YtDlpRunner {
         child: null,
         settled: false,
         terminating: false,
+        resolveChildClosed,
         stdout: '',
         stderr: '',
         outputBytes: 0
@@ -71,6 +82,16 @@ class YtDlpRunner {
       this.queue.sort((a, b) => b.priority - a.priority || a.id - b.id);
       this._drain();
     });
+    // Expose the process-lifecycle boundary separately from the operation
+    // result: cancellation may reject before Windows confirms child close.
+    result.childClosed = childClosed;
+    return result;
+  }
+
+  _rejectedRun(error) {
+    const result = Promise.reject(error);
+    result.childClosed = Promise.resolve();
+    return result;
   }
 
   getStatus() {
@@ -90,12 +111,18 @@ class YtDlpRunner {
     for (const job of queued) this._settle(job, abortError('yt-dlp runner destroyed'));
 
     const active = [...this.active.values()];
-    await Promise.all(active.map((job) => this._terminateAndSettle(job, abortError('yt-dlp runner destroyed'))));
-    this.active.clear();
+    const closeResults = await Promise.all(
+      active.map((job) => this._terminateAndSettle(job, abortError('yt-dlp runner destroyed')))
+    );
+    if (closeResults.some((closed) => !closed)) {
+      const error = new Error('yt-dlp process close was not confirmed after bounded shutdown');
+      error.code = 'YTDLP_CLOSE_TIMEOUT';
+      throw error;
+    }
   }
 
   _drain() {
-    if (this.destroyed) return;
+    if (this.destroyed || this.unconfirmedCloseJobs.size > 0) return;
     while (this.active.size < this.maxConcurrent && this.queue.length) {
       const job = this.queue.shift();
       if (!job || job.settled) continue;
@@ -117,6 +144,7 @@ class YtDlpRunner {
       child = this.spawnImpl(job.executable, job.args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
+        env: buildMusicBotChildEnv('yt-dlp', this.environment, this.platform),
         ...(this.platform === 'win32' ? {} : { detached: true })
       });
     } catch (error) {
@@ -131,18 +159,32 @@ class YtDlpRunner {
     child.stderr?.on('data', (chunk) => this._appendOutput(job, 'stderr', chunk));
     child.once('error', (error) => {
       if (job.terminating) return;
+      let failure = error;
       if (error?.code === 'ENOENT') {
         const missing = new Error(`yt-dlp not found at "${job.executable}"`);
         missing.code = 'ENOENT';
         missing.ytdlpNotFound = true;
-        this._complete(job, missing);
+        failure = missing;
+      }
+      if (!child?.pid) {
+        // Spawn failure has no owned OS process; settle the lifecycle directly.
+        job.resolveChildClosed?.();
+        this._complete(job, failure);
         return;
       }
-      this._complete(job, error);
+      // Preserve active ownership until the close event. The operation can
+      // report its error now, while destroy() still sees and waits for the child.
+      job.pendingError = failure;
+      this._settle(job, failure);
     });
     child.once('close', (code) => {
+      job.resolveChildClosed?.();
       if (job.terminating) return;
       if (!this.active.has(job.id)) return;
+      if (job.pendingError) {
+        this._complete(job, job.pendingError);
+        return;
+      }
       if (code !== 0) {
         const error = new Error(job.stderr.trim() || `yt-dlp exited with code ${code}`);
         error.exitCode = code;
@@ -196,6 +238,7 @@ class YtDlpRunner {
     job.settled = true;
     clearTimeout(job.deadlineTimer);
     job.signal?.removeEventListener('abort', job.onAbort);
+    if (!job.child) job.resolveChildClosed?.();
     if (error) job.reject(error);
     else job.resolve(value);
   }
@@ -217,15 +260,86 @@ class YtDlpRunner {
     if (job.terminationPromise) return job.terminationPromise;
     job.terminating = true;
     job.terminationPromise = (async () => {
+      let closed = this._isChildClosed(job.child);
       try {
-        await this._killProcessTree(job.child);
+        if (!closed) {
+          this._watchForTerminatingChildClose(job);
+          await this._killProcessTree(job.child);
+          closed = await this._waitForChildClose(job.child);
+        }
+        if (!closed && job.child) {
+          try { job.child.kill('SIGKILL'); } catch (_error) { /* already gone */ }
+          closed = await this._waitForChildClose(job.child);
+        }
+        closed = closed || this._isChildClosed(job.child);
+        if (!closed) {
+          job.closeUnconfirmed = true;
+          this.unconfirmedCloseJobs.add(job);
+          try {
+            this.logger?.log?.(
+              '[music-bot] yt-dlp child close was not confirmed (YTDLP_CLOSE_TIMEOUT)',
+              'warn'
+            );
+          } catch (_error) { /* logger failures must not block shutdown */ }
+        } else {
+          job.closeConfirmed = true;
+          job.closeUnconfirmed = false;
+          this.unconfirmedCloseJobs.delete(job);
+          this.active.delete(job.id);
+        }
+        if (closed) job.resolveChildClosed?.();
       } finally {
-        this.active.delete(job.id);
         this._settle(job, error);
-        if (!this.destroyed) this._drain();
+        if (!this.destroyed && closed) this._drain();
       }
+      return closed;
     })();
     return job.terminationPromise;
+  }
+
+  _watchForTerminatingChildClose(job) {
+    const child = job?.child;
+    if (!child || this._isChildClosed(child) || job.terminationCloseListener) return;
+    job.terminationCloseListener = () => {
+      job.resolveChildClosed?.();
+      job.closeConfirmed = true;
+      job.closeUnconfirmed = false;
+      this.unconfirmedCloseJobs.delete(job);
+      this.active.delete(job.id);
+      if (!this.destroyed) this._drain();
+    };
+    child.once('close', job.terminationCloseListener);
+  }
+
+  _isChildClosed(child) {
+    return !child
+      || child.exitCode != null
+      || child.signalCode != null
+      || child.closed === true;
+  }
+
+  _waitForChildClose(child) {
+    if (this._isChildClosed(child)) return Promise.resolve(true);
+    if (typeof child?.once !== 'function') return Promise.resolve(false);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let timeout = null;
+      const finish = (closed) => {
+        if (settled) return;
+        settled = true;
+        if (timeout) clearTimeout(timeout);
+        child.removeListener?.('close', onClose);
+        child.removeListener?.('error', onError);
+        resolve(closed);
+      };
+      const onClose = () => finish(true);
+      const onError = () => finish(this._isChildClosed(child));
+
+      child.once('close', onClose);
+      child.once('error', onError);
+      timeout = setTimeout(() => finish(this._isChildClosed(child)), this.childCloseTimeoutMs);
+    });
   }
 
   async _killProcessTree(child) {
@@ -258,7 +372,11 @@ class YtDlpRunner {
         taskkill = this.taskkillImpl(
           'taskkill.exe',
           ['/PID', String(child.pid), '/T', '/F'],
-          { stdio: 'ignore', windowsHide: true }
+          {
+            stdio: 'ignore',
+            windowsHide: true,
+            env: buildMusicBotChildEnv('taskkill', this.environment, this.platform)
+          }
         );
       } catch (_error) {
         resolve(false);

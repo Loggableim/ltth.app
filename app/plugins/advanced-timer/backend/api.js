@@ -61,7 +61,7 @@ class TimerAPI {
 
         this.api.registerRoute('get', '/api/advanced-timer/legacy-data/preview', (req, res) => {
             try {
-                const preview = inspectLegacy(this.api, this.plugin.db);
+                const preview = inspectLegacy(this.api, this.plugin.db, { sourceId: req.query?.sourceId });
                 res.json({ ...preview, requiresExplicitConfirmation: true, targetProfile: this.api.getActiveProfile() });
             } catch (error) {
                 res.status(500).json({ success: false, error: error.message });
@@ -73,7 +73,7 @@ class TimerAPI {
                 if (req.body?.confirm !== true) {
                     return res.status(400).json({ success: false, error: 'Explicit confirmation is required' });
                 }
-                const result = importLegacy(this.api, this.plugin.db);
+                const result = importLegacy(this.api, this.plugin.db, { sourceId: req.body?.sourceId });
                 res.json({ ...result, targetProfile: this.api.getActiveProfile() });
                 if (result.cleanupWarning) {
                     this.api.log(`Legacy timer import committed with cleanup warning: ${result.cleanupWarning}`, 'warn');

@@ -55,6 +55,7 @@ describe('plugin loader canonical identity inventory', () => {
   afterEach(() => {
     delete global.__streamMonstersIdentityProbe;
     delete global.__streamMonstersIdentityTimers;
+    delete global.__docsAllowedPluginProbe;
     fs.rmSync(root, { recursive: true, force: true });
   });
 
@@ -109,6 +110,27 @@ describe('plugin loader canonical identity inventory', () => {
     expect(global.__streamMonstersIdentityTimers).toBe(1);
     await loader.unloadPlugin('streamalchemy');
     expect(global.__streamMonstersIdentityTimers).toBe(0);
+  });
+
+  test('loads only canonical plugin ids explicitly present in an allowlist', async () => {
+    const allowlistedSource = `module.exports = class AllowedPlugin {
+      async init() { global.__docsAllowedPluginProbe.push('allowed-plugin'); }
+    };`;
+    const excludedSource = `module.exports = class ExcludedPlugin {
+      async init() { global.__docsAllowedPluginProbe.push('excluded-plugin'); }
+    };`;
+    writePlugin(root, 'allowed-plugin', 'allowed-plugin', allowlistedSource);
+    writePlugin(root, 'excluded-plugin', 'excluded-plugin', excludedSource);
+    global.__docsAllowedPluginProbe = [];
+    const loader = createLoader(root);
+
+    const loaded = await loader.loadAllPlugins({ allowedPluginIds: new Set(['allowed-plugin']) });
+
+    expect(loaded.map(plugin => plugin.id)).toEqual(['allowed-plugin']);
+    expect([...loader.plugins.keys()]).toEqual(['allowed-plugin']);
+    expect(global.__docsAllowedPluginProbe).toEqual(['allowed-plugin']);
+    await loader.unloadPlugin('allowed-plugin');
+    delete global.__docsAllowedPluginProbe;
   });
 
   test('reads the complete inventory before construction and lets the canonical directory win', async () => {

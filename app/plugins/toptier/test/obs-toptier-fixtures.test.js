@@ -56,10 +56,13 @@ describe('TopTier canonical OBS overlay offline fixture', () => {
   test.each(locales)('loads the real template and supported %s title locale, then renders inactive defaults', async locale => {
     const fixture = await createOverlayFixture({ locale, board: 'both', variant: 'spotlight' });
     const expectedTitle = require(`../locales/${locale}.json`).plugins.toptier.labels.toptier_overlay;
+    const expectedEmptyLabel = require(`../locales/${locale}.json`).plugins.toptier.toptier.ui.messages.no_entries;
 
     expect(fixture.window.document.documentElement.lang).toBe(locale);
     expect(fixture.window.document.title).toBe(expectedTitle);
-    expect(fixture.root.children).toHaveLength(0);
+    expect(fixture.root.querySelectorAll('.tt-board')).toHaveLength(2);
+    expect(fixture.root.querySelectorAll('.tt-no-entries')).toHaveLength(2);
+    expect(fixture.root.textContent).toContain(expectedEmptyLabel);
     fixture.fire('connect');
     expect(fixture.emittedSocketEvents).toEqual([
       { eventName: 'toptier:get-board', payload: { board: 'likes' } },
@@ -69,9 +72,7 @@ describe('TopTier canonical OBS overlay offline fixture', () => {
     fixture.fire('toptier:update', { board: 'likes', entries: [], sessionId: null, active: false });
     fixture.fire('toptier:update', { board: 'gifts', entries: [], sessionId: null, active: false });
     expect(fixture.root.querySelectorAll('.tt-no-entries')).toHaveLength(2);
-    expect(fixture.root.textContent).toContain('Likes');
-    expect(fixture.root.textContent).toContain('Gifts');
-    expect(fixture.root.textContent).toContain('Keine Einträge');
+    expect(fixture.root.textContent).toContain(expectedEmptyLabel);
     expect(fixture.consoleMessages.every(line => line.length <= 240)).toBe(true);
     fixture.close();
   });

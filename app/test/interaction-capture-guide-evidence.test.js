@@ -13,7 +13,6 @@ describe('interaction capture guide evidence', () => {
   }
 
   test.each([
-    ['chatango', 'chatango-review', '#btn-preview', '#preview-card'],
     ['config-import', 'backup-cleanup', '#exportBtn', '#exportResultCard'],
     ['weather-control', 'lifecycle-rule', '#testRainEffectBtn', '#statusAlert'],
     ['weather-control', 'weather-reset', '#stopAllPreviewBtn', '#statusAlert'],

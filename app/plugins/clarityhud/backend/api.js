@@ -18,6 +18,7 @@ const {
   createProfile,
   validateProfile
 } = require('../lib/settings-schema');
+const { retainRecentSuperFanEvents } = require('../lib/superfan-retention');
 
 class ClarityHUDBackend {
   constructor(api) {
@@ -31,6 +32,7 @@ class ClarityHUDBackend {
       like: [],
       gift: [],
       subscribe: [],
+      'superfan-display': [],
       treasure: [],
       join: []
     };
@@ -38,6 +40,7 @@ class ClarityHUDBackend {
     // Multi-stream specific: event queue and connectors
     this.multiStreamQueue = [];
     this.multiStreamConnectors = [];
+    this.multiFallbackConfirmations = new Map();
     this.multiStreamStatuses = [];
     this.multiStreamReconnectTimers = new Map();
     this.multiStreamMaxMessages = DEFAULT_SETTINGS.multi.maxMessages;
@@ -222,6 +225,8 @@ class ClarityHUDBackend {
           });
         }
 
+        if (dock === 'full') this.pruneSuperFanQueue();
+
         // For chat dock, return only chat events
         if (dock === 'chat') {
           res.json({
@@ -337,7 +342,7 @@ class ClarityHUDBackend {
           this.api.emit(`clarityhud.settings.${dock}`, this.settings[dock]);
         }
 
-        if (validation.customPresetsProvided) {
+        if (Array.isArray(profile.customPresets)) {
           this.customPresets = validation.customPresets;
           await this.api.setConfig('clarityhud.customPresets', this.customPresets);
         }
@@ -450,6 +455,22 @@ class ClarityHUDBackend {
         this.api.log(`Error getting multi-stream status: ${error.message}`, 'error');
         res.status(500).json({ success: false, error: error.message });
       }
+    });
+
+    this.api.registerRoute('post', '/api/clarityhud/multi/confirm-fallback/:index', async (req, res) => {
+      const streamIndex = Number(req.params.index);
+      const status = this.multiStreamStatuses[streamIndex];
+      if (!Number.isInteger(streamIndex) || streamIndex < 0 || streamIndex >= this.settings.multi.streams.length ||
+          req.body?.confirmed !== true || !status?.confirmationRequired) {
+        return res.status(400).json({ success: false, error: 'Fallback confirmation is not pending for this stream' });
+      }
+      const streamConfig = this.settings.multi.streams[streamIndex];
+      if (!streamConfig?.enabled || !streamConfig.username) {
+        return res.status(400).json({ success: false, error: 'The selected stream is not enabled' });
+      }
+      this.multiFallbackConfirmations.set(streamIndex, streamConfig.username);
+      await this.connectMultiStream(streamIndex, 0, true);
+      res.json({ success: true, streams: this.getMultiStreamStatus() });
     });
 
     // Test event endpoint for chat HUD
@@ -997,6 +1018,37 @@ class ClarityHUDBackend {
   }
 
   /**
+   * Handle the allowlisted, event-bound SuperFan display DTO.
+   * This path intentionally does not call handleSubscribeEvent or store raw input.
+   */
+  async handleSuperFanDisplayEvent(data) {
+    if (this.settings.full.showSuperFans === false) return;
+    if (!data || typeof data !== 'object' || Array.isArray(data) ||
+        !['superfan', 'superfan-join'].includes(data.eventType) ||
+        typeof data.displayName !== 'string' || data.displayName.length < 1 ||
+        data.displayName.length > 80 || !data.displayName.trim() ||
+        /[\u0000-\u001f\u007f]/.test(data.displayName)) return;
+
+    const displayEvent = { eventType: data.eventType, displayName: data.displayName.trim() };
+    if (Number.isInteger(data.level) && data.level >= 0 && data.level <= 999) {
+      displayEvent.level = data.level;
+    }
+    if (typeof data.profilePictureUrl === 'string' && data.profilePictureUrl.length <= 2048) {
+      const { projectViewerXpAvatarUrl } = require('../../../modules/public-overlay-payload-projection');
+      const profilePictureUrl = projectViewerXpAvatarUrl(data.profilePictureUrl);
+      if (profilePictureUrl) displayEvent.profilePictureUrl = profilePictureUrl;
+    }
+
+    const queueEvent = {
+      type: 'superfan-display',
+      timestamp: Date.now(),
+      ...displayEvent
+    };
+    this.addToQueue('superfan-display', queueEvent);
+    this.api.emit('clarityhud.update.superfan-display', displayEvent);
+  }
+
+  /**
    * Handle join event (user joined stream)
    * Broadcasts to full HUD only
    */
@@ -1044,18 +1096,32 @@ class ClarityHUDBackend {
       this.eventQueues[queueName] = [];
     }
 
+    if (queueName === 'superfan-display') this.pruneSuperFanQueue();
+
     // Add event to beginning of queue (newest first)
     this.eventQueues[queueName].unshift(event);
 
     // Determine max length based on settings
-    const maxLines = queueName === 'chat'
+    const configuredMaxLines = queueName === 'chat'
       ? this.settings.chat.maxLines
       : this.settings.full.maxLines;
+    const maxLines = queueName === 'superfan-display'
+      ? (Number.isInteger(configuredMaxLines)
+        ? Math.max(1, Math.min(configuredMaxLines, 500))
+        : DEFAULT_SETTINGS.full.maxLines)
+      : configuredMaxLines;
 
     // Trim queue to max length
     if (this.eventQueues[queueName].length > maxLines) {
       this.eventQueues[queueName] = this.eventQueues[queueName].slice(0, maxLines);
     }
+  }
+
+  pruneSuperFanQueue(now = Date.now()) {
+    this.eventQueues['superfan-display'] = retainRecentSuperFanEvents(
+      this.eventQueues['superfan-display'],
+      now
+    );
   }
 
   createOverlayEventId(type) {
@@ -1130,7 +1196,7 @@ class ClarityHUDBackend {
   /**
    * Connect one configured multi-stream source and schedule retries on failure.
    */
-  async connectMultiStream(streamIndex, attempt) {
+  async connectMultiStream(streamIndex, attempt, fallbackKeyConfirmed = false) {
     const streamConfig = this.settings.multi.streams[streamIndex];
     if (!streamConfig || !streamConfig.enabled || !streamConfig.username) {
       this.updateMultiStreamStatus(streamIndex, { status: 'disabled' });
@@ -1154,9 +1220,9 @@ class ClarityHUDBackend {
     });
 
     try {
-      const connector = new TikTokConnector(io, db, logger);
       const sourceId = `stream${streamIndex + 1}`;
       const sourceLabel = streamConfig.displayName || streamConfig.username;
+      const connector = new TikTokConnector(io, db, logger, { mode: 'secondary', sourceId });
 
       connector.on('chat', (data) => {
         this.handleMultiStreamChat(data, streamIndex, sourceId, sourceLabel, streamConfig);
@@ -1179,20 +1245,35 @@ class ClarityHUDBackend {
         });
       });
 
-      await connector.connect(streamConfig.username);
+      const previouslyConfirmed = this.multiFallbackConfirmations.get(streamIndex) === streamConfig.username;
+      await connector.connect(streamConfig.username, {
+        ...(fallbackKeyConfirmed || previouslyConfirmed ? { fallbackKeyConfirmed: true } : {})
+      });
       this.multiStreamConnectors.push({ streamIndex, connector });
       this.updateMultiStreamStatus(streamIndex, {
         status: 'connected',
         attempts: attempt,
         lastError: null,
         nextRetryAt: null,
-        connectedAt: Date.now()
+        connectedAt: Date.now(),
+        confirmationRequired: false
       });
       
       this.api.log(`Connected multi-stream connector ${streamIndex + 1} to @${streamConfig.username}`, 'info');
     } catch (error) {
       this.api.log(`Failed to connect multi-stream ${streamIndex + 1} (@${streamConfig.username}): ${error.message}`, 'error');
-      this.scheduleMultiStreamReconnect(streamIndex, attempt + 1, error);
+      if (error.connectionStatus === 'fallback_confirmation_required') {
+        this.updateMultiStreamStatus(streamIndex, {
+          status: 'failed',
+          attempts: attempt,
+          lastError: error.message,
+          nextRetryAt: null,
+          connectedAt: null,
+          confirmationRequired: true
+        });
+      } else {
+        this.scheduleMultiStreamReconnect(streamIndex, attempt + 1, error);
+      }
     }
   }
 
@@ -1269,6 +1350,7 @@ class ClarityHUDBackend {
         status: status.status || (streamConfig.enabled && streamConfig.username ? 'pending' : 'disabled'),
         attempts: status.attempts || 0,
         lastError: status.lastError || null,
+        confirmationRequired: Boolean(status.confirmationRequired),
         nextRetryAt: status.nextRetryAt || null,
         connectedAt: status.connectedAt || null
       };

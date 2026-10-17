@@ -8,6 +8,7 @@
         "elevenlabs_api_key_placeholder": "z. B. sk_...",
         "fish_audio_api_key_placeholder": "Fish.audio-API-Schlüssel...",
         "ollama_api_key_placeholder": "z. B. ollama-key-...",
+        "keyterms_placeholder": "z. B. LTTH, TikTok",
         "aria": {
           "add_language": "Sprache hinzufügen"
         },

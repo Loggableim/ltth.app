@@ -59,23 +59,17 @@ describe('Talking Heads local asset library', () => {
     ]);
   });
 
-  test('exposes Boba, Kenney and vector-character catalog entries', () => {
+  test('exposes Boba catalog entries exclusively', () => {
     const catalog = library.getCatalog();
 
-    expect(catalog.packs.map((pack) => pack.id)).toEqual(['boba', 'kenney', 'rgs']);
+    expect(catalog.packs.map((pack) => pack.id)).toEqual(['boba']);
     expect(catalog.packs.find((pack) => pack.id === 'boba').characters).toContain('Fox');
-    expect(catalog.packs.find((pack) => pack.id === 'kenney').options.body).toContain('blueA');
-    expect(catalog.packs.find((pack) => pack.id === 'rgs').options.head).toContain('head1');
   });
 
-  test.each([
-    ['boba', 'Fox', {}],
-    ['kenney', 'blueA', { eye: 'human' }],
-    ['rgs', 'head1', { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' }]
-  ])('materializes five local TTS frames for %s', async (packId, characterId, options) => {
-    const result = await library.getSpriteSet({ packId, characterId, options });
+  test('materializes five local TTS frames for Boba animal', async () => {
+    const result = await library.getSpriteSet({ packId: 'boba', characterId: 'Fox', options: {} });
 
-    expect(result.packId).toBe(packId);
+    expect(result.packId).toBe('boba');
     expect(Object.keys(result.sprites).sort()).toEqual([
       'blink',
       'idle_neutral',
@@ -93,11 +87,151 @@ describe('Talking Heads local asset library', () => {
     }
   });
 
+  test('normalizes non-boba pack requests to boba', async () => {
+    const result = await library.getSpriteSet({ packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } });
+
+    expect(result.packId).toBe('boba');
+    expect(result.characterId).toBe('Fox');
+  });
+
   test('uses a safe default for an unknown local selection', async () => {
     const result = await library.getSpriteSet({ packId: 'unknown', characterId: '../../Fox' });
 
     expect(result.packId).toBe('boba');
     expect(result.characterId).toBe('Fox');
+  });
+
+  test('safely normalizes null, undefined, primitive, and corrupted inputs to default Boba Fox', () => {
+    const expectedDefault = {
+      packId: 'boba',
+      characterId: 'Fox',
+      options: { expression: 'Default' }
+    };
+
+    // Null, undefined, empty object
+    expect(library.normalizeSelection(null)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(undefined)).toEqual(expectedDefault);
+    expect(library.normalizeSelection()).toEqual(expectedDefault);
+    expect(library.normalizeSelection({})).toEqual(expectedDefault);
+
+    // Primitives
+    expect(library.normalizeSelection('invalid')).toEqual(expectedDefault);
+    expect(library.normalizeSelection('')).toEqual(expectedDefault);
+    expect(library.normalizeSelection(123)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(0)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(NaN)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(true)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(false)).toEqual(expectedDefault);
+    expect(library.normalizeSelection(Symbol('test'))).toEqual(expectedDefault);
+    expect(library.normalizeSelection(() => {})).toEqual(expectedDefault);
+
+    // Arrays
+    expect(library.normalizeSelection([])).toEqual(expectedDefault);
+    expect(library.normalizeSelection(['Fox'])).toEqual(expectedDefault);
+
+    // Corrupted objects
+    expect(library.normalizeSelection({ packId: null, characterId: null, options: null })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ packId: 123, characterId: {}, options: [] })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ characterId: Object.create(null) })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ options: { expression: null } })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ options: { expression: 123 } })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ options: { expression: Object.create(null) } })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ options: { expression: [] } })).toEqual(expectedDefault);
+    expect(library.normalizeSelection({ options: { expression: 'invalid_expression' } })).toEqual(expectedDefault);
+
+    // Case-insensitivity & whitespace trimming
+    expect(library.normalizeSelection({
+      packId: 'boba',
+      characterId: 'bear',
+      options: { expression: '  happy  ' }
+    })).toEqual({
+      packId: 'boba',
+      characterId: 'Bear',
+      options: { expression: 'Happy' }
+    });
+  });
+
+  test('generates valid Boba Fox sprite set when selection is null, undefined, or primitive', async () => {
+    const inputs = [null, undefined, {}, 'corrupted-string'];
+
+    for (const input of inputs) {
+      const result = await library.getSpriteSet(input);
+
+      expect(result.packId).toBe('boba');
+      expect(result.characterId).toBe('Fox');
+      expect(result.options).toEqual({ expression: 'Default' });
+      expect(Object.keys(result.sprites).sort()).toEqual([
+        'blink',
+        'idle_neutral',
+        'speak_closed',
+        'speak_mid',
+        'speak_open'
+      ]);
+
+      for (const spriteUrl of Object.values(result.sprites)) {
+        expect(spriteUrl).toMatch(/^\/api\/talkingheads\/sprite\/asset_[a-z0-9_-]+\.svg$/);
+        const filename = spriteUrl.split('/').pop();
+        const svg = await fs.readFile(path.join(dataDir, 'avatars', filename), 'utf8');
+        expect(svg).toContain('<svg');
+        expect(svg).toContain('data:image/png;base64,');
+      }
+    }
+  });
+
+  test('safely handles null options parameter in getSpriteSet(null, null) and getSpriteSet(selection, null)', async () => {
+    const resultNullBoth = await library.getSpriteSet(null, null);
+    expect(resultNullBoth.packId).toBe('boba');
+    expect(resultNullBoth.characterId).toBe('Fox');
+    expect(Object.keys(resultNullBoth.sprites).sort()).toEqual([
+      'blink',
+      'idle_neutral',
+      'speak_closed',
+      'speak_mid',
+      'speak_open'
+    ]);
+
+    const result = await library.getSpriteSet({ packId: 'boba', characterId: 'Fox' }, null);
+    expect(result.packId).toBe('boba');
+    expect(result.characterId).toBe('Fox');
+    expect(Object.keys(result.sprites).sort()).toEqual([
+      'blink',
+      'idle_neutral',
+      'speak_closed',
+      'speak_mid',
+      'speak_open'
+    ]);
+  });
+
+  test('verifies speak_closed !== speak_mid !== speak_open holds for all animals in BOBA_ANIMALS', async () => {
+    const realAssetLibrary = new AssetSpriteLibrary({ dataDir });
+    const catalog = realAssetLibrary.getCatalog();
+    const bobaAnimals = catalog.packs[0].characters;
+
+    expect(bobaAnimals).toHaveLength(16);
+
+    for (const characterId of bobaAnimals) {
+      const result = await realAssetLibrary.getSpriteSet({
+        packId: 'boba',
+        characterId,
+        options: { expression: 'Default' }
+      });
+
+      const closedFile = path.basename(result.sprites.speak_closed);
+      const midFile = path.basename(result.sprites.speak_mid);
+      const openFile = path.basename(result.sprites.speak_open);
+
+      const closedSvg = await fs.readFile(path.join(dataDir, 'avatars', closedFile), 'utf8');
+      const midSvg = await fs.readFile(path.join(dataDir, 'avatars', midFile), 'utf8');
+      const openSvg = await fs.readFile(path.join(dataDir, 'avatars', openFile), 'utf8');
+
+      expect(closedSvg).toMatch(/<svg/);
+      expect(midSvg).toMatch(/<svg/);
+      expect(openSvg).toMatch(/<svg/);
+
+      expect(closedSvg).not.toBe(midSvg);
+      expect(midSvg).not.toBe(openSvg);
+      expect(closedSvg).not.toBe(openSvg);
+    }
   });
 
   test('composes a selected Boba expression with the real eyebrow, nose and mouth filenames', async () => {
@@ -194,9 +328,9 @@ describe('Talking Heads local asset library', () => {
       generatedAssetRegistry: cacheManager
     });
     const selection = {
-      packId: 'kenney',
-      characterId: 'blueA',
-      options: { eye: 'human' }
+      packId: 'boba',
+      characterId: 'Fox',
+      options: { expression: 'Default' }
     };
     const manualFile = path.join(dataDir, 'manual', 'owned-by-user.png');
     await fs.mkdir(path.dirname(manualFile), { recursive: true });
@@ -274,7 +408,7 @@ describe('Talking Heads local asset library', () => {
 
     try {
       const generation = managedLibrary.getSpriteSet(
-        { packId: 'kenney', characterId: 'blueA', options: { eye: 'human' } },
+        { packId: 'boba', characterId: 'Fox', options: { expression: 'Default' } },
         {
           frameNames: ['idle_neutral'],
           ownerId: 'preview:in-flight',
@@ -307,9 +441,9 @@ describe('Talking Heads local asset library', () => {
       generatedAssetRegistry: cacheManager
     });
     const activeSelection = {
-      packId: 'kenney',
-      characterId: 'blueA',
-      options: { eye: 'human' }
+      packId: 'boba',
+      characterId: 'Fox',
+      options: { expression: 'Happy' }
     };
     const staleSelection = {
       packId: 'boba',
@@ -353,6 +487,36 @@ describe('Talking Heads local asset library', () => {
       await expect(fs.access(activeIdlePath)).rejects.toMatchObject({ code: 'ENOENT' });
     } finally {
       db.close();
+    }
+  });
+
+  test('generates distinct SVGs for speak_closed, speak_mid, and speak_open across Boba animals', async () => {
+    const bundledLibrary = new AssetSpriteLibrary({ dataDir });
+    const animals = [
+      'Axolotl', 'Bear', 'Bunny', 'Dog', 'Fox', 'Frog', 'Giraffe', 'Goat',
+      'Monkey', 'Octopus', 'Otter', 'Pinguin', 'Raccoon', 'Seal', 'Snake', 'Spider'
+    ];
+    for (const characterId of animals) {
+      const result = await bundledLibrary.getSpriteSet({
+        packId: 'boba',
+        characterId,
+        options: { expression: 'Default' }
+      });
+      const closedSvg = await fs.readFile(
+        path.join(dataDir, 'avatars', path.basename(result.sprites.speak_closed)),
+        'utf8'
+      );
+      const midSvg = await fs.readFile(
+        path.join(dataDir, 'avatars', path.basename(result.sprites.speak_mid)),
+        'utf8'
+      );
+      const openSvg = await fs.readFile(
+        path.join(dataDir, 'avatars', path.basename(result.sprites.speak_open)),
+        'utf8'
+      );
+      expect(closedSvg).not.toBe(midSvg);
+      expect(midSvg).not.toBe(openSvg);
+      expect(closedSvg).not.toBe(openSvg);
     }
   });
 });

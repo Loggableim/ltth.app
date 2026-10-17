@@ -62,6 +62,25 @@ describe('overlay Quick Tunnel API', () => {
     expect(networkManager.ensureOverlayQuickTunnel).not.toHaveBeenCalled();
   });
 
+  test('rejects credential-like and unknown query keys without starting a tunnel or echoing values', async () => {
+    const { app, networkManager } = createHarness();
+    const canary = 'apiKey-secret-canary';
+
+    const response = await request(app)
+      .post('/api/network/overlay-tunnel/ensure')
+      .set('Host', '127.0.0.1:3000')
+      .send({ overlayURL: `http://127.0.0.1:3000/overlay/viewer-xp/xp-bar?username=viewer&apiKey=${canary}` });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({
+      success: false,
+      code: 'OVERLAY_URL_QUERY_INVALID',
+      error: 'Overlay URL query parameters are invalid'
+    });
+    expect(JSON.stringify(response.body)).not.toContain(canary);
+    expect(networkManager.ensureOverlayQuickTunnel).not.toHaveBeenCalled();
+  });
+
   test('starts once and returns a server-built public URL', async () => {
     const { app, networkManager } = createHarness();
 
@@ -69,14 +88,14 @@ describe('overlay Quick Tunnel API', () => {
       .post('/api/network/overlay-tunnel/ensure')
       .set('Host', '127.0.0.1:3000')
       .send({
-        overlayURL: 'http://localhost:3000/goals/overlay?id=goal-7'
+        overlayURL: 'http://localhost:3000/overlay/viewer-xp/xp-bar?username=viewer-7'
       });
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
       success: true,
       tunnelURL: 'https://quiet-river.trycloudflare.com',
-      publicURL: 'https://quiet-river.trycloudflare.com/goals/overlay?id=goal-7',
+      publicURL: 'https://quiet-river.trycloudflare.com/overlay/viewer-xp/xp-bar?username=viewer-7',
       reused: false
     });
     expect(networkManager.ensureOverlayQuickTunnel).toHaveBeenCalledWith(3000);

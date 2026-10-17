@@ -52,8 +52,7 @@ const testSuites = [
                 assert.ok('configured' in keyInfo, 'keyInfo should have configured property');
                 assert.strictEqual(keyInfo.configured, true, 'configured should be true when fallback key is used');
                 assert.strictEqual(keyInfo.activeSource, 'Fallback Key', 'activeSource should be Fallback Key');
-                assert.ok(typeof keyInfo.activeKey === 'string' && keyInfo.activeKey.includes('...'), 'activeKey should be masked string');
-                assert.ok(keyInfo.activeKey.length >= 12, 'activeKey should show masked sections of the fallback key');
+                assert.strictEqual(keyInfo.activeKey, null, 'key material should not be returned');
             }},
             
             { name: 'Detects database setting key', fn: () => {
@@ -64,20 +63,16 @@ const testSuites = [
                 
                 assert.strictEqual(keyInfo.configured, true, 'configured should be true');
                 assert.strictEqual(keyInfo.activeSource, 'Database Setting', 'activeSource should be Database Setting');
-                assert.ok(keyInfo.activeKey.includes('test_key'), 'activeKey should contain masked key');
-                assert.ok(keyInfo.activeKey.includes('...'), 'activeKey should be masked');
+                assert.strictEqual(keyInfo.activeKey, null, 'key material should not be returned');
             }},
             
-            { name: 'Masks API key properly', fn: () => {
+            { name: 'Does not return API key prefix or suffix', fn: () => {
                 const db = new MockDB();
                 db.setSetting('tiktok_euler_api_key', '12345678901234567890abcdefghijklmnop');
                 const connector = new TikTokConnector(new MockIO(), db);
                 const keyInfo = connector.getEulerApiKeyInfo();
                 
-                assert.ok(keyInfo.activeKey.startsWith('12345678'), 'Should show first 8 chars');
-                assert.ok(keyInfo.activeKey.includes('...'), 'Should contain ...');
-                assert.ok(keyInfo.activeKey.endsWith('mnop'), 'Should show last 4 chars');
-                assert.strictEqual(keyInfo.activeKey, '12345678...mnop', 'Should mask middle of key');
+                assert.strictEqual(keyInfo.activeKey, null, 'key material should not be returned');
             }},
         ]
     },

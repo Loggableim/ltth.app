@@ -4,6 +4,7 @@ const path = require('path');
 const pluginRoot = path.join(__dirname, '..', '..', 'plugin-store', 'sources', 'visual-fx-frame-webgpu');
 const settings = fs.readFileSync(path.join(pluginRoot, 'ui', 'settings.html'), 'utf8');
 const appRoot = path.join(__dirname, '..');
+const runtimeSettings = fs.readFileSync(path.join(appRoot, 'plugins', 'visual-fx-frame-webgpu', 'ui', 'settings.html'), 'utf8');
 const dashboard = fs.readFileSync(path.join(appRoot, 'public', 'dashboard.html'), 'utf8');
 const navigation = fs.readFileSync(path.join(appRoot, 'public', 'js', 'navigation.js'), 'utf8');
 
@@ -73,6 +74,12 @@ describe('Visual FX Frame WEBGPU Control Room', () => {
     ]) expect(settings).toContain(`id="${id}"`);
     expect(settings).toContain("fetch('/api/visual-fx-frame-webgpu/status'");
     expect(settings).toContain('setInterval(loadWebGPUStatus, 2000)');
+  });
+
+  test('keeps the live noise octave value out of static translation replacement', () => {
+    expect(runtimeSettings).toContain('id="noiseOctavesValue">8</span>');
+    expect(runtimeSettings).not.toContain('id="noiseOctavesValue" data-i18n=');
+    expect(runtimeSettings).toContain("document.getElementById('noiseOctavesValue').textContent = config.noiseOctaves || 9;");
   });
 
   test('previews and confirms the one-time legacy import', () => {

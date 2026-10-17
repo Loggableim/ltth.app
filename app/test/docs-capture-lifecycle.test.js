@@ -62,4 +62,18 @@ describe('documentation screenshot capture lifecycle', () => {
     expect(child.kill).toHaveBeenNthCalledWith(1, 'SIGTERM');
     expect(child.kill).toHaveBeenNthCalledWith(2, 'SIGKILL');
   });
+
+  test('recognizes a child already stopped by signal without sending another shutdown signal', async () => {
+    expect(typeof lifecycle.stopCaptureAppChild).toBe('function');
+    const child = new EventEmitter();
+    child.exitCode = null;
+    child.signalCode = 'SIGTERM';
+    child.kill = jest.fn();
+
+    await expect(lifecycle.stopCaptureAppChild(child, {
+      label: 'de/sidekick',
+      timeoutMs: 15
+    })).resolves.toBeUndefined();
+    expect(child.kill).not.toHaveBeenCalled();
+  });
 });

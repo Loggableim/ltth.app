@@ -1,0 +1,2 @@
+
+- Dashboard Markenpalette unabhängig CEO geprüft: aus pp/ mit bundled Node 22 vier gezielte Suiten (dashboard-theme-palette, dashboard-theme-accessibility, dashboard-theme-action-focus, 	heme-manager-default) **4/4 Suites, 32/32 Tests PASS**. Der Nachtmodus ist nun grün getönt/off-white mit violetten Markenakzenten; Tagmodus weiß/mint mit dunklem Text. Kontrast-/Fokus-Assertions mindestens 4.5:1. git diff --check des Agents PASS. Mockups bleiben Prototypen, keine Produkt-UI-Richtung gewählt.

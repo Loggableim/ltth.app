@@ -37,6 +37,20 @@ function createApp() {
   app.get('/api/stable-overlay-routing/account', (_req, res) => {
     res.json({ username: 'must-stay-local' });
   });
+  app.get('/api/plugins/music-bot/config', (_req, res) => {
+    res.json({
+      success: true,
+      config: {
+        playback: { mpvPath: 'C:\\private\\mpv.exe' },
+        autoDJ: { playlistUrls: ['https://private.invalid/list?token=fixture'] },
+        moderation: { blockedKeywords: ['fixture-private-keyword'] },
+        monetization: { payToPlayGiftCatalog: ['fixture-private-gift'] }
+      }
+    });
+  });
+  app.get('/plugins/music-bot/ui', (_req, res) => {
+    res.type('html').send('<h1>Music Bot Configuration</h1>');
+  });
   app.get('/api/game-engine/arena/state', (_req, res) => {
     res.json({
       gameType: 'arena', reason: 'snapshot', timestamp: 123,
@@ -127,11 +141,11 @@ describe('public overlay Express middleware', () => {
       .get('/api/weather/config')
       .set('Host', 'quiet-river.trycloudflare.com');
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      success: true,
-      config: { enabled: true, qualityPreset: 'high', adaptiveQuality: true, maxConcurrentEffects: 4, effects: { rain: { enabled: true, defaultIntensity: 0.5, defaultDuration: 10000, layer: 20 } }, gamification: { enabled: true, overlay: { enabled: true, showMeter: true, showQuest: true, showStreak: true, showRewardFeed: true } } }
-    });
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: 'Not found' });
+    const localResponse = await request(createApp()).get('/api/weather/config').set('Host', '127.0.0.1:3000');
+    expect(localResponse.status).toBe(200);
+    expect(localResponse.body.config.apiKey).toBe('must-not-leak');
   });
 
   test('projects the Arena state GET only on the public Quick Tunnel request', async () => {
@@ -142,13 +156,8 @@ describe('public overlay Express middleware', () => {
       .get('/api/game-engine/arena/state')
       .set('Host', '127.0.0.1:3000');
 
-    expect(publicResponse.status).toBe(200);
-    expect(publicResponse.body).toEqual({
-      gameType: 'arena', config: { arenaWidth: 1080, giftWeaponMappings: {} },
-      fever: { active: false }, players: [], food: [], weaponPickups: [],
-      mines: [], bombs: [], leaderboard: []
-    });
-    expect(JSON.stringify(publicResponse.body)).not.toMatch(/private-config|private-state|endsAt|timestamp|reason/);
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
     expect(localResponse.body.localOnly).toBe('private-state');
     expect(localResponse.body.config.apiKey).toBe('private-config');
     expect(localResponse.body.timestamp).toBe(123);
@@ -163,14 +172,8 @@ describe('public overlay Express middleware', () => {
       .get(`/api/game-engine/config/${gameType}`)
       .set('Host', '127.0.0.1:3000');
 
-    expect(publicResponse.status).toBe(200);
-    expect(publicResponse.body).not.toHaveProperty('privateCanary');
-    expect(publicResponse.body).not.toHaveProperty('chatCommand');
-    expect(publicResponse.body).not.toHaveProperty('timeoutLockoutMinutes');
-    expect(publicResponse.body).not.toHaveProperty('autoplay');
-    expect(publicResponse.body).not.toHaveProperty('streamerRole');
-    expect(publicResponse.body.displayTexts).not.toHaveProperty('privateText');
-    expect(publicResponse.body).toHaveProperty('displayTexts.titleText', gameType === 'chess' ? 'Chess' : 'Connect4');
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
     expect(localResponse.body).toHaveProperty('privateCanary', 'local-only');
     if (gameType === 'chess') {
       expect(localResponse.body).toHaveProperty('displayTexts.privateText', 'drop');
@@ -199,10 +202,7 @@ describe('public overlay Express middleware', () => {
       .get('/api/game-engine/arena/state')
       .set('Host', '127.0.0.1:3000');
 
-    expect(publicResponse.status).toBe(200);
-    expect(publicResponse.body.gameType).toBe('arena');
-    expect(publicResponse.body.config).toHaveProperty('giftWeaponMappings', {});
-    expect(publicResponse.body).not.toHaveProperty('timestamp');
+    expect(publicResponse.status).toBe(404);
     expect(localResponse.body).toEqual(actualProducerState);
     expect(game.tickTimer).toBeNull();
   });
@@ -222,8 +222,8 @@ describe('public overlay Express middleware', () => {
       .get('/api/game-engine/arena/state')
       .set('Host', '127.0.0.1:3000');
 
-    expect(publicResponse.status).toBe(500);
-    expect(publicResponse.body).toEqual({ error: 'Response unavailable' });
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
     expect(JSON.stringify(publicResponse.body)).not.toContain('local');
     expect(localResponse.body.secret).toBe('local');
   });
@@ -264,6 +264,8 @@ describe('public overlay Express middleware', () => {
   test.each([
     '/dashboard.html',
     '/api/network/config',
+    '/api/plugins/music-bot/config',
+    '/plugins/music-bot/ui',
     '/plugins/game-engine/ui.html',
     '/does-not-exist'
   ])('returns the same neutral 404 for denied public path %s', async pathname => {
@@ -273,6 +275,23 @@ describe('public overlay Express middleware', () => {
 
     expect(response.status).toBe(404);
     expect(response.body).toEqual({ error: 'Not found' });
+    expect(JSON.stringify(response.body)).not.toMatch(/private\\mpv|private\.invalid|fixture-private/);
+  });
+
+  test('keeps Music Bot config GET unchanged on loopback but never exposes it on Quick Tunnel', async () => {
+    const localResponse = await request(createApp())
+      .get('/api/plugins/music-bot/config')
+      .set('Host', '127.0.0.1:3000');
+    const publicResponse = await request(createApp())
+      .get('/api/plugins/music-bot/config')
+      .set('Host', 'quiet-river.trycloudflare.com');
+
+    expect(localResponse.status).toBe(200);
+    expect(localResponse.body.config.playback.mpvPath).toBe('C:\\private\\mpv.exe');
+    expect(localResponse.body.config.autoDJ.playlistUrls).toEqual(['https://private.invalid/list?token=fixture']);
+    expect(publicResponse.status).toBe(404);
+    expect(publicResponse.body).toEqual({ error: 'Not found' });
+    expect(JSON.stringify(publicResponse.body)).not.toMatch(/private\\mpv|private\.invalid|fixture-private/);
   });
 
   test.each([
@@ -350,7 +369,7 @@ describe('public overlay socket protection', () => {
 
     const registeredNext = jest.fn();
     socket.incomingMiddleware(['weather:client-ready', { renderer: 'overlay' }], registeredNext);
-    expect(registeredNext).toHaveBeenCalledWith();
+    expect(registeredNext.mock.calls[0][0]).toBeInstanceOf(Error);
 
     const deniedNext = jest.fn();
     const secretPayload = { token: 'never log this' };
@@ -358,9 +377,9 @@ describe('public overlay socket protection', () => {
     expect(deniedNext.mock.calls[0][0]).toBeInstanceOf(Error);
     expect(logger.warn.mock.calls.flat().join(' ')).not.toContain('never log this');
 
-    expect(socket.emit('weather:trigger', { action: 'rain', intensity: 1, duration: 1000, permanent: false, options: {} })).toBe(true);
+    expect(socket.emit('weather:trigger', { action: 'rain', intensity: 1, duration: 1000, permanent: false, options: {} })).toBe(false);
     expect(socket.emit('admin:settings-updated', secretPayload)).toBe(false);
-    expect(originalEmit).toHaveBeenCalledTimes(1);
+    expect(originalEmit).not.toHaveBeenCalled();
     const warningText = logger.warn.mock.calls.flat().join(' ');
     expect(warningText).not.toContain('quiet-river.trycloudflare.com');
     expect(warningText).not.toContain(
@@ -398,18 +417,8 @@ describe('public overlay socket protection', () => {
     reconnectedPublicSocket.emit('zappiehell:goals:state', payload);
     localSocket.emit('zappiehell:goals:state', payload);
 
-    expect(publicOriginalEmit).toHaveBeenCalledTimes(1);
-    expect(reconnectedOriginalEmit).toHaveBeenCalledTimes(1);
-    const publicPayload = publicOriginalEmit.mock.calls[0][1];
-    expect(publicOriginalEmit.mock.calls[0][0]).toBe('zappiehell:goals:state');
-    expect(publicPayload.goals[0]).toMatchObject({
-      name: 'Goal', targetCoins: 100, currentCoins: 20, type: 'stream', active: true
-    });
-    expect(publicPayload.goals[0].displayToken).toMatch(/^[0-9a-f-]{36}$/i);
-    expect(publicPayload.goals[0]).not.toHaveProperty('id');
-    expect(JSON.stringify(publicPayload)).not.toContain('internal-goal-id');
-    expect(reconnectedOriginalEmit.mock.calls[0][1].goals[0].displayToken)
-      .toBe(publicPayload.goals[0].displayToken);
+    expect(publicOriginalEmit).not.toHaveBeenCalled();
+    expect(reconnectedOriginalEmit).not.toHaveBeenCalled();
     expect(localOriginalEmit).toHaveBeenCalledWith('zappiehell:goals:state', payload);
   });
 
@@ -443,9 +452,7 @@ describe('public Weather HTTP response projection', () => {
     } }));
     const publicResponse = await request(app).get('/api/weather/config').set('Host', 'quiet-river.trycloudflare.com');
     const localResponse = await request(app).get('/api/weather/config').set('Host', '127.0.0.1:3000');
-    expect(publicResponse.body.config).not.toHaveProperty('apiKey');
-    expect(publicResponse.body.config).not.toHaveProperty('permissions');
-    expect(publicResponse.body.config.effects.rain).toEqual({ enabled: true, defaultIntensity: 0.5, defaultDuration: 10000, layer: 20 });
+    expect(publicResponse.status).toBe(404);
     expect(localResponse.body.config).toHaveProperty('apiKey', 'secret');
     expect(localResponse.body.config).toHaveProperty('permissions.admin');
   });
@@ -460,10 +467,7 @@ describe('public Weather HTTP response projection', () => {
     app.get('/api/weather/config', (_req, res) => res.json({ success: true, config: { apiKey: 'must-not-leak' } }));
     const gamification = await request(app).get('/api/weather/gamification').set('Host', 'quiet-river.trycloudflare.com');
     const malformed = await request(app).get('/api/weather/config').set('Host', 'quiet-river.trycloudflare.com');
-    expect(gamification.body).toEqual({ success: true, gamification: {
-      enabled: true, communityMeter: { current: 3, max: 10 }, streaks: { current: 2 }, quest: null, rewards: { nextThreshold: null }
-    } });
-    expect(malformed.status).toBe(500);
-    expect(JSON.stringify(malformed.body)).not.toContain('must-not-leak');
+    expect(gamification.status).toBe(404);
+    expect(malformed.status).toBe(404);
   });
 });

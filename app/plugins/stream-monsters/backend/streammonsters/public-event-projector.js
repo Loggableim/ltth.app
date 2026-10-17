@@ -25,6 +25,24 @@ const CRITICAL_EVENT_TYPES = new Set([
   'streammonsters:achievement_unlocked',
   'streammonsters:season_rank_changed'
 ]);
+const MASTERY_PUBLIC_UNLOCKS = new Set(['title', 'attack_trail', 'mastery_frame']);
+const STREAM_MISSION_KEYS = new Set([
+  'six_hatches', 'four_elements', 'three_battles', 'heart_chain_five'
+]);
+const STREAM_ACHIEVEMENT_KEYS = new Set([
+  'first_hatch', 'charged_hatch', 'six_elements', '10_battles',
+  '50_battles', '100_battles', 'five_win_streak'
+]);
+const STREAM_QUEST_KEYS = new Set([
+  'daily:gift', 'daily:hatch', 'daily:chat',
+  'weekly:event', 'weekly:battle', 'weekly:collection'
+]);
+const SEASON_RANK_KEYS = new Set([
+  'Monster Master', 'Crystal', 'Gold', 'Silver', 'Bronze'
+]);
+const EGG_STAGE_TIMING_KEYS = new Set([
+  'landedAtMs', 'publicAtMs', 'claimedAtMs', 'readyAtMs', 'expiresAtMs'
+]);
 
 const PRIVATE_KEYS = new Set([
   'userid',
@@ -90,6 +108,10 @@ const PRIVATE_KEY_SUFFIXES = Object.freeze([
 
 function normalizedKey(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+function isRecord(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
 function isPrivateKey(key) {
@@ -259,6 +281,47 @@ function projectEgg(egg = null) {
     ),
     imageUrl: safeImageUrl(egg.imageUrl ?? egg.image_url)
   };
+}
+
+function projectEggStageSnapshot(stage) {
+  if (!isRecord(stage) || !/^egg-[a-f0-9]{24}$/i.test(stage.visualId || '')) return null;
+  const projected = {
+    visualId: stage.visualId,
+    provenance: ['gift', 'free', 'legacy'].includes(stage.provenance) ? stage.provenance : 'legacy',
+    displayName: publicViewerName(stage.displayName) || 'Viewer',
+    element: boundedText(stage.element, 24),
+    variant: boundedText(stage.variant, 24),
+    state: boundedText(stage.state, 24),
+    imageUrl: safeImageUrl(stage.imageUrl),
+    avatarRef: safeImageUrl(stage.avatarRef)
+  };
+  if (stage.ownershipState !== undefined) {
+    if (!['owned', 'public', 'reserved', 'claimed'].includes(stage.ownershipState)) return null;
+    projected.ownershipState = stage.ownershipState;
+  }
+  if (stage.timing !== undefined) {
+    if (!isRecord(stage.timing)) return null;
+    const timing = {};
+    for (const [key, value] of Object.entries(stage.timing)) {
+      if (!EGG_STAGE_TIMING_KEYS.has(key)) continue;
+      if (value !== null && (!Number.isFinite(value) || value < 0)) return null;
+      timing[key] = value;
+    }
+    projected.timing = timing;
+  }
+  if (stage.queuePosition !== undefined) {
+    if (stage.queuePosition !== null && (!Number.isFinite(stage.queuePosition) || stage.queuePosition < 0)) return null;
+    projected.queuePosition = stage.queuePosition;
+  }
+  if (stage.adoptionStatus !== undefined) {
+    if (typeof stage.adoptionStatus !== 'string' || stage.adoptionStatus.length > 24) return null;
+    projected.adoptionStatus = stage.adoptionStatus;
+  }
+  if (stage.adoptable !== undefined) {
+    if (typeof stage.adoptable !== 'boolean') return null;
+    projected.adoptable = stage.adoptable;
+  }
+  return projected;
 }
 
 function projectGift(gift = null) {
@@ -714,6 +777,43 @@ class StreamMonstersPublicEventProjector {
   }
 
   project(eventType, payload = {}) {
+    if (eventType === 'streammonsters:egg_ready') {
+      const egg = projectEgg(payload.egg);
+      const eggStage = projectEggStageSnapshot(payload.eggStage);
+      if (!egg || !eggStage) return {};
+      return {
+        displayName: this.displayName(payload),
+        egg,
+        eggStage,
+        hint: boundedText(payload.hint, 160)
+      };
+    }
+    if (eventType === 'streammonsters:hatch_started') {
+      const egg = projectEgg(payload.egg);
+      if (!egg) return {};
+      return {
+        displayName: this.displayName(payload),
+        egg,
+        ...(payload.autoHatch === true ? { autoHatch: true } : {})
+      };
+    }
+    if (eventType === 'streammonsters:free_egg_claimed') {
+      const eggStage = projectEggStageSnapshot(payload.eggStage);
+      const removedEggStage = projectEggStageSnapshot(payload.removedEggStage);
+      if (!eggStage || !removedEggStage) return {};
+      return { eggStage, removedEggStage };
+    }
+    if (eventType === 'streammonsters:owned_ready_egg_claimed') {
+      const eggStage = projectEggStageSnapshot(payload.eggStage);
+      return eggStage ? { eggStage } : {};
+    }
+    if (eventType === 'streammonsters:egg_spawned') {
+      return {
+        displayName: this.displayName(payload),
+        egg: projectEgg(payload.egg),
+        hint: boundedText(payload.hint, 160)
+      };
+    }
     if (eventType === 'streammonsters:egg_hatched') {
       const owner = this.owner(payload);
       return {
@@ -722,6 +822,43 @@ class StreamMonstersPublicEventProjector {
         egg: projectEgg(payload.egg),
         monster: projectMonster(payload.monster),
         ...(payload.autoHatch === true ? { autoHatch: true } : {})
+      };
+    }
+    if (eventType === 'streammonsters:mastery_unlocked') {
+      return MASTERY_PUBLIC_UNLOCKS.has(payload.unlock)
+        ? { unlock: payload.unlock }
+        : {};
+    }
+    if (eventType === 'streammonsters:stream_mission_completed') {
+      const missionKey = payload.mission?.mission_key ?? payload.mission?.missionKey;
+      return {
+        mission: STREAM_MISSION_KEYS.has(missionKey) ? { mission_key: missionKey } : {}
+      };
+    }
+    if (eventType === 'streammonsters:achievement_unlocked') {
+      const achievementKey = payload.achievement?.achievement_key ??
+        payload.achievement?.achievementKey;
+      return {
+        displayName: this.displayName(payload),
+        achievement: STREAM_ACHIEVEMENT_KEYS.has(achievementKey)
+          ? { achievement_key: achievementKey }
+          : {}
+      };
+    }
+    if (eventType === 'streammonsters:quest_completed') {
+      const questKey = payload.quest?.quest_key ?? payload.quest?.questKey;
+      return {
+        quest: STREAM_QUEST_KEYS.has(questKey) ? { quest_key: questKey } : {}
+      };
+    }
+    if (eventType === 'streammonsters:season_rank_changed') {
+      const rank = payload.after ?? payload.rank ?? payload.score?.rank;
+      const points = Number(payload.score?.points ?? payload.points);
+      if (!SEASON_RANK_KEYS.has(rank) || !Number.isFinite(points) || points < 0) return {};
+      return {
+        displayName: this.displayName(payload),
+        after: rank,
+        score: { points }
       };
     }
     if (eventType === 'streammonsters:monster_discovered') {

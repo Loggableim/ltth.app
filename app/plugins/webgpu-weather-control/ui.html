@@ -795,11 +795,11 @@
             <!-- Header -->
         <div class="header fade-in">
             <div class="header-title">
-                <span class="icon">ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                <span class="icon">🌦️</span>
                 <h1 data-i18n-key="plugins.webgpu-weather-control.header.title">Weather Control</h1>
             </div>
             <a href="/dashboard.html" class="btn btn-secondary" id="backButton" data-i18n-key="plugins.webgpu-weather-control.header.back">
-                <span>ÃƒÂ¢Ã¢â‚¬Â Ã‚Â</span>
+                <span>←</span>
                 Back to Dashboard
             </a>
         </div>
@@ -822,7 +822,7 @@
                 <div class="stat-label" data-i18n-key="plugins.webgpu-weather-control.stats.events">Events Triggered</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="connectionStatus">ÃƒÂ¢Ã…Â¡Ã‚Âª</div>
+                <div class="stat-value" id="connectionStatus">●</div>
                 <div class="stat-label" data-i18n-key="plugins.webgpu-weather-control.stats.connection">Connection</div>
             </div>
         </div>
@@ -830,7 +830,7 @@
         <!-- Live Preview Section -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                <span>🌤️</span>
                 <h3 data-i18n-key="plugins.webgpu-weather-control.cards.preview.title">Live Weather Preview</h3>
             </div>
             <div class="card-body">
@@ -841,15 +841,15 @@
 
                     <div class="preview-controls">
                         <button class="btn btn-primary" id="togglePreviewBtn">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span id="togglePreviewText" data-i18n-key="plugins.webgpu-weather-control.buttons.preview_on">Start Preview</span>
                         </button>
                         <button class="btn btn-secondary" id="testRainEffectBtn">
-                            <span>ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â§ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>🌧️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.buttons.test_rain">Test Rain Effect</span>
                         </button>
                         <button class="btn btn-danger" id="stopAllPreviewBtn">
-                            <span>ÃƒÂ¢Ã‚ÂÃ‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>⏹️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.buttons.stop_all">Stop All</span>
                         </button>
                     </div>
@@ -874,7 +874,7 @@
                     </div>
 
                     <div class="preview-warning" id="preview-warning">
-                        <span>ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                        <span>⚠️</span>
                         <span data-i18n-key="plugins.webgpu-weather-control.preview.warning">Performance Warning: This configuration may lag on low-end systems</span>
                     </div>
                 </div>
@@ -884,7 +884,7 @@
         <!-- Main Settings -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ¢Ã…Â¡Ã¢â€žÂ¢ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                <span>⚙️</span>
                 <h3 data-i18n-key="plugins.webgpu-weather-control.cards.main.title">Main Settings</h3>
             </div>
             <div class="card-body">
@@ -928,7 +928,7 @@
                         <div class="url-copy">
                             <input type="text" class="form-control" id="overlayUrl" readonly>
                             <button class="btn btn-primary" id="copyOverlayUrlBtn" data-i18n-key="plugins.webgpu-weather-control.buttons.copy">
-                                <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹</span>
+                                <span>📋</span>
                                 Copy
                             </button>
                             <button type="button" class="btn btn-primary"
@@ -944,10 +944,10 @@
                         <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.settings.quality_preset">Quality Preset</label>
                         <select class="form-select" id="qualityPreset">
                             <option value="auto" selected data-i18n="plugins.webgpu-weather-control.labels.auto_adaptive_1080p60">Auto - Adaptive 1080p60</option>
-                            <option value="low" data-i18n="plugins.webgpu-weather-control.labels.low_100_max_particles">Low ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 100 max particles</option>
-                            <option value="medium" data-i18n="plugins.webgpu-weather-control.labels.medium_300">Medium ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 300</option>
-                            <option value="high" data-i18n="plugins.webgpu-weather-control.labels.high_500">High ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 500</option>
-                            <option value="ultra" data-i18n="plugins.webgpu-weather-control.labels.ultra_800">Ultra ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ 800</option>
+                            <option value="low" data-i18n="plugins.webgpu-weather-control.labels.low_100_max_particles">Low – 100 max particles</option>
+                            <option value="medium" data-i18n="plugins.webgpu-weather-control.labels.medium_300">Medium – 300</option>
+                            <option value="high" data-i18n="plugins.webgpu-weather-control.labels.high_500">High – 500</option>
+                            <option value="ultra" data-i18n="plugins.webgpu-weather-control.labels.ultra_800">Ultra – 800</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1073,7 +1073,7 @@
         <!-- Permission Settings -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â¡ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                <span>🛡️</span>
                 <h3 data-i18n-key="plugins.webgpu-weather-control.cards.permissions.title">Permission Settings</h3>
             </div>
             <div class="card-body">
@@ -1106,7 +1106,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.followers"><span>ÃƒÂ¢Ã‚ÂÃ‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â</span> Followers</span>
+                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.followers"><span>♥️</span> Followers</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowFollowers">
                                         <span class="slider"></span>
@@ -1118,7 +1118,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.superfans"><span>ÃƒÂ¢Ã‚Â­Ã‚Â</span> Superfans</span>
+                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.superfans"><span>⭐</span> Superfans</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowSuperfans">
                                         <span class="slider"></span>
@@ -1130,7 +1130,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.subscribers"><span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ</span> Subscribers</span>
+                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.subscribers"><span>👥</span> Subscribers</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowSubscribers">
                                         <span class="slider"></span>
@@ -1142,7 +1142,7 @@
                         <div class="form-group">
                             <label class="form-label">
                                 <span style="display: flex; justify-content: space-between; align-items: center;">
-                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.team_members"><span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥</span> Team Members</span>
+                                    <span data-i18n-key="plugins.webgpu-weather-control.cards.permissions.team_members"><span>👥</span> Team Members</span>
                                     <label class="switch">
                                         <input type="checkbox" id="allowTeamMembers">
                                         <span class="slider"></span>
@@ -1179,7 +1179,7 @@
         <!-- Gamification Settings -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â®</span>
+                <span>🎮</span>
                 <h3 data-i18n="plugins.webgpu-weather-control.labels.weather_gamification">Weather Gamification</h3>
             </div>
             <div class="card-body">
@@ -1319,7 +1319,7 @@
         <!-- Weather Effects -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ°Ã…Â¸Ã…â€™Ã‹â€ </span>
+                <span>🌦️</span>
                 <h3 data-i18n-key="plugins.webgpu-weather-control.cards.effects.title">Weather Effects Configuration</h3>
             </div>
             <div class="card-body">
@@ -1328,7 +1328,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #60a5fa; font-size: 1.5rem;">ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â§ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #60a5fa; font-size: 1.5rem;">🌧️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.rain">Rain</span>
                             </div>
                             <label class="switch">
@@ -1341,7 +1341,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-rain-intensity-val">0.5</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-rain-intensity" min="0" max="1" step="0.1" value="0.5">
+                            <input type="range" class="range-slider" id="effect-rain-intensity" min="0" max="1" step="0.01" value="0.5">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1360,7 +1360,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="rain">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1369,7 +1369,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #93c5fd; font-size: 1.5rem;">ÃƒÂ¢Ã‚ÂÃ¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #93c5fd; font-size: 1.5rem;">❄️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.snow">Snow</span>
                             </div>
                             <label class="switch">
@@ -1382,7 +1382,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-snow-intensity-val">0.5</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-snow-intensity" min="0" max="1" step="0.1" value="0.5">
+                            <input type="range" class="range-slider" id="effect-snow-intensity" min="0" max="1" step="0.01" value="0.5">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1401,7 +1401,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="snow">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1410,7 +1410,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #818cf8; font-size: 1.5rem;">ÃƒÂ¢Ã¢â‚¬ÂºÃ‹â€ ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #818cf8; font-size: 1.5rem;">⛈️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.storm">Storm</span>
                             </div>
                             <label class="switch">
@@ -1423,7 +1423,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-storm-intensity-val">0.7</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-storm-intensity" min="0" max="1" step="0.1" value="0.7">
+                            <input type="range" class="range-slider" id="effect-storm-intensity" min="0" max="1" step="0.01" value="0.7">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1442,7 +1442,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="storm">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1451,7 +1451,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #94a3b8; font-size: 1.5rem;">ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â«ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #94a3b8; font-size: 1.5rem;">🌫️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.fog">Fog</span>
                             </div>
                             <label class="switch">
@@ -1464,7 +1464,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-fog-intensity-val">0.4</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-fog-intensity" min="0" max="1" step="0.1" value="0.4">
+                            <input type="range" class="range-slider" id="effect-fog-intensity" min="0" max="1" step="0.01" value="0.4">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1493,7 +1493,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="fog">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1502,7 +1502,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #fbbf24; font-size: 1.5rem;">ÃƒÂ¢Ã…Â¡Ã‚Â¡</span>
+                                <span style="color: #fbbf24; font-size: 1.5rem;">⚡</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.thunder">Thunder</span>
                             </div>
                             <label class="switch">
@@ -1515,7 +1515,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-thunder-intensity-val">0.8</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-thunder-intensity" min="0" max="1" step="0.1" value="0.8">
+                            <input type="range" class="range-slider" id="effect-thunder-intensity" min="0" max="1" step="0.01" value="0.8">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1534,7 +1534,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="thunder">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1543,7 +1543,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #fcd34d; font-size: 1.5rem;">ÃƒÂ¢Ã‹Å“Ã¢â€šÂ¬ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #fcd34d; font-size: 1.5rem;">☀️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.sunbeam">Sunbeam</span>
                             </div>
                             <label class="switch">
@@ -1556,7 +1556,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-sunbeam-intensity-val">0.6</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-sunbeam-intensity" min="0" max="1" step="0.1" value="0.6">
+                            <input type="range" class="range-slider" id="effect-sunbeam-intensity" min="0" max="1" step="0.01" value="0.6">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1584,7 +1584,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="sunbeam">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1593,7 +1593,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #c084fc; font-size: 1.5rem;">ÃƒÂ¢Ã‹Å“Ã‚ÂÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #c084fc; font-size: 1.5rem;">🌌</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.glitchclouds">Glitch Clouds</span>
                             </div>
                             <label class="switch">
@@ -1606,7 +1606,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-glitchclouds-intensity-val">0.7</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-glitchclouds-intensity" min="0" max="1" step="0.1" value="0.7">
+                            <input type="range" class="range-slider" id="effect-glitchclouds-intensity" min="0" max="1" step="0.01" value="0.7">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1653,10 +1653,10 @@
                                 <span data-i18n="plugins.webgpu-weather-control.labels.glitch_intensity_multiplier">Glitch Intensity Multiplier</span>
                                 <span class="range-value" id="effect-glitchclouds-glitchintensity-val">1.0</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-glitchclouds-glitchintensity" min="0.1" max="3" step="0.1" value="1">
+                            <input type="range" class="range-slider" id="effect-glitchclouds-glitchintensity" min="0.1" max="3" step="0.01" value="1">
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="glitchclouds">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1665,7 +1665,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #818cf8; font-size: 1.5rem;">ÃƒÂ°Ã…Â¸Ã…â€™Ã…â€™</span>
+                                <span style="color: #818cf8; font-size: 1.5rem;">🌌</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.aurora">Aurora Borealis</span>
                             </div>
                             <label class="switch">
@@ -1678,7 +1678,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-aurora-intensity-val">0.6</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-aurora-intensity" min="0" max="1" step="0.1" value="0.6">
+                            <input type="range" class="range-slider" id="effect-aurora-intensity" min="0" max="1" step="0.01" value="0.6">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1697,7 +1697,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="aurora">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1706,7 +1706,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #fbbf24; font-size: 1.5rem;">ÃƒÂ¢Ã…â€œÃ‚Â¨</span>
+                                <span style="color: #fbbf24; font-size: 1.5rem;">✨</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.fireflies">Fireflies</span>
                             </div>
                             <label class="switch">
@@ -1719,7 +1719,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-fireflies-intensity-val">0.5</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-fireflies-intensity" min="0" max="1" step="0.1" value="0.5">
+                            <input type="range" class="range-slider" id="effect-fireflies-intensity" min="0" max="1" step="0.01" value="0.5">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1738,7 +1738,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="fireflies">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1747,7 +1747,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #f97316; font-size: 1.5rem;">ÃƒÂ¢Ã‹Å“Ã¢â‚¬Å¾ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                                <span style="color: #f97316; font-size: 1.5rem;">☄️</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.meteors">Meteor Shower</span>
                             </div>
                             <label class="switch">
@@ -1760,7 +1760,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-meteors-intensity-val">0.4</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-meteors-intensity" min="0" max="1" step="0.1" value="0.4">
+                            <input type="range" class="range-slider" id="effect-meteors-intensity" min="0" max="1" step="0.01" value="0.4">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1779,7 +1779,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="meteors">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1788,7 +1788,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #f9a8d4; font-size: 1.5rem;">ÃƒÂ°Ã…Â¸Ã…â€™Ã‚Â¸</span>
+                                <span style="color: #f9a8d4; font-size: 1.5rem;">🌸</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.sakura">Sakura Petals</span>
                             </div>
                             <label class="switch">
@@ -1801,7 +1801,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-sakura-intensity-val">0.6</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-sakura-intensity" min="0" max="1" step="0.1" value="0.6">
+                            <input type="range" class="range-slider" id="effect-sakura-intensity" min="0" max="1" step="0.01" value="0.6">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1820,7 +1820,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="sakura">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1829,7 +1829,7 @@
                     <div class="effect-card">
                         <div class="effect-header">
                             <div class="effect-title">
-                                <span style="color: #ef4444; font-size: 1.5rem;">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â¥</span>
+                                <span style="color: #ef4444; font-size: 1.5rem;">🔥</span>
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.names.embers">Rising Embers</span>
                             </div>
                             <label class="switch">
@@ -1842,7 +1842,7 @@
                                 <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">Intensity</span>
                                 <span class="range-value" id="effect-embers-intensity-val">0.5</span>
                             </label>
-                            <input type="range" class="range-slider" id="effect-embers-intensity" min="0" max="1" step="0.1" value="0.5">
+                            <input type="range" class="range-slider" id="effect-embers-intensity" min="0" max="1" step="0.01" value="0.5">
                         </div>
                         <div class="form-group">
                             <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">Duration (ms)</label>
@@ -1861,7 +1861,7 @@
                             <small class="form-text" data-i18n-key="plugins.webgpu-weather-control.effects.permanent_help">Keep this effect running until manually stopped.</small>
                         </div>
                         <button class="btn btn-primary btn-sm w-100" data-test-effect="embers">
-                            <span>ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â</span>
+                            <span>▶️</span>
                             <span data-i18n-key="plugins.webgpu-weather-control.effects.test_button">Test Effect</span>
                         </button>
                     </div>
@@ -1970,7 +1970,7 @@
         <!-- Gift-to-Weather Mappings -->
         <div class="card fade-in">
             <div class="card-header">
-                <span>ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â</span>
+                <span>🎁</span>
                 <h3 data-i18n-key="plugins.webgpu-weather-control.cards.gifts.title">Gift-to-Weather Mappings</h3>
             </div>
             <div class="card-body">
@@ -1980,15 +1980,15 @@
 
                 <div style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
                     <button class="btn btn-primary" id="loadGiftCatalog" data-i18n-key="plugins.webgpu-weather-control.buttons.load_catalog">
-                        <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾</span>
+                        <span>📥</span>
                         Load Gift Catalog
                     </button>
                     <button class="btn btn-secondary" id="updateGiftCatalog" data-i18n-key="plugins.webgpu-weather-control.buttons.update_catalog">
-                        <span>ÃƒÂ¢Ã…Â¸Ã‚Â³</span>
+                        <span>⏳</span>
                         Update Gift Catalog
                     </button>
                     <button class="btn btn-secondary" id="refreshGiftMappings" data-i18n-key="plugins.webgpu-weather-control.buttons.refresh_mappings">
-                        <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾</span>
+                        <span>🔄</span>
                         Refresh Mappings
                     </button>
                     <span id="giftCatalogStatus" class="help-text"></span>
@@ -2004,7 +2004,7 @@
         <!-- Save Button -->
         <div style="text-align: center; margin-top: 2rem; margin-bottom: 2rem;">
             <button class="btn btn-success btn-lg" id="saveConfig" data-i18n-key="plugins.webgpu-weather-control.buttons.save_config">
-                <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾</span>
+                <span>💾</span>
                 Save Configuration
             </button>
         </div>
@@ -2171,10 +2171,10 @@
                 'cards.permissions.title': 'Permission Settings',
                 'cards.permissions.enable': 'Enable Permission System',
                 'cards.permissions.allow_all': 'Allow All Users',
-                'cards.permissions.followers': 'ÃƒÂ¢Ã‚ÂÃ‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â Followers',
-                'cards.permissions.superfans': 'ÃƒÂ¢Ã‚Â­Ã‚Â Superfans',
-                'cards.permissions.subscribers': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ Subscribers',
-                'cards.permissions.team_members': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥ Team Members',
+                'cards.permissions.followers': '♥ Follower',
+                'cards.permissions.superfans': '★ Superfans',
+                'cards.permissions.subscribers': 'Subscribers',
+                'cards.permissions.team_members': 'Team Members',
                 'cards.permissions.min_team_level': 'Min Team Level',
                 'cards.permissions.top_gifters': 'Top Gifters (Top N)',
                 'cards.permissions.min_points': 'Minimum Points Required',
@@ -2235,10 +2235,10 @@
             },
             de: {
                 'header.title': 'Wetterkontrolle',
-                'header.back': 'ZurÃƒÆ’Ã‚Â¼ck zum Dashboard',
+                'header.back': 'Zurück zum Dashboard',
                 'stats.effects': 'Wetter-Effekte',
                 'stats.active': 'Aktive Effekte',
-                'stats.events': 'AusgelÃƒÆ’Ã‚Â¶ste Events',
+                'stats.events': 'Ausgelöste Events',
                 'stats.connection': 'Verbindung',
                 'cards.main.title': 'Haupteinstellungen',
                 'cards.main.enable': 'Weather Control Plugin aktivieren',
@@ -2253,41 +2253,41 @@
                 'buttons.test_effect': 'Effekt testen',
                 'buttons.stop_all': 'Alle stoppen',
                 'preview.fps': 'FPS',
-                'preview.avg_fps': 'ÃƒÆ’Ã‹Å“ FPS',
+                'preview.avg_fps': 'Average FPS',
                 'preview.particles': 'Partikel',
                 'preview.active_effects': 'Aktiv',
-                'preview.warning': 'Leistungswarnung: Diese Konfiguration kÃƒÆ’Ã‚Â¶nnte auf schwachen Systemen laggen',
+                'preview.warning': 'Leistungswarnung: Diese Konfiguration könnte auf schwachen Systemen laggen',
                 'cards.chat.title': 'Chatbefehle (GCCE-Integration)',
-                'cards.chat.info': 'BenÃƒÆ’Ã‚Â¶tigt das Global Chat Command Engine (GCCE) Plugin. Zuschauer kÃƒÆ’Ã‚Â¶nnen Wettereffects per Chat auslÃƒÆ’Ã‚Â¶sen.',
+                'cards.chat.info': 'Benötigt das Global Chat Command Engine (GCCE) Plugin. Zuschauer können Wettereffects per Chat auslösen.',
                 'cards.chat.enable': 'Chatbefehle aktivieren',
                 'cards.chat.enable_help': 'Erlaube Zuschauern, Wettereffects per /weather, /weatherlist und /weatherstop zu triggern.',
                 'cards.chat.require_permission': 'Berechtigungen erforderlich',
                 'cards.chat.require_permission_help': 'Nutze das Berechtigungssystem unten, um zu steuern, wer Wetterbefehle verwenden darf.',
-                'cards.chat.allow_intensity': 'IntensitÃƒÆ’Ã‚Â¤t steuerbar',
-                'cards.chat.allow_intensity_help': 'Nutzer dÃƒÆ’Ã‚Â¼rfen die EffektintensitÃƒÆ’Ã‚Â¤t angeben (0.0-1.0).',
+                'cards.chat.allow_intensity': 'Intensität steuerbar',
+                'cards.chat.allow_intensity_help': 'Nutzer dürfen die Effektintensität angeben (0.0-1.0).',
                 'cards.chat.allow_duration': 'Dauer steuerbar',
-                'cards.chat.allow_duration_help': 'Nutzer dÃƒÆ’Ã‚Â¼rfen die Effektdauer angeben (1-60 Sekunden).',
+                'cards.chat.allow_duration_help': 'Nutzer dürfen die Effektdauer angeben (1-60 Sekunden).',
                 'cards.chat.command_names_title': 'Eigene Befehlsnamen',
                 'cards.chat.command_weather': 'Weather-Befehl',
                 'cards.chat.command_weather_placeholder': 'weather',
-                'cards.chat.command_weather_help': 'Befehl zum AuslÃƒÆ’Ã‚Â¶sen von Effekten',
+                'cards.chat.command_weather_help': 'Befehl zum Auslösen von Effekten',
                 'cards.chat.command_list': 'Listen-Befehl',
                 'cards.chat.command_list_placeholder': 'weatherlist',
-                'cards.chat.command_list_help': 'VerfÃƒÆ’Ã‚Â¼gbare Effekte auflisten',
+                'cards.chat.command_list_help': 'Verfügbare Effekte auflisten',
                 'cards.chat.command_stop': 'Stopp-Befehl',
                 'cards.chat.command_stop_placeholder': 'weatherstop',
                 'cards.chat.command_stop_help': 'Alle Effekte stoppen',
                 'cards.chat.command_usage_title': 'Befehlsnutzung:',
-                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather" data-i18n-key="plugins.webgpu-weather-control.ui.commands.weather">weather</span> &lt;effect&gt;</code> - Wettereffekt auslÃƒÆ’Ã‚Â¶sen',
+                'cards.chat.command_usage_weather': '<code>/<span id="displayCmdWeather" data-i18n-key="plugins.webgpu-weather-control.ui.commands.weather">weather</span> &lt;effect&gt;</code> - Wettereffekt auslösen',
                 'cards.chat.command_usage_list': '<code>/<span id="displayCmdList" data-i18n-key="plugins.webgpu-weather-control.ui.commands.weatherlist">weatherlist</span></code> - Alle Effekte auflisten',
                 'cards.chat.command_usage_stop': '<code>/<span id="displayCmdStop" data-i18n-key="plugins.webgpu-weather-control.ui.commands.weatherstop">weatherstop</span></code> - Alle Effekte stoppen (nur Abonnenten)',
                 'cards.permissions.title': 'Berechtigungseinstellungen',
                 'cards.permissions.enable': 'Berechtigungssystem aktivieren',
                 'cards.permissions.allow_all': 'Alle Nutzer erlauben',
-                'cards.permissions.followers': 'ÃƒÂ¢Ã‚ÂÃ‚Â¤ÃƒÂ¯Ã‚Â¸Ã‚Â Follower',
-                'cards.permissions.superfans': 'ÃƒÂ¢Ã‚Â­Ã‚Â Superfans',
-                'cards.permissions.subscribers': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Ëœ Abonnenten',
-                'cards.permissions.team_members': 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ‚Â¥ Team-Mitglieder',
+                'cards.permissions.followers': '♥ Follower',
+                'cards.permissions.superfans': '★ Superfans',
+                'cards.permissions.subscribers': 'Subscribers',
+                'cards.permissions.team_members': 'Team Members',
                 'cards.permissions.min_team_level': 'Min. Team-Level',
                 'cards.permissions.top_gifters': 'Top-Gifter (Top N)',
                 'cards.permissions.min_points': 'Mindestpunkte erforderlich',
@@ -2300,28 +2300,28 @@
                 'effects.names.sunbeam': 'Sonnenstrahlen',
                 'effects.names.glitchclouds': 'Glitch-Wolken',
                 'effects.names.aurora': 'Nordlichter',
-                'effects.names.fireflies': 'GlÃƒÆ’Ã‚Â¼hwÃƒÆ’Ã‚Â¼rmchen',
+                'effects.names.fireflies': 'Glühwürmchen',
                 'effects.names.meteors': 'Sternschnuppen',
-                'effects.names.sakura': 'KirschblÃƒÆ’Ã‚Â¼ten',
+                'effects.names.sakura': 'Kirschblüten',
                 'effects.names.embers': 'Glutfunken',
                 'effects.names.heatwave': 'Hitzeflimmern',
                 'effects.fog_color': 'Nebel-Farbvorlage',
                 'effects.sunbeam_colortemp': 'Farbtemperatur',
-                'settings.quality_preset': 'QualitÃƒÆ’Ã‚Â¤tsstufe',
-                'effects.intensity': 'IntensitÃƒÆ’Ã‚Â¤t',
+                'settings.quality_preset': 'Qualitätsstufe',
+                'effects.intensity': 'Intensität',
                 'effects.duration_ms': 'Dauer (ms)',
                 'effects.permanent_label': 'Permanent',
-                'effects.permanent_help': 'Effekt lÃƒÆ’Ã‚Â¤uft dauerhaft, bis er gestoppt wird.',
+                'effects.permanent_help': 'Effekt läuft dauerhaft, bis er gestoppt wird.',
                 'effects.test_button': 'Effekt testen',
                 'cards.gifts.title': 'Geschenk-zu-Wetter-Zuordnung',
-                'cards.gifts.description': 'VerknÃƒÆ’Ã‚Â¼pfe TikTok-Geschenke mit Wettereffekten. Bei einem verknÃƒÆ’Ã‚Â¼pften Geschenk wird der konfigurierte Effekt ausgelÃƒÆ’Ã‚Â¶st.',
-                'cards.gifts.load_prompt': 'Klicke auf ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Geschenkkatalog ladenÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ, um verfÃƒÆ’Ã‚Â¼gbare Geschenke zu sehen',
+                'cards.gifts.description': 'Verknüpfe TikTok-Geschenke mit Wettereffekten. Bei einem verknüpften Geschenk wird der konfigurierte Effekt ausgelöst.',
+                'cards.gifts.load_prompt': 'Klicke auf „Geschenkkatalog laden“, um verfügbare Geschenke zu sehen',
                 'cards.gifts.effect_label': 'Wettereffekt',
                 'cards.gifts.no_mapping': 'Keine Zuordnung',
                 'cards.gifts.save': 'Speichern',
-                'cards.gifts.delete': 'LÃƒÆ’Ã‚Â¶schen',
+                'cards.gifts.delete': 'Löschen',
                 'cards.gifts.enabled': 'Aktiv',
-                'cards.gifts.delete_confirm': 'MÃƒÆ’Ã‚Â¶chtest du diese Geschenkzuordnung wirklich lÃƒÆ’Ã‚Â¶schen?',
+                'cards.gifts.delete_confirm': 'Möchtest du diese Geschenkzuordnung wirklich löschen?',
                 'buttons.load_catalog': 'Geschenkkatalog laden',
                 'buttons.update_catalog': 'Geschenkkatalog aktualisieren',
                 'buttons.refresh_mappings': 'Zuordnungen aktualisieren',
@@ -2332,8 +2332,8 @@
                 'status.error_saving_config': 'Fehler beim Speichern der Konfiguration: {{error}}',
                 'status.saving_config': 'Speichere...',
                 'status.overlay_copied': 'Overlay-URL kopiert!',
-                'status.effect_triggered': '{{effect}}-Effekt ausgelÃƒÆ’Ã‚Â¶st!',
-                'status.effect_trigger_error': 'Fehler beim AuslÃƒÆ’Ã‚Â¶sen des Effekts: {{error}}',
+                'status.effect_triggered': '{{effect}}-Effekt ausgelöst!',
+                'status.effect_trigger_error': 'Fehler beim Auslösen des Effekts: {{error}}',
                 'status.gift_catalog_loading': 'Geschenkkatalog wird geladen...',
                 'status.gift_catalog_empty': 'Kein Geschenkkatalog vorhanden. Verbinde zuerst einen TikTok-Stream.',
                 'status.gift_catalog_loaded': 'Geschenkkatalog geladen: {{count}} Geschenke',
@@ -2342,9 +2342,9 @@
                 'status.gift_catalog_updated': 'Geschenkkatalog erfolgreich aktualisiert',
                 'status.gift_mappings_refreshed': 'Geschenkzuordnungen aktualisiert',
                 'status.gift_mapping_saved': 'Geschenkzuordnung gespeichert!',
-                'status.gift_mapping_deleted': 'Geschenkzuordnung gelÃƒÆ’Ã‚Â¶scht!',
+                'status.gift_mapping_deleted': 'Geschenkzuordnung gelöscht!',
                 'status.gift_mapping_error': 'Fehler beim Speichern der Zuordnung: {{error}}',
-                'status.select_effect': 'Bitte wÃƒÆ’Ã‚Â¤hle einen Wettereffekt'
+                'status.select_effect': 'Bitte wähle einen Wettereffekt'
             }
         };
 
@@ -2465,7 +2465,7 @@
                         <span data-i18n-key="plugins.webgpu-weather-control.effects.intensity">${intensityLabel}</span>
                         <span class="range-value" id="effect-heatwave-intensity-val">0.4</span>
                     </label>
-                    <input type="range" class="range-slider" id="effect-heatwave-intensity" min="0" max="1" step="0.1" value="0.4">
+                    <input type="range" class="range-slider" id="effect-heatwave-intensity" min="0" max="1" step="0.01" value="0.4">
                 </div>
                 <div class="form-group">
                     <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.effects.duration_ms">${durationLabel}</label>
@@ -2582,7 +2582,7 @@
                         <div class="grid grid-2">
                             <div class="form-group">
                                 <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.ui.triggers.intensity">Intensity</label>
-                                <input class="form-control" type="number" step="0.1" min="0" max="1" id="${controls.intensity}" value="${trigger.intensity ?? 0.5}">
+                                <input class="form-control" type="number" step="0.01" min="0" max="1" id="${controls.intensity}" value="${trigger.intensity ?? 0.5}">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" data-i18n-key="plugins.webgpu-weather-control.ui.triggers.duration">Duration</label>
@@ -2616,6 +2616,7 @@
             const idMap = {
                 defaultIntensity: `effect-${effect}-intensity`,
                 defaultDuration: `effect-${effect}-duration`,
+                fogColor: effect === 'fog' ? 'effect-fog-color' : null,
                 opacity: `effect-${effect}-opacity`,
                 particleScale: `effect-${effect}-particleScale`,
                 wind: `effect-${effect}-wind`,
@@ -2652,7 +2653,9 @@
         function renderActiveEffects(activeEffects = []) {
             const list = document.getElementById('activeEffectsList');
             if (!list) return;
-            const safeEffects = activeEffects.filter(effect => effect && effects.includes(effect.type));
+            const safeEffects = activeEffects
+                .map(effect => typeof effect === 'string' ? { type: effect } : effect)
+                .filter(effect => effect && effects.includes(effect.type));
             document.getElementById('activeEffectsCount').textContent = safeEffects.length;
             if (safeEffects.length === 0) {
                 const emptyMessage = weatherText('plugins.webgpu-weather-control.ui.active.noEffects', 'No active effects reported by the overlay.');
@@ -2925,13 +2928,14 @@
                 document.getElementById('preview-avg-fps').textContent = `${Math.round(metrics.gpuFrameMs || metrics.frameMs || 0)} ms`;
                 document.getElementById('preview-particles').textContent = metrics.activeParticles || 0;
                 document.getElementById('preview-active-effects').textContent = Array.isArray(metrics.effects) ? metrics.effects.length : 0;
+                if (Array.isArray(metrics.effects)) renderActiveEffects(metrics.effects);
             });
         }
 
         // Update connection status indicator
         function updateConnectionStatus(connected) {
             const statusEl = document.getElementById('connectionStatus');
-            statusEl.textContent = connected ? 'ÃƒÂ°Ã…Â¸Ã…Â¸Ã‚Â¢' : 'ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â´';
+            statusEl.textContent = connected ? '●' : '○';
         }
 
         // Load configuration
@@ -3024,7 +3028,7 @@
                         }
                         document.getElementById(`effect-${effect}-enabled`).checked = effectConfig.enabled;
                         document.getElementById(`effect-${effect}-intensity`).value = effectConfig.defaultIntensity;
-                        document.getElementById(`effect-${effect}-intensity-val`).textContent = effectConfig.defaultIntensity.toFixed(1);
+                        document.getElementById(`effect-${effect}-intensity-val`).textContent = effectConfig.defaultIntensity.toFixed(2);
                         document.getElementById(`effect-${effect}-duration`).value = effectConfig.defaultDuration;
                         const permanentToggle = document.getElementById(`effect-${effect}-permanent`);
                         if (permanentToggle) {
@@ -3053,7 +3057,7 @@
                     const giSlider = document.getElementById('effect-glitchclouds-glitchintensity');
                     if (giSlider) {
                         giSlider.value = glitchConfig.glitchIntensity || 1;
-                        document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = (glitchConfig.glitchIntensity || 1).toFixed(1);
+                        document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = (glitchConfig.glitchIntensity || 1).toFixed(2);
                     }
 
                     // Quality preset
@@ -3184,7 +3188,7 @@
                         .filter(e => config.effects[e]?.permanent === true);
 
                     if (permanentEffects.length > 0) {
-                        console.log('ÃƒÂ¢Ã¢â€žÂ¢Ã‚Â¾ÃƒÂ¯Ã‚Â¸Ã‚Â Active permanent effects:', permanentEffects.join(', '));
+                        console.log('[WEATHER] Active permanent effects:', permanentEffects.join(', '));
                         // Show additional notification for permanent effects
                         setTimeout(() => {
                             showStatus('status.permanent_effects_active', 'info', {
@@ -3200,7 +3204,7 @@
                 saveBtn.disabled = false;
             } catch (error) {
                 showStatus('status.error_saving_config', 'danger', { error: error.message });
-                document.getElementById('saveConfig').innerHTML = '<span>ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾</span> ' + weatherText('plugins.webgpu-weather-control.buttons.save_config', 'Save Configuration');
+                document.getElementById('saveConfig').innerHTML = '<span>💾</span> ' + weatherText('plugins.webgpu-weather-control.buttons.save_config', 'Save Configuration');
                 document.getElementById('saveConfig').disabled = false;
             }
         }
@@ -3253,9 +3257,9 @@
             alert.className = `alert alert-${type} show`;
 
             const message = weatherText(messageKey, messageKey, params);
-            let icon = '<span>ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â</span>';
-            if (type === 'success') icon = '<span>ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦</span>';
-            if (type === 'danger') icon = '<span>ÃƒÂ¢Ã‚ÂÃ…â€™</span>';
+            let icon = '<span>ℹ️</span>';
+            if (type === 'success') icon = '<span>✅</span>';
+            if (type === 'danger') icon = '<span>❌</span>';
 
             alert.innerHTML = `${icon} <span>${message}</span>`;
 
@@ -3327,7 +3331,7 @@
             const intensityInput = document.getElementById(`effect-${effect}-intensity`);
             if (intensityInput) {
                 intensityInput.addEventListener('input', (e) => {
-                    document.getElementById(`effect-${effect}-intensity-val`).textContent = parseFloat(e.target.value).toFixed(1);
+                    document.getElementById(`effect-${effect}-intensity-val`).textContent = parseFloat(e.target.value).toFixed(2);
                 });
             }
         });
@@ -3336,7 +3340,7 @@
         const giSlider = document.getElementById('effect-glitchclouds-glitchintensity');
         if (giSlider) {
             giSlider.addEventListener('input', (e) => {
-                document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = parseFloat(e.target.value).toFixed(1);
+                document.getElementById('effect-glitchclouds-glitchintensity-val').textContent = parseFloat(e.target.value).toFixed(2);
             });
         }
 
@@ -3436,7 +3440,7 @@
             } finally {
                 const btn = document.getElementById('loadGiftCatalog');
                 btn.disabled = false;
-                btn.innerHTML = '<span>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾</span> ' + weatherText('plugins.webgpu-weather-control.buttons.load_catalog', 'Load Gift Catalog');
+                btn.innerHTML = '<span>📥</span> ' + weatherText('plugins.webgpu-weather-control.buttons.load_catalog', 'Load Gift Catalog');
             }
         }
 
@@ -3467,7 +3471,7 @@
                 showStatus('status.gift_catalog_error', 'danger', { error: error.message });
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<span>ÃƒÂ¢Ã…Â¸Ã‚Â³</span> ' + weatherText('plugins.webgpu-weather-control.buttons.update_catalog', 'Update Gift Catalog');
+                btn.innerHTML = '<span>⏳</span> ' + weatherText('plugins.webgpu-weather-control.buttons.update_catalog', 'Update Gift Catalog');
             }
         }
 
@@ -3509,11 +3513,11 @@
                         <div class="effect-header" style="display: flex; justify-content: space-between; align-items: start;">
                             <div style="flex: 1;">
                                 <div class="effect-title">
-                                    ${gift.image_url ? `<img src="${escapeHtml(gift.image_url)}" alt="${escapeHtml(gift.name)}" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 0.5rem;" onerror="this.style.display='none'">` : 'ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â'}
+                                    ${gift.image_url ? `<img src="${escapeHtml(gift.image_url)}" alt="${escapeHtml(gift.name)}" style="width: 24px; height: 24px; vertical-align: middle; margin-right: 0.5rem;" onerror="this.style.display='none'">` : '🎁'}
                                     <strong>${escapeHtml(gift.name)}</strong>
                                 </div>
                                 <div class="help-text" style="font-size: 0.75rem; margin-top: 0.25rem;">
-                                    ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã…Â½ ${weatherText('plugins.webgpu-weather-control.runtime.ui.gift_cost', '{count} diamonds | ID: {id}', { count: gift.diamond_count, id: gift.id })}
+                                    💎 ${weatherText('plugins.webgpu-weather-control.runtime.ui.gift_cost', '{count} diamonds | ID: {id}', { count: gift.diamond_count, id: gift.id })}
                                 </div>
                             </div>
                         </div>
@@ -3534,9 +3538,9 @@
                             <div class="form-group">
                                 <label class="form-label">
                                     ${weatherText('plugins.webgpu-weather-control.effects.intensity', 'Intensity')}
-                                    <span class="range-value" id="gift-${gift.id}-intensity-val">${mapping ? mapping.intensity.toFixed(1) : '0.5'}</span>
+                                    <span class="range-value" id="gift-${gift.id}-intensity-val">${mapping ? mapping.intensity.toFixed(2) : '0.50'}</span>
                                 </label>
-                                <input type="range" class="range-slider" id="gift-${gift.id}-intensity" min="0" max="1" step="0.1" value="${mapping ? mapping.intensity : 0.5}">
+                                <input type="range" class="range-slider" id="gift-${gift.id}-intensity" min="0" max="1" step="0.01" value="${mapping ? mapping.intensity : 0.5}">
                             </div>
 
                             <div class="form-group">
@@ -3554,10 +3558,10 @@
 
                             <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
                                 <button class="btn btn-primary btn-sm save-gift-btn" style="flex: 1;" data-gift-id="${gift.id}">
-                                    <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾</span> ${weatherText('plugins.webgpu-weather-control.cards.gifts.save', 'Save')}
+                                    <span>💾</span> ${weatherText('plugins.webgpu-weather-control.cards.gifts.save', 'Save')}
                                 </button>
                                 <button class="btn btn-danger btn-sm delete-gift-btn" data-gift-id="${gift.id}">
-                                    <span>ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â</span> ${weatherText('plugins.webgpu-weather-control.cards.gifts.delete', 'Delete')}
+                                    <span>🗑️</span> ${weatherText('plugins.webgpu-weather-control.cards.gifts.delete', 'Delete')}
                                 </button>
                             </div>
                         </div>
@@ -3587,7 +3591,7 @@
 
                 if (intensitySlider && intensityVal) {
                     intensitySlider.addEventListener('input', (e) => {
-                        intensityVal.textContent = parseFloat(e.target.value).toFixed(1);
+                        intensityVal.textContent = parseFloat(e.target.value).toFixed(2);
                     });
                 }
             });
@@ -3703,13 +3707,13 @@
             if (previewActive) {
                 btn.classList.remove('btn-primary');
                 btn.classList.add('btn-success');
-                btn.querySelector('span:first-child').textContent = 'ÃƒÂ¢Ã‚ÂÃ‚Â¸ÃƒÂ¯Ã‚Â¸Ã‚Â';
+                btn.querySelector('span:first-child').textContent = '⏹️';
                 text.setAttribute('data-i18n-key', 'plugins.webgpu-weather-control.buttons.preview_off');
                 text.textContent = weatherText('plugins.webgpu-weather-control.buttons.preview_off', 'Stop Preview');
             } else {
                 btn.classList.remove('btn-success');
                 btn.classList.add('btn-primary');
-                btn.querySelector('span:first-child').textContent = 'ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¶ÃƒÂ¯Ã‚Â¸Ã‚Â';
+                btn.querySelector('span:first-child').textContent = '▶️';
                 text.setAttribute('data-i18n-key', 'plugins.webgpu-weather-control.buttons.preview_on');
                 text.textContent = weatherText('plugins.webgpu-weather-control.buttons.preview_on', 'Start Preview');
             }
@@ -3744,8 +3748,8 @@
          */
         function updatePreviewStats() {
             document.getElementById('preview-fps').textContent = 'WebGPU';
-            document.getElementById('preview-avg-fps').textContent = 'â€”';
-            document.getElementById('preview-particles').textContent = 'â€”';
+            document.getElementById('preview-avg-fps').textContent = '—';
+            document.getElementById('preview-particles').textContent = '—';
             document.getElementById('preview-active-effects').textContent = previewActive ? 'Ready' : 'Idle';
         }
 

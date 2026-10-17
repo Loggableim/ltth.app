@@ -69,18 +69,14 @@ describe('Talking Heads avatar lottery manager', () => {
     return () => values[index++] ?? 0;
   }
 
-  test('builds canonical three-pack pools and chooses each eligible pack uniformly', () => {
+  test('builds canonical Boba pool exclusively', () => {
     const library = new AssetSpriteLibrary({ dataDir: '/tmp/talking-heads-lottery-test' });
     const pools = library.getLotterySelectionPools();
     const boba = { packId: 'boba', characterId: 'Axolotl', options: { expression: 'Default' } };
-    const kenney = { packId: 'kenney', characterId: 'blueA', options: { eye: 'angry_blue' } };
-    const rgs = { packId: 'rgs', characterId: 'head1', options: { hair: 'hair1', eyes: 'eyes1', mouth: 'mouth1' } };
 
     expect(Object.fromEntries(Object.entries(pools).map(([packId, selections]) => [packId, selections.length])))
-      .toEqual({ boba: 90, kenney: 540, rgs: 504 });
+      .toEqual({ boba: 90 });
     expect(library.getRandomSelection(randomSequence(0, 0))).toEqual(boba);
-    expect(library.getRandomSelection(randomSequence(0.34, 0))).toEqual(kenney);
-    expect(library.getRandomSelection(randomSequence(0.67, 0))).toEqual(rgs);
   });
 
   test('excludes the exact current selection and keeps zero-RNG candidates unique inside Boba', () => {
@@ -106,11 +102,11 @@ describe('Talking Heads avatar lottery manager', () => {
     expect(new Set(candidates.map(selection => JSON.stringify(selection))).size).toBe(3);
   });
 
-  test('every three-pack automatic selection resolves usable idle, blink, and speaking frames', async () => {
+  test('every Boba automatic selection resolves usable idle, blink, and speaking frames', async () => {
     const library = new AssetSpriteLibrary();
     const selections = Object.values(library.getLotterySelectionPools()).flat();
 
-    expect(selections).toHaveLength(1134);
+    expect(selections).toHaveLength(90);
     for (const selection of selections) {
       const frames = await library._getFrameLayers(selection);
       expect(['idle_neutral', 'blink', 'speak_closed', 'speak_mid', 'speak_open']

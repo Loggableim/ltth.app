@@ -1,0 +1,37 @@
+# OBS-104: Guide-URL- und Registry-Zuordnung
+
+Stand: 2026-10-07; gepinnte Quelle: `fde29a99d95222e8f441ffedc78df43e15ba0f06`.
+
+**Ergebnis:** 11 Alternativrouten zeigen auf dieselbe HTML-Datei wie der Matrixpfad (8 Public, 3 Local Closed Beta). Zwei registrierte Alternativrouten zeigen auf einen anderen Renderer (Advanced Timer, OpenShock) und bleiben Owner-Entscheidungen. Minecraft Connect hat keinen registrierten Alternativpfad. Keine Registry-, Produkt- oder Matrixänderung; keine OBS-/VM-/App-/Tunnel-Ausführung. Praktische OBS-Abnahme unverändert 0/104.
+
+| Profil / Fälle | Scope | Matrixpfad | Route/URL-Produzent | Vorschlag | Status |
+|---|---|---|---|---|---|
+| `advanced-timer` (advanced-timer:de, advanced-timer:en, advanced-timer:es, advanced-timer:fr) | PUBLIC | `/plugins/advanced-timer/overlay/index.html` | `app/plugins/advanced-timer/backend/api.js:87-94`; `app/plugins/advanced-timer/ui/ui.js:411,446-448` | `/advanced-timer/overlay` | `holdMismatch` |
+| `coinbattle` (coinbattle:de, coinbattle:en, coinbattle:es, coinbattle:fr) | PUBLIC | `/plugins/coinbattle/overlay/overlay.html` | `app/plugins/coinbattle/main.js:1461-1475`; `app/plugins/coinbattle/ui.js:902,920+` | `/plugins/coinbattle/overlay` | `approvedProposal` |
+| `fireworks` (fireworks:de, fireworks:en, fireworks:es, fireworks:fr) | PUBLIC | `/plugins/fireworks/overlay.html` | `app/plugins/fireworks/main.js:460-463`; `app/plugins/fireworks/ui/settings.js:26; app/plugins/fireworks/ui/settings.js:922` | `/fireworks/overlay` | `approvedProposal` |
+| `game-engine` (game-engine:de, game-engine:en, game-engine:es, game-engine:fr) | PUBLIC | `/plugins/game-engine/overlay/game-hud.html` | `app/plugins/game-engine/main.js:2367-2369`; `app/plugins/game-engine/ui.html:3837,7054` | `/overlay/game-engine/hud` | `approvedProposal` |
+| `interactive-story` (interactive-story:de, interactive-story:en, interactive-story:es, interactive-story:fr) | LOCAL_CLOSED_BETA | `/plugins/interactive-story/overlay.html` | `app/plugins/interactive-story/main.js:1433-1435`; `app/plugins/interactive-story/ui.html:5882,6578,6652` | `/interactive-story/overlay` | `approvedLocalOnly` |
+| `milestone-leaderboard` (milestone-leaderboard:de, milestone-leaderboard:en, milestone-leaderboard:es, milestone-leaderboard:fr) | PUBLIC | `/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html` | `app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/viewer-xp-impl.js:234-236`; `app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/ui/admin.html:1436; app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/ui/admin.js:2374` | `/overlay/viewer-xp/leaderboard` | `approvedProposal` |
+| `minecraft-connect` (minecraft-connect:de, minecraft-connect:en, minecraft-connect:es, minecraft-connect:fr) | PUBLIC_RUNTIME_GUIDE | `/plugins/minecraft-connect/overlay/minecraft_overlay.html` | `app/server.js:4025 global /plugins static middleware; no plugin GET route`; `app/plugins/minecraft-connect/README.md:179; scripts/plugin-guides/minecraft-connect.js:559` | — | `noRegisteredRoute` |
+| `openshock` (openshock:de, openshock:en, openshock:es, openshock:fr) | PUBLIC | `/plugins/openshock/overlay/openshock_overlay.html` | `app/plugins/openshock/main.js:643-646`; `app/plugins/openshock/ui.js:4389-4390` | `/openshock/zappiehell/overlay` | `holdMismatch` |
+| `quiz-show` (quiz-show:de, quiz-show:en, quiz-show:es, quiz-show:fr) | PUBLIC | `/plugins/quiz-show/quiz_show_overlay.html` | `app/plugins/quiz-show/main.js:1519-1525`; `app/plugins/quiz-show/quiz_show.html:1165-1168; app/plugins/quiz-show/quiz_show.js:1428` | `/quiz-show/overlay` | `approvedProposal` |
+| `spotlight` (spotlight:de, spotlight:en, spotlight:es, spotlight:fr) | PUBLIC | `/plugins/spotlight/overlays/chatter.html` | `app/plugins/spotlight/main.js:504-507`; `app/plugins/spotlight/ui/main.js:52,147,161` | `/overlay/spotlight/chatter` | `approvedProposal` |
+| `stt-ticker` (stt-ticker:de, stt-ticker:en, stt-ticker:es, stt-ticker:fr) | PUBLIC | `/plugins/stt-ticker/overlay/ticker.html` | `app/plugins/stt-ticker/main.js:141-143`; `app/plugins/stt-ticker/ui.html:2068+` | `/overlay/stt-ticker` | `approvedProposal` |
+| `talking-heads` (talking-heads:de, talking-heads:en, talking-heads:es, talking-heads:fr) | LOCAL_CLOSED_BETA | `/plugins/talking-heads/overlay.html` | `app/plugins/talking-heads/main.js:996-998`; `app/plugins/talking-heads/assets/ui.js:634` | `/overlay/talking-heads` | `approvedLocalOnly` |
+| `weather-control` (weather-control:de, weather-control:en, weather-control:es, weather-control:fr) | PUBLIC | `/plugins/weather-control/overlay.html` | `app/plugins/weather-control/main.js:458-461`; `app/plugins/weather-control/ui.html:3821-3822` | `/weather-control/overlay` | `approvedProposal` |
+| `webgpu-emoji-rain` (webgpu-emoji-rain:de, webgpu-emoji-rain:en, webgpu-emoji-rain:es, webgpu-emoji-rain:fr) | LOCAL_CLOSED_BETA | `/plugins/webgpu-emoji-rain/overlay.html` | `app/plugins/webgpu-emoji-rain/main.js:1689-1692`; `app/plugins/webgpu-emoji-rain/ui.html:1956-1966` | `/webgpu-emoji-rain/overlay` | `approvedLocalOnly` |
+
+## Befund und Einordnung
+
+- **Behebbar durch Guide-URL-Änderung nach Owner-Freigabe:** CoinBattle, Fireworks, Game Engine, Viewer-XP, Quiz Show, Spotlight, STT Ticker und Weather Control: gleiche HTML-Datei. Der Alternativpfad ist im Public Overlay Registry Contract verankert.
+- **Local OBS Vorschläge:** Interactive Story, Talking Heads und WebGPU Emoji Rain: gleiche Datei; diese drei Plugins bleiben Closed Beta und sind im Public-Modus herausgefiltert. Die Routen sind nur für lokale OBS-Ziele vorgeschlagen, keine Public-Tunnel-Freigabe.
+- **Offene Rendererentscheidung:** Advanced Timer: Matrixdatei `overlay/index.html`, registrierte Route und UI-Producer `overlay.html`. OpenShock: Matrixdatei `openshock_overlay.html`, Route/Producer `zappiehell-overlay.html`. Pfadersetzung allein wäre nicht gleichwertig.
+- **Kein Kandidat:** Minecraft Connect ist ein öffentliches Runtime-Manifest, aber ohne Store-ZIP. Der aktuelle Guide verweist auf globales `/plugins`-Static-Serving; kein Plugin-GET-Handler und kein registrierter Tunnelpfad. Nicht mit lokaler OBS-Routbarkeit oder Public-Tunnel-Allowlist gleichsetzen; Route nicht erfinden.
+- Die Datei enthält pro Profil Case-IDs, Status aus dem Readiness-Register und HEAD-Blobpins für Handler, URL-Produzent und Ziel-HTML. `matrixPathRegistered` und `registryCandidatePresent` sind statische Vergleiche mit `public-overlay-registry.js`, kein HTTP-Beleg.
+
+## Verifiziert / nicht verifiziert
+
+- **Quellbestätigt:** gepinnte GET-Handler und `sendFile`-Ziele, UI-/Guide-URL-Produzenten, registrierter Entry-Point, Public-/Closed-Beta-Scope sowie identische/abweichende HTML-Zieldateien. Änderungen an parallelen, schmutzigen Arbeitsbaumdateien wurden nicht übernommen; Beleg gilt für den oben genannten HEAD.
+- **Nicht geprüft:** echte HTTP-Dispatches, Browser Source/OBS-Routing, Tunnelverhalten, Installation oder Live-Renderer. Es wurde kein Server gestartet und keine Netzwerkverbindung aufgebaut.
+- **Entscheidungen:** Advanced Timer: beabsichtigten Renderer für Guide und 4 Fälle auswählen. OpenShock: generic OpenShock vs. ZappieHell Ziel auswählen. Minecraft Connect: bestätigen, ob die Matrix lokale OBS-Static-Route dokumentieren soll oder ob ein späterer separater Registryauftrag gewünscht ist. Keine dieser Fragen ist durch Store-/Runtime-Metadaten allein auflösbar.
+

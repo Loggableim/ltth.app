@@ -11,6 +11,8 @@
 
   let networkConfig = null;
   let stableRoutingUI = null;
+  let overlayTunnelStatusRevision = 0;
+  let overlayTunnelStatusTimer = null;
 
   // ── DOM helpers ────────────────────────────────────────────────────────────
 
@@ -84,16 +86,88 @@
   // ── Data Loading ───────────────────────────────────────────────────────────
 
   async function loadConfig() {
+    const revision = ++overlayTunnelStatusRevision;
     try {
       const res = await fetch('/api/network/config');
       const data = await res.json();
-      if (data.success) {
+      if (revision === overlayTunnelStatusRevision && data.success) {
         networkConfig = data.config;
         renderAll();
       }
     } catch (e) {
       console.error('[NetworkSettings] Error loading config:', e);
     }
+  }
+
+  async function refreshOverlayTunnelStatus() {
+    if (!networkConfig) return false;
+    const revision = ++overlayTunnelStatusRevision;
+    try {
+      const response = await fetch('/api/network/config', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Tunnel status request failed');
+      const data = await response.json();
+      if (revision !== overlayTunnelStatusRevision) return false;
+      if (data.success !== true || !data.config?.overlayTunnel) {
+        throw new Error('Tunnel status response is invalid');
+      }
+      networkConfig.overlayTunnel = data.config.overlayTunnel;
+      renderOverlayTunnel();
+      return true;
+    } catch (_) {
+      if (revision !== overlayTunnelStatusRevision) return false;
+      networkConfig.overlayTunnel = {
+        active: false,
+        starting: false,
+        url: null,
+        lastError: translate(
+          'network.overlay_tunnel.unavailable',
+          'Tunnel status is unavailable'
+        )
+      };
+      renderOverlayTunnel();
+      return false;
+    }
+  }
+
+  function isNetworkSettingsVisible() {
+    if (document.visibilityState === 'hidden') return false;
+    const bindMode = el('network-bind-mode');
+    const settingsCard = bindMode?.closest?.('.settings-card');
+    if (!settingsCard || typeof settingsCard.getClientRects !== 'function') return true;
+    return settingsCard.getClientRects().length > 0;
+  }
+
+  function refreshVisibleOverlayTunnelStatus() {
+    if (isNetworkSettingsVisible()) void refreshOverlayTunnelStatus();
+  }
+
+  function stopOverlayTunnelStatusPolling() {
+    if (overlayTunnelStatusTimer !== null) {
+      window.clearInterval(overlayTunnelStatusTimer);
+      overlayTunnelStatusTimer = null;
+    }
+  }
+
+  function startOverlayTunnelStatusPolling() {
+    if (overlayTunnelStatusTimer !== null) return;
+    overlayTunnelStatusTimer = window.setInterval(() => {
+      refreshVisibleOverlayTunnelStatus();
+    }, 5000);
+  }
+
+  function handleOverlayTunnelPageHide(event) {
+    stopOverlayTunnelStatusPolling();
+    if (event.persisted) return;
+    overlayTunnelStatusRevision += 1;
+    window.removeEventListener('pageshow', handleOverlayTunnelPageShow);
+    window.removeEventListener('focus', refreshVisibleOverlayTunnelStatus);
+    document.removeEventListener('visibilitychange', refreshVisibleOverlayTunnelStatus);
+    window.removeEventListener('pagehide', handleOverlayTunnelPageHide);
+  }
+
+  function handleOverlayTunnelPageShow(event) {
+    startOverlayTunnelStatusPolling();
+    if (event.persisted) refreshVisibleOverlayTunnelStatus();
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -103,14 +177,17 @@
     renderBindMode();
     renderInterfaces();
     renderTunnel();
-    if (window.LTTHNetworkOverlayTunnel) {
-      window.LTTHNetworkOverlayTunnel.render(networkConfig.overlayTunnel || {}, {
-        translate
-      });
-    }
+    renderOverlayTunnel();
     renderExternalURLs();
     renderAccessURLs();
     renderSecurityWarning();
+  }
+
+  function renderOverlayTunnel() {
+    if (!networkConfig || !window.LTTHNetworkOverlayTunnel) return;
+    window.LTTHNetworkOverlayTunnel.render(networkConfig.overlayTunnel || {}, {
+      translate
+    });
   }
 
   function renderBindMode() {
@@ -466,6 +543,16 @@
     if (stopButton) stopButton.disabled = true;
     try {
       await window.LTTHNetworkOverlayTunnel.stop();
+      overlayTunnelStatusRevision += 1;
+      if (networkConfig) {
+        networkConfig.overlayTunnel = {
+          active: false,
+          starting: false,
+          url: null,
+          lastError: null
+        };
+        renderOverlayTunnel();
+      }
       await loadConfig();
     } catch (_) {
       showNotification(
@@ -553,7 +640,18 @@
   const overlayCopyBtn = el('network-overlay-tunnel-copy');
   if (overlayCopyBtn && window.LTTHNetworkOverlayTunnel) {
     overlayCopyBtn.addEventListener('click', async () => {
+      const statusIsCurrent = await refreshOverlayTunnelStatus();
       const urlText = el('network-overlay-tunnel-url-text');
+      if (!statusIsCurrent || overlayCopyBtn.disabled) {
+        showNotification(
+          translate(
+            'common.tiktok_studio.copy_failed',
+            'Could not copy the TikTok Studio URL'
+          ),
+          'error'
+        );
+        return;
+      }
       try {
         await window.LTTHNetworkOverlayTunnel.copyTunnelURL(
           urlText ? urlText.textContent : ''
@@ -597,6 +695,12 @@
       }
     });
   }
+
+  startOverlayTunnelStatusPolling();
+  window.addEventListener('focus', refreshVisibleOverlayTunnelStatus);
+  document.addEventListener('visibilitychange', refreshVisibleOverlayTunnelStatus);
+  window.addEventListener('pagehide', handleOverlayTunnelPageHide);
+  window.addEventListener('pageshow', handleOverlayTunnelPageShow);
 
   // ── Initial Load ───────────────────────────────────────────────────────────
 

@@ -16,6 +16,9 @@ function flush() {
 function makeChild(pid) {
   const child = new EventEmitter();
   child.pid = pid;
+  child.exitCode = null;
+  child.signalCode = null;
+  child.closed = false;
   child.stdout = new EventEmitter();
   child.stderr = new EventEmitter();
   child.kill = jest.fn(() => true);
@@ -24,11 +27,18 @@ function makeChild(pid) {
 
 function finish(child, output = 'ok', code = 0) {
   if (output) child.stdout.emit('data', Buffer.from(output));
-  child.emit('close', code);
+  child.exitCode = code;
+  child.signalCode = code === null ? 'SIGKILL' : null;
+  child.closed = true;
+  child.emit('close', code, child.signalCode);
 }
 
 function youtubeSearch(entries) {
   return JSON.stringify({ entries });
+}
+
+function directYtDlp(data) {
+  return ['0', 'channel-id', 'Channel', "['Music']", JSON.stringify(data)].join('\n');
 }
 
 describe('YtDlpRunner concurrency and cancellation', () => {
@@ -64,7 +74,9 @@ describe('YtDlpRunner concurrency and cancellation', () => {
 
   test('terminates a process that exceeds the configured combined output limit', async () => {
     const child = makeChild(8181);
-    const processKill = jest.fn();
+    const processKill = jest.fn((_pid, signal) => {
+      if (signal === 'SIGKILL') process.nextTick(() => finish(child, '', null));
+    });
     const runner = new YtDlpRunner({
       maxConcurrent: 1,
       maxOutputBytes: 1024,
@@ -86,6 +98,8 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     const children = [];
     const runner = new YtDlpRunner({
       maxConcurrent: 1,
+      platform: 'linux',
+      processKill: jest.fn(),
       spawnImpl: jest.fn(() => {
         const child = makeChild(children.length + 1);
         children.push(child);
@@ -110,6 +124,10 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     const children = [];
     const runner = new YtDlpRunner({
       maxConcurrent: 1,
+      platform: 'linux',
+      processKill: jest.fn((_pid, signal) => {
+        if (signal === 'SIGKILL') process.nextTick(() => finish(children[0], '', null));
+      }),
       spawnImpl: jest.fn(() => {
         const child = makeChild(children.length + 1);
         children.push(child);
@@ -132,8 +150,13 @@ describe('YtDlpRunner concurrency and cancellation', () => {
   test('Windows tree cancellation invokes taskkill and falls back to direct kill', async () => {
     const taskkill = new EventEmitter();
     const child = makeChild(4242);
+    child.kill.mockImplementation(() => {
+      process.nextTick(() => finish(child, '', null));
+      return true;
+    });
     const runner = new YtDlpRunner({
       platform: 'win32',
+      childCloseTimeoutMs: 50,
       spawnImpl: jest.fn(() => child),
       taskkillImpl: jest.fn(() => {
         process.nextTick(() => taskkill.emit('error', new Error('taskkill unavailable')));
@@ -154,9 +177,114 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     expect(child.kill).toHaveBeenCalledWith('SIGKILL');
   });
 
+  test('waits for a delayed child close after successful Windows taskkill', async () => {
+    const taskkill = new EventEmitter();
+    const child = makeChild(4343);
+    const runner = new YtDlpRunner({
+      platform: 'win32',
+      childCloseTimeoutMs: 100,
+      spawnImpl: jest.fn(() => child),
+      taskkillImpl: jest.fn(() => taskkill)
+    });
+    const operation = runner.run('yt-dlp', ['track'], { deadline: Date.now() + 10000 });
+    const rejected = expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    await flush();
+
+    const destroying = runner.destroy();
+    taskkill.emit('close', 0);
+    await flush();
+    expect(runner.getStatus().active).toBe(1);
+    expect(child.kill).not.toHaveBeenCalled();
+
+    setTimeout(() => finish(child, '', null), 20);
+    await Promise.all([destroying, rejected]);
+    expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0, destroyed: true });
+  });
+
+  test('bounds a child that never closes and retries the owned-child kill once', async () => {
+    const taskkill = new EventEmitter();
+    const child = makeChild(4444);
+    const logger = { log: jest.fn() };
+    const spawnImpl = jest.fn(() => child);
+    const controller = new AbortController();
+    const runner = new YtDlpRunner({
+      platform: 'win32',
+      maxConcurrent: 1,
+      childCloseTimeoutMs: 20,
+      logger,
+      spawnImpl,
+      taskkillImpl: jest.fn(() => {
+        process.nextTick(() => taskkill.emit('error', new Error('fixture taskkill failure')));
+        return taskkill;
+      })
+    });
+    const operation = runner.run('yt-dlp', ['active'], {
+      deadline: Date.now() + 10000,
+      signal: controller.signal
+    });
+    const rejected = expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    const queued = runner.run('yt-dlp', ['queued'], { deadline: Date.now() + 10000 });
+    const queuedRejected = expect(queued).rejects.toMatchObject({ name: 'AbortError' });
+    await flush();
+
+    const startedAt = Date.now();
+    controller.abort();
+    await rejected;
+
+    expect(Date.now() - startedAt).toBeLessThan(250);
+    expect(child.kill).toHaveBeenCalledTimes(2);
+    expect(logger.log).toHaveBeenCalledWith(
+      '[music-bot] yt-dlp child close was not confirmed (YTDLP_CLOSE_TIMEOUT)',
+      'warn'
+    );
+    expect(spawnImpl).toHaveBeenCalledTimes(1);
+    expect(runner.getStatus()).toMatchObject({ active: 1, queued: 1, destroyed: false });
+
+    await expect(runner.destroy()).rejects.toMatchObject({ code: 'YTDLP_CLOSE_TIMEOUT' });
+    await queuedRejected;
+    expect(runner.getStatus()).toMatchObject({ active: 1, queued: 0, destroyed: true });
+
+    finish(child, '', null);
+    expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0, destroyed: true });
+    await expect(runner.destroy()).resolves.toBeUndefined();
+  });
+
+  test('duplicate abort and destroy share one termination and one close wait', async () => {
+    const taskkill = new EventEmitter();
+    const child = makeChild(4545);
+    const controller = new AbortController();
+    const taskkillImpl = jest.fn(() => taskkill);
+    const runner = new YtDlpRunner({
+      platform: 'win32',
+      childCloseTimeoutMs: 100,
+      spawnImpl: jest.fn(() => child),
+      taskkillImpl
+    });
+    const operation = runner.run('yt-dlp', ['track'], {
+      deadline: Date.now() + 10000,
+      signal: controller.signal
+    });
+    const rejected = expect(operation).rejects.toMatchObject({ name: 'AbortError' });
+    await flush();
+
+    controller.abort();
+    await flush();
+    const destroying = runner.destroy();
+    expect(taskkillImpl).toHaveBeenCalledTimes(1);
+    taskkill.emit('close', 0);
+    await flush();
+    finish(child, '', null);
+
+    await Promise.all([destroying, rejected]);
+    expect(taskkillImpl).toHaveBeenCalledTimes(1);
+    expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0, destroyed: true });
+  });
+
   test('POSIX cancellation spawns a dedicated process group and kills the full group', async () => {
     const child = makeChild(5151);
-    const processKill = jest.fn();
+    const processKill = jest.fn((_pid, signal) => {
+      if (signal === 'SIGKILL') process.nextTick(() => finish(child, '', null));
+    });
     const spawnImpl = jest.fn(() => child);
     const runner = new YtDlpRunner({
       platform: 'linux',
@@ -185,6 +313,7 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     const controller = new AbortController();
     const runner = new YtDlpRunner({
       platform: 'win32',
+      childCloseTimeoutMs: 100,
       spawnImpl: jest.fn(() => child),
       taskkillImpl: jest.fn(() => taskkill)
     });
@@ -206,6 +335,7 @@ describe('YtDlpRunner concurrency and cancellation', () => {
     expect(runner.taskkillImpl).toHaveBeenCalledTimes(1);
 
     taskkill.emit('close', 0);
+    finish(child, '', null);
     await Promise.all([destroying, rejected]);
     expect(runner.getStatus()).toMatchObject({ active: 0, queued: 0, destroyed: true });
   });
@@ -317,6 +447,73 @@ describe('MusicResolver provider cascade and subscribers', () => {
     expect(result.song.trackKey).toBe('youtube:direct-id');
     expect(runner.run).toHaveBeenCalledTimes(1);
     expect(runner.run.mock.calls[0][1].at(-1)).toBe('https://www.youtube.com/watch?v=direct-id');
+  });
+
+  test.each([
+    ['is_live flag and unknown duration', { is_live: true, live_status: 'is_live', duration: null }, 'live_stream_unsupported'],
+    ['was_live flag with finite duration', { was_live: true, duration: 240 }, 'live_stream_unsupported'],
+    ['upcoming live status with finite duration', { live_status: 'is_upcoming', duration: 240 }, 'live_stream_unsupported'],
+    ['post-live status with finite duration', { live_status: 'post_live', duration: 240 }, 'live_stream_unsupported'],
+    ['missing duration without live flags', { duration: null }, 'unknown_duration'],
+    ['infinite duration without live flags', { duration: Infinity }, 'unknown_duration']
+  ])('rejects direct live or unbounded metadata (%s)', async (_label, metadata, reason) => {
+    const { resolver } = createResolver(async () => directYtDlp({
+      id: 'direct-live-01',
+      title: 'Direct Live Track',
+      uploader: 'Artist',
+      duration: 180,
+      extractor: 'youtube',
+      webpage_url: 'https://www.youtube.com/watch?v=direct-live-01',
+      ...metadata
+    }));
+
+    await expect(resolver.resolve('https://www.youtube.com/watch?v=direct-live-01'))
+      .resolves.toMatchObject({ success: false, reason });
+  });
+
+  test('search skips live candidates but selects an ordinary finite track', async () => {
+    const { resolver, runner } = createResolver(async (_executable, args) => {
+      expect(args.at(-1)).toBe('ytsearch5:artist song');
+      return youtubeSearch([
+        {
+          id: 'live-track', title: 'Artist Song', uploader: 'Artist', duration: null,
+          is_live: true, live_status: 'is_live', extractor: 'youtube',
+          webpage_url: 'https://www.youtube.com/watch?v=live-track'
+        },
+        {
+          id: 'was-live-track', title: 'Artist Song', uploader: 'Artist', duration: 180,
+          was_live: true, live_status: 'was_live', extractor: 'youtube',
+          webpage_url: 'https://www.youtube.com/watch?v=was-live-track'
+        },
+        {
+          id: 'finite-track', title: 'Artist Song', uploader: 'Artist', duration: 180,
+          is_live: false, was_live: false, live_status: 'not_live', extractor: 'youtube',
+          webpage_url: 'https://www.youtube.com/watch?v=finite-track'
+        }
+      ]);
+    });
+
+    const result = await resolver.resolve('artist song');
+
+    expect(result).toMatchObject({ success: true, song: { trackKey: 'youtube:finite-track', duration: 180 } });
+    expect(runner.run).toHaveBeenCalledTimes(1);
+  });
+
+  test('accepts direct finite metadata explicitly marked not_live', async () => {
+    const { resolver } = createResolver(async () => directYtDlp({
+      id: 'finite-direct-01',
+      title: 'Finite Direct Track',
+      uploader: 'Artist',
+      duration: 180,
+      live_status: 'not_live',
+      is_live: false,
+      was_live: false,
+      extractor: 'youtube',
+      webpage_url: 'https://www.youtube.com/watch?v=finite-direct-01'
+    }));
+
+    await expect(resolver.resolve('https://www.youtube.com/watch?v=finite-direct-01'))
+      .resolves.toMatchObject({ success: true, song: { trackKey: 'youtube:finite-direct-01', duration: 180 } });
   });
 
   test('preserves provider album, BPM, and genre metadata for the catalog', () => {

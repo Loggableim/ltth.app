@@ -171,6 +171,8 @@ const {
 const {
     createServerRestartCoordinator
 } = require('./modules/server-restart-coordinator');
+const { unloadPluginsForShutdown } = require('./modules/plugin-shutdown');
+const { runBoundedShutdownStage } = require('./modules/launcher-shutdown-stage');
 const debugLogger = require('./modules/debug-logger');
 const { apiLimiter, authLimiter, uploadLimiter, pluginLimiter, iftttLimiter } = require('./modules/rate-limiter');
 const OBSWebSocket = require('./modules/obs-websocket');
@@ -202,6 +204,8 @@ const PresetManager = require('./modules/preset-manager');
 const BackupManager = require('./modules/backup-manager');
 const CloudSyncEngine = require('./modules/cloud-sync');
 const { createAdminAuth } = require('./modules/admin-auth');
+const { createMusicBotLocalReadPolicy } = require('./modules/music-bot-local-read-policy');
+const { createAdminSocketAuthorization } = require('./modules/admin-socket-authorization');
 const { obsCacheControl } = require('./modules/obs-cache-control');
 const { mountPluginStaticAliases } = require('./modules/plugin-static-aliases');
 const {
@@ -306,9 +310,9 @@ const io = socketIO(server, {
     // Allow EIO 4 (Socket.IO 4.x)
     allowEIO3: true
 });
-const pluginReleasePolicy = createPluginReleasePolicy({ appRoot: __dirname });
-io.adapter(createPublicOverlayAdapter(Adapter, { pluginReleasePolicy }));
-attachPublicSocketPolicy({ io, logger, pluginReleasePolicy });
+io.adapter(createPublicOverlayAdapter(Adapter));
+attachPublicSocketPolicy({ io, logger });
+io.use(createAdminSocketAuthorization({ logger }));
 io.sockets.setMaxListeners(50);
 
 // Middleware
@@ -427,6 +431,9 @@ app.use((req, res, next) => {
     next();
 });
 
+// Music Bot data reads are local-only; public overlays are handled above.
+app.use('/api/plugins/music-bot', createMusicBotLocalReadPolicy());
+
 const adminAuth = createAdminAuth();
 app.use('/api', (req, res, next) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
@@ -438,6 +445,7 @@ app.use('/api', (req, res, next) => {
 
 // Prevent closed-beta plugin API handlers and source assets from being served
 // in the public distribution. This precedes core/static/plugin route registration.
+const pluginReleasePolicy = createPluginReleasePolicy({ appRoot: __dirname });
 app.use(pluginReleasePolicy.createRequestGuard({ pluginsDir: () => pluginsDir }));
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -576,6 +584,19 @@ networkManager = new NetworkManager(db, {
     cloudflaredBinaryManager
 });
 const { bindAddress: BIND_ADDRESS } = networkManager.init();
+// Expose only the active origin decision to plugin routes, not NetworkManager itself.
+Object.defineProperty(app.locals, 'isNetworkOriginAllowed', {
+    value: (origin, port) => {
+        const requestedPort = Number(port);
+        const activePort = Number.isInteger(requestedPort) && requestedPort > 0
+            ? requestedPort
+            : (PORT || 3000);
+        return networkManager.isOriginAllowed(origin, activePort);
+    },
+    enumerable: false,
+    configurable: false,
+    writable: false
+});
 const stableOverlayRoutingConfig = {
     enabled: process.env.LTTH_STABLE_OVERLAY_ROUTING_ENABLED,
     apiOrigin: process.env.LTTH_STABLE_OVERLAY_ROUTING_API_ORIGIN
@@ -1235,11 +1256,50 @@ app.post('/api/cloud-sync/validate-path', authLimiter, (req, res) => {
 // ========== ROUTES ==========
 
 let serverRestartScheduled = false;
+let serverRestartFailure = null;
+let launcherShutdownStatus = 'idle';
+let launcherShutdownMessage = null;
+let launcherShutdownCloseScheduled = false;
+const BLOCKED_PLUGIN_CLEANUP_FAILURE = Object.freeze({
+    code: 'PLUGIN_CLEANUP_BLOCKED',
+    message: 'Server restart is blocked because plugin cleanup did not complete.'
+});
+const RESTART_CLEANUP_FAILURE_MESSAGES = Object.freeze({
+    'database-event-flush': 'Server restart is blocked because pending database events could not be flushed.',
+    'database-close': 'Server restart is blocked because the database could not be closed cleanly.'
+});
+function normalizeServerRestartFailure(failure) {
+    if (failure?.stage === 'plugin cleanup') return BLOCKED_PLUGIN_CLEANUP_FAILURE;
+
+    const stage = typeof failure?.stage === 'string'
+        && Object.prototype.hasOwnProperty.call(RESTART_CLEANUP_FAILURE_MESSAGES, failure.stage)
+        ? failure.stage
+        : null;
+    const failureCode = typeof failure?.error?.code === 'string'
+        && /^[A-Z0-9_-]{1,40}$/.test(failure.error.code)
+        ? failure.error.code
+        : null;
+
+    return Object.freeze({
+        code: 'RESTART_CLEANUP_BLOCKED',
+        message: stage
+            ? RESTART_CLEANUP_FAILURE_MESSAGES[stage]
+            : 'Server restart cleanup did not complete.',
+        ...(stage ? { stage } : {}),
+        ...(stage && failureCode ? { failureCode } : {})
+    });
+}
 const serverRestartCoordinator = createServerRestartCoordinator({
     stableLifecycle: stableOverlayRoutingLifecycle,
+    pluginLoader,
     io,
     db,
     server,
+    onRestartAborted: failure => {
+        serverRestartFailure = normalizeServerRestartFailure(failure);
+        serverRestartScheduled = false;
+        logger.error('Server restart did not complete cleanly:', serverRestartFailure);
+    },
     logger,
     processExit: code => process.exit(code),
     timers: {
@@ -1267,6 +1327,52 @@ function scheduleServerShutdownAfterResponse(res, reason) {
         logger.info(`Launcher requested graceful server shutdown (${reason})`);
         gracefulShutdown('LAUNCHER_SHUTDOWN');
     });
+}
+
+function scheduleLauncherServerCloseAfterResponse(res) {
+    if (launcherShutdownCloseScheduled) return;
+    launcherShutdownCloseScheduled = true;
+    let responseFinished = false;
+    const detachAbortHandlers = () => {
+        res.removeListener('close', onResponseAbort);
+        res.removeListener('error', onResponseAbort);
+    };
+    const onResponseAbort = () => {
+        if (responseFinished) return;
+        launcherShutdownCloseScheduled = false;
+        res.removeListener('finish', onResponseFinish);
+        detachAbortHandlers();
+    };
+    const onResponseFinish = () => {
+        responseFinished = true;
+        detachAbortHandlers();
+        const closeFallback = setTimeout(() => {
+            logger.warn('HTTP server close is still pending after authenticated cleanup completion; exiting.');
+            process.exit(1);
+        }, 5000);
+        closeFallback.unref();
+        const handleClose = error => {
+            clearTimeout(closeFallback);
+            if (error) {
+                launcherShutdownCloseScheduled = false;
+                launcherShutdownStatus = 'pending';
+                launcherShutdownMessage = 'HTTP server close failed; retry shutdown.';
+                _isShuttingDown = false;
+                process.exitCode = 1;
+                logger.error(`HTTP server close failed during launcher shutdown: ${error.message}`);
+                return;
+            }
+            process.exit(0);
+        };
+        try {
+            server.close(handleClose);
+        } catch (error) {
+            handleClose(error);
+        }
+    };
+    res.once('finish', onResponseFinish);
+    res.once('close', onResponseAbort);
+    res.once('error', onResponseAbort);
 }
 
 function normalizeRemoteAddress(address) {
@@ -1582,22 +1688,63 @@ app.post('/api/launcher/shutdown', (req, res) => {
         return res.status(401).json({ success: false, error: 'Invalid launcher token' });
     }
 
-    scheduleServerShutdownAfterResponse(res, 'launcher graceful shutdown');
+    if (launcherShutdownStatus === 'complete') {
+        scheduleLauncherServerCloseAfterResponse(res);
+        return res.json({
+            success: true,
+            status: 'shutdown_complete',
+            pid: process.pid,
+            port: PORT,
+            supervisorPid: Number.parseInt(process.env.LTTH_LAUNCHER_SUPERVISOR_PID || '', 10) || null
+        });
+    }
+
+    if (launcherShutdownStatus !== 'running') {
+        launcherShutdownStatus = 'scheduled';
+        launcherShutdownMessage = null;
+        scheduleServerShutdownAfterResponse(res, 'launcher graceful shutdown');
+    }
     res.json({
         success: true,
         status: 'shutdown_scheduled',
         pid: process.pid,
-        port: PORT
+        port: PORT,
+        supervisorPid: Number.parseInt(process.env.LTTH_LAUNCHER_SUPERVISOR_PID || '', 10) || null
+    });
+});
+
+app.get('/api/launcher/shutdown-status', (req, res) => {
+    if (!isLocalLauncherRequest(req)) {
+        return res.status(403).json({ success: false, error: 'Launcher shutdown status is only available from localhost' });
+    }
+
+    if (!launcherTokenMatches(req)) {
+        return res.status(401).json({ success: false, error: 'Invalid launcher token' });
+    }
+
+    if (launcherShutdownStatus === 'complete') {
+        scheduleLauncherServerCloseAfterResponse(res);
+    }
+    res.json({
+        success: true,
+        status: launcherShutdownStatus,
+        message: launcherShutdownMessage,
+        pid: process.pid,
+        port: PORT,
+        supervisorPid: Number.parseInt(process.env.LTTH_LAUNCHER_SUPERVISOR_PID || '', 10) || null
     });
 });
 
 function buildRestartingApiState(endpoint) {
     return {
         success: false,
-        status: 'restarting',
+        status: serverRestartFailure ? 'restart-incomplete' : 'restarting',
         restarting: true,
+        restartFailure: serverRestartFailure,
         endpoint,
-        message: 'Server restart in progress. Please retry shortly.',
+        message: serverRestartFailure
+            ? serverRestartFailure.message
+            : 'Server restart in progress. Please retry shortly.',
         timestamp: new Date().toISOString()
     };
 }
@@ -1607,7 +1754,8 @@ app.get('/api/status', apiLimiter, (req, res) => {
         isConnected: tiktok.isActive(),
         username: tiktok.currentUsername,
         stats: tiktok.getStats(),
-        restarting: serverRestartScheduled
+        restarting: serverRestartScheduled,
+        restartFailure: serverRestartFailure
     });
 });
 
@@ -1632,6 +1780,7 @@ app.get('/api/live-stats', apiLimiter, (req, res) => {
             isConnected: tiktok.isActive(),
             username: tiktok.currentUsername,
             restarting: serverRestartScheduled,
+            restartFailure: serverRestartFailure,
             stats: {
                 runtime: runtimeFormatted,
                 streamDuration: streamDuration,
@@ -2109,6 +2258,10 @@ app.get('/api/profiles/active', apiLimiter, (req, res) => {
             activeProfile: loadedProfile, // Currently loaded profile
             pendingProfile: hasPendingProfile ? activeProfileFile : undefined, // Profile pending restart
             requiresRestart: hasPendingProfile,
+            restartState: serverRestartFailure
+                ? 'blocked-cleanup'
+                : hasPendingProfile ? 'pending-restart' : 'active',
+            restartFailure: serverRestartFailure,
             port: PORT
         });
     } catch (error) {
@@ -2230,9 +2383,27 @@ app.post('/api/profiles/switch', apiLimiter, (req, res) => {
 app.post('/api/server/restart', apiLimiter, (req, res) => {
     logger.info('♻️  Server restart requested via API');
 
+    if (serverRestartFailure && serverRestartFailure.code !== 'PLUGIN_CLEANUP_BLOCKED') {
+        return res.status(503).json({
+            success: false,
+            message: serverRestartFailure.message,
+            errorCode: serverRestartFailure.code,
+            restartFailure: serverRestartFailure,
+            restartScheduled: false
+        });
+    }
+
+    // A new explicit restart request is the only retry for a retained
+    // application-shutdown owner. It reuses the same PluginLoader instance;
+    // database cleanup failures remain blocked and are never retried here.
+    if (serverRestartFailure?.code === 'PLUGIN_CLEANUP_BLOCKED') {
+        serverRestartFailure = null;
+    }
+
     res.json({
         success: true,
         message: serverRestartScheduled ? 'Server restart is already scheduled.' : 'Server is restarting...',
+        restartFailure: null,
         restartScheduled: true
     });
 
@@ -2241,13 +2412,23 @@ app.post('/api/server/restart', apiLimiter, (req, res) => {
 
 // Profil-Backup erstellen
 app.post('/api/profiles/:username/backup', apiLimiter, (req, res) => {
-    const { username } = req.params;
-
     try {
+        const username = Validators.string(req.params.username, {
+            required: true,
+            minLength: 1,
+            maxLength: 50,
+            pattern: /^[a-zA-Z0-9_-]+$/,
+            fieldName: 'username'
+        });
+
         const backup = profileManager.backupProfile(username);
         logger.info(`💾 Created backup for profile: ${username}`);
         res.json({ success: true, backup });
     } catch (error) {
+        if (error instanceof ValidationError) {
+            logger.warn(`Invalid profile backup request: ${error.message}`);
+            return res.status(400).json({ success: false, error: error.message });
+        }
         logger.error('Error creating backup:', error);
         res.status(500).json({ success: false, error: error.message });
     }
@@ -4565,41 +4746,62 @@ async function gracefulShutdown(signal) {
     gracefulShutdown.activeAttempt = shutdownAttempt;
 
     logger.info(`\n\n🛑 Shutting down gracefully (${signal})...`);
+    if (signal === 'LAUNCHER_SHUTDOWN') {
+        launcherShutdownStatus = 'running';
+        launcherShutdownMessage = null;
+    }
 
-    // Force-Exit nach 5 Sekunden falls server.close() hängt
-    const forceExitTimer = setTimeout(() => {
-        logger.warn('⚠️  Graceful shutdown timed out after 5s, forcing exit...');
-        try {
-            // SQLite writes are synchronous; persist even events queued by slow cleanup.
-            db._flushEventBatchSync();
-        } catch (error) {
-            gracefulShutdown.activeAttempt = null;
-            _isShuttingDown = false;
-            process.exitCode = 1;
-            logger.error(`Forced shutdown aborted to preserve pending events: ${error.message}`);
-            return;
-        }
+    // Cleanup stages are bounded, but timing out only returns a retryable state;
+    // no process-exit deadline runs until all durable cleanup has succeeded.
+    let forceExitTimer = null;
+    const abortForRetry = message => {
         gracefulShutdown.activeAttempt = null;
-        process.exit(1);
-    }, 5000);
-    forceExitTimer.unref();
+        _isShuttingDown = false;
+        process.exitCode = 1;
+        if (signal === 'LAUNCHER_SHUTDOWN') {
+            launcherShutdownStatus = 'pending';
+            launcherShutdownMessage = message;
+        }
+        logger.error(message);
+    };
 
-    // This shutdown path has its own 2s client bound. It must finish before
-    // slower plugin cleanup can consume the process-wide 5s force-exit budget.
-    await stableOverlayRoutingLifecycle.shutdown();
+    const stableShutdown = await runBoundedShutdownStage(
+        () => stableOverlayRoutingLifecycle.shutdown(),
+        { timeoutMs: 4500 }
+    );
     if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+    if (stableShutdown.timedOut || stableShutdown.error) {
+        abortForRetry(stableShutdown.timedOut
+            ? 'Overlay cleanup is still pending; retry shutdown after cleanup completes.'
+            : `Overlay cleanup failed; retry shutdown after the issue is resolved: ${stableShutdown.error.message}`);
+        return;
+    }
 
     // Plugins own routes, sockets, timers and optional servers. Release them
     // first and in reverse load order so dependants disappear before providers.
-    const loadedPluginIds = Array.from(pluginLoader.plugins.keys()).reverse();
-    for (const pluginId of loadedPluginIds) {
-        try {
-            const unloaded = await pluginLoader.unloadPlugin(pluginId, { reason: 'application-shutdown' });
-            if (!unloaded) logger.error(`Plugin ${pluginId} reported cleanup errors during shutdown`);
-        } catch (error) {
-            logger.error(`Failed to unload plugin ${pluginId} during shutdown: ${error.message}`);
+    const pluginShutdown = await unloadPluginsForShutdown({
+        pluginLoader,
+        timeoutMs: 4500,
+        logger
+    });
+    if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+    if (!pluginShutdown.success) {
+        clearTimeout(forceExitTimer);
+        gracefulShutdown.activeAttempt = null;
+        _isShuttingDown = false;
+        process.exitCode = 1;
+        if (signal === 'LAUNCHER_SHUTDOWN') {
+            launcherShutdownStatus = 'pending';
+            launcherShutdownMessage = pluginShutdown.timedOut
+                ? 'Plugin cleanup is still pending; retry shutdown after cleanup completes.'
+                : 'Plugin cleanup failed; retry shutdown after cleanup completes.';
         }
-        if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+        logger.error(
+            pluginShutdown.timedOut
+                ? 'Shutdown aborted because plugin cleanup timed out; database and HTTP server remain open.'
+                : 'Shutdown aborted because plugin cleanup failed; database and HTTP server remain open.'
+        );
+        return;
     }
 
     // TikTok-Verbindung trennen
@@ -4609,16 +4811,28 @@ async function gracefulShutdown(signal) {
 
     // OBS-Verbindung trennen
     if (obs.isConnected()) {
-        try { await obs.disconnect(); } catch (e) { logger.debug('OBS disconnect error:', e.message); }
+        const obsShutdown = await runBoundedShutdownStage(() => obs.disconnect(), { timeoutMs: 4500 });
+        if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+        if (obsShutdown.timedOut || obsShutdown.error) {
+            abortForRetry(obsShutdown.timedOut
+                ? 'OBS cleanup is still pending; retry shutdown after cleanup completes.'
+                : `OBS cleanup failed; retry shutdown after the issue is resolved: ${obsShutdown.error.message}`);
+            return;
+        }
     }
 
     // Cloud Sync beenden
-    try {
-        await cloudSync.shutdown();
-    } catch (error) {
-        logger.error('Error shutting down cloud sync:', error);
-    }
+    const cloudSyncShutdown = await runBoundedShutdownStage(
+        () => cloudSync.shutdown(),
+        { timeoutMs: 4500 }
+    );
     if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+    if (cloudSyncShutdown.timedOut || cloudSyncShutdown.error) {
+        abortForRetry(cloudSyncShutdown.timedOut
+            ? 'Cloud sync cleanup is still pending; retry shutdown after cleanup completes.'
+            : `Cloud sync cleanup failed; retry shutdown after the issue is resolved: ${cloudSyncShutdown.error.message}`);
+        return;
+    }
 
     // Alle Socket.io-Verbindungen sofort trennen damit server.close() nicht endlos wartet
     io.disconnectSockets(true);
@@ -4631,17 +4845,59 @@ async function gracefulShutdown(signal) {
         gracefulShutdown.activeAttempt = null;
         _isShuttingDown = false;
         process.exitCode = 1;
+        if (signal === 'LAUNCHER_SHUTDOWN') {
+            launcherShutdownStatus = 'pending';
+            launcherShutdownMessage = 'Database close failed; retry shutdown after the database issue is resolved.';
+        }
         logger.error(`Database flush failed; shutdown aborted to preserve pending events: ${error.message}`);
         return;
     }
 
+    if (signal === 'LAUNCHER_SHUTDOWN') {
+        // The authenticated launcher must observe this state before asking the
+        // server to close its HTTP listener and exit.
+        launcherShutdownStatus = 'complete';
+        launcherShutdownMessage = null;
+        return;
+    }
+
+    // The database and all queue/plugin cleanup are complete. Only now may a
+    // process-exit fallback protect against a stuck HTTP close callback.
+    forceExitTimer = setTimeout(() => {
+        logger.warn('HTTP server close is still pending after durable shutdown cleanup; exiting.');
+        process.exit(1);
+    }, 5000);
+    forceExitTimer.unref();
+
     // Server schließen
-    server.close(() => {
-        if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+    try {
+        server.close((error) => {
+            if (gracefulShutdown.activeAttempt !== shutdownAttempt) return;
+            clearTimeout(forceExitTimer);
+            if (error) {
+                gracefulShutdown.activeAttempt = null;
+                _isShuttingDown = false;
+                process.exitCode = 1;
+                if (signal === 'LAUNCHER_SHUTDOWN') {
+                    launcherShutdownStatus = 'pending';
+                    launcherShutdownMessage = 'HTTP server close failed; retry shutdown.';
+                }
+                logger.error(`HTTP server close failed during shutdown: ${error.message}`);
+                process.exit(1);
+                return;
+            }
+            if (signal === 'LAUNCHER_SHUTDOWN') launcherShutdownStatus = 'complete';
+            logger.info('✅ Server closed');
+            process.exit(0);
+        });
+    } catch (error) {
         clearTimeout(forceExitTimer);
-        logger.info('✅ Server closed');
-        process.exit(0);
-    });
+        gracefulShutdown.activeAttempt = null;
+        _isShuttingDown = false;
+        process.exitCode = 1;
+        logger.error(`HTTP server close failed during shutdown: ${error.message}`);
+        process.exit(1);
+    }
 }
 
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));

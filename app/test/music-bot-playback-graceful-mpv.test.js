@@ -6,7 +6,11 @@ const path = require('path');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
 
 const MPV_PATH = 'C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe';
-const integrationTest = process.platform === 'win32' && fs.existsSync(MPV_PATH) ? test : test.skip;
+const integrationTest = process.env.LTTH_RUN_MUSIC_BOT_NULL_MPV === '1'
+  && process.platform === 'win32'
+  && fs.existsSync(MPV_PATH)
+  ? test
+  : test.skip;
 
 function createSilentWav(durationSeconds = 10, sampleRate = 8000) {
   const sampleCount = durationSeconds * sampleRate;
@@ -103,7 +107,7 @@ integrationTest('controller stop exits its owned MPV through IPC quit with code 
     expect(processRegistry.findMarkedProcesses).not.toHaveBeenCalled();
     console.info(`[isolated mpv stop] pid=${owned.child.pid} exit=${owned.child.exitCode} owned=0 ipcRemoved=${!fs.existsSync(ipcPath)}`);
   } finally {
-    await controller.shutdown();
+    await controller.shutdown({ reconcileOrphans: true });
     fs.rmSync(tempDir, { recursive: true, force: true });
   }
 
@@ -134,7 +138,7 @@ integrationTest('track replacement and controller shutdown close each owned MPV 
     expect(second.engine._ownedPids.has(second.child.pid)).toBe(true);
     await waitForMediaReady(second.engine);
 
-    await controller.shutdown();
+    await controller.shutdown({ reconcileOrphans: true });
 
     expectGracefulClose(second.engine, second.child);
     expect(processRegistry.findMarkedProcesses).not.toHaveBeenCalled();

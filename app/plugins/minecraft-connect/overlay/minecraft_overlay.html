@@ -31,13 +31,28 @@
                 document.documentElement.style.colorScheme = (theme === 'day' || theme === 'contrast' || theme === 'vision-impaired') ? 'light' : 'dark';
             }
 
+            let themeSyncDisposed = false;
+            let parentThemeObserver = null;
+            function disposeThemeSync(event) {
+                if (event?.persisted || themeSyncDisposed) return;
+                themeSyncDisposed = true;
+                document.removeEventListener('DOMContentLoaded', syncTheme);
+                window.removeEventListener('load', syncTheme);
+                window.removeEventListener('focus', syncTheme);
+                parentThemeObserver?.disconnect();
+                parentThemeObserver = null;
+                window.removeEventListener('pagehide', disposeThemeSync);
+            }
+
             document.addEventListener('DOMContentLoaded', syncTheme);
             window.addEventListener('load', syncTheme);
             window.addEventListener('focus', syncTheme);
+            window.addEventListener('pagehide', disposeThemeSync);
 
             try {
                 if (window.parent && window.parent !== window) {
-                    new MutationObserver(syncTheme).observe(window.parent.document.documentElement, {
+                    parentThemeObserver = new MutationObserver(syncTheme);
+                    parentThemeObserver.observe(window.parent.document.documentElement, {
                         attributes: true,
                         attributeFilter: ['data-theme']
                     });

@@ -1,0 +1,119 @@
+{
+  "fixtureId": "interactive-story-source-fixture-v1",
+  "caseCount": 4,
+  "files": [
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "role": "browser-socket-client-source",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+    },
+    {
+      "path": "app/plugins/interactive-story/overlay.html",
+      "role": "renderer-entry-inline-css-js",
+      "bytes": 65722,
+      "sha256": "739e58adb3436fe64dd4e9f39c730cb93f0df325f832d6e116999c2d17b19c5b"
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "role": "shared-i18n-client",
+      "bytes": 24907,
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+    },
+    {
+      "path": "app/public/js/public-overlay-render-mode.js",
+      "role": "shared-render-mode-script",
+      "bytes": 1513,
+      "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143"
+    },
+    {
+      "path": "app/plugins/interactive-story/locales/de.json",
+      "role": "plugin-locale",
+      "bytes": 24318,
+      "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f"
+    },
+    {
+      "path": "app/plugins/interactive-story/locales/en.json",
+      "role": "plugin-locale",
+      "bytes": 22314,
+      "sha256": "35db326b77bc9e1fd7a631d1fc9cd681463aeddf8f8396500e6de363daa9329f"
+    },
+    {
+      "path": "app/plugins/interactive-story/locales/es.json",
+      "role": "plugin-locale",
+      "bytes": 24825,
+      "sha256": "d93b50567bbba5119eaa7d27cfee51951f19e3ada26df03b9b6448da86409df5"
+    },
+    {
+      "path": "app/plugins/interactive-story/locales/fr.json",
+      "role": "plugin-locale",
+      "bytes": 24830,
+      "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21"
+    }
+  ],
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "schemaVersion": 1,
+  "runnerContract": {
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "cleanup": "close the isolated JSDOM and its shim after the case; source has no pagehide cleanup handler, so product transport cleanup is not proven",
+    "externalNetwork": "blocked",
+    "assetGetRoutes": [
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/js/public-overlay-render-mode.js",
+        "source": "app/public/js/public-overlay-render-mode.js"
+      },
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      }
+    ],
+    "transport": "in-process-jsdom-interceptor",
+    "socketEventsConsumed": [
+      "connect",
+      "connect_error",
+      "disconnect",
+      "story:chapter-display",
+      "story:chapter-ready",
+      "story:chapter-sentence",
+      "story:chapter-title-phase",
+      "story:chapter-tts-complete",
+      "story:chapter-tts-start",
+      "story:config-updated",
+      "story:dnd-participants-updated",
+      "story:ended",
+      "story:generation-started",
+      "story:image-generation-failed",
+      "story:image-updated",
+      "story:vote-update",
+      "story:voting-ended",
+      "story:voting-started",
+      "tts:playback:ended"
+    ],
+    "listenerStarted": false,
+    "pluginControlProducer": "excluded; synthetic fixed GET responses and one in-memory chapter-display event; no Interactive Story backend, database, LLM/image/TTS provider or audio playback",
+    "driverEvents": [
+      {
+        "event": "story:chapter-display",
+        "negativeCase": "chapter has no imagePath, config uses default generating animation with empty URL, TTS relay event is not driven",
+        "payload": {
+          "chapter": {
+            "content": "Synthetic chapter text.",
+            "title": "Synthetic chapter"
+          },
+          "mode": "immediate"
+        }
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)",
+      "/api/interactive-story/config",
+      "/api/interactive-story/participants",
+      "/api/interactive-story/overlay-positions"
+    ],
+    "productProfileOrCredentialData": "excluded"
+  }
+}

@@ -259,6 +259,7 @@ See [Build Instructions](docs/BUILD_INSTRUCTIONS.md) for detailed information.
 - Command cooldown between actions
 - Queue size limits
 - localhost-only WebSocket connections
+- The WebSocket host accepts only `localhost`, `127.0.0.1`, or `::1`. Other configured values are preserved, but no non-loopback listener is started; the dashboard and config API report the restriction.
 - Input validation
 - Error handling
 

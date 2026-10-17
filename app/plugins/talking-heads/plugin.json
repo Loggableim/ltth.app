@@ -2,7 +2,7 @@
   "id": "talking-heads",
   "name": "Talking Heads",
   "version": "2.0.0",
-  "description": "Three-pack speaker-stage avatars with renderer-synchronized TTS animation",
+  "description": "Boba Animals speaker-stage avatars with renderer-synchronized TTS animation",
   "author": "Pup Cid",
   "entry": "main.js",
   "enabled": false,
@@ -18,9 +18,6 @@
   ],
   "features": [
     "Bundled Boba Animals Library",
-    "Bundled Kenney Monster Builder",
-    "Bundled Vector Character Builder",
-    "Modular Head, Hair, Eye and Mouth Selection",
     "5-Frame Sprite Animation System",
     "First Voice Assignment Avatar Slot",
     "Cosmetic Gift Avatar Rerolls",
@@ -56,10 +53,22 @@
     "minTeamLevel": 0,
     "requireSubscriber": false,
     "requireCustomVoice": false,
-    "spriteMode": "asset-library"
+    "spriteMode": "asset-library",
+    "nameplatePosition": "below",
+    "nameplateFontFamily": "Inter, ui-sans-serif, system-ui, sans-serif",
+    "nameplateFontSize": 14,
+    "nameplateFontColor": "#ffffff",
+    "nameplateBackgroundColor": "#060c1c",
+    "nameplateBackgroundOpacity": 0.75,
+    "nameplateTextShadow": "subtle",
+    "nameplateTextStroke": "none",
+    "headEntranceAnimation": "slide-up",
+    "headExitAnimation": "fade",
+    "nameplateEntranceAnimation": "fade",
+    "nameplateExitAnimation": "fade"
   },
   "descriptions": {
-    "en": "Speaker-stage avatars with an equal-weight Boba, Kenney, and vector-character assignment slot plus mouth animation synchronized to the actual TTS renderer. Uses bundled assets without external avatar APIs.",
-    "de": "Sprecheravatare mit einem gleichgewichteten Slot aus Boba-, Kenney- und Vector-Figuren sowie Mundanimation, die mit dem echten TTS-Renderer synchronisiert ist. Nutzt gebuendelte Assets ohne externe Avatar-APIs."
+    "en": "Speaker-stage avatars with Boba animal assignment slot plus mouth animation synchronized to the actual TTS renderer. Uses bundled assets without external avatar APIs.",
+    "de": "Sprecheravatare mit Boba-Tier-Slot sowie Mundanimation, die mit dem echten TTS-Renderer synchronisiert ist. Nutzt gebuendelte Assets ohne externe Avatar-APIs."
   }
 }

@@ -244,6 +244,7 @@
       this.window = dependencies.window || root;
       this.document = dependencies.document || root.document;
       this.Matter = dependencies.Matter || root.Matter;
+      this.ownsSocket = !dependencies.socket;
       this.socket = dependencies.socket || (typeof root.io === 'function'
         ? root.io({ reconnectionDelay: 1000, reconnectionDelayMax: 30000 })
         : null);
@@ -258,20 +259,32 @@
       this.bodies = [];
       this.walls = [];
       this.spawnTimer = null;
+      this.popupTimer = null;
       this.counterFrame = null;
       this.counterValue = 0;
       this.counterTarget = 0;
       this.lastSoundAt = 0;
+      this.destroyed = false;
+      this.socketHandlers = [];
+      this.matterHandlers = [];
+      this.activeImpactSounds = new Set();
+      this.impactSoundListeners = new Map();
       this.bounds = null;
       this.physicsBounds = null;
       this.elements = {};
-      this._boundResize = () => this.resize();
+      this._boundResize = () => {
+        if (!this.destroyed) this.resize();
+      };
+      this._boundPageHide = event => {
+        if (!event?.persisted) this.destroy();
+      };
 
       this._findElements();
       if (this.Matter && this.document) {
         this._initializePhysics();
       }
       if (this.window?.addEventListener) this.window.addEventListener('resize', this._boundResize);
+      if (this.window?.addEventListener) this.window.addEventListener('pagehide', this._boundPageHide);
       this.bindSocket();
       this.applyConfig(this.config);
     }
@@ -295,8 +308,15 @@
       this.engine = Engine.create({ gravity: { x: 0, y: 1, scale: 0.001 } });
       this.runner = Runner.create();
       Runner.run(this.runner, this.engine);
-      Events.on(this.engine, 'afterUpdate', () => this._updateBodies());
-      Events.on(this.engine, 'collisionStart', event => this._handleCollisions(event));
+      const afterUpdate = () => {
+        if (!this.destroyed) this._updateBodies();
+      };
+      const collisionStart = event => {
+        if (!this.destroyed) this._handleCollisions(event);
+      };
+      Events.on(this.engine, 'afterUpdate', afterUpdate);
+      Events.on(this.engine, 'collisionStart', collisionStart);
+      this.matterHandlers.push(['afterUpdate', afterUpdate], ['collisionStart', collisionStart]);
       this.resize();
     }
 
@@ -368,6 +388,7 @@
     }
 
     applyConfig(config = {}) {
+      if (this.destroyed) return;
       this.config = { ...this.config, ...(config || {}) };
       this.config.maxPhysicalIcons = Math.floor(clamp(finiteNumber(this.config.maxPhysicalIcons, 300), 20, 3000));
       this.config.iconScale = clamp(finiteNumber(this.config.iconScale, 1), 0.25, 3);
@@ -402,14 +423,23 @@
 
     bindSocket() {
       if (!this.socket?.on) return;
-      this.socket.on('connect', () => this.socket.emit('coinJar.sync.request'));
-      this.socket.on('coinJar.sync', payload => this.applySync(payload));
-      this.socket.on('coinJar.add', payload => this.enqueueSpawn(payload));
-      this.socket.on('coinJar.reset', payload => this.clear(payload));
-      this.socket.on('coinJar.config', payload => this.applyConfig(payload));
+      if (!this.socketHandlers) this.socketHandlers = [];
+      const bind = (event, callback) => {
+        const handler = (...args) => {
+          if (!this.destroyed) callback(...args);
+        };
+        this.socket.on(event, handler);
+        this.socketHandlers.push([event, handler]);
+      };
+      bind('connect', () => this.socket.emit('coinJar.sync.request'));
+      bind('coinJar.sync', payload => this.applySync(payload));
+      bind('coinJar.add', payload => this.enqueueSpawn(payload));
+      bind('coinJar.reset', payload => this.clear(payload));
+      bind('coinJar.config', payload => this.applyConfig(payload));
     }
 
     applySync(payload = {}) {
+      if (this.destroyed) return;
       if (payload.config) this.applyConfig(payload.config);
       this.clear({ generation: payload.generation, preserveCounter: true, useIncomingGeneration: true });
       this.generation = Math.max(this.generation, finiteNumber(payload.generation, this.generation));
@@ -444,6 +474,7 @@
     }
 
     enqueueSpawn(payload = {}) {
+      if (this.destroyed) return;
       if (finiteNumber(payload.generation, this.generation) < this.generation || this.config.enabled === false) return;
       if (payload.generation !== undefined) this.generation = Math.max(this.generation, finiteNumber(payload.generation, this.generation));
       this.counterTarget = Math.max(this.counterTarget, finiteNumber(payload.totalCoinValue, this.counterTarget));
@@ -501,10 +532,12 @@
     }
 
     _scheduleSpawn() {
-      if (this.spawnTimer || this.queue.length === 0) return;
+      if (this.destroyed) return;
+      if (this.spawnTimer != null || this.queue.length === 0) return;
       const item = this.queue.shift();
       const delay = Math.round(this.config.spawnDelayMs * (0.5 + this.random()) * this.config.spawnMultiplier);
       this.spawnTimer = this.setTimeoutFn(() => {
+        if (this.destroyed) return;
         this.spawnTimer = null;
         if (item.generation === this.generation) {
           const overflow = item.overflow || this._isJarFull(calculateGiftSize(item.payload.totalValue, this.config));
@@ -638,41 +671,76 @@
     }
 
     _handleCollisions(event) {
+      if (this.destroyed) return;
       if (event.pairs?.some(pair => pair.bodyA.plugin || pair.bodyB.plugin)) this._playImpactSound(event);
     }
 
     _playImpactSound() {
+      if (this.destroyed) return;
       if (this.config.soundEnabled !== true) return;
       const now = Date.now();
       if (now - this.lastSoundAt < 110) return;
       this.lastSoundAt = now;
+      let impactSound;
       try {
-        const impactSound = this.elements.impactSound?.cloneNode?.(true);
+        impactSound = this.elements.impactSound?.cloneNode?.(true);
         if (!impactSound) return;
+        const onFinished = () => this._releaseImpactSound(impactSound);
+        if (!this.activeImpactSounds) this.activeImpactSounds = new Set();
+        if (!this.impactSoundListeners) this.impactSoundListeners = new Map();
+        this.activeImpactSounds.add(impactSound);
+        this.impactSoundListeners.set(impactSound, onFinished);
+        impactSound.addEventListener?.('ended', onFinished, { once: true });
+        impactSound.addEventListener?.('error', onFinished, { once: true });
         impactSound.volume = clamp(finiteNumber(this.config.soundVolume, 0.35), 0, 1);
         const playResult = impactSound.play?.();
-        playResult?.catch?.(() => {});
+        playResult?.catch?.(onFinished);
       } catch (_) {
+        if (impactSound) this._releaseImpactSound(impactSound);
         // Browser sources can reject audio until a gesture; the visual must continue silently.
       }
     }
 
+    _releaseImpactSound(impactSound) {
+      if (!this.activeImpactSounds?.has(impactSound)) return;
+      this.activeImpactSounds.delete(impactSound);
+      const onFinished = this.impactSoundListeners?.get(impactSound);
+      if (onFinished) {
+        impactSound.removeEventListener?.('ended', onFinished);
+        impactSound.removeEventListener?.('error', onFinished);
+      }
+      this.impactSoundListeners?.delete(impactSound);
+      try {
+        impactSound.pause?.();
+        impactSound.currentTime = 0;
+      } catch (_) {
+        // Media cleanup is best-effort if the browser has already detached the node.
+      }
+    }
+
     _showGiftPopup(payload) {
+      if (this.destroyed) return;
       const popup = this.elements.popup;
       if (!popup) return;
       const sender = this.config.showSenderName === false ? '' : (payload.senderName ? `${payload.senderName} ` : '');
       popup.textContent = `${sender}${payload.giftName || 'Gift'} +${finiteNumber(payload.totalValue, 0).toLocaleString()}`;
       popup.hidden = false;
-      if (this.popupTimer) this.clearTimeoutFn(this.popupTimer);
-      this.popupTimer = this.setTimeoutFn(() => { popup.hidden = true; }, 2400);
+      if (this.popupTimer != null) this.clearTimeoutFn(this.popupTimer);
+      this.popupTimer = this.setTimeoutFn(() => {
+        if (this.destroyed) return;
+        this.popupTimer = null;
+        popup.hidden = true;
+      }, 2400);
     }
 
     setCounter(value) {
+      if (this.destroyed) return;
       this.counterTarget = Math.max(0, finiteNumber(value, 0));
       this._renderCounter();
     }
 
     _renderCounter(immediate = false) {
+      if (this.destroyed) return;
       if (immediate) this.counterValue = this.counterTarget;
       if (!immediate && Math.abs(this.counterTarget - this.counterValue) > 0.5) {
         this.counterValue += (this.counterTarget - this.counterValue) * 0.2;
@@ -682,15 +750,20 @@
       const counter = this.elements?.counter;
       if (counter) counter.textContent = `${Math.round(this.counterValue).toLocaleString()} ${this.config.counterLabel || ''}`.trim();
       if (!immediate && this.counterValue !== this.counterTarget && this.requestAnimationFrame) {
-        if (this.counterFrame) this.cancelAnimationFrame?.(this.counterFrame);
-        this.counterFrame = this.requestAnimationFrame(() => this._renderCounter());
+        if (this.counterFrame != null) this.cancelAnimationFrame?.(this.counterFrame);
+        this.counterFrame = this.requestAnimationFrame(() => {
+          if (this.destroyed) return;
+          this.counterFrame = null;
+          this._renderCounter();
+        });
       }
     }
 
     _emitTelemetry() {
+      if (this.destroyed) return;
       this.socket?.emit?.('coinJar.telemetry', {
         physicalCoinCount: this.bodies.length,
-        pendingSpawns: this.queue.length + (this.spawnTimer ? 1 : 0)
+        pendingSpawns: this.queue.length + (this.spawnTimer != null ? 1 : 0)
       });
       this._renderDebug();
     }
@@ -701,13 +774,14 @@
       }
     }
 
-    clear(payload = {}) {
+    clear(payload = {}, allowDestroyed = false) {
+      if (this.destroyed && !allowDestroyed) return;
       const incomingGeneration = finiteNumber(payload.generation, this.generation + 1);
       this.generation = payload.useIncomingGeneration === true
         ? incomingGeneration
         : Math.max(this.generation + 1, incomingGeneration);
-      if (this.spawnTimer) this.clearTimeoutFn(this.spawnTimer);
-      if (this.popupTimer) this.clearTimeoutFn(this.popupTimer);
+      if (this.spawnTimer != null) this.clearTimeoutFn(this.spawnTimer);
+      if (this.popupTimer != null) this.clearTimeoutFn(this.popupTimer);
       this.spawnTimer = null;
       this.popupTimer = null;
       this.queue = [];
@@ -723,9 +797,24 @@
     }
 
     destroy() {
-      this.clear({ preserveCounter: true });
-      if (this.counterFrame) this.cancelAnimationFrame?.(this.counterFrame);
+      if (this.destroyed) return;
+      this.destroyed = true;
       if (this.window?.removeEventListener) this.window.removeEventListener('resize', this._boundResize);
+      if (this.window?.removeEventListener) this.window.removeEventListener('pagehide', this._boundPageHide);
+      for (const [event, handler] of this.socketHandlers) {
+        if (this.socket?.off) this.socket.off(event, handler);
+        else if (this.socket?.removeListener) this.socket.removeListener(event, handler);
+      }
+      this.socketHandlers = [];
+      if (this.ownsSocket && this.socket?.disconnect) this.socket.disconnect();
+      for (const [event, handler] of this.matterHandlers) {
+        this.Matter?.Events?.off?.(this.engine, event, handler);
+      }
+      this.matterHandlers = [];
+      for (const sound of [...this.activeImpactSounds]) this._releaseImpactSound(sound);
+      this.clear({ preserveCounter: true }, true);
+      if (this.counterFrame != null) this.cancelAnimationFrame?.(this.counterFrame);
+      this.counterFrame = null;
       if (this.Matter?.Runner && this.runner) this.Matter.Runner.stop(this.runner);
       if (this.Matter?.Engine && this.engine) this.Matter.Engine.clear(this.engine);
     }

@@ -23,6 +23,7 @@ const fs = require('fs').promises;
 const MinecraftWebSocketServer = require('./helpers/minecraftWebSocket');
 const CommandQueue = require('./helpers/commandQueue');
 const ActionMapper = require('./helpers/actionMapper');
+const { getWebSocketBindPolicy } = require('./helpers/websocketBindPolicy');
 
 class MinecraftConnectPlugin {
     constructor(api) {
@@ -76,6 +77,7 @@ class MinecraftConnectPlugin {
         this.availableActions = [];
         this.connectionStatus = 'Disconnected';
         this.isRunning = false;
+        this.websocketWarning = null;
 
         // Statistics
         this.stats = {
@@ -124,7 +126,15 @@ class MinecraftConnectPlugin {
             this.registerTikTokEvents();
 
             // Start WebSocket server
-            this.wsServer.start();
+            try {
+                this.wsServer.start();
+            } catch (error) {
+                if (error.code !== 'MINECRAFT_CONNECT_LOOPBACK_ONLY') {
+                    throw error;
+                }
+                this.websocketWarning = error.message;
+                this.api.log(error.message, 'warn');
+            }
 
             this.api.log('Minecraft Connect plugin initialized successfully');
             return true;
@@ -205,11 +215,17 @@ class MinecraftConnectPlugin {
                 isConnected: this.wsServer ? this.wsServer.isConnected() : false,
                 availableActions: this.availableActions,
                 stats: this.stats,
-                queueStatus: this.commandQueue ? this.commandQueue.getStatus() : null
+                queueStatus: this.commandQueue ? this.commandQueue.getStatus() : null,
+                warning: this.getWebSocketWarning()
             },
             mappings: this.actionMapper ? this.actionMapper.getMappings() : [],
             events: this.eventLog
         };
+    }
+
+    getWebSocketWarning() {
+        const policy = getWebSocketBindPolicy(this.config.websocket?.host);
+        return policy.warning || this.websocketWarning;
     }
 
     /**
@@ -297,7 +313,8 @@ class MinecraftConnectPlugin {
                     isConnected: this.wsServer.isConnected(),
                     availableActions: this.availableActions,
                     stats: this.stats,
-                    queueStatus: this.commandQueue.getStatus()
+                    queueStatus: this.commandQueue.getStatus(),
+                    warning: this.getWebSocketWarning()
                 }
             });
         });
@@ -416,10 +433,18 @@ class MinecraftConnectPlugin {
                 const updates = req.body;
                 this.config = this.mergeConfig(this.config, updates);
                 await this.saveConfig();
+
+                const policy = getWebSocketBindPolicy(this.config.websocket?.host);
+                this.websocketWarning = policy.warning || (
+                    this.wsServer && !this.wsServer.isRunning
+                        ? 'Loopback configuration saved. Restart Minecraft Connect to start its WebSocket listener.'
+                        : null
+                );
                 
                 res.json({
                     success: true,
-                    config: this.config
+                    config: this.config,
+                    warning: this.getWebSocketWarning()
                 });
             } catch (error) {
                 res.status(400).json({
@@ -616,7 +641,8 @@ class MinecraftConnectPlugin {
             connectionStatus: this.connectionStatus,
             isConnected: this.wsServer.isConnected(),
             stats: this.stats,
-            queueStatus: this.commandQueue.getStatus()
+            queueStatus: this.commandQueue.getStatus(),
+            warning: this.getWebSocketWarning()
         });
     }
 

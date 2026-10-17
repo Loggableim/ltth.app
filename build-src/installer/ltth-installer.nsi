@@ -44,7 +44,15 @@
 
 ; Paths (relative to build-src/installer directory)
 !define BUILD_DIR ".."
-!define APP_DIR "../../app"
+!ifndef APP_DIR
+  !error "APP_DIR must be an explicit verified temporary public stage; use build-installer.bat"
+!endif
+!ifndef NSIS_PUBLIC_STAGE_VERIFIED
+  !error "Public staging preflight is required; use build-installer.bat"
+!endif
+!ifndef LAUNCHER_EXE
+  !error "A verified release launcher or explicit developer launcher is required"
+!endif
 !define ASSETS_DIR "../assets"
 
 ; Constants
@@ -53,7 +61,11 @@
 
 ; Installer Properties
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
+!ifdef DEVELOPER_BUILD
+OutFile "LTTH-Setup-${PRODUCT_VERSION}-NOT-FOR-DISTRIBUTION.exe"
+!else
 OutFile "LTTH-Setup-${PRODUCT_VERSION}.exe"
+!endif
 InstallDir "$PROGRAMFILES64\${PRODUCT_NAME_SHORT}"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
@@ -380,7 +392,7 @@ Section "!LTTH Core Application" SEC_CORE
   Banner::show /NOUNLOAD "Installing Core Files" "Installing launcher and executables..."
   
   ; Install launcher executable
-  File "${BUILD_DIR}\launcher.exe"
+  File "${LAUNCHER_EXE}"
   File "${BUILD_DIR}\icon.ico"
   
   ; Install build-src resources (assets and locales for launcher GUI)
@@ -396,29 +408,13 @@ Section "!LTTH Core Application" SEC_CORE
   Banner::show /NOUNLOAD "Installing Application" "Copying application files..."
   SetOutPath "$INSTDIR\app"
   
-  ; Copy root-level files first (exclude backup files and git files)
-  File /nonfatal /x "*.md~" /x ".git*" /x ".env" /x ".env.*" "${APP_DIR}\*.*"
-  File /nonfatal "${APP_DIR}\.env.example"
-  
-  ; Copy subdirectories individually, excluding runtime-generated directories:
-  ; - logs: Contains Winston audit files (.*.json) that cause NSIS errors
-  ; - node_modules: Runtime dependencies installed by npm
-  ; Using /nonfatal to skip files that can't be opened (e.g., locked files, permission issues)
-  ; IMPORTANT: If compilation fails with "failed opening file" errors, extract the repo to a SHORT path
-  ;            Windows MAX_PATH limit (260 chars) causes issues with long download paths
-  ;            Recommended: C:\ltth\ or C:\build\ (NOT C:\Users\...\Downloads\...)
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\data"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\docs"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\locales"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\modules"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\plugins"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\public"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\routes"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\scripts"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\test"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\tts"
-  File /nonfatal /r /x "*.md~" /x ".git*" /x "*.tmp" /x "*.bak" /x ".env" /x ".env.*" "${APP_DIR}\wiki"
-  
+  ; Copy only the complete preflight-verified public tree, including config/marker.
+  ; Source plugins and private files are filtered before this compiler is invoked.
+  !ifndef NSIS_PUBLIC_FILE_LIST
+    !error "Locked explicit public file list is required; use build-installer.bat"
+  !endif
+  !include "${NSIS_PUBLIC_FILE_LIST}"
+
   ; Create runtime directories that were excluded from packaging
   ; These directories are needed for the application to run properly
   CreateDirectory "$INSTDIR\app\logs"
@@ -560,7 +556,7 @@ Section "Uninstall"
   Banner::show /NOUNLOAD "Uninstalling ${PRODUCT_NAME}" "Removing files and shortcuts..."
   
   ; Ask if user wants to keep user data
-  MessageBox MB_YESNO|MB_ICONQUESTION "Do you want to keep your user data and settings?$\n$\n(Choosing 'No' will permanently delete all your data)" IDYES keep_data
+  MessageBox MB_YESNO|MB_ICONQUESTION "Do you want to keep your user data and settings?$\n$\n(Choosing 'No' will permanently delete all your data)" /SD IDYES IDYES keep_data
   
   ; Remove user data if user chose not to keep it
   RMDir /r "$INSTDIR\app\user_data"
@@ -802,7 +798,7 @@ FunctionEnd
 ; Uninstaller initialization
 Function un.onInit
   MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 \
-  "Are you sure you want to completely remove ${PRODUCT_NAME} and all of its components?" \
+    "Are you sure you want to completely remove ${PRODUCT_NAME} and all of its components?" /SD IDYES \
   IDYES +2
   Abort
 FunctionEnd

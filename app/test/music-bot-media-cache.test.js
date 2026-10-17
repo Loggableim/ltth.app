@@ -1,8 +1,30 @@
 const { EventEmitter } = require('events');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const MediaCache = require('../plugins/music-bot/lib/media-cache');
+
+function checkFileSymlinkSupport() {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'music-bot-cache-symlink-check-'));
+  const target = path.join(tempDir, 'target.wav');
+  const link = path.join(tempDir, 'link.wav');
+  try {
+    fs.writeFileSync(target, 'sentinel');
+    fs.symlinkSync(target, link, 'file');
+    return { supported: true, reason: '' };
+  } catch (error) {
+    const windowsPermissionFailure = process.platform === 'win32'
+      && ['EPERM', 'EACCES', 'UNKNOWN'].includes(error.code);
+    if (!windowsPermissionFailure) throw error;
+    return { supported: false, reason: `Windows symlink creation unavailable (${error.code})` };
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+const symlinkSupport = checkFileSymlinkSupport();
+const symlinkTest = symlinkSupport.supported ? it : it.skip;
 
 function createApi(dataDir) {
   return {
@@ -85,12 +107,70 @@ describe('music-bot media cache', () => {
 
     expect(first).toBe(second);
     expect(spawn).toHaveBeenCalledTimes(1);
+    expect(spawn.mock.calls[0][1][0]).toBe('--ignore-config');
+    expect(spawn.mock.calls[0][1]).not.toContain('--cookies');
+    expect(spawn.mock.calls[0][1]).not.toContain('--cookies-from-browser');
     expect(fs.readFileSync(first, 'utf8')).toBe('audio');
 
     const restarted = new MediaCache({}, createApi(dataDir), { spawn: jest.fn() });
     expect(restarted.get('youtube:abc')).toBe(first);
     await restarted.destroy();
     await cache.destroy();
+  });
+
+  symlinkTest(`ignores a published symlink without touching its external target${symlinkSupport.reason ? `: ${symlinkSupport.reason}` : ''}`, async () => {
+    const trackKey = 'youtube:symlink-published';
+    const sentinelPath = path.join(dataDir, 'outside-sentinel.wav');
+    const cacheDir = path.join(dataDir, 'music-cache');
+    fs.mkdirSync(cacheDir, { recursive: true });
+    const publishedLink = path.join(cacheDir, `${crypto.createHash('sha256').update(trackKey).digest('hex')}.wav`);
+    fs.writeFileSync(sentinelPath, 'outside sentinel');
+    const originalMtime = fs.statSync(sentinelPath).mtimeMs;
+    fs.symlinkSync(sentinelPath, publishedLink, 'file');
+    const cache = new MediaCache({}, createApi(dataDir), { runner: { run: jest.fn(), destroy: jest.fn() } });
+
+    try {
+      expect(cache.get(trackKey)).toBeNull();
+      expect(cache.getStats().files).toBe(0);
+      expect(fs.lstatSync(publishedLink).isSymbolicLink()).toBe(true);
+      expect(fs.statSync(sentinelPath).mtimeMs).toBe(originalMtime);
+      expect(fs.readFileSync(sentinelPath, 'utf8')).toBe('outside sentinel');
+    } finally {
+      await cache.destroy();
+    }
+  });
+
+  symlinkTest(`rejects a symlink returned as a download result without publishing or touching its target${symlinkSupport.reason ? `: ${symlinkSupport.reason}` : ''}`, async () => {
+    const sentinelPath = path.join(dataDir, 'outside-download-sentinel.wav');
+    fs.writeFileSync(sentinelPath, 'outside download sentinel');
+    const originalMtime = fs.statSync(sentinelPath).mtimeMs;
+    let symlinkPath = null;
+    const runner = {
+      run: jest.fn(async (_executable, args) => {
+        const outputTemplate = args[args.indexOf('--output') + 1];
+        symlinkPath = outputTemplate.replace('%(ext)s', 'wav');
+        fs.symlinkSync(sentinelPath, symlinkPath, 'file');
+        return `${symlinkPath}\n`;
+      }),
+      destroy: jest.fn(async () => {}),
+      getStatus: jest.fn(() => ({ active: 0, queued: 0 }))
+    };
+    const cache = new MediaCache({}, createApi(dataDir), { runner });
+
+    try {
+      await expect(cache.getOrDownload({
+        trackKey: 'youtube:symlink-download',
+        url: 'https://youtu.be/synthetic-symlink-download'
+      })).rejects.toThrow(/did not publish a cache file/i);
+
+      expect(cache.get('youtube:symlink-download')).toBeNull();
+      expect(cache.getStats().files).toBe(0);
+      expect(fs.lstatSync(symlinkPath).isSymbolicLink()).toBe(true);
+      expect(fs.statSync(sentinelPath).mtimeMs).toBe(originalMtime);
+      expect(fs.readFileSync(sentinelPath, 'utf8')).toBe('outside download sentinel');
+    } finally {
+      await cache.destroy();
+    }
   });
 
   it('uses an injected yt-dlp runner without taking ownership of it', async () => {
@@ -179,11 +259,22 @@ describe('music-bot media cache', () => {
   });
 
   it('aborts an in-flight download without publishing a cache hit', async () => {
-    const processKill = jest.fn();
+    let child;
+    const processKill = jest.fn((pid, signal) => {
+      if (pid === -2223 && signal === 'SIGKILL') {
+        process.nextTick(() => {
+          child.signalCode = signal;
+          child.closed = true;
+          child.emit('close', null, signal);
+        });
+      }
+    });
     const spawn = jest.fn(() => {
-      const child = new EventEmitter();
+      child = new EventEmitter();
       child.pid = 2223;
       child.exitCode = null;
+      child.signalCode = null;
+      child.closed = false;
       child.stdout = new EventEmitter();
       child.stderr = new EventEmitter();
       child.kill = jest.fn(() => true);
@@ -209,28 +300,47 @@ describe('music-bot media cache', () => {
     await cache.destroy();
   });
 
-  it('destroy settles even when a child process never closes', async () => {
+  it('fails bounded shutdown and retains ownership when a child never closes', async () => {
+    let child;
+    const processKill = jest.fn();
     const spawn = jest.fn(() => {
-      const child = new EventEmitter();
+      child = new EventEmitter();
       child.pid = 3333;
       child.exitCode = null;
+      child.signalCode = null;
+      child.closed = false;
       child.stdout = new EventEmitter();
       child.stderr = new EventEmitter();
       child.kill = jest.fn(() => true);
       return child;
     });
-    const cache = new MediaCache({}, createApi(dataDir), { spawn });
+    const cache = new MediaCache({}, createApi(dataDir), {
+      spawn,
+      platform: 'linux',
+      processKill
+    });
+    cache.runner.childCloseTimeoutMs = 20;
     const pending = cache.getOrDownload({
       trackKey: 'youtube:hung',
       url: 'https://youtu.be/hung'
     });
 
-    await expect(Promise.race([
-      cache.destroy().then(() => 'destroyed'),
-      new Promise((resolve) => setTimeout(() => resolve('timed-out'), 250))
-    ])).resolves.toBe('destroyed');
+    const startedAt = Date.now();
+    await expect(cache.destroy()).rejects.toMatchObject({ code: 'YTDLP_CLOSE_TIMEOUT' });
+    expect(Date.now() - startedAt).toBeLessThan(250);
     await expect(pending).rejects.toThrow(/destroyed|aborted/i);
     expect(cache.get('youtube:hung')).toBeNull();
+    expect(cache.runner.active.size).toBe(1);
+    expect(cache.runner.getStatus().activePids).toContain(3333);
+    expect(child.kill).toHaveBeenCalledTimes(1);
+    expect(processKill).toHaveBeenCalledWith(-3333, 'SIGTERM');
+    expect(processKill).toHaveBeenCalledWith(-3333, 'SIGKILL');
+
+    child.signalCode = 'SIGKILL';
+    child.closed = true;
+    child.emit('close', null, 'SIGKILL');
+    expect(cache.runner.active.size).toBe(0);
+    await cache.runner.destroy();
   });
 
   it('rejects instead of returning a path pruned by the configured byte limit', async () => {

@@ -779,7 +779,10 @@ class CoinBattleEngine {
       return this.stateAugmenter ? this.stateAugmenter(state) : state;
     }
 
-    const elapsed = Math.floor((Date.now() - this.matchStartTime - this.totalPausedTime) / 1000);
+    const currentPauseDuration = this.isPaused && this.pauseStartTime
+      ? Date.now() - this.pauseStartTime
+      : 0;
+    const elapsed = Math.floor((Date.now() - this.matchStartTime - this.totalPausedTime - currentPauseDuration) / 1000);
     const remaining = Math.max(0, this.matchDuration - elapsed);
 
     const state = {

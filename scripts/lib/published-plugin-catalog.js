@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PLUGIN_ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const RETIRED_PLUGIN_IDS = new Set(['chatango']);
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, ''));
@@ -15,14 +16,21 @@ function readReleasePolicy(repoRoot) {
   if (!policy || policy.schemaVersion !== 1 || !Array.isArray(policy.closedBeta)) {
     throw new Error('plugin-release-policy.json has an invalid schema');
   }
+  const publicRuntimeExcluded = policy.publicRuntimeExcluded === undefined ? [] : policy.publicRuntimeExcluded;
+  if (!Array.isArray(publicRuntimeExcluded) ||
+      publicRuntimeExcluded.some((id) => typeof id !== 'string' || !PLUGIN_ID_PATTERN.test(id)) ||
+      new Set(publicRuntimeExcluded).size !== publicRuntimeExcluded.length ||
+      publicRuntimeExcluded.some((id) => policy.closedBeta.includes(id))) {
+    throw new Error('plugin-release-policy.json contains invalid public runtime exclusions');
+  }
   if (!policy.aliases || typeof policy.aliases !== 'object' || Array.isArray(policy.aliases)) {
     throw new Error('plugin-release-policy.json aliases must be an object');
   }
-  if (!policy.publicAssetPathOwners || typeof policy.publicAssetPathOwners !== 'object' ||
-      Array.isArray(policy.publicAssetPathOwners)) {
+  const assetOwners = policy.publicAssetPathOwners === undefined ? {} : policy.publicAssetPathOwners;
+  if (!assetOwners || typeof assetOwners !== 'object' || Array.isArray(assetOwners)) {
     throw new Error('plugin-release-policy.json publicAssetPathOwners must be an object');
   }
-  if (Object.keys(policy).some((key) => !['schemaVersion', 'closedBeta', 'aliases', 'publicAssetPathOwners'].includes(key))) {
+  if (Object.keys(policy).some((key) => !['schemaVersion', 'closedBeta', 'publicRuntimeExcluded', 'aliases', 'publicAssetPathOwners'].includes(key))) {
     throw new Error('plugin-release-policy.json contains an unknown key');
   }
   const ids = policy.closedBeta;
@@ -37,7 +45,7 @@ function readReleasePolicy(repoRoot) {
   }
   const closedBeta = new Set(ids);
   const publicAssetPathOwners = new Map();
-  for (const [assetPath, owner] of Object.entries(policy.publicAssetPathOwners)) {
+  for (const [assetPath, owner] of Object.entries(assetOwners)) {
     if (typeof assetPath !== 'string' || !assetPath.startsWith('/') || assetPath.startsWith('//') ||
         assetPath !== assetPath.toLowerCase() || assetPath.includes('\\') || /[%?#]/.test(assetPath) ||
         path.posix.normalize(assetPath) !== assetPath || assetPath.slice(1).split('/').some((part) => !part || part === '.' || part === '..')) {
@@ -53,6 +61,22 @@ function readReleasePolicy(repoRoot) {
 
 function compareById(left, right) {
   return left.id.localeCompare(right.id);
+}
+
+function isRetiredPluginId(pluginId) {
+  if (typeof pluginId !== 'string') return false;
+  let normalized = pluginId.normalize('NFKC').trim();
+  for (let attempt = 0; attempt < 8 && normalized.includes('%'); attempt += 1) {
+    try {
+      const decoded = decodeURIComponent(normalized);
+      if (decoded === normalized) break;
+      normalized = decoded.normalize('NFKC');
+    } catch {
+      break;
+    }
+  }
+  normalized = normalized.trim().normalize('NFKC').toLowerCase();
+  return normalized.includes('%') || RETIRED_PLUGIN_IDS.has(normalized);
 }
 
 function readManifestDirectory(pluginRoot) {
@@ -78,7 +102,8 @@ function assertUniqueManifests(manifests, label) {
 }
 
 function isClosedBetaPlugin(repoRoot, pluginId) {
-  return readReleasePolicy(repoRoot).closedBeta.has(pluginId);
+  return readReleasePolicy(repoRoot).closedBeta.has(pluginId) ||
+    isRetiredPluginId(pluginId);
 }
 
 function loadPublishedPluginCatalog(repoRoot) {
@@ -107,16 +132,17 @@ function loadPublishedPluginCatalog(repoRoot) {
   }
   const aliasIds = new Set(Object.keys(releasePolicy.aliases));
   const publicStoreIds = storeIds.filter((id) => (
-    !releasePolicy.closedBeta.has(id) && !aliasIds.has(id)
+    !releasePolicy.closedBeta.has(id) && !aliasIds.has(id) && !isRetiredPluginId(id)
   ));
   const publicStorePlugins = storePlugins.filter((plugin) => (
-    !releasePolicy.closedBeta.has(plugin.id) && !aliasIds.has(plugin.id)
+    !releasePolicy.closedBeta.has(plugin.id) && !aliasIds.has(plugin.id) &&
+    !isRetiredPluginId(plugin.id)
   ));
 
   const appById = new Map(appManifests.map((manifest) => [manifest.id, manifest]));
   const sourceById = new Map(storeSourceManifests.map((manifest) => [manifest.id, manifest]));
   for (const [id, manifest] of sourceById) {
-    if (!releasePolicy.closedBeta.has(id) && !aliasIds.has(id) && !storeIds.includes(id)) {
+    if (!releasePolicy.closedBeta.has(id) && !aliasIds.has(id) && !isRetiredPluginId(id) && !storeIds.includes(id)) {
       throw new Error(`Store source manifest ${id} is missing from plugin-store.json`);
     }
   }
@@ -136,9 +162,9 @@ function loadPublishedPluginCatalog(repoRoot) {
     ...storeAdminMetadata
   };
 
-  const plugins = [...appManifests.filter((manifest) => !releasePolicy.closedBeta.has(manifest.id)), ...storeSourceManifests.filter((manifest) => (
+  const plugins = [...appManifests.filter((manifest) => !releasePolicy.closedBeta.has(manifest.id) && !isRetiredPluginId(manifest.id)), ...storeSourceManifests.filter((manifest) => (
     manifest.id !== 'store-admin' && !appById.has(manifest.id)
-  ) && !releasePolicy.closedBeta.has(manifest.id) && !aliasIds.has(manifest.id))]
+  ) && !releasePolicy.closedBeta.has(manifest.id) && !aliasIds.has(manifest.id) && !isRetiredPluginId(manifest.id))]
     .sort(compareById);
   const manifestIds = plugins.map((manifest) => manifest.id);
 

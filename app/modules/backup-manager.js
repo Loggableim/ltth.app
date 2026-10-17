@@ -13,6 +13,7 @@
 const { exportBackup } = require('./backup/exporter');
 const { parseBackupZip, previewImport, performImport, cleanupTempDir } = require('./backup/importer');
 const { canonicalizePluginId } = require('./plugin-identities');
+const { inspectSelection, selectionFromOptions } = require('./backup/selection');
 
 class BackupManager {
     /**
@@ -111,6 +112,16 @@ class BackupManager {
 
         this.logger.info('[BackupManager] Export archive prepared');
         return result;
+    }
+
+    /** Return export counts and estimated sizes without returning setting values or file names. */
+    previewExport(selection = {}) {
+        return inspectSelection({
+            db: this.db,
+            configPathManager: this.configPathManager,
+            pluginLoader: this.pluginLoader,
+            activeProfile: this.activeProfile
+        }, selectionFromOptions(selection));
     }
 
     // ── Import ────────────────────────────────────────────────────────────────

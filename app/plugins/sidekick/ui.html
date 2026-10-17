@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sidekick - Admin Panel</title>
+  <title data-i18n="plugins.sidekick.ui.title">Sidekick - Admin Panel</title>
   <link rel="stylesheet" href="/css/themes.css">
   <style>
     * {
@@ -414,47 +414,47 @@
   <div class="container">
     <h1>
       🤖 Sidekick
-      <span id="status-badge" class="badge badge-success">Active</span>
+      <span id="status-badge" class="badge badge-success" data-i18n="plugins.sidekick.ui.active">Active</span>
     </h1>
-    <p style="color: #aaa; margin-bottom: 20px;">Intelligenter Stream-Assistent mit VNyan (3D/VRM) &amp; Animaze Integration</p>
+    <p style="color: #aaa; margin-bottom: 20px;" data-i18n="plugins.sidekick.ui.subtitle">Intelligenter Stream-Assistent mit VNyan (3D/VRM) &amp; Animaze Integration</p>
 
     <div class="tabs">
-      <button class="tab active" data-tab="status">Status</button>
-      <button class="tab" data-tab="avatar">🦊 Avatar &amp; VNyan</button>
-      <button class="tab" data-tab="settings">Einstellungen</button>
-      <button class="tab" data-tab="memory">Memory</button>
-      <button class="tab" data-tab="analytics">Analytics</button>
-      <button class="tab" data-tab="events">Events</button>
+      <button class="tab active" data-tab="status" data-i18n="plugins.sidekick.ui.tab_status">Status</button>
+      <button class="tab" data-tab="avatar" data-i18n="plugins.sidekick.ui.tab_avatar">🦊 Avatar &amp; VNyan</button>
+      <button class="tab" data-tab="settings" data-i18n="plugins.sidekick.ui.tab_settings">Einstellungen</button>
+      <button class="tab" data-tab="memory" data-i18n="plugins.sidekick.ui.tab_memory">Memory</button>
+      <button class="tab" data-tab="analytics" data-i18n="plugins.sidekick.ui.tab_analytics">Analytics</button>
+      <button class="tab" data-tab="events" data-i18n="plugins.sidekick.ui.tab_events">Events</button>
     </div>
 
     <!-- Status Tab -->
     <div id="tab-status" class="tab-content active">
       <div class="grid">
         <div class="card">
-          <h3>🔌 Avatar &amp; Stream Verbindungen</h3>
+          <h3 data-i18n="plugins.sidekick.ui.connections">🔌 Avatar &amp; Stream Verbindungen</h3>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="vnyan-status-indicator"></span>
             <span>VNyan (VRM/3D): <strong id="vnyan-status-text">Disconnected</strong></span>
-            <span id="vnyan-active-badge" class="badge badge-success active-badge-indicator" style="display:none;">Aktiv</span>
+            <span id="vnyan-active-badge" class="badge badge-success active-badge-indicator" style="display:none;" data-i18n="plugins.sidekick.ui.active">Aktiv</span>
           </div>
           <div class="inline-row" style="margin-top: 8px;">
-            <button id="btn-vnyan-connect-quick" class="btn-primary btn-sm">VNyan Verbinden</button>
-            <button id="btn-vnyan-disconnect-quick" class="btn-secondary btn-sm">Trennen</button>
+            <button id="btn-vnyan-connect-quick" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.connect_vnyan">VNyan Verbinden</button>
+            <button id="btn-vnyan-disconnect-quick" class="btn-secondary btn-sm" data-i18n="plugins.sidekick.ui.disconnect">Trennen</button>
           </div>
           <div class="inline-row" style="margin-top: 15px;">
             <span class="status-indicator" id="animaze-status-indicator"></span>
             <span>Animaze: <strong id="animaze-status-text">Disconnected</strong></span>
-            <span id="animaze-active-badge" class="badge badge-warning active-badge-indicator" style="display:none;">Aktiv</span>
+            <span id="animaze-active-badge" class="badge badge-warning active-badge-indicator" style="display:none;" data-i18n="plugins.sidekick.ui.active">Aktiv</span>
           </div>
           <div class="inline-row" style="margin-top: 8px;">
-            <button id="btn-connect" class="btn-secondary btn-sm">Animaze Verbinden</button>
-            <button id="btn-disconnect" class="btn-secondary btn-sm">Trennen</button>
+            <button id="btn-connect" class="btn-secondary btn-sm" data-i18n="plugins.sidekick.ui.connect_animaze">Animaze Verbinden</button>
+            <button id="btn-disconnect" class="btn-secondary btn-sm" data-i18n="plugins.sidekick.ui.disconnect">Trennen</button>
           </div>
           <div style="margin-top: 15px;">
-            <label>Aktuelle Emotion: <strong id="avatar-current-emotion" style="color: #64B5F6;">Neutral</strong></label>
+            <label><span data-i18n="plugins.sidekick.ui.current_emotion">Aktuelle Emotion:</span> <strong id="avatar-current-emotion" style="color: #64B5F6;">Neutral</strong></label>
           </div>
           <div style="margin-top: 10px;">
-            <label>Queue: <span id="queue-length">0</span> Nachrichten</label>
+            <label><span data-i18n="plugins.sidekick.ui.queue">Queue:</span> <span id="queue-length">0</span> <span data-i18n="plugins.sidekick.ui.messages">Nachrichten</span></label>
             <div class="progress-bar">
               <div class="progress-fill" id="queue-progress" style="width: 0%"></div>
             </div>
@@ -462,17 +462,17 @@
         </div>
 
         <div class="card">
-          <h3>🎤 Steuerung</h3>
+          <h3 data-i18n="plugins.sidekick.ui.controls">🎤 Steuerung</h3>
           <div class="inline-row" style="margin-top: 15px;">
-            <button id="btn-mute" class="btn-warning">🔇 Mute</button>
-            <button id="btn-unmute" class="btn-primary">🔊 Unmute</button>
-            <button id="btn-reset" class="btn-danger">🔄 Reset Session</button>
+            <button id="btn-mute" class="btn-warning" data-i18n="plugins.sidekick.ui.mute">🔇 Mute</button>
+            <button id="btn-unmute" class="btn-primary" data-i18n="plugins.sidekick.ui.unmute">🔊 Unmute</button>
+            <button id="btn-reset" class="btn-danger" data-i18n="plugins.sidekick.ui.reset_session">🔄 Reset Session</button>
           </div>
           <div style="margin-top: 15px;">
-            <label for="test-message">Test-Nachricht:</label>
+            <label for="test-message" data-i18n="plugins.sidekick.ui.test_message_label">Test-Nachricht:</label>
             <div class="inline-row">
-              <input type="text" id="test-message" placeholder="Nachricht eingeben...">
-              <button id="btn-test" class="btn-primary">Senden</button>
+              <input type="text" id="test-message" placeholder="Nachricht eingeben..." data-i18n-placeholder="plugins.sidekick.ui.message_placeholder">
+              <button id="btn-test" class="btn-primary" data-i18n="plugins.sidekick.ui.send">Senden</button>
             </div>
           </div>
         </div>
@@ -481,33 +481,33 @@
       <div class="grid">
         <div class="stat-card">
           <div class="stat-value" id="stat-chats">0</div>
-          <div class="stat-label">Chats/Min</div>
+          <div class="stat-label" data-i18n="plugins.sidekick.ui.chats_per_minute">Chats/Min</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="stat-gifts">0</div>
-          <div class="stat-label">Gifts</div>
+          <div class="stat-label" data-i18n="plugins.sidekick.ui.gifts">Gifts</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="stat-follows">0</div>
-          <div class="stat-label">Follows</div>
+          <div class="stat-label" data-i18n="plugins.sidekick.ui.follows">Follows</div>
         </div>
         <div class="stat-card">
           <div class="stat-value" id="stat-viewers">0</div>
-          <div class="stat-label">Aktive Viewer</div>
+          <div class="stat-label" data-i18n="plugins.sidekick.ui.active_viewers">Aktive Viewer</div>
         </div>
       </div>
 
       <div class="card">
-        <h3>📊 Session Statistiken</h3>
+        <h3 data-i18n="plugins.sidekick.ui.session_statistics">📊 Session Statistiken</h3>
         <div class="grid">
           <div>
-            <p>Laufzeit: <strong id="session-duration">0:00:00</strong></p>
-            <p>Total Events: <strong id="session-events">0</strong></p>
-            <p>Responses gesendet: <strong id="session-responses">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.uptime">Laufzeit:</span> <strong id="session-duration">0:00:00</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.total_events">Total Events:</span> <strong id="session-events">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.responses_sent">Responses gesendet:</span> <strong id="session-responses">0</strong></p>
           </div>
           <div>
-            <p>Dedupe Hits: <strong id="session-dedupe">0</strong></p>
-            <p>Rate Limit Status: <strong id="ratelimit-status">OK</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.dedupe_hits">Dedupe Hits:</span> <strong id="session-dedupe">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.rate_limit_status">Rate Limit Status:</span> <strong id="ratelimit-status">OK</strong></p>
           </div>
         </div>
       </div>
@@ -517,52 +517,52 @@
     <div id="tab-avatar" class="tab-content">
       <!-- Engine & Connection -->
       <div class="card">
-        <h3>🦊 Avatar Engine &amp; VNyan Verbindung</h3>
+        <h3 data-i18n="plugins.sidekick.ui.avatar_connection">🦊 Avatar Engine &amp; VNyan Verbindung</h3>
         <div class="grid" style="margin-top: 15px;">
           <div>
             <div class="form-group">
-              <label for="avatar-driver-select">Aktive Avatar Engine:</label>
+              <label for="avatar-driver-select" data-i18n="plugins.sidekick.ui.active_avatar_engine">Aktive Avatar Engine:</label>
               <select id="avatar-driver-select">
-                <option value="vnyan">VNyan (3D / VRM Node Graph - Empfohlen)</option>
-                <option value="animaze">Animaze (Live2D / 3D ChatPal)</option>
+                <option value="vnyan" data-i18n="plugins.sidekick.ui.vnyan_engine">VNyan (3D / VRM Node Graph - Empfohlen)</option>
+                <option value="animaze" data-i18n="plugins.sidekick.ui.animaze_engine">Animaze (Live2D / 3D ChatPal)</option>
               </select>
             </div>
             <div class="inline-row" style="margin-top: 10px;">
               <span class="status-indicator" id="vnyan-tab-status-indicator"></span>
-              <span>VNyan Status: <strong id="vnyan-tab-status-text">Disconnected</strong></span>
+              <span><span data-i18n="plugins.sidekick.ui.vnyan_status">VNyan Status:</span> <strong id="vnyan-tab-status-text">Disconnected</strong></span>
               <span id="vnyan-tab-uri" style="color: #888; font-size: 12px; margin-left: 10px;">ws://127.0.0.1:8000/vnyan</span>
             </div>
             <div class="inline-row" style="margin-top: 15px;">
-              <button id="btn-vnyan-connect" class="btn-primary">Verbinden</button>
-              <button id="btn-vnyan-disconnect" class="btn-secondary">Trennen</button>
-              <button id="btn-vnyan-test-ping" class="btn-info">Ping Trigger</button>
+              <button id="btn-vnyan-connect" class="btn-primary" data-i18n="plugins.sidekick.ui.connect">Verbinden</button>
+              <button id="btn-vnyan-disconnect" class="btn-secondary" data-i18n="plugins.sidekick.ui.disconnect">Trennen</button>
+              <button id="btn-vnyan-test-ping" class="btn-info" data-i18n="plugins.sidekick.ui.ping_trigger">Ping Trigger</button>
             </div>
           </div>
           <div>
             <div class="grid" style="grid-template-columns: 2fr 1fr;">
               <div class="form-group">
-                <label for="vnyan-host">VNyan Host</label>
+              <label for="vnyan-host" data-i18n="plugins.sidekick.ui.vnyan_host">VNyan Host</label>
                 <input type="text" id="vnyan-host" value="127.0.0.1">
               </div>
               <div class="form-group">
-                <label for="vnyan-port">Port</label>
+                <label for="vnyan-port" data-i18n="plugins.sidekick.ui.vnyan_port">Port</label>
                 <input type="number" id="vnyan-port" value="8000">
               </div>
             </div>
             <div class="form-group">
-              <label for="vnyan-path">WebSocket Pfad</label>
+                <label for="vnyan-path" data-i18n="plugins.sidekick.ui.websocket_path">WebSocket Pfad</label>
               <input type="text" id="vnyan-path" value="/vnyan">
             </div>
             <div class="inline-row" style="margin-top: 10px;">
               <label style="cursor: pointer; margin-right: 15px;">
-                <input type="checkbox" id="vnyan-autoconnect" checked> Auto-Connect
+                <input type="checkbox" id="vnyan-autoconnect" checked> <span data-i18n="plugins.sidekick.ui.auto_connect">Auto-Connect</span>
               </label>
               <label style="cursor: pointer;">
-                <input type="checkbox" id="vnyan-plain-triggers" checked> Plain Triggers senden
+                <input type="checkbox" id="vnyan-plain-triggers" checked> <span data-i18n="plugins.sidekick.ui.send_plain_triggers">Plain Triggers senden</span>
               </label>
             </div>
             <div style="margin-top: 15px;">
-              <button id="btn-save-vnyan-conn" class="btn-primary btn-sm">💾 Verbindungseinstellungen speichern</button>
+              <button id="btn-save-vnyan-conn" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.save_connection_settings">💾 Verbindungseinstellungen speichern</button>
             </div>
           </div>
         </div>
@@ -570,17 +570,17 @@
 
       <!-- Live Interactive Playground -->
       <div class="card">
-        <h3>🎮 Live Test Playground</h3>
+        <h3 data-i18n="plugins.sidekick.ui.live_playground">🎮 Live Test Playground</h3>
         <p style="color: #aaa; font-size: 13px; margin-bottom: 15px;">
-          Teste Emotionen, Sprache, Gift-Reaktionen und Prop-Throws direkt live in VNyan.
+          <span data-i18n="plugins.sidekick.ui.playground_description">Teste Emotionen, Sprache, Gift-Reaktionen und Prop-Throws direkt live in VNyan.</span>
         </p>
 
         <!-- Quick Emotions -->
         <div style="margin-bottom: 20px;">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label style="font-weight: bold; color: #fff;">VRM Blendshape / Emotionen:</label>
+            <label style="font-weight: bold; color: #fff;" data-i18n="plugins.sidekick.ui.vrm_emotions">VRM Blendshape / Emotionen:</label>
             <span style="font-size: 12px; color: #aaa;">
-              Aktuell: <strong id="playground-active-emotion" style="color: #4CAF50;">Neutral</strong>
+              <span data-i18n="plugins.sidekick.ui.currently">Aktuell:</span> <strong id="playground-active-emotion" style="color: #4CAF50;">Neutral</strong>
               <span id="playground-emotion-timer" class="badge badge-warning" style="display: none; margin-left: 6px;">0s</span>
             </span>
           </div>
@@ -599,45 +599,45 @@
         <div class="grid">
           <!-- Speech Test -->
           <div style="background: #1f1f33; padding: 15px; border-radius: 8px;">
-            <label style="font-weight: bold; color: #fff;">🗣️ Sprache &amp; Lip-Sync Test:</label>
+            <label style="font-weight: bold; color: #fff;" data-i18n="plugins.sidekick.ui.speech_lipsync_test">🗣️ Sprache &amp; Lip-Sync Test:</label>
             <div style="margin-top: 10px;">
-              <input type="text" id="playground-speech-text" placeholder="Hallo Stream, schön dass ihr da seid!" value="Hallo Welt! Willkommen im Live Stream!">
+              <input type="text" id="playground-speech-text" placeholder="Hallo Stream, schön dass ihr da seid!" data-i18n-placeholder="plugins.sidekick.ui.speech_placeholder" value="Hallo Welt! Willkommen im Live Stream!">
             </div>
             <div class="inline-row" style="margin-top: 10px;">
-              <button id="btn-playground-speech-start" class="btn-primary btn-sm">▶️ Sprechen simulieren</button>
-              <button id="btn-playground-speech-stop" class="btn-secondary btn-sm">⏹️ Stop</button>
+              <button id="btn-playground-speech-start" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.simulate_speech">▶️ Sprechen simulieren</button>
+              <button id="btn-playground-speech-stop" class="btn-secondary btn-sm" data-i18n="plugins.sidekick.ui.stop">⏹️ Stop</button>
             </div>
           </div>
 
           <!-- Gift Reaction Test -->
           <div style="background: #1f1f33; padding: 15px; border-radius: 8px;">
-            <label style="font-weight: bold; color: #fff;">🎁 TikTok Gift Reaktion Test:</label>
+            <label style="font-weight: bold; color: #fff;" data-i18n="plugins.sidekick.ui.gift_reaction_test">🎁 TikTok Gift Reaktion Test:</label>
             <div class="inline-row" style="margin-top: 10px;">
               <select id="playground-gift-select" style="flex: 1;">
-                <option value="Rose" data-diamonds="1">🌹 Rose (1 Coin)</option>
-                <option value="Galaxy" data-diamonds="1000">🌌 Galaxy (1000 Coins)</option>
-                <option value="Whale" data-diamonds="2150">🐋 Whale (2150 Coins)</option>
-                <option value="Cap" data-diamonds="99">🧢 TikTok Cap (99 Coins)</option>
-                <option value="Custom">✏️ Eigenes Gift...</option>
+                <option value="Rose" data-diamonds="1" data-i18n="plugins.sidekick.ui.gift_rose">🌹 Rose (1 Coin)</option>
+                <option value="Galaxy" data-diamonds="1000" data-i18n="plugins.sidekick.ui.gift_galaxy">🌌 Galaxy (1000 Coins)</option>
+                <option value="Whale" data-diamonds="2150" data-i18n="plugins.sidekick.ui.gift_whale">🐋 Whale (2150 Coins)</option>
+                <option value="Cap" data-diamonds="99" data-i18n="plugins.sidekick.ui.gift_cap">🧢 TikTok Cap (99 Coins)</option>
+                <option value="Custom" data-i18n="plugins.sidekick.ui.custom_gift">✏️ Eigenes Gift...</option>
               </select>
-              <input type="text" id="playground-custom-gift" placeholder="Gift Name" style="display: none; width: 130px;">
+              <input type="text" id="playground-custom-gift" placeholder="Gift Name" data-i18n-placeholder="plugins.sidekick.ui.gift_name_placeholder" style="display: none; width: 130px;">
               <input type="number" id="playground-gift-diamonds" value="1" min="1" style="width: 80px;" title="Coins/Diamonds">
             </div>
             <div class="inline-row" style="margin-top: 10px;">
-              <button id="btn-playground-test-gift" class="btn-primary btn-sm">🎁 Gift Reaction abfeuern</button>
+              <button id="btn-playground-test-gift" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.fire_gift_reaction">🎁 Gift Reaction abfeuern</button>
               <span id="playground-gift-result" style="font-size: 12px; color: #64B5F6;"></span>
             </div>
           </div>
 
           <!-- Item Drop / Prop Throw -->
           <div style="background: #1f1f33; padding: 15px; border-radius: 8px;">
-            <label style="font-weight: bold; color: #fff;">🚀 VNyan Item Drop / Prop Throw:</label>
+            <label style="font-weight: bold; color: #fff;" data-i18n="plugins.sidekick.ui.item_drop">🚀 VNyan Item Drop / Prop Throw:</label>
             <div class="inline-row" style="margin-top: 10px;">
-              <input type="text" id="playground-drop-item" placeholder="Item Name (z.B. Rose, Cake)" value="Rose" style="flex: 1;">
+              <input type="text" id="playground-drop-item" placeholder="Item Name (z.B. Rose, Cake)" data-i18n-placeholder="plugins.sidekick.ui.item_name_placeholder" value="Rose" style="flex: 1;">
               <input type="number" id="playground-drop-count" value="5" min="1" max="50" style="width: 80px;" title="Anzahl">
             </div>
             <div class="inline-row" style="margin-top: 10px;">
-              <button id="btn-playground-test-drop" class="btn-info btn-sm">💥 Props werfen (SK_ItemDrop)</button>
+              <button id="btn-playground-test-drop" class="btn-info btn-sm" data-i18n="plugins.sidekick.ui.throw_props">💥 Props werfen (SK_ItemDrop)</button>
               <span id="playground-drop-result" style="font-size: 12px; color: #4CAF50;"></span>
             </div>
           </div>
@@ -647,25 +647,25 @@
       <!-- Gift-to-Trigger & Emotion Rules -->
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h3>📋 Custom Gift-to-Trigger &amp; Emotion Regeln</h3>
+          <h3 data-i18n="plugins.sidekick.ui.gift_trigger_rules">📋 Custom Gift-to-Trigger &amp; Emotion Regeln</h3>
           <div class="inline-row">
-            <button id="btn-reset-gift-rules" class="btn-secondary btn-sm">🔄 Standardregeln</button>
-            <button id="btn-save-all-rules" class="btn-primary btn-sm">💾 Alle Regeln speichern</button>
+            <button id="btn-reset-gift-rules" class="btn-secondary btn-sm" data-i18n="plugins.sidekick.ui.reset_default_rules">🔄 Standardregeln</button>
+            <button id="btn-save-all-rules" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.save_all_rules">💾 Alle Regeln speichern</button>
           </div>
         </div>
         <p style="color: #aaa; font-size: 13px; margin-top: 5px;">
-          Hier legst du fest, welcher Trigger in VNyan ausgelöst wird und welcher Gesichtsausdruck (mit automatischer Rückkehr zu Neutral) sowie Props geworfen werden.
+          <span data-i18n="plugins.sidekick.ui.gift_rules_description">Hier legst du fest, welcher Trigger in VNyan ausgelöst wird und welcher Gesichtsausdruck (mit automatischer Rückkehr zu Neutral) sowie Props geworfen werden.</span>
         </p>
 
         <table class="rule-table">
           <thead>
             <tr>
-              <th>Bedingung</th>
-              <th>VNyan Trigger</th>
-              <th>Emotion</th>
-              <th>Dauer</th>
-              <th>Item Drop</th>
-              <th>Aktionen</th>
+              <th data-i18n="plugins.sidekick.ui.condition">Bedingung</th>
+              <th data-i18n="plugins.sidekick.ui.vnyan_trigger">VNyan Trigger</th>
+              <th data-i18n="plugins.sidekick.ui.emotion">Emotion</th>
+              <th data-i18n="plugins.sidekick.ui.duration">Dauer</th>
+              <th data-i18n="plugins.sidekick.ui.item_drop_short">Item Drop</th>
+              <th data-i18n="plugins.sidekick.ui.actions">Aktionen</th>
             </tr>
           </thead>
           <tbody id="gift-rules-table-body">
@@ -675,27 +675,27 @@
 
         <!-- Add Rule Box -->
         <div style="background: #1f1f33; padding: 15px; border-radius: 8px; margin-top: 20px;">
-          <h4 style="color: #64B5F6; margin-bottom: 10px;">➕ Neue Geschenk-Regel hinzufügen</h4>
+          <h4 style="color: #64B5F6; margin-bottom: 10px;" data-i18n="plugins.sidekick.ui.add_gift_rule">➕ Neue Geschenk-Regel hinzufügen</h4>
           <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
             <div class="form-group">
-              <label>Match-Typ</label>
+              <label data-i18n="plugins.sidekick.ui.match_type">Match-Typ</label>
               <select id="new-rule-match-type">
-                <option value="name">Geschenk Name (Substring)</option>
-                <option value="minDiamonds">Min. Diamanten / Coins</option>
+                <option value="name" data-i18n="plugins.sidekick.ui.match_gift_name">Geschenk Name (Substring)</option>
+                <option value="minDiamonds" data-i18n="plugins.sidekick.ui.match_min_diamonds">Min. Diamanten / Coins</option>
               </select>
             </div>
             <div class="form-group">
-              <label>Match-Wert</label>
-              <input type="text" id="new-rule-match-val" placeholder="z.B. Rose oder 100">
+              <label data-i18n="plugins.sidekick.ui.match_value">Match-Wert</label>
+              <input type="text" id="new-rule-match-val" placeholder="z.B. Rose oder 100" data-i18n-placeholder="plugins.sidekick.ui.match_value_placeholder">
             </div>
             <div class="form-group">
-              <label>VNyan Trigger</label>
-              <input type="text" id="new-rule-trigger" placeholder="z.B. SK_Gift_Rose">
+              <label data-i18n="plugins.sidekick.ui.vnyan_trigger">VNyan Trigger</label>
+              <input type="text" id="new-rule-trigger" placeholder="z.B. SK_Gift_Rose" data-i18n-placeholder="plugins.sidekick.ui.vnyan_trigger_placeholder">
             </div>
             <div class="form-group">
-              <label>Avatar Emotion</label>
+              <label data-i18n="plugins.sidekick.ui.avatar_emotion">Avatar Emotion</label>
               <select id="new-rule-emotion">
-                <option value="">Keine Emotion</option>
+                <option value="" data-i18n="plugins.sidekick.ui.no_emotion">Keine Emotion</option>
                 <option value="Happy">Happy</option>
                 <option value="Joy">Joy</option>
                 <option value="Blush">Blush</option>
@@ -706,110 +706,110 @@
               </select>
             </div>
             <div class="form-group">
-              <label>Dauer (ms)</label>
+              <label data-i18n="plugins.sidekick.ui.duration_ms">Dauer (ms)</label>
               <input type="number" id="new-rule-duration" value="4000" min="500" step="500">
             </div>
             <div class="form-group">
-              <label>Item Drop (Props)</label>
+              <label data-i18n="plugins.sidekick.ui.item_drop_props">Item Drop (Props)</label>
               <div class="inline-row" style="margin-top: 6px;">
                 <label style="cursor: pointer; margin-right: 10px;">
-                  <input type="checkbox" id="new-rule-item-drop" checked> Ja
+                  <input type="checkbox" id="new-rule-item-drop" checked> <span data-i18n="plugins.sidekick.ui.yes">Ja</span>
                 </label>
                 <input type="number" id="new-rule-drop-count" value="3" min="1" max="50" style="width: 70px;" title="Anzahl Props">
               </div>
             </div>
           </div>
           <div style="margin-top: 10px;">
-            <button id="btn-add-gift-rule" class="btn-primary btn-sm">➕ Regel zur Liste hinzufügen</button>
+            <button id="btn-add-gift-rule" class="btn-primary btn-sm" data-i18n="plugins.sidekick.ui.add_rule_to_list">➕ Regel zur Liste hinzufügen</button>
           </div>
         </div>
       </div>
 
       <!-- Event to Emotion Reactions -->
       <div class="card">
-        <h3>✨ Stream Event Reaktionen &amp; Emotion State Machine</h3>
+        <h3 data-i18n="plugins.sidekick.ui.stream_event_reactions">✨ Stream Event Reaktionen &amp; Emotion State Machine</h3>
         <p style="color: #aaa; font-size: 13px; margin-bottom: 15px;">
-          Konfiguriere automatische Emotionen bei Follows, Shares, Subscriptions, Fragen im Chat und Like-Streaks.
+          <span data-i18n="plugins.sidekick.ui.event_emotions_description">Konfiguriere automatische Emotionen bei Follows, Shares, Subscriptions, Fragen im Chat und Like-Streaks.</span>
         </p>
         <div class="grid">
           <div class="form-group">
-            <label>Follower Reaktion:</label>
+            <label data-i18n="plugins.sidekick.ui.follower_reaction">Follower Reaktion:</label>
             <div class="inline-row">
               <select id="event-emo-follow">
                 <option value="Happy">Happy</option>
                 <option value="Joy">Joy</option>
                 <option value="Blush">Blush</option>
-                <option value="">Deaktiviert</option>
+                <option value="" data-i18n="plugins.sidekick.ui.disabled">Deaktiviert</option>
               </select>
               <input type="number" id="event-dur-follow" value="3500" min="500" step="500" style="width: 100px;" title="Dauer ms">
               <span style="font-size: 12px; color: #888;">ms</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Share / Teilen Reaktion:</label>
+            <label data-i18n="plugins.sidekick.ui.share_reaction">Share / Teilen Reaktion:</label>
             <div class="inline-row">
               <select id="event-emo-share">
                 <option value="Happy">Happy</option>
                 <option value="Joy">Joy</option>
                 <option value="Surprised">Surprised</option>
-                <option value="">Deaktiviert</option>
+                <option value="" data-i18n="plugins.sidekick.ui.disabled">Deaktiviert</option>
               </select>
               <input type="number" id="event-dur-share" value="3000" min="500" step="500" style="width: 100px;" title="Dauer ms">
               <span style="font-size: 12px; color: #888;">ms</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Subscription Reaktion:</label>
+            <label data-i18n="plugins.sidekick.ui.subscription_reaction">Subscription Reaktion:</label>
             <div class="inline-row">
               <select id="event-emo-sub">
                 <option value="Joy">Joy</option>
                 <option value="Happy">Happy</option>
                 <option value="Surprised">Surprised</option>
-                <option value="">Deaktiviert</option>
+                <option value="" data-i18n="plugins.sidekick.ui.disabled">Deaktiviert</option>
               </select>
               <input type="number" id="event-dur-sub" value="6000" min="500" step="500" style="width: 100px;" title="Dauer ms">
               <span style="font-size: 12px; color: #888;">ms</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Frage im Chat (? oder Fragewort):</label>
+            <label data-i18n="plugins.sidekick.ui.chat_question">Frage im Chat (? oder Fragewort):</label>
             <div class="inline-row">
               <select id="event-emo-question">
                 <option value="Thinking">Thinking</option>
                 <option value="Surprised">Surprised</option>
-                <option value="">Deaktiviert</option>
+                <option value="" data-i18n="plugins.sidekick.ui.disabled">Deaktiviert</option>
               </select>
               <input type="number" id="event-dur-question" value="4500" min="500" step="500" style="width: 100px;" title="Dauer ms">
               <span style="font-size: 12px; color: #888;">ms</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Like Streak Schwelle &amp; Emotion:</label>
+            <label data-i18n="plugins.sidekick.ui.like_streak_threshold">Like Streak Schwelle &amp; Emotion:</label>
             <div class="inline-row">
               <input type="number" id="event-thresh-like" value="50" min="10" step="10" style="width: 80px;" title="Likes">
-              <span style="font-size: 12px; color: #888;">Likes:</span>
+              <span style="font-size: 12px; color: #888;" data-i18n="plugins.sidekick.ui.likes_label">Likes:</span>
               <select id="event-emo-like">
                 <option value="Happy">Happy</option>
                 <option value="Joy">Joy</option>
-                <option value="">Deaktiviert</option>
+                <option value="" data-i18n="plugins.sidekick.ui.disabled">Deaktiviert</option>
               </select>
               <input type="number" id="event-dur-like" value="2500" min="500" step="500" style="width: 100px;" title="Dauer ms">
               <span style="font-size: 12px; color: #888;">ms</span>
             </div>
           </div>
           <div class="form-group">
-            <label>Auto-Reset &amp; Neutral:</label>
+            <label data-i18n="plugins.sidekick.ui.auto_reset_neutral">Auto-Reset &amp; Neutral:</label>
             <div class="inline-row" style="margin-top: 5px;">
               <label style="cursor: pointer; margin-right: 15px;">
-                <input type="checkbox" id="emotions-autoreset" checked> Auto-Reset aktiv
+                <input type="checkbox" id="emotions-autoreset" checked> <span data-i18n="plugins.sidekick.ui.auto_reset_enabled">Auto-Reset aktiv</span>
               </label>
               <input type="number" id="emotions-default-dur" value="4000" min="1000" step="500" style="width: 100px;" title="Default Duration ms">
-              <span style="font-size: 12px; color: #888;">ms Standard</span>
+              <span style="font-size: 12px; color: #888;" data-i18n="plugins.sidekick.ui.ms_default">ms Standard</span>
             </div>
           </div>
         </div>
         <div style="margin-top: 15px;">
-          <button id="btn-save-event-emotions" class="btn-primary">💾 Event Emotionen speichern</button>
+          <button id="btn-save-event-emotions" class="btn-primary" data-i18n="plugins.sidekick.ui.save_event_emotions">💾 Event Emotionen speichern</button>
         </div>
       </div>
     </div>
@@ -817,148 +817,148 @@
     <!-- Settings Tab -->
     <div id="tab-settings" class="tab-content">
       <div class="card">
-        <h3>🔧 Animaze Verbindung</h3>
+        <h3 data-i18n="plugins.sidekick.ui.animaze_connection">🔧 Animaze Verbindung</h3>
         <div class="grid">
           <div class="form-group">
-            <label for="animaze-host">Host</label>
+            <label for="animaze-host" data-i18n="plugins.sidekick.ui.host">Host</label>
             <input type="text" id="animaze-host" value="127.0.0.1">
           </div>
           <div class="form-group">
-            <label for="animaze-port">Port</label>
+            <label for="animaze-port" data-i18n="plugins.sidekick.ui.port">Port</label>
             <input type="number" id="animaze-port" value="9000">
           </div>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="animaze-enabled"> Animaze aktiviert
+            <input type="checkbox" id="animaze-enabled"> <span data-i18n="plugins.sidekick.ui.animaze_enabled">Animaze aktiviert</span>
           </label>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="animaze-autoconnect"> Auto-Connect beim Start
+            <input type="checkbox" id="animaze-autoconnect"> <span data-i18n="plugins.sidekick.ui.auto_connect_start">Auto-Connect beim Start</span>
           </label>
         </div>
       </div>
 
       <div class="card">
-        <h3>💬 Chat Einstellungen</h3>
+        <h3 data-i18n="plugins.sidekick.ui.chat_settings">💬 Chat Einstellungen</h3>
         <div class="grid">
           <div class="form-group">
             <label for="comment-enabled">
-              <input type="checkbox" id="comment-enabled"> Chat-Verarbeitung aktiviert
+              <input type="checkbox" id="comment-enabled"> <span data-i18n="plugins.sidekick.ui.chat_processing_enabled">Chat-Verarbeitung aktiviert</span>
             </label>
           </div>
           <div class="form-group">
-            <label for="reply-threshold">Reply Threshold (0-1)</label>
+            <label for="reply-threshold" data-i18n="plugins.sidekick.ui.reply_threshold">Reply Threshold (0-1)</label>
             <input type="number" id="reply-threshold" min="0" max="1" step="0.1" value="0.6">
           </div>
           <div class="form-group">
-            <label for="global-cooldown">Global Cooldown (Sek)</label>
+            <label for="global-cooldown" data-i18n="plugins.sidekick.ui.global_cooldown_seconds">Global Cooldown (Sek)</label>
             <input type="number" id="global-cooldown" min="0" value="6">
           </div>
           <div class="form-group">
-            <label for="user-cooldown">Per-User Cooldown (Sek)</label>
+            <label for="user-cooldown" data-i18n="plugins.sidekick.ui.per_user_cooldown_seconds">Per-User Cooldown (Sek)</label>
             <input type="number" id="user-cooldown" min="0" value="15">
           </div>
           <div class="form-group">
-            <label for="max-replies">Max Replies/Min</label>
+            <label for="max-replies" data-i18n="plugins.sidekick.ui.max_replies_minute">Max Replies/Min</label>
             <input type="number" id="max-replies" min="1" value="20">
           </div>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="respond-greetings"> Auf Grüße antworten
+            <input type="checkbox" id="respond-greetings"> <span data-i18n="plugins.sidekick.ui.respond_to_greetings">Auf Grüße antworten</span>
           </label>
         </div>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="respond-thanks"> Auf Danke antworten
+            <input type="checkbox" id="respond-thanks"> <span data-i18n="plugins.sidekick.ui.respond_to_thanks">Auf Danke antworten</span>
           </label>
         </div>
       </div>
 
       <div class="card">
-        <h3>👋 Join Greetings</h3>
+        <h3 data-i18n="plugins.sidekick.ui.join_greetings">👋 Join Greetings</h3>
         <div class="form-group">
           <label>
-            <input type="checkbox" id="joins-enabled"> Join Greetings aktiviert
+            <input type="checkbox" id="joins-enabled"> <span data-i18n="plugins.sidekick.ui.join_greetings_enabled">Join Greetings aktiviert</span>
           </label>
         </div>
         <div class="grid">
           <div class="form-group">
-            <label for="greet-delay">Greet nach (Sek)</label>
+            <label for="greet-delay" data-i18n="plugins.sidekick.ui.greet_after_seconds">Greet nach (Sek)</label>
             <input type="number" id="greet-delay" min="0" value="30">
           </div>
           <div class="form-group">
-            <label for="greet-cooldown">Global Greet Cooldown (Sek)</label>
+            <label for="greet-cooldown" data-i18n="plugins.sidekick.ui.global_greet_cooldown_seconds">Global Greet Cooldown (Sek)</label>
             <input type="number" id="greet-cooldown" min="0" value="180">
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h3>📦 Outbox Batching</h3>
+        <h3 data-i18n="plugins.sidekick.ui.outbox_batching">📦 Outbox Batching</h3>
         <div class="grid">
           <div class="form-group">
-            <label for="batch-window">Batch Window (Sek)</label>
+            <label for="batch-window" data-i18n="plugins.sidekick.ui.batch_window_seconds">Batch Window (Sek)</label>
             <input type="number" id="batch-window" min="1" value="8">
           </div>
           <div class="form-group">
-            <label for="batch-max-items">Max Items pro Batch</label>
+            <label for="batch-max-items" data-i18n="plugins.sidekick.ui.max_items_batch">Max Items pro Batch</label>
             <input type="number" id="batch-max-items" min="1" value="8">
           </div>
           <div class="form-group">
-            <label for="batch-max-chars">Max Zeichen</label>
+            <label for="batch-max-chars" data-i18n="plugins.sidekick.ui.max_characters">Max Zeichen</label>
             <input type="number" id="batch-max-chars" min="50" value="320">
           </div>
           <div class="form-group">
-            <label for="batch-separator">Separator</label>
+            <label for="batch-separator" data-i18n="plugins.sidekick.ui.separator">Separator</label>
             <input type="text" id="batch-separator" value=" • ">
           </div>
         </div>
       </div>
 
-      <button id="btn-save-settings" class="btn-primary">💾 Einstellungen speichern</button>
+      <button id="btn-save-settings" class="btn-primary" data-i18n="plugins.sidekick.ui.save_settings">💾 Einstellungen speichern</button>
     </div>
 
     <!-- Memory Tab -->
     <div id="tab-memory" class="tab-content">
       <div class="card">
-        <h3>🧠 Memory Statistiken</h3>
+        <h3 data-i18n="plugins.sidekick.ui.memory_statistics">🧠 Memory Statistiken</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="memory-users">0</div>
-            <div class="stat-label">Gespeicherte User</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.saved_users">Gespeicherte User</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="memory-gifts">0</div>
-            <div class="stat-label">Total Gifts</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.gifts">Total Gifts</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="memory-follows">0</div>
-            <div class="stat-label">Total Follows</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.follows">Total Follows</div>
           </div>
         </div>
         <div style="margin-top: 15px;">
-          <button id="btn-clear-memory" class="btn-danger">🗑️ Memory löschen</button>
+          <button id="btn-clear-memory" class="btn-danger" data-i18n="plugins.sidekick.ui.clear_memory">🗑️ Memory löschen</button>
         </div>
       </div>
 
       <div class="card">
-        <h3>🏆 Top User (Engagement)</h3>
+        <h3 data-i18n="plugins.sidekick.ui.top_users">🏆 Top User (Engagement)</h3>
         <div class="user-list" id="top-users">
-          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.loading">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3>🔍 User Suche</h3>
+        <h3 data-i18n="plugins.sidekick.ui.user_search">🔍 User Suche</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
-          <input type="text" id="search-user" placeholder="Nickname oder ID suchen...">
-          <button id="btn-search" class="btn-primary">Suchen</button>
+          <input type="text" id="search-user" placeholder="Nickname oder ID suchen..." data-i18n-placeholder="plugins.sidekick.ui.search_user_placeholder">
+          <button id="btn-search" class="btn-primary" data-i18n="plugins.sidekick.ui.search">Suchen</button>
         </div>
         <div class="user-list" id="search-results">
-          <p style="color: #666; padding: 20px; text-align: center;">Suchbegriff eingeben...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.enter_search">Suchbegriff eingeben...</p>
         </div>
       </div>
     </div>
@@ -966,39 +966,39 @@
     <!-- Analytics Tab -->
     <div id="tab-analytics" class="tab-content">
       <div class="card">
-        <h3>📈 Live Rates (pro Minute)</h3>
+        <h3 data-i18n="plugins.sidekick.ui.live_rates">📈 Live Rates (pro Minute)</h3>
         <div class="grid">
           <div class="stat-card">
             <div class="stat-value" id="rate-chats">0</div>
-            <div class="stat-label">Chats/Min</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.chats_per_minute">Chats/Min</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="rate-gifts">0</div>
-            <div class="stat-label">Gifts/Min</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.gifts_per_minute">Gifts/Min</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="rate-likes">0</div>
-            <div class="stat-label">Likes/Min</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.likes_per_minute">Likes/Min</div>
           </div>
           <div class="stat-card">
             <div class="stat-value" id="rate-joins">0</div>
-            <div class="stat-label">Joins/Min</div>
+            <div class="stat-label" data-i18n="plugins.sidekick.ui.joins_per_minute">Joins/Min</div>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <h3>🎯 Top Gifter</h3>
+        <h3 data-i18n="plugins.sidekick.ui.top_gifters">🎯 Top Gifter</h3>
         <div class="user-list" id="top-gifters">
-          <p style="color: #666; padding: 20px; text-align: center;">Lade...</p>
+          <p style="color: #666; padding: 20px; text-align: center;" data-i18n="plugins.sidekick.ui.loading">Lade...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3>📊 Event History</h3>
+        <h3 data-i18n="plugins.sidekick.ui.event_history">📊 Event History</h3>
         <div class="chart-container">
           <div class="chart-placeholder">
-            Chart-Visualisierung (in zukünftiger Version)
+            <span data-i18n="plugins.sidekick.ui.chart_placeholder">Chart-Visualisierung (in zukünftiger Version)</span>
           </div>
         </div>
       </div>
@@ -1007,45 +1007,52 @@
     <!-- Events Tab -->
     <div id="tab-events" class="tab-content">
       <div class="card">
-        <h3>📜 Event Log</h3>
+        <h3 data-i18n="plugins.sidekick.ui.event_log">📜 Event Log</h3>
         <div class="inline-row" style="margin-bottom: 15px;">
           <select id="event-filter">
-            <option value="">Alle Events</option>
-            <option value="chat">Chat</option>
-            <option value="gift">Gift</option>
-            <option value="follow">Follow</option>
-            <option value="share">Share</option>
-            <option value="subscribe">Subscribe</option>
-            <option value="join">Join</option>
-            <option value="like">Like</option>
+            <option value="" data-i18n="plugins.sidekick.ui.all_events">Alle Events</option>
+            <option value="chat" data-i18n="plugins.sidekick.ui.event_chat">Chat</option>
+            <option value="gift" data-i18n="plugins.sidekick.ui.event_gift">Gift</option>
+            <option value="follow" data-i18n="plugins.sidekick.ui.event_follow">Follow</option>
+            <option value="share" data-i18n="plugins.sidekick.ui.event_share">Share</option>
+            <option value="subscribe" data-i18n="plugins.sidekick.ui.event_subscribe">Subscribe</option>
+            <option value="join" data-i18n="plugins.sidekick.ui.event_join">Join</option>
+            <option value="like" data-i18n="plugins.sidekick.ui.event_like">Like</option>
           </select>
-          <button id="btn-refresh-events" class="btn-secondary">🔄 Aktualisieren</button>
+          <button id="btn-refresh-events" class="btn-secondary" data-i18n="plugins.sidekick.ui.refresh">🔄 Aktualisieren</button>
         </div>
         <div class="event-log" id="event-log">
-          <p style="color: #666; text-align: center;">Lade Events...</p>
+          <p style="color: #666; text-align: center;" data-i18n="plugins.sidekick.ui.loading_events">Lade Events...</p>
         </div>
       </div>
 
       <div class="card">
-        <h3>🔍 Deduper Status</h3>
+        <h3 data-i18n="plugins.sidekick.ui.deduper_status">🔍 Deduper Status</h3>
         <div class="grid">
           <div>
-            <p>Größe: <strong id="deduper-size">0</strong> Einträge</p>
-            <p>Total Checks: <strong id="deduper-checks">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.size">Größe:</span> <strong id="deduper-size">0</strong> <span data-i18n="plugins.sidekick.ui.entries">Einträge</span></p>
+            <p><span data-i18n="plugins.sidekick.ui.total_checks">Total Checks:</span> <strong id="deduper-checks">0</strong></p>
           </div>
           <div>
-            <p>Duplikate blockiert: <strong id="deduper-blocked">0</strong></p>
-            <p>Hit Rate: <strong id="deduper-hitrate">0%</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.duplicates_blocked">Duplikate blockiert:</span> <strong id="deduper-blocked">0</strong></p>
+            <p><span data-i18n="plugins.sidekick.ui.hit_rate">Hit Rate:</span> <strong id="deduper-hitrate">0%</strong></p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <script src="/js/i18n-client.js"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script>
     // Initialize Socket.io
     const socket = io();
+    const sidekickText = (key, fallback, params = {}) => {
+      const fullKey = `plugins.sidekick.ui.${key}`;
+      if (!window.i18n?.initialized) return fallback;
+      const translated = window.i18n.t(fullKey, params);
+      return translated === fullKey ? fallback : translated;
+    };
     
     // State
     let config = {};
@@ -1096,10 +1103,10 @@
       const badge = document.getElementById('status-badge');
       if (status.muted) {
         badge.className = 'badge badge-warning';
-        badge.textContent = 'Muted';
+        badge.textContent = sidekickText('muted', 'Muted');
       } else {
         badge.className = 'badge badge-success';
-        badge.textContent = 'Active';
+        badge.textContent = sidekickText('active', 'Active');
       }
 
       // VNyan & Avatar state
@@ -1115,7 +1122,7 @@
       const vnyanBadge = document.getElementById('vnyan-active-badge');
       if (vnyanInd && vnyanTxt) {
         vnyanInd.className = 'status-indicator ' + (isVnyanConnected ? 'status-connected' : 'status-disconnected');
-        vnyanTxt.textContent = isVnyanConnected ? 'Verbunden' : 'Getrennt';
+        vnyanTxt.textContent = isVnyanConnected ? sidekickText('connected', 'Connected') : sidekickText('disconnected', 'Disconnected');
         if (vnyanBadge) vnyanBadge.style.display = isVnyanActive ? 'inline-block' : 'none';
       }
 
@@ -1125,7 +1132,7 @@
       const animazeBadge = document.getElementById('animaze-active-badge');
       if (animazeIndicator && animazeText) {
         animazeIndicator.className = 'status-indicator ' + (isAnimazeConnected ? 'status-connected' : 'status-disconnected');
-        animazeText.textContent = isAnimazeConnected ? 'Verbunden' : 'Getrennt';
+        animazeText.textContent = isAnimazeConnected ? sidekickText('connected', 'Connected') : sidekickText('disconnected', 'Disconnected');
         if (animazeBadge) animazeBadge.style.display = isAnimazeActive ? 'inline-block' : 'none';
       }
 
@@ -1135,7 +1142,7 @@
       const vnyanTabUri = document.getElementById('vnyan-tab-uri');
       if (vnyanTabInd && vnyanTabTxt) {
         vnyanTabInd.className = 'status-indicator ' + (isVnyanConnected ? 'status-connected' : 'status-disconnected');
-        vnyanTabTxt.textContent = isVnyanConnected ? 'Verbunden' : 'Getrennt';
+        vnyanTabTxt.textContent = isVnyanConnected ? sidekickText('connected', 'Connected') : sidekickText('disconnected', 'Disconnected');
         if (vnyanTabUri && vnyan.uri) vnyanTabUri.textContent = vnyan.uri;
       }
 
@@ -1188,7 +1195,7 @@
       document.getElementById('session-dedupe').textContent = status.session?.dedupeHits || 0;
       
       // Rate limit
-      const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0 ? 'Cooldown' : 'OK';
+      const rlStatus = status.rateLimiter?.globalCooldownRemaining > 0 ? sidekickText('cooldown', 'Cooldown') : sidekickText('ok', 'OK');
       document.getElementById('ratelimit-status').textContent = rlStatus;
       
       // Deduper
@@ -1284,11 +1291,11 @@
         const data = await res.json();
         if (data.success) {
           config = data.config;
-          alert('Einstellungen gespeichert!');
+          alert(sidekickText('settings_saved', 'Einstellungen gespeichert!'));
         }
       } catch (err) {
         console.error('Failed to save config:', err);
-        alert('Fehler beim Speichern!');
+        alert(sidekickText('save_failed', 'Fehler beim Speichern!'));
       }
     }
     
@@ -1315,7 +1322,7 @@
         if (data.success) {
           const container = document.getElementById('top-users');
           if (data.users.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine User gefunden</p>';
+            container.innerHTML = `<p style="color: #666; padding: 20px; text-align: center;">${sidekickText('no_users_found', 'Keine User gefunden')}</p>`;
             return;
           }
           container.innerHTML = data.users.map((user, i) => `
@@ -1323,7 +1330,7 @@
               <div>
                 <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
                 <div class="user-stats">
-                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👍 ${user.likes || 0}
+                  💬 ${user.messages?.length || 0} ${sidekickText('messages', 'messages')} | 🎁 ${user.gifts || 0} ${sidekickText('gifts', 'gifts')} | 👍 ${user.likes || 0} ${sidekickText('likes', 'likes')}
                 </div>
               </div>
               <span class="badge badge-success">${Math.round(user.score || 0)}</span>
@@ -1347,7 +1354,7 @@
         if (data.success) {
           const container = document.getElementById('event-log');
           if (data.events.length === 0) {
-            container.innerHTML = '<p style="color: #666; text-align: center;">Keine Events</p>';
+            container.innerHTML = `<p style="color: #666; text-align: center;">${sidekickText('no_events', 'Keine Events')}</p>`;
             return;
           }
           container.innerHTML = data.events.reverse().map(event => {
@@ -1378,13 +1385,13 @@
           const gifters = data.metrics.topGifters || [];
           const container = document.getElementById('top-gifters');
           if (gifters.length === 0) {
-            container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Gifter</p>';
+            container.innerHTML = `<p style="color: #666; padding: 20px; text-align: center;">${sidekickText('no_gifters', 'Keine Gifter')}</p>`;
           } else {
             container.innerHTML = gifters.map((user, i) => `
               <div class="user-item">
                 <div>
                   <span class="user-nickname">#${i + 1} ${user.nickname || user.uid}</span>
-                  <div class="user-stats">🎁 ${user.gift || 0} Gifts | 💎 ${user.diamonds || 0} Diamonds</div>
+                <div class="user-stats">🎁 ${user.gift || 0} ${sidekickText('gifts', 'gifts')} | 💎 ${user.diamonds || 0} ${sidekickText('diamonds', 'diamonds')}</div>
                 </div>
                 <span class="badge badge-danger">${user.diamonds || 0} 💎</span>
               </div>
@@ -1411,13 +1418,13 @@
               <div>
                 <span class="user-nickname">${user.nickname || user.uid}</span>
                 <div class="user-stats">
-                  💬 ${user.messages?.length || 0} | 🎁 ${user.gifts || 0} | 👥 ${user.joins || 0}
+                  💬 ${user.messages?.length || 0} ${sidekickText('messages', 'messages')} | 🎁 ${user.gifts || 0} ${sidekickText('gifts', 'gifts')} | 👥 ${user.joins || 0} ${sidekickText('joins', 'joins')}
                 </div>
               </div>
             </div>
           `).join('');
         } else {
-          container.innerHTML = '<p style="color: #666; padding: 20px; text-align: center;">Keine Ergebnisse</p>';
+          container.innerHTML = `<p style="color: #666; padding: 20px; text-align: center;">${sidekickText('no_results', 'Keine Ergebnisse')}</p>`;
         }
       } catch (err) {
         console.error('Failed to search users:', err);
@@ -1452,14 +1459,14 @@
 
       const rules = avatarRules.giftRules || [];
       if (rules.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #888; padding: 20px;">Keine benutzerdefinierten Geschenk-Regeln definiert.</td></tr>';
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #888; padding: 20px;">${sidekickText('no_gift_rules', 'Keine benutzerdefinierten Geschenk-Regeln definiert.')}</td></tr>`;
         return;
       }
 
       tbody.innerHTML = rules.map((rule, idx) => {
         const matchLabel = rule.matchType === 'name' 
-          ? `Name enthält <strong style="color: #64B5F6;">"${rule.matchValue}"</strong>`
-          : `Coins/Diamanten &ge; <strong style="color: #FFC107;">${rule.matchValue}</strong>`;
+          ? `${sidekickText('match_name_contains', 'Name contains')} <strong style="color: #64B5F6;">"${rule.matchValue}"</strong>`
+          : `${sidekickText('match_coins_min', 'Coins / diamonds ≥')} <strong style="color: #FFC107;">${rule.matchValue}</strong>`;
 
         const emotionLabel = rule.emotion 
           ? `<span class="badge badge-success">${rule.emotion}</span> <small style="color: #aaa;">(${rule.durationMs || 4000}ms)</small>`
@@ -1477,8 +1484,8 @@
             <td>${rule.durationMs ? rule.durationMs + 'ms' : '-'}</td>
             <td>${itemDropLabel}</td>
             <td>
-              <button class="btn-info btn-sm" onclick="testGiftRuleByIndex(${idx})">Testen</button>
-              <button class="btn-danger btn-sm" onclick="deleteGiftRuleByIndex(${idx})" style="margin-left: 5px;">Löschen</button>
+              <button class="btn-info btn-sm" onclick="testGiftRuleByIndex(${idx})">${sidekickText('test', 'Test')}</button>
+              <button class="btn-danger btn-sm" onclick="deleteGiftRuleByIndex(${idx})" style="margin-left: 5px;">${sidekickText('delete', 'Delete')}</button>
             </td>
           </tr>
         `;
@@ -1530,11 +1537,11 @@
       const dropCount = parseInt(document.getElementById('new-rule-drop-count').value, 10) || 3;
 
       if (!matchVal) {
-        alert('Bitte einen Match-Wert (Name oder Coins) angeben.');
+        alert(sidekickText('please_match_value', 'Enter a match value (name or coins).'));
         return;
       }
       if (!trigger) {
-        alert('Bitte einen VNyan Trigger-Namen angeben (z.B. SK_Gift_Rose).');
+        alert(sidekickText('please_vnyan_trigger', 'Enter a VNyan trigger name (for example SK_Gift_Rose).'));
         return;
       }
 
@@ -1584,7 +1591,7 @@
         const data = await res.json();
         if (data.success) {
           const resElem = document.getElementById('playground-gift-result');
-          if (resElem) resElem.textContent = `Regel ${rule.trigger} ausgelöst!`;
+          if (resElem) resElem.textContent = sidekickText('rule_triggered', 'Rule {trigger} triggered!', { trigger: rule.trigger });
           fetchStatus();
         }
       } catch (err) {
@@ -1594,7 +1601,7 @@
 
     // Reset gift rules to defaults
     async function resetGiftRulesToDefaults() {
-      if (!confirm('Wirklich alle Gift-Regeln auf Standard zurücksetzen?')) return;
+      if (!confirm(sidekickText('confirm_reset_rules', 'Restore all gift rules to their defaults?'))) return;
       avatarRules.giftRules = [
         { id: 'rule_rose', matchType: 'name', matchValue: 'Rose', trigger: 'SK_Gift_Rose', emotion: 'Blush', durationMs: 4000, itemDrop: true, dropCount: 3 },
         { id: 'rule_galaxy', matchType: 'name', matchValue: 'Galaxy', trigger: 'SK_Gift_Galaxy', emotion: 'Surprised', durationMs: 8000, itemDrop: true, dropCount: 10 },
@@ -1616,12 +1623,12 @@
         });
         const data = await res.json();
         if (data.success) {
-          if (showAlert) alert('Avatar-Regeln erfolgreich gespeichert!');
+          if (showAlert) alert(sidekickText('rules_saved', 'Avatar rules saved.'));
           fetchStatus();
         }
       } catch (err) {
         console.error('Failed to save avatar rules:', err);
-        if (showAlert) alert('Fehler beim Speichern der Regeln!');
+        if (showAlert) alert(sidekickText('rules_save_failed', 'Could not save the rules.'));
       }
     }
 
@@ -1683,12 +1690,12 @@
         const data = await res.json();
         if (data.success) {
           config = data.config;
-          alert('VNyan Verbindungseinstellungen gespeichert!');
+          alert(sidekickText('vnyan_connection_saved', 'VNyan connection settings saved.'));
           fetchStatus();
         }
       } catch (err) {
         console.error('Failed to save VNyan config:', err);
-        alert('Fehler beim Speichern der VNyan Verbindung!');
+        alert(sidekickText('vnyan_connection_failed', 'Could not save the VNyan connection.'));
       }
     }
     
@@ -1754,7 +1761,7 @@
           body: JSON.stringify({ trigger: 'SK_Ping', data: { test: true } })
         });
         const d = await res.json();
-        alert(d.success ? 'Ping Trigger SK_Ping an VNyan gesendet!' : 'Fehler: VNyan nicht verbunden!');
+        alert(d.success ? sidekickText('ping_sent', 'Ping trigger SK_Ping sent to VNyan.') : sidekickText('vnyan_not_connected', 'Error: VNyan is not connected.'));
         fetchStatus();
       });
     }
@@ -1849,7 +1856,9 @@
           const data = await res.json();
           const resElem = document.getElementById('playground-gift-result');
           if (resElem) {
-            resElem.textContent = data.success ? `🎁 Reaction für ${giftName} ausgelöst!` : `Fehler: ${data.error}`;
+            resElem.textContent = data.success
+              ? sidekickText('gift_reaction_triggered', '🎁 Reaction for {gift} triggered!', { gift: giftName })
+              : sidekickText('action_failed', 'Error: {error}', { error: data.error });
           }
           fetchStatus();
         } catch (err) {
@@ -1874,7 +1883,9 @@
           const data = await res.json();
           const resElem = document.getElementById('playground-drop-result');
           if (resElem) {
-            resElem.textContent = data.success ? `🚀 ${count}x ${item} geworfen!` : `Fehler: ${data.error}`;
+            resElem.textContent = data.success
+              ? sidekickText('item_thrown', '🚀 Threw {count}x {item}!', { count, item })
+              : sidekickText('action_failed', 'Error: {error}', { error: data.error });
           }
         } catch (err) {
           console.error(err);
@@ -1917,7 +1928,7 @@
     });
     
     document.getElementById('btn-reset').addEventListener('click', async () => {
-      if (confirm('Session wirklich zurücksetzen?')) {
+      if (confirm(sidekickText('confirm_reset_session', 'Session wirklich zurücksetzen?'))) {
         await fetch('/api/sidekick/reset', { method: 'POST' });
         fetchStatus();
       }
@@ -1937,7 +1948,7 @@
     document.getElementById('btn-save-settings').addEventListener('click', saveConfig);
     
     document.getElementById('btn-clear-memory').addEventListener('click', async () => {
-      if (confirm('Memory wirklich löschen?')) {
+      if (confirm(sidekickText('confirm_clear_memory', 'Memory wirklich löschen?'))) {
         await fetch('/api/sidekick/memory/clear', { method: 'POST' });
         fetchMemoryStats();
         fetchTopUsers();
@@ -1958,7 +1969,43 @@
       updateStatusUI();
     });
     
+    const speechExamples = [
+      'Hallo Welt! Willkommen im Live Stream!',
+      'Hello world! Welcome to the live stream!',
+      '¡Hola a todos! ¡Bienvenidos al directo!',
+      'Bonjour à tous ! Bienvenue sur le direct !'
+    ];
+    function localizeSpeechExample() {
+      const speechInput = document.getElementById('playground-speech-text');
+      if (speechInput && speechExamples.includes(speechInput.value)) {
+        speechInput.value = sidekickText('speech_example', speechInput.value);
+      }
+    }
+
     // Initial load
+    window.i18n?.ready?.then(() => {
+      window.i18n.updateDOM();
+      updateStatusUI();
+      localizeSpeechExample();
+      // Dynamic API sections can render before the locale bundle finishes loading.
+      // Fetch them again once translations are ready so empty states use the
+      // selected language on first display as well.
+      fetchStatus();
+      fetchConfig();
+      fetchAvatarRules();
+      fetchMemoryStats();
+      fetchTopUsers();
+      fetchEvents();
+      fetchMetrics();
+    });
+    window.i18n?.onLanguageChange?.(() => {
+      localizeSpeechExample();
+      updateStatusUI();
+      fetchTopUsers();
+      fetchEvents();
+      fetchMetrics();
+      renderGiftRulesTable();
+    });
     fetchStatus();
     fetchConfig();
     fetchAvatarRules();

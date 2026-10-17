@@ -18,6 +18,123 @@
     let profileSwitchPending = false;
     let restartCountdown = null;
     let restartInProgress = false;
+    let restartBlocked = false;
+    let restartFailureNotified = false;
+    let blockedRestartCode = null;
+    let cleanupRetryPromise = null;
+
+    function hasBlockedRestart(data) {
+        return data?.restartState === 'blocked-cleanup' || Boolean(data?.restartFailure);
+    }
+
+    function getRestartFailureMessage(data) {
+        const failure = data?.restartFailure;
+        if (typeof failure === 'string' && failure.trim()) return failure;
+        if (typeof failure?.message === 'string' && failure.message.trim()) return failure.message;
+        return '';
+    }
+
+    function renderBlockedRestartNotice(data = {}) {
+        document.getElementById('restart-cleanup-blocked-notice')?.remove();
+
+        const notice = document.createElement('div');
+        notice.id = 'restart-cleanup-blocked-notice';
+        notice.setAttribute('role', 'alert');
+        notice.style.cssText = 'position:fixed;left:16px;right:16px;bottom:16px;z-index:100000;padding:16px;background:#7f1d1d;color:#fff;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 8px 24px rgba(0,0,0,.35)';
+
+        const message = document.createElement('span');
+        message.textContent = getRestartFailureMessage(data) || 'Server restart cleanup did not complete.';
+        notice.appendChild(message);
+
+        if (blockedRestartCode === 'PLUGIN_CLEANUP_BLOCKED') {
+            const retryButton = document.createElement('button');
+            retryButton.type = 'button';
+            retryButton.className = 'btn-retry-plugin-cleanup';
+            retryButton.textContent = 'Retry cleanup / Bereinigung erneut versuchen';
+            retryButton.addEventListener('click', () => { void retryBlockedCleanup(); });
+            notice.appendChild(retryButton);
+        }
+
+        document.body.appendChild(notice);
+    }
+
+    function handleBlockedRestart(data = {}, targetProfile) {
+        restartBlocked = true;
+        restartInProgress = false;
+        blockedRestartCode = data?.restartFailure?.code || data?.errorCode || null;
+        selectedProfile = targetProfile || data.pendingProfile || selectedProfile;
+        profileSwitchPending = Boolean(selectedProfile && !profilesMatch(selectedProfile, activeProfile));
+        localStorage.removeItem('selectedProfile');
+
+        const overlay = document.getElementById('server-restart-overlay');
+        if (overlay) overlay.remove();
+        renderBlockedRestartNotice(data);
+        if (profileSwitchPending) {
+            showProfileSwitchWarning();
+            document.querySelector('#profile-switch-warning .btn-restart-now')?.remove();
+            updateProfileDisplay();
+        }
+
+        if (!restartFailureNotified) {
+            restartFailureNotified = true;
+            showRestartError(getRestartFailureMessage(data));
+        }
+    }
+
+    function retryBlockedCleanup() {
+        if (blockedRestartCode !== 'PLUGIN_CLEANUP_BLOCKED') return Promise.resolve(false);
+        if (cleanupRetryPromise) return cleanupRetryPromise;
+        if (restartInProgress) return Promise.resolve(false);
+
+        restartInProgress = true;
+        const targetProfile = selectedProfile;
+        const retryButton = document.querySelector('#restart-cleanup-blocked-notice .btn-retry-plugin-cleanup');
+        if (retryButton) retryButton.disabled = true;
+        showRestartWaitingOverlay(targetProfile);
+
+        const operation = (async () => {
+            try {
+                const response = await fetch('/api/server/restart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.clone().json().catch(() => null);
+                if (hasBlockedRestart(result)) {
+                    handleBlockedRestart(result, targetProfile);
+                    return false;
+                }
+                if (!response.ok) {
+                    showRestartError(await readRestartError(response));
+                    restartInProgress = false;
+                    document.getElementById('server-restart-overlay')?.remove();
+                    return false;
+                }
+
+                blockedRestartCode = null;
+                document.getElementById('restart-cleanup-blocked-notice')?.remove();
+                const restarted = await waitForServerRestart(targetProfile);
+                if (restarted) window.location.reload();
+                else restartInProgress = false;
+                return restarted;
+            } catch (error) {
+                console.log('♻️ Server appears to be restarting after cleanup retry. Waiting for it to come back online...');
+                const restarted = await waitForServerRestart(targetProfile);
+                if (restarted) window.location.reload();
+                else {
+                    showRestartError(error.message);
+                    restartInProgress = false;
+                }
+                return restarted;
+            } finally {
+                const remainingRetryButton = document.querySelector('#restart-cleanup-blocked-notice .btn-retry-plugin-cleanup');
+                if (remainingRetryButton && blockedRestartCode === 'PLUGIN_CLEANUP_BLOCKED') {
+                    remainingRetryButton.disabled = false;
+                }
+            }
+        })();
+        cleanupRetryPromise = operation.finally(() => { cleanupRetryPromise = null; });
+        return cleanupRetryPromise;
+    }
 
     function profilesMatch(a, b) {
         return typeof a === 'string'
@@ -116,6 +233,16 @@
             const serverPendingProfile = data.pendingProfile && !profilesMatch(data.pendingProfile, activeProfile)
                 ? data.pendingProfile
                 : null;
+
+            if (hasBlockedRestart(data)) {
+                handleBlockedRestart(data, serverPendingProfile || storedSelected);
+                return data;
+            }
+
+            restartBlocked = false;
+            restartFailureNotified = false;
+            blockedRestartCode = null;
+            document.getElementById('restart-cleanup-blocked-notice')?.remove();
 
             if (serverPendingProfile) {
                 selectedProfile = serverPendingProfile;
@@ -230,7 +357,7 @@
                 <div class="profile-switch-warning-actions">
                     <button class="btn-restart-now" onclick="window.profileManager.restartNow()">
                         <i data-lucide="refresh-cw"></i>
-                        ${window.i18n?.t('profile.restart_now') || 'Restart Now'}
+                        <span class="btn-restart-now-label">${window.i18n?.t('profile.restart_now') || 'Restart Now'}</span>
                     </button>
                     <button class="btn-dismiss-warning" onclick="window.profileManager.dismissWarning()">
                         <i data-lucide="x"></i>
@@ -249,6 +376,32 @@
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+    }
+
+    function refreshProfileSwitchWarning() {
+        const warning = document.getElementById('profile-switch-warning');
+        if (!warning) return;
+
+        const title = warning.querySelector('.profile-switch-warning-text strong');
+        const message = warning.querySelector('.profile-switch-warning-text p');
+        const restartLabel = warning.querySelector('.btn-restart-now-label');
+
+        if (title) {
+            title.textContent = window.i18n?.t('profile.switch_pending_title') || 'Profile Switch Pending';
+        }
+        if (message) {
+            message.textContent = window.i18n?.t('profile.switch_pending_message', {
+                current: activeProfile,
+                selected: selectedProfile
+            }) || `You switched to profile "${selectedProfile}" but the application is still using "${activeProfile}". Restart required to activate the new profile.`;
+        }
+        if (restartLabel) {
+            restartLabel.textContent = window.i18n?.t('profile.restart_now') || 'Restart Now';
+        }
+    }
+
+    if (typeof window.i18n?.onLanguageChange === 'function') {
+        window.i18n.onLanguageChange(() => refreshProfileSwitchWarning());
     }
 
     /**
@@ -307,6 +460,7 @@
      * Falls back to location.reload() if the API is unavailable (e.g. direct node server.js without launcher).
      */
     async function restartNow() {
+        if (restartBlocked) return;
         await beginProfileRestart({
             to: selectedProfile || localStorage.getItem('selectedProfile'),
             requiresRestart: true
@@ -314,6 +468,8 @@
     }
 
     async function beginProfileRestart(data = {}) {
+        if (restartBlocked) return;
+
         const targetProfile = data.to || data.newProfile || selectedProfile || localStorage.getItem('selectedProfile');
 
         if (targetProfile) {
@@ -321,7 +477,7 @@
             localStorage.setItem('selectedProfile', targetProfile);
         }
 
-        if (restartInProgress) {
+        if (restartInProgress || restartBlocked) {
             return;
         }
 
@@ -337,8 +493,8 @@
         showRestartWaitingOverlay(targetProfile);
 
         if (data.restartScheduled) {
-            await waitForServerRestart(targetProfile);
-            window.location.reload();
+            const restarted = await waitForServerRestart(targetProfile);
+            if (restarted) window.location.reload();
             return;
         }
 
@@ -348,12 +504,18 @@
                 headers: { 'Content-Type': 'application/json' }
             });
 
+            const result = await response.clone().json().catch(() => null);
+            if (hasBlockedRestart(result)) {
+                handleBlockedRestart(result, targetProfile);
+                return;
+            }
+
             if (response.ok) {
                 // Server acknowledged restart request.
                 // Poll until server is back online, then reload the page.
                 console.log('✅ Server restart initiated. Waiting for server to come back online...');
-                await waitForServerRestart(targetProfile);
-                window.location.reload();
+                const restarted = await waitForServerRestart(targetProfile);
+                if (restarted) window.location.reload();
             } else {
                 // API returned an error – fall back to page reload
                 console.warn('⚠️ Server restart API returned error, falling back to page reload');
@@ -380,8 +542,9 @@
     }
 
     function showRestartError(message) {
+        const title = window.i18n?.t('profile.restart_failed') || 'Server restart failed';
         showNotification(
-            `${window.i18n?.t('profile.restart_failed') || 'Server restart failed'}: ${message}`,
+            message ? `${title}: ${message}` : title,
             'error',
             10000
         );
@@ -431,14 +594,19 @@
                     const r = await fetch('/api/profiles/active?restartPoll=' + Date.now(), { cache: 'no-store' });
                     if (r.ok) {
                         const data = await r.json().catch(() => null);
+                        if (hasBlockedRestart(data)) {
+                            handleBlockedRestart(data, targetProfile);
+                            resolve(false);
+                            return;
+                        }
                         if (targetProfile && data && profilesMatch(data.activeProfile, targetProfile) && !data.requiresRestart) {
-                            resolve();
+                            resolve(true);
                             return;
                         }
                     }
 
                     if (r.ok && !targetProfile && sawServerOffline) {
-                        resolve();
+                        resolve(true);
                         return;
                     }
                 } catch (_) {
@@ -460,6 +628,7 @@
                 } else {
                     showRestartError(`Timeout waiting for profile "${targetProfile || 'unknown'}" to become active`);
                     restartInProgress = false;
+                    resolve(false);
                 }
             };
 
@@ -490,6 +659,10 @@
      * Check for pending profile switch on page load
      */
     function checkPendingProfileSwitch() {
+        if (restartBlocked) {
+            localStorage.removeItem('selectedProfile');
+            return;
+        }
         const storedSelected = localStorage.getItem('selectedProfile');
 
         if (!activeProfile) {
@@ -606,6 +779,7 @@
     // Expose public API
     window.profileManager = {
         restartNow,
+        retryBlockedCleanup,
         beginProfileRestart,
         dismissWarning,
         loadProfileStatus,

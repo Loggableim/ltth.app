@@ -1,0 +1,595 @@
+{
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "schemaVersion": 1,
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 6,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "recordedAt": "2026-10-07"
+  },
+  "coverage": {
+    "media": "Audio constructor fails closed; video play/load are blocked and asserted unused.",
+    "render": "Synthetic immediate chapter title/text render with no chapter imagePath and default generating animation with empty URL.",
+    "routes": "Only four locale GETs and synthetic config/participants/overlay-positions GETs allowed. Dynamic image API path and external URL fetch probes return 404 in-process.",
+    "cleanup": "The original entry now owns pagehide teardown: cancels countdown/sentence intervals and tracked timeouts, removes Socket.IO handlers, disconnects the renderer socket and clears only its owned window.socket reference. BFCache pagehide remains resumable. Deferred configuration after final pagehide cannot mutate DOM or start roster/position follow-up GETs.",
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "localeSocketSync": "Synthetic locale-changed DE→FR rerenders labels while retaining the current chapter title and content.",
+    "dynamicRosterLocale": "The existing i18n onLanguageChange callback rerenders the synthetic empty participant state and any current participant rows while preserving the locale-independent chapter title/text.",
+    "imageWithoutPath": "A chapter with no imagePath removes the empty image src and keeps the background image layer hidden."
+  },
+  "transport": {
+    "requestHandling": "in-process request interceptor and injected fetch; no network listener",
+    "origin": "http://127.0.0.1:3000 synthetic JSDOM URL only",
+    "producer": "excluded; backend, DB, LLM/image/TTS providers and all audio playback are excluded",
+    "socketHandling": "in-memory Socket.IO shim; real browser client is pinned by SHA but not executed"
+  },
+  "notProven": [
+    "real provider, TTS, audio or video behavior",
+    "dynamic chapter/generated media; only no-image and denied route case tested",
+    "OBS Browser Source or screenshot review",
+    "shared i18n /api/i18n/locales consumer (not called; four translation routes only)",
+    "actual Interactive Story product HTTP/backend producer, OBS Browser Source rendering or screenshot review; browser used only the isolated synthetic loopback host",
+    "product HTTP/backend producer and OBS Browser Source review; this actual Chromium proof used only the isolated synthetic loopback host"
+  ],
+  "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test/obs-interactive-story-renderer-fixtures.test.js",
+  "manifest": {
+    "path": "docs/coordination/obs-104-interactive-story-fixture.json",
+    "sha256": "13c58ba56df8902bec20cfdbaa310489391fad8441ba9652a898dc92f5fbb085",
+    "files": 8,
+    "localeFiles": 4,
+    "bytes": 344265
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-interactive-story-renderer-fixtures.test.js",
+      "sha256": "06c9cfc59caeca39f31325d6e7482d7f7845ba43d67c87e352b0c3d284979498"
+    },
+    {
+      "path": "app/test/helpers/obs-interactive-story-jsdom-fixture.js",
+      "sha256": "a99f0bed1ecd0688879f5a117ee90a97233a3061f78cff297bdd88d08434d87c"
+    }
+  ],
+  "history": [
+    {
+      "recordedAt": "2026-10-07",
+      "status": "source-hash-bound-cpu-jsdom-fixture-run",
+      "manifest": {
+        "bytes": 341846,
+        "sha256": "17a9182bd25d2c98861ee934432dcb42f10fe8c09b68e119efc12feb39c226c8",
+        "path": "docs/coordination/obs-104-interactive-story-fixture.json",
+        "files": 8,
+        "localeFiles": 4
+      },
+      "result": {
+        "testsFailed": 0,
+        "testsSkipped": 0,
+        "exitCode": 0,
+        "recordedAt": "2026-10-07",
+        "testSuitesPassed": 1,
+        "testsPassed": 4
+      },
+      "sourceWitnesses": [
+        {
+          "sha256": "fdd4fa5c1bc42cb4e2248d2544cb97e0b7f937c23605004f288cfeb7a67727b4",
+          "path": "app/test/obs-interactive-story-renderer-fixtures.test.js"
+        },
+        {
+          "sha256": "6496a6789b1911d1f60690e8a8abfb790b14384dff516f202d32afe1f6fcf2a3",
+          "path": "app/test/helpers/obs-interactive-story-jsdom-fixture.js"
+        }
+      ]
+    },
+    {
+      "recordedAt": "2026-10-07",
+      "status": "source-hash-bound-cpu-jsdom-fixture-run",
+      "manifest": {
+        "path": "docs/coordination/obs-104-interactive-story-fixture.json",
+        "sha256": "a8972386692205ce671f8150382f334bce688e6d1f123abe02aaae7599de2f35",
+        "files": 8,
+        "localeFiles": 4,
+        "bytes": 344041
+      },
+      "result": {
+        "exitCode": 0,
+        "testSuitesPassed": 1,
+        "testsPassed": 6,
+        "testsFailed": 0,
+        "testsSkipped": 0,
+        "recordedAt": "2026-10-07"
+      },
+      "sourceWitnesses": [
+        {
+          "path": "app/test/obs-interactive-story-renderer-fixtures.test.js",
+          "sha256": "d05a737ee186a09bb8c3cc51e859815f3b712120a687587b2c16d17bef4888e5"
+        },
+        {
+          "path": "app/test/helpers/obs-interactive-story-jsdom-fixture.js",
+          "sha256": "a99f0bed1ecd0688879f5a117ee90a97233a3061f78cff297bdd88d08434d87c"
+        }
+      ],
+      "browserProof": {
+        "status": "PASS local-loopback real-browser synthetic",
+        "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+        "before": {
+          "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+          "locale": "de",
+          "title": "Synthetisches Browserkapitel",
+          "content": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+          "translatedLabel": "Jetzt abstimmen! Geben Sie Ihre Wahl im Chat ein",
+          "socketBound": true
+        },
+        "after": {
+          "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+          "locale": "fr",
+          "title": "Synthetisches Browserkapitel",
+          "content": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+          "translatedLabel": "Votez maintenant ! Tapez votre choix dans le chat",
+          "socketBound": true
+        },
+        "teardown": {
+          "windowSocketCleared": true,
+          "ownedSocketDisconnected": true,
+          "chapterStillPresent": true
+        },
+        "servedBytes": 141524,
+        "requestLedger": [
+          {
+            "method": "GET",
+            "path": "/plugins/interactive-story/overlay.html",
+            "status": 200,
+            "bytes": 65498
+          },
+          {
+            "method": "GET",
+            "path": "/socket.io/socket.io.js",
+            "status": "socket-transport"
+          },
+          {
+            "method": "GET",
+            "path": "/js/i18n-client.js",
+            "status": 200,
+            "bytes": 24907
+          },
+          {
+            "method": "GET",
+            "path": "/js/public-overlay-render-mode.js",
+            "status": 200,
+            "bytes": 1513
+          },
+          {
+            "method": "GET",
+            "path": "/socket.io/",
+            "status": "socket-transport"
+          },
+          {
+            "method": "GET",
+            "path": "/api/interactive-story/config",
+            "status": 200,
+            "bytes": 377
+          },
+          {
+            "method": "POST",
+            "path": "/socket.io/",
+            "status": "socket-transport"
+          },
+          {
+            "method": "GET",
+            "path": "/api/i18n/translations/de",
+            "status": 200,
+            "bytes": 24318
+          },
+          {
+            "method": "GET",
+            "path": "/socket.io/",
+            "status": "socket-transport"
+          },
+          {
+            "method": "GET",
+            "path": "/api/interactive-story/participants",
+            "status": 200,
+            "bytes": 53
+          },
+          {
+            "method": "GET",
+            "path": "/socket.io/",
+            "status": "socket-transport"
+          },
+          {
+            "method": "GET",
+            "path": "/api/interactive-story/overlay-positions",
+            "status": 200,
+            "bytes": 28
+          },
+          {
+            "method": "GET",
+            "path": "/api/i18n/translations/fr",
+            "status": 200,
+            "bytes": 24830
+          }
+        ],
+        "sourcePins": {
+          "app/plugins/interactive-story/overlay.html": {
+            "bytes": 65498,
+            "sha256": "1d895d6707e5a1ef397c26b08057d8254c58972f1686a8fc6ca7915b13751bf9"
+          },
+          "app/public/js/i18n-client.js": {
+            "bytes": 24907,
+            "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+          },
+          "app/public/js/public-overlay-render-mode.js": {
+            "bytes": 1513,
+            "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143"
+          },
+          "app/plugins/interactive-story/locales/de.json": {
+            "bytes": 24318,
+            "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f"
+          },
+          "app/plugins/interactive-story/locales/fr.json": {
+            "bytes": 24830,
+            "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21"
+          },
+          "app/node_modules/socket.io/client-dist/socket.io.js": {
+            "bytes": 155836,
+            "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+          }
+        },
+        "png": {
+          "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/interactive-story-fr-after-de.png",
+          "bytes": 288817,
+          "sha256": "2a6b2e2b7cfc19dc7dba2ab622ad56caf6c7032933b782ea0efd57bd1fe16204"
+        },
+        "socket": {
+          "connections": 1,
+          "disconnects": 1,
+          "chapterEvents": 1,
+          "localeEvents": 1
+        },
+        "externalOrUnknownRequests": [],
+        "pageErrors": [],
+        "terminalCleanup": "browser closed; loopback Socket.IO and HTTP servers closed",
+        "proofJson": {
+          "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/browser-proof.json",
+          "bytes": 4017,
+          "sha256": "072b034eac9b8ba6b8d038acfa56ae5d759eff37a1e8ecbdf5d7e54d28486669"
+        }
+      }
+    }
+  ],
+  "currentLifecycleReview": {
+    "recordedAt": "2026-10-07",
+    "contractPin": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba",
+    "observed": "Original consumer JSDOM suite passes 6/6 for BFCache retention, final cleanup, deferred config disposal, locale switch with translated empty roster and unchanged chapter text, and hidden empty-image state. Frozen runnerContract cleanup text remains a historical description; no shared-contract change."
+  },
+  "browserProof": {
+    "status": "PASS local-loopback actual Chromium with synthetic backend/events",
+    "capturedAt": "2026-10-07T07:22:23.222Z",
+    "urlBefore": "http://127.0.0.1:59022/plugins/interactive-story/overlay.html?lang=de",
+    "urlAfter": "http://127.0.0.1:59022/plugins/interactive-story/overlay.html?lang=de",
+    "before": {
+      "url": "http://127.0.0.1:59022/plugins/interactive-story/overlay.html?lang=de",
+      "locale": "de",
+      "documentTitle": "Interaktive Geschichte – OBS Overlay",
+      "chapterTitle": "Synthetisches Browserkapitel",
+      "chapterText": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+      "emptyRosterLabel": "Noch keine Spieler beigetreten.",
+      "translatedVoteLabel": "Jetzt abstimmen! Geben Sie Ihre Wahl im Chat ein",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "imageContainerVisible": false,
+      "imageHasSrc": false,
+      "contentBox": {
+        "top": 591.71875,
+        "bottom": 847.46875,
+        "height": 255.75,
+        "visibleViewportHeight": 255.75,
+        "scrollHeight": 256,
+        "clientHeight": 256,
+        "overflowY": "auto"
+      }
+    },
+    "after": {
+      "url": "http://127.0.0.1:59022/plugins/interactive-story/overlay.html?lang=de",
+      "locale": "fr",
+      "documentTitle": "Histoire interactive - Superposition OBS",
+      "chapterTitle": "Synthetisches Browserkapitel",
+      "chapterText": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+      "emptyRosterLabel": "Aucun joueur n'a encore rejoint.",
+      "translatedVoteLabel": "Votez maintenant ! Tapez votre choix dans le chat",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "imageContainerVisible": false,
+      "imageHasSrc": false,
+      "contentBox": {
+        "top": 591.71875,
+        "bottom": 847.46875,
+        "height": 255.75,
+        "visibleViewportHeight": 255.75,
+        "scrollHeight": 256,
+        "clientHeight": 256,
+        "overflowY": "auto"
+      }
+    },
+    "teardown": {
+      "windowSocketCleared": true,
+      "ownedSocketDisconnected": true,
+      "chapterRetained": true
+    },
+    "servedRenderer": {
+      "path": "/plugins/interactive-story/overlay.html",
+      "bytes": 65722,
+      "sha256": "739e58adb3436fe64dd4e9f39c730cb93f0df325f832d6e116999c2d17b19c5b"
+    },
+    "servedBytes": 141748,
+    "httpResponses": [
+      {
+        "method": "GET",
+        "path": "/plugins/interactive-story/overlay.html",
+        "status": 200,
+        "bytes": 65722,
+        "sha256": "739e58adb3436fe64dd4e9f39c730cb93f0df325f832d6e116999c2d17b19c5b"
+      },
+      {
+        "method": "GET",
+        "path": "/js/i18n-client.js",
+        "status": 200,
+        "bytes": 24907,
+        "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+      },
+      {
+        "method": "GET",
+        "path": "/js/public-overlay-render-mode.js",
+        "status": 200,
+        "bytes": 1513,
+        "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143"
+      },
+      {
+        "method": "GET",
+        "path": "/api/interactive-story/config",
+        "status": 200,
+        "bytes": 377,
+        "sha256": "cb8cd9d7adb0c6456501b7281beaca1c49f3ede39d13da9a2dfe8e3141d3c506"
+      },
+      {
+        "method": "GET",
+        "path": "/api/i18n/translations/de",
+        "status": 200,
+        "bytes": 24318,
+        "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f"
+      },
+      {
+        "method": "GET",
+        "path": "/api/interactive-story/participants",
+        "status": 200,
+        "bytes": 53,
+        "sha256": "d7a5783675ead36ac82bbd7548f41b0b8f1d92e5b90c677e509aef570c9123c2"
+      },
+      {
+        "method": "GET",
+        "path": "/api/interactive-story/overlay-positions",
+        "status": 200,
+        "bytes": 28,
+        "sha256": "a5fdee115be72d333b3e2cb94a2ed7dcee93e7758ff83a1e94979de93dde10d7"
+      },
+      {
+        "method": "GET",
+        "path": "/api/i18n/translations/fr",
+        "status": 200,
+        "bytes": 24830,
+        "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21"
+      }
+    ],
+    "socketClientResponse": [
+      {
+        "method": "GET",
+        "path": "/socket.io/socket.io.js",
+        "status": 200,
+        "bytes": 155836,
+        "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+      }
+    ],
+    "sourcePins": {
+      "app/plugins/interactive-story/overlay.html": {
+        "bytes": 65722,
+        "sha256": "739e58adb3436fe64dd4e9f39c730cb93f0df325f832d6e116999c2d17b19c5b"
+      },
+      "app/public/js/i18n-client.js": {
+        "bytes": 24907,
+        "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+      },
+      "app/public/js/public-overlay-render-mode.js": {
+        "bytes": 1513,
+        "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143"
+      },
+      "app/plugins/interactive-story/locales/de.json": {
+        "bytes": 24318,
+        "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f"
+      },
+      "app/plugins/interactive-story/locales/fr.json": {
+        "bytes": 24830,
+        "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21"
+      },
+      "app/node_modules/socket.io/client-dist/socket.io.js": {
+        "bytes": 155836,
+        "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+      }
+    },
+    "png": {
+      "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/interactive-story-fr-after-de-v2.png",
+      "bytes": 261592,
+      "sha256": "e105f42923f786eb5025cce83fa518b603b510582d6200ef7b0af120cec65bc6"
+    },
+    "socket": {
+      "connections": 1,
+      "disconnects": 1,
+      "chapterEvents": 1,
+      "localeEvents": 1
+    },
+    "externalOrUnknownRequests": [],
+    "pageErrors": [],
+    "terminalCleanup": "Playwright browser closed and loopback HTTP/Socket.IO servers closed in finally",
+    "proofJson": {
+      "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/browser-proof-v2.json",
+      "bytes": 5702,
+      "sha256": "62c0a66367c1ceb14112dc96f218c7acd0206274f6f77922de3530601ea82dd0"
+    }
+  },
+  "browserProofHistory": [
+    {
+      "status": "PASS local-loopback real-browser synthetic",
+      "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+      "before": {
+        "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+        "locale": "de",
+        "title": "Synthetisches Browserkapitel",
+        "content": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+        "translatedLabel": "Jetzt abstimmen! Geben Sie Ihre Wahl im Chat ein",
+        "socketBound": true
+      },
+      "after": {
+        "url": "http://127.0.0.1:61447/plugins/interactive-story/overlay.html?lang=de",
+        "locale": "fr",
+        "title": "Synthetisches Browserkapitel",
+        "content": "Dieser unveränderte Text bleibt beim Sprachwechsel erhalten.",
+        "translatedLabel": "Votez maintenant ! Tapez votre choix dans le chat",
+        "socketBound": true
+      },
+      "teardown": {
+        "windowSocketCleared": true,
+        "ownedSocketDisconnected": true,
+        "chapterStillPresent": true
+      },
+      "servedBytes": 141524,
+      "requestLedger": [
+        {
+          "method": "GET",
+          "path": "/plugins/interactive-story/overlay.html",
+          "status": 200,
+          "bytes": 65498
+        },
+        {
+          "method": "GET",
+          "path": "/socket.io/socket.io.js",
+          "status": "socket-transport"
+        },
+        {
+          "method": "GET",
+          "path": "/js/i18n-client.js",
+          "status": 200,
+          "bytes": 24907
+        },
+        {
+          "method": "GET",
+          "path": "/js/public-overlay-render-mode.js",
+          "status": 200,
+          "bytes": 1513
+        },
+        {
+          "method": "GET",
+          "path": "/socket.io/",
+          "status": "socket-transport"
+        },
+        {
+          "method": "GET",
+          "path": "/api/interactive-story/config",
+          "status": 200,
+          "bytes": 377
+        },
+        {
+          "method": "POST",
+          "path": "/socket.io/",
+          "status": "socket-transport"
+        },
+        {
+          "method": "GET",
+          "path": "/api/i18n/translations/de",
+          "status": 200,
+          "bytes": 24318
+        },
+        {
+          "method": "GET",
+          "path": "/socket.io/",
+          "status": "socket-transport"
+        },
+        {
+          "method": "GET",
+          "path": "/api/interactive-story/participants",
+          "status": 200,
+          "bytes": 53
+        },
+        {
+          "method": "GET",
+          "path": "/socket.io/",
+          "status": "socket-transport"
+        },
+        {
+          "method": "GET",
+          "path": "/api/interactive-story/overlay-positions",
+          "status": 200,
+          "bytes": 28
+        },
+        {
+          "method": "GET",
+          "path": "/api/i18n/translations/fr",
+          "status": 200,
+          "bytes": 24830
+        }
+      ],
+      "sourcePins": {
+        "app/plugins/interactive-story/overlay.html": {
+          "bytes": 65498,
+          "sha256": "1d895d6707e5a1ef397c26b08057d8254c58972f1686a8fc6ca7915b13751bf9"
+        },
+        "app/public/js/i18n-client.js": {
+          "bytes": 24907,
+          "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5"
+        },
+        "app/public/js/public-overlay-render-mode.js": {
+          "bytes": 1513,
+          "sha256": "de77bfae8609db483128cd65252c8ac80a3a07d9ebaf0e7fcbdddb10f4fee143"
+        },
+        "app/plugins/interactive-story/locales/de.json": {
+          "bytes": 24318,
+          "sha256": "6e04662d34d7f927e409065a078fc542f5750a1d1394317a379c517670ce7e8f"
+        },
+        "app/plugins/interactive-story/locales/fr.json": {
+          "bytes": 24830,
+          "sha256": "ad0fe745b9eff2c6a8d42d9d45dda6eb5d3725343f3b7e70f481d95400246b21"
+        },
+        "app/node_modules/socket.io/client-dist/socket.io.js": {
+          "bytes": 155836,
+          "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954"
+        }
+      },
+      "png": {
+        "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/interactive-story-fr-after-de.png",
+        "bytes": 288817,
+        "sha256": "2a6b2e2b7cfc19dc7dba2ab622ad56caf6c7032933b782ea0efd57bd1fe16204"
+      },
+      "socket": {
+        "connections": 1,
+        "disconnects": 1,
+        "chapterEvents": 1,
+        "localeEvents": 1
+      },
+      "externalOrUnknownRequests": [],
+      "pageErrors": [],
+      "terminalCleanup": "browser closed; loopback Socket.IO and HTTP servers closed",
+      "proofJson": {
+        "path": "docs/coordination/evidence/interactive-story-locale-browser-20261007/browser-proof.json",
+        "bytes": 4017,
+        "sha256": "072b034eac9b8ba6b8d038acfa56ae5d759eff37a1e8ecbdf5d7e54d28486669"
+      }
+    }
+  ]
+}

@@ -81,17 +81,6 @@
       }
     },
     {
-      "id": "chatango",
-      "canonical": "/screenshots/features/chatango.png",
-      "route": "/chatango/ui",
-      "state": "default-demo",
-      "viewport": {
-        "width": 1280,
-        "height": 800,
-        "deviceScaleFactor": 1
-      }
-    },
-    {
       "id": "clarityhud",
       "canonical": "/screenshots/features/clarityhud.png",
       "route": "/clarityhud/ui",
@@ -436,17 +425,6 @@
       "id": "overlays",
       "canonical": "/screenshots/features/overlays.png",
       "route": "/ifttt-hud.html",
-      "state": "default-demo",
-      "viewport": {
-        "width": 1280,
-        "height": 800,
-        "deviceScaleFactor": 1
-      }
-    },
-    {
-      "id": "plugin-chatango-dashboard",
-      "canonical": "/screenshots/features/plugin-chatango-dashboard.png",
-      "route": "/chatango/ui",
       "state": "default-demo",
       "viewport": {
         "width": 1280,
@@ -901,16 +879,6 @@
     },
     {
       "locale": "de",
-      "id": "chatango",
-      "path": "screenshots/de/features/chatango.png",
-      "route": "/chatango/ui",
-      "state": {
-        "lang": "de",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "de",
       "id": "clarityhud",
       "path": "screenshots/de/features/clarityhud.png",
       "route": "/clarityhud/ui",
@@ -1134,16 +1102,6 @@
       "id": "overlays",
       "path": "screenshots/de/features/overlays.png",
       "route": "/ifttt-hud.html",
-      "state": {
-        "lang": "de",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "de",
-      "id": "plugin-chatango-dashboard",
-      "path": "screenshots/de/features/plugin-chatango-dashboard.png",
-      "route": "/chatango/ui",
       "state": {
         "lang": "de",
         "theme": "cid"
@@ -1517,16 +1475,6 @@
     },
     {
       "locale": "en",
-      "id": "chatango",
-      "path": "screenshots/features/chatango.png",
-      "route": "/chatango/ui",
-      "state": {
-        "lang": "en",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "en",
       "id": "clarityhud",
       "path": "screenshots/features/clarityhud.png",
       "route": "/clarityhud/ui",
@@ -1750,16 +1698,6 @@
       "id": "overlays",
       "path": "screenshots/features/overlays.png",
       "route": "/ifttt-hud.html",
-      "state": {
-        "lang": "en",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "en",
-      "id": "plugin-chatango-dashboard",
-      "path": "screenshots/features/plugin-chatango-dashboard.png",
-      "route": "/chatango/ui",
       "state": {
         "lang": "en",
         "theme": "cid"
@@ -2133,16 +2071,6 @@
     },
     {
       "locale": "es",
-      "id": "chatango",
-      "path": "screenshots/es/features/chatango.png",
-      "route": "/chatango/ui",
-      "state": {
-        "lang": "es",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "es",
       "id": "clarityhud",
       "path": "screenshots/es/features/clarityhud.png",
       "route": "/clarityhud/ui",
@@ -2366,16 +2294,6 @@
       "id": "overlays",
       "path": "screenshots/es/features/overlays.png",
       "route": "/ifttt-hud.html",
-      "state": {
-        "lang": "es",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "es",
-      "id": "plugin-chatango-dashboard",
-      "path": "screenshots/es/features/plugin-chatango-dashboard.png",
-      "route": "/chatango/ui",
       "state": {
         "lang": "es",
         "theme": "cid"
@@ -2749,16 +2667,6 @@
     },
     {
       "locale": "fr",
-      "id": "chatango",
-      "path": "screenshots/fr/features/chatango.png",
-      "route": "/chatango/ui",
-      "state": {
-        "lang": "fr",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "fr",
       "id": "clarityhud",
       "path": "screenshots/fr/features/clarityhud.png",
       "route": "/clarityhud/ui",
@@ -2982,16 +2890,6 @@
       "id": "overlays",
       "path": "screenshots/fr/features/overlays.png",
       "route": "/ifttt-hud.html",
-      "state": {
-        "lang": "fr",
-        "theme": "cid"
-      }
-    },
-    {
-      "locale": "fr",
-      "id": "plugin-chatango-dashboard",
-      "path": "screenshots/fr/features/plugin-chatango-dashboard.png",
-      "route": "/chatango/ui",
       "state": {
         "lang": "fr",
         "theme": "cid"

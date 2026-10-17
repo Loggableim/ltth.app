@@ -16,7 +16,8 @@
             "manual_sets": "MANUAL SETS",
             "local_cache": "LOCAL CACHE",
             "viewer_bar": "VIEWER BAR / LOCAL",
-            "diagnostics": "DIAGNOSTICS"
+            "diagnostics": "DIAGNOSTICS",
+            "nameplate_style": "NAMEPLATE & ANIMATIONS"
           },
           "sections": {
             "playback_health": "Playback health",
@@ -27,7 +28,8 @@
             "manual_workflows": "Keep custom frame workflows",
             "generated_frames": "Generated avatar frames",
             "viewer_bar": "Keep the audience strip available",
-            "local_log": "Local plugin log"
+            "local_log": "Local plugin log",
+            "nameplate_style": "Username plate and animation style"
           },
           "labels": {
             "talking_heads": "Talking Heads",
@@ -63,7 +65,21 @@
             "avatar_size": "Avatar size",
             "sprite_mode": "Sprite mode",
             "manual_fallback": "Manual fallback to assets",
-            "debug_logging": "Verbose local logging"
+            "debug_logging": "Verbose local logging",
+            "nameplate_position": "Nameplate position",
+            "nameplate_font_family": "Font family",
+            "nameplate_font_size": "Font size (px)",
+            "nameplate_font_color": "Font color",
+            "nameplate_background_color": "Background color",
+            "nameplate_background_opacity": "Background opacity",
+            "nameplate_text_shadow": "Text shadow",
+            "nameplate_text_stroke": "Text stroke",
+            "head_entrance_animation": "Head entrance animation",
+            "head_exit_animation": "Head exit animation",
+            "nameplate_entrance_animation": "Nameplate entrance animation",
+            "nameplate_exit_animation": "Nameplate exit animation",
+            "nameplate_preview": "LIVE MINI-PREVIEW",
+            "preview_head": "Preview avatar head"
           },
           "options": {
             "all_tts_users": "All TTS users",
@@ -72,7 +88,23 @@
             "subscribers": "Subscribers",
             "asset_library": "Asset library",
             "manual_only": "Manual only",
-            "hybrid": "Hybrid"
+            "hybrid": "Hybrid",
+            "position_below": "Below avatar",
+            "position_above": "Above avatar",
+            "position_hidden": "Hidden",
+            "shadow_subtle": "Subtle",
+            "shadow_none": "None",
+            "shadow_medium": "Medium",
+            "shadow_glow": "Glow",
+            "stroke_none": "None",
+            "stroke_1px_black": "1px black",
+            "stroke_2px_black": "2px black",
+            "stroke_1px_white": "1px white",
+            "anim_slide_up": "Slide up",
+            "anim_slide_down": "Slide down",
+            "anim_pop": "Pop",
+            "anim_bounce": "Bounce",
+            "anim_fade": "Fade"
           },
           "actions": {
             "refresh_health": "Refresh health",
@@ -160,6 +192,17 @@
             "assigned_avatar": "Assigned avatar",
             "your_avatar": "YOUR AVATAR",
             "avatar": "Avatar"
+          },
+          "preview_speaker": "Streamer",
+          "fonts": {
+            "inter": "Inter",
+            "roboto": "Roboto",
+            "montserrat": "Montserrat",
+            "poppins": "Poppins",
+            "impact": "Impact",
+            "arial": "Arial",
+            "comic_sans": "Comic Sans MS",
+            "press_start_2p": "Press Start 2P"
           }
         },
         "local_assets": {

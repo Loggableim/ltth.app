@@ -78,12 +78,28 @@ function makeTestDb() {
 
 async function createTestZip(entries) {
     const archiver = require('archiver');
+    const crypto = require('crypto');
     const tmpOut = path.join(os.tmpdir(), `test-backup-${Date.now()}.zip`);
     const out = fs.createWriteStream(tmpOut);
     const archive = archiver('zip');
     archive.pipe(out);
-    for (const [name, content] of Object.entries(entries)) {
-        archive.append(typeof content === 'string' ? content : JSON.stringify(content), { name });
+    const payloads = Object.fromEntries(Object.entries(entries).map(([name, content]) => [
+        name,
+        Buffer.isBuffer(content) ? content : Buffer.from(typeof content === 'string' ? content : JSON.stringify(content))
+    ]));
+    if (payloads['manifest.json'] && !payloads['checksums.json']) {
+        const manifest = JSON.parse(payloads['manifest.json'].toString('utf8'));
+        const [major, minor] = String(manifest.formatVersion || '0.0.0').split('.').map(Number);
+        if (major > 1 || (major === 1 && minor >= 1)) {
+            const files = {};
+            for (const [name, content] of Object.entries(payloads)) {
+                files[name] = { sha256: crypto.createHash('sha256').update(content).digest('hex'), sizeBytes: content.length };
+            }
+            payloads['checksums.json'] = Buffer.from(JSON.stringify({ formatVersion: manifest.formatVersion, files }));
+        }
+    }
+    for (const [name, content] of Object.entries(payloads)) {
+        archive.append(content, { name });
     }
     await new Promise((resolve, reject) => {
         out.on('close', resolve);
@@ -217,6 +233,16 @@ runTest('discovery: restorePluginSettings replace mode overwrites', () => {
     assert(r.imported.includes('k'));
     const row = db.prepare("SELECT value FROM settings WHERE key='plugin:p:k'").get();
     assert.strictEqual(JSON.parse(row.value), 'new');
+});
+
+runTest('discovery: restorePluginSettings supports the DatabaseManager wrapper transaction contract', () => {
+    const rawDb = makeTestDb();
+    const manager = { db: rawDb, prepare: sql => rawDb.prepare(sql) };
+    const result = restorePluginSettings(manager, 'coinbattle', { audit_key: 'isolated-value' }, 'merge');
+    assert.deepStrictEqual(result.imported, ['audit_key']);
+    const row = rawDb.prepare("SELECT value FROM settings WHERE key='plugin:coinbattle:audit_key'").get();
+    assert.strictEqual(JSON.parse(row.value), 'isolated-value');
+    rawDb.close();
 });
 
 runTest('discovery: restoreGlobalSettings merge skips existing', () => {
@@ -584,6 +610,7 @@ async function runAllAsyncTests() {
         const result = await performImport(parsed, { db: { dbPath: activeDbPath }, configPathManager }, {
             mode: 'replace',
             includeUserConfigs: true,
+            confirmProfileReplacement: true,
             includeGlobalSettings: false,
             includePluginSettings: false,
             includePluginData: false

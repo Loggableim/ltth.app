@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "goals-source-fixture-v1",
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "caseCount": 4,
+  "files": [
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "role": "browser-socket-client-source"
+    },
+    {
+      "path": "app/plugins/goals/locales/de.json",
+      "bytes": 11440,
+      "sha256": "a69d271b1fc0042b4b6dfb45fd2846ef5352776ea6c9ae238d97b49a69951aa7",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/goals/locales/en.json",
+      "bytes": 10342,
+      "sha256": "5035f5319dab85230bd8b32f397ddaa50d94bc89f2620ea2d58038adab92ce7c",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/goals/locales/es.json",
+      "bytes": 11263,
+      "sha256": "724e586e931516d5e91a6fdfbc1ad377fb1415398d48df1e120ede041c782bd3",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/goals/locales/fr.json",
+      "bytes": 11598,
+      "sha256": "57f1427912cf15efe98ac173054c76e390c7c8fba130260d4d2a449eea94fe89",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/goals/overlay/index.html",
+      "bytes": 1559,
+      "sha256": "d5f7466535ca7b2f891663d53e6b67bd8bd55d68ec2cf1fcb23373a40439df40",
+      "role": "renderer-entry"
+    },
+    {
+      "path": "app/plugins/goals/overlay/overlay.js",
+      "bytes": 51464,
+      "sha256": "4bcf283f57a6ea0bfb852d75bc62ab79d416ea9d9e7eb3a2e443aa81270a9c12",
+      "role": "renderer-script"
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "bytes": 24907,
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "role": "shared-i18n-client"
+    }
+  ],
+  "runnerContract": {
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "listenerStarted": false,
+    "assetGetRoutes": [
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      },
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/plugins/goals/overlay/overlay.js",
+        "source": "app/plugins/goals/overlay/overlay.js"
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)"
+    ],
+    "socketEventsConsumed": [
+      "connect",
+      "disconnect",
+      "goals:animation-end",
+      "goals:config-changed",
+      "goals:deleted",
+      "goals:error",
+      "goals:reach-complete",
+      "goals:reached",
+      "goals:reset",
+      "goals:subscribe",
+      "goals:subscribed",
+      "goals:value-changed",
+      "locale-changed"
+    ],
+    "driverEvents": [
+      {
+        "event": "goals:subscribed",
+        "matchingId": "fixture-goal-{locale}",
+        "payload": {
+          "currentValue": 25,
+          "targetValue": 100,
+          "goalType": "coin"
+        },
+        "negativeCase": "same event with nonmatching goalId is ignored"
+      },
+      {
+        "event": "goals:value-changed",
+        "matchingId": "fixture-goal-{locale}",
+        "payload": {
+          "currentValue": 40,
+          "targetValue": 100,
+          "goalType": "coin"
+        },
+        "negativeCase": "same event with nonmatching goalId is ignored"
+      },
+      {
+        "event": "goals:error",
+        "matchingId": "fixture-goal-{locale}",
+        "payload": {
+          "error": "Synthetic service error"
+        },
+        "negativeCase": "wrong goalId leaves the renderer unchanged"
+      },
+      {
+        "event": "locale-changed",
+        "payload": {
+          "locale": "fr"
+        },
+        "negativeCase": "unsupported locales are rejected and do not change the renderer locale"
+      }
+    ],
+    "pluginControlProducer": "excluded; runner uses fixed synthetic GET responses and an in-memory socket shim, with no Goals plugin backend or database",
+    "externalNetwork": "blocked",
+    "productProfileOrCredentialData": "excluded",
+    "cleanup": "dispatch pagehide, assert socket disconnect and renderer handler cleanup, flush scoped animation timers and close JSDOM"
+  }
+}

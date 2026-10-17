@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "generatedAtUtc": "2026-10-07T16:29:53.0726110Z",
+  "status": "READ_ONLY_COMMITTED_SOURCE_SEMANTICS_NO_HTTP_NO_OBS",
+  "head": "a86ebdde078ec56c91d112073af100df0c338fe3",
+  "comparisons": [
+    {
+      "plugin": "advanced-timer",
+      "caseIds": [
+        "advanced-timer:de",
+        "advanced-timer:en",
+        "advanced-timer:es",
+        "advanced-timer:fr"
+      ],
+      "scope": "PUBLIC_GUIDE_LOCAL_OBS",
+      "matrix": {
+        "path": "/plugins/advanced-timer/overlay/index.html",
+        "routeKind": "global plugin static",
+        "html": "app/plugins/advanced-timer/overlay/index.html",
+        "script": "/plugins/advanced-timer/overlay/overlay.js?v=3",
+        "guide": "scripts/plugin-guides/advanced-timer.js"
+      },
+      "registered": {
+        "path": "/advanced-timer/overlay",
+        "registryEntry": true,
+        "handler": "app/plugins/advanced-timer/backend/api.js:87-94",
+        "html": "app/plugins/advanced-timer/overlay.html",
+        "scriptRoute": "/advanced-timer/overlay.js",
+        "scriptHandler": "app/plugins/advanced-timer/backend/api.js:97-105",
+        "uiUrlProducer": "app/plugins/advanced-timer/ui/ui.js:411",
+        "url": "/advanced-timer/overlay?timer={id}"
+      },
+      "behavior": {
+        "shared": "Both use the same overlay/overlay.js, timer query parameter, GET /api/advanced-timer/timers/{id}, matching timer events and core timer template renderer. The Guide 90s fixture 01:30 and subsequent tick remain meaningful.",
+        "before": "Guide opens static nested index; it renders timer in #timer-container and has no rotator/threshold layers.",
+        "after": "Registered route serves root shell; it provides #timer-template-host, #rotator-container and #threshold-effect-layer, so the same runtime can also show the timer rotator and threshold effects. Core display is retained; visual canvas is richer.",
+        "canonicalRecommendation": "Recommend /advanced-timer/overlay?timer={id} as the Guide/fixture URL for the current UI-copy contract. Keep expected proof scoped to timer core unless the acceptance owner explicitly includes rotator/threshold presentation; screenshot/visual acceptance must be refreshed for the added layers.",
+        "equivalent": "core_timer_contract_only"
+      },
+      "decision": "recommend_candidate_with_visual_scope_note",
+      "sourceRefs": [
+        "app/modules/public-overlay-registry.js",
+        "app/plugins/advanced-timer/backend/api.js",
+        "app/plugins/advanced-timer/ui/ui.js",
+        "app/plugins/advanced-timer/overlay.html",
+        "app/plugins/advanced-timer/overlay/index.html",
+        "app/plugins/advanced-timer/overlay/overlay.js",
+        "scripts/plugin-guides/advanced-timer.js"
+      ],
+      "sourcePins": [
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "blob": "5bb3d9b3a2ea1c5954d8e666e6b8ca2ed6b37835"
+        },
+        {
+          "path": "app/plugins/advanced-timer/backend/api.js",
+          "blob": "6da91b2a5adb3c4ab8b868c15dccfeec796a7d0f"
+        },
+        {
+          "path": "app/plugins/advanced-timer/ui/ui.js",
+          "blob": "c55b5b2d76630e2f2b5de9ed951540a84852a970"
+        },
+        {
+          "path": "app/plugins/advanced-timer/overlay.html",
+          "blob": "1c9e0e5ea89fe0c3809b3dada103f94a82c25e5c"
+        },
+        {
+          "path": "app/plugins/advanced-timer/overlay/index.html",
+          "blob": "4e8bb5d2e37ecced66c59e0b50670357f7bc6dd6"
+        },
+        {
+          "path": "app/plugins/advanced-timer/overlay/overlay.js",
+          "blob": "4ebc122385f6c1fe0475a85eb3d8f8002e88dafe"
+        },
+        {
+          "path": "scripts/plugin-guides/advanced-timer.js",
+          "blob": "96acadd3ccc1567b360b9c7a4a276c8024e9ecff"
+        }
+      ]
+    },
+    {
+      "plugin": "openshock",
+      "caseIds": [
+        "openshock:de",
+        "openshock:en",
+        "openshock:es",
+        "openshock:fr"
+      ],
+      "scope": "PUBLIC_PLUGIN_GUIDE_LOCAL_OBS; TUNNEL_DISTINCT",
+      "matrix": {
+        "path": "/plugins/openshock/overlay/openshock_overlay.html",
+        "routeKind": "global plugin static",
+        "html": "app/plugins/openshock/overlay/openshock_overlay.html",
+        "script": "/openshock/openshock_overlay.js",
+        "guide": "scripts/plugin-guides/openshock.js"
+      },
+      "genericRoute": {
+        "path": "/openshock/overlay",
+        "registryEntry": false,
+        "handler": "app/plugins/openshock/main.js:637-641",
+        "html": "app/plugins/openshock/overlay/openshock_overlay.html",
+        "script": "/openshock/openshock_overlay.js",
+        "uiUrlProducer": "No generic URL copy producer found; Guide has direct local static URL."
+      },
+      "registeredTunnel": {
+        "path": "/openshock/zappiehell/overlay",
+        "registryEntry": true,
+        "handler": "app/plugins/openshock/main.js:643-647",
+        "html": "app/plugins/openshock/overlay/zappiehell-overlay.html",
+        "uiUrlProducer": "app/plugins/openshock/ui.js:4386-4393",
+        "url": "/openshock/zappiehell/overlay"
+      },
+      "behavior": {
+        "generic": "Listens for openshock:command-sent, openshock:emergency-stop, queue and stats events. Renders command type, intensity, duration, device display name, source and username. It is the Guide Shock Overlay.",
+        "zappiehell": "Requests active goal state; listens for zappiehell:goals:state/update/completed, overlay:animate and audio:play. Renders active coin-goal cards/progress, completion flash/particles, and optionally speech. It does not listen for openshock:command-sent.",
+        "before": "Current Guide/matrix URL loads the generic event-card renderer directly; without local command event it intentionally remains empty.",
+        "after": "Using the registered ZappieHell route would replace the event-card contract with goal-progress cards and goal/TTS events; a shock command would not update it. Not equivalent for the existing Guide acceptance.",
+        "canonicalRecommendation": "For local OBS/Guide semantics, /openshock/overlay is a same-file server-route candidate; direct static URL is also a valid local file path. Do not substitute /openshock/zappiehell/overlay. Generic /openshock/overlay is absent from the public tunnel registry; exposing that renderer publicly requires a separate registry decision.",
+        "equivalent": "generic_alias_same_html; zappiehell_not_equivalent"
+      },
+      "decision": "retain_generic_local_target_and_flag_public_tunnel_gap",
+      "sourceRefs": [
+        "app/modules/public-overlay-registry.js",
+        "app/plugins/openshock/main.js",
+        "app/plugins/openshock/ui.js",
+        "app/plugins/openshock/overlay/openshock_overlay.html",
+        "app/plugins/openshock/overlay/openshock_overlay.js",
+        "app/plugins/openshock/overlay/zappiehell-overlay.html",
+        "scripts/plugin-guides/openshock.js"
+      ],
+      "sourcePins": [
+        {
+          "path": "app/modules/public-overlay-registry.js",
+          "blob": "5bb3d9b3a2ea1c5954d8e666e6b8ca2ed6b37835"
+        },
+        {
+          "path": "app/plugins/openshock/main.js",
+          "blob": "359899a00f402ba3ad8e14b3eee71d71763ecfec"
+        },
+        {
+          "path": "app/plugins/openshock/ui.js",
+          "blob": "5b4df007bde53c610897901094664643ec7bc9b3"
+        },
+        {
+          "path": "app/plugins/openshock/overlay/openshock_overlay.html",
+          "blob": "3f5990f3c4781d0ce83d03ddb07f22a933c3cdda"
+        },
+        {
+          "path": "app/plugins/openshock/overlay/openshock_overlay.js",
+          "blob": "21f0bd289429cc25ab793b06aacb6ba3c4163550"
+        },
+        {
+          "path": "app/plugins/openshock/overlay/zappiehell-overlay.html",
+          "blob": "d7129d5a535bd3c9da94ed997fb31fd97ae18ba5"
+        },
+        {
+          "path": "scripts/plugin-guides/openshock.js",
+          "blob": "4ca9c463bc6882ab51a56c28e9ca142d55e61faa"
+        }
+      ]
+    }
+  ]
+}

@@ -40,7 +40,9 @@ class Metrics {
     this.topUsers = new Map();
     
     // Window rotation timer
-    this.rotationInterval = setInterval(() => this._rotateWindow(), this.windowDurationMs);
+    this.rotationInterval = this.api?.isDocsCapture === true
+      ? null
+      : setInterval(() => this._rotateWindow(), this.windowDurationMs);
   }
   
   /**

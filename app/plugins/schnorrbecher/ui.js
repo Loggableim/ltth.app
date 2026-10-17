@@ -18,6 +18,13 @@
       this.clipboard = dependencies.clipboard || root.navigator?.clipboard;
       this.socket = dependencies.socket || (typeof root.io === 'function' ? root.io() : null);
       this.config = {};
+      this.i18nReady = root.i18n?.ready || Promise.resolve();
+    }
+
+    tr(key, params = {}) {
+      const fullKey = `plugins.schnorrbecher.legacy.${key}`;
+      const translated = root.i18n?.t?.(fullKey, params);
+      return translated && translated !== fullKey ? translated : fullKey;
     }
 
     query(selector) {
@@ -72,10 +79,47 @@
     }
 
     async load() {
+      await this.i18nReady;
+      root.i18n?.updateDOM?.();
       const state = await this.request('/api/coin-jar/state');
       this.renderStatus(state);
       this.bind();
+      this.refreshLegacyStatus();
       return state;
+    }
+
+    async refreshLegacyStatus() {
+      const status = await this.request('/api/coin-jar/legacy-data/status');
+      const panel = this.query('#legacy-data-panel');
+      if (panel) panel.hidden = !status.hasLegacyData;
+      const message = this.query('#legacy-data-status');
+      if (message && status.hasLegacyData) {
+        message.textContent = this.tr('found', { profile: status.targetProfile || this.tr('activeProfile'), config: this.tr(status.targetConfigExists ? 'yes' : 'no'), state: this.tr(status.targetStateExists ? 'yes' : 'no') });
+      }
+      return status;
+    }
+
+    async previewLegacyData() {
+      const preview = await this.request('/api/coin-jar/legacy-data/preview');
+      const panel = this.query('#legacy-data-preview');
+      if (panel) panel.hidden = false;
+      const config = this.query('#import-legacy-config');
+      const state = this.query('#import-legacy-state');
+      if (config) { config.disabled = !preview.config.canImport; config.checked = false; }
+      if (state) { state.disabled = !preview.state.importAllowed; state.checked = false; }
+      const text = this.query('#legacy-data-preview-text');
+      if (text) text.textContent = this.tr('preview', { config: this.tr(preview.config.available ? (preview.config.canImport ? 'available' : 'conflict') : 'missing'), state: preview.state.available ? this.tr('stateValue', { value: preview.state.totalCoinValue, note: preview.state.note }) : this.tr('missing') });
+      return preview;
+    }
+
+    async importLegacyData() {
+      const includeConfig = this.query('#import-legacy-config')?.checked === true;
+      const includePersistentState = this.query('#import-legacy-state')?.checked === true;
+      if (!includeConfig && !includePersistentState) throw new Error(this.tr('selectAtLeastOne'));
+      if (!this.confirm(this.tr('confirm'))) return null;
+      const result = await this.post('/api/coin-jar/legacy-data/import', { confirm: true, includeConfig, includePersistentState });
+      this.showMessage(this.tr('complete'), 'success');
+      return result;
     }
 
     bind() {
@@ -92,6 +136,8 @@
       bindClick('#reset-coin-jar', () => this.reset());
       bindClick('#clear-event-cache', () => this.clearEventCache());
       bindClick('#copy-overlay-url', () => this.copyOverlayUrl());
+      bindClick('#preview-legacy-data', () => this.previewLegacyData());
+      bindClick('#import-legacy-data', () => this.importLegacyData());
 
       this.query('#coin-jar-config')?.addEventListener('submit', async event => {
         event.preventDefault();

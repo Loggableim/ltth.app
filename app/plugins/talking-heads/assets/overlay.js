@@ -38,11 +38,7 @@
     const packId = String(selection.packId || 'boba').toLowerCase();
     const character = String(selection.characterId || '').trim();
     const options = selection.options || {};
-    const parts = packId === 'kenney'
-      ? ['Kenney', character, options.eye]
-      : packId === 'rgs'
-        ? ['RGS', character, options.hair, options.eyes, options.mouth]
-        : [character, options.expression];
+    const parts = [character, options.expression];
     return parts.filter(Boolean).join(' · ') || overlayText('avatar');
   }
 
@@ -201,23 +197,100 @@
     }
   }
 
+  let currentConfig = {
+    nameplatePosition: 'below',
+    nameplateFontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
+    nameplateFontSize: 14,
+    nameplateFontColor: '#ffffff',
+    nameplateBackgroundColor: '#060c1c',
+    nameplateBackgroundOpacity: 0.75,
+    nameplateTextShadow: 'subtle',
+    nameplateTextStroke: 'none',
+    headEntranceAnimation: 'slide-up',
+    headExitAnimation: 'fade',
+    nameplateEntranceAnimation: 'fade',
+    nameplateExitAnimation: 'fade'
+  };
+
+  const SHADOW_MAP = {
+    'none': 'none',
+    'subtle': '0 1px 3px rgba(0, 0, 0, 0.8)',
+    'medium': '0 2px 8px rgba(0, 0, 0, 0.9)',
+    'glow': '0 0 8px rgba(101, 225, 255, 0.8), 0 0 14px rgba(101, 225, 255, 0.5)'
+  };
+
+  const STROKE_MAP = {
+    'none': '0 transparent',
+    '1px black': '1px #000000',
+    '2px black': '2px #000000',
+    '1px white': '1px #ffffff'
+  };
+
+  function hexToRgba(hex, opacity = 1) {
+    if (!hex || typeof hex !== 'string') return 'rgba(6, 12, 28, ' + opacity + ')';
+    let clean = hex.replace('#', '').trim();
+    if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+    if (clean.length !== 6) return 'rgba(6, 12, 28, ' + opacity + ')';
+    const r = parseInt(clean.slice(0, 2), 16);
+    const g = parseInt(clean.slice(2, 4), 16);
+    const b = parseInt(clean.slice(4, 6), 16);
+    const a = Math.max(0, Math.min(1, Number(opacity) ?? 1));
+    return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')';
+  }
+
+  function applyOverlayConfig(config = {}) {
+    currentConfig = { ...currentConfig, ...config };
+    if (stage) {
+      if (currentConfig.nameplateFontFamily) {
+        stage.style.setProperty('--th-name-font', currentConfig.nameplateFontFamily);
+      }
+      if (currentConfig.nameplateFontSize) {
+        stage.style.setProperty('--th-name-size', currentConfig.nameplateFontSize + 'px');
+      }
+      if (currentConfig.nameplateFontColor) {
+        stage.style.setProperty('--th-name-color', currentConfig.nameplateFontColor);
+      }
+      const bg = hexToRgba(currentConfig.nameplateBackgroundColor, currentConfig.nameplateBackgroundOpacity);
+      stage.style.setProperty('--th-name-bg', bg);
+
+      const shadow = SHADOW_MAP[currentConfig.nameplateTextShadow] || currentConfig.nameplateTextShadow || 'none';
+      stage.style.setProperty('--th-name-shadow', shadow);
+
+      const stroke = STROKE_MAP[currentConfig.nameplateTextStroke] || currentConfig.nameplateTextStroke || 'none';
+      stage.style.setProperty('--th-name-stroke', stroke);
+    }
+
+    activeAvatars.forEach(avatar => avatar.updateConfig?.(currentConfig));
+  }
+
   class AvatarInstance {
     constructor(data) {
       this.userId = String(data.userId || '');
       this.username = String(data.username || this.userId);
       this.playbackId = playbackKey(data);
       this.sprites = data.sprites || {};
+      this.config = currentConfig;
       this.element = document.createElement('article');
-      this.element.className = 'avatar';
+      this.element.className = 'avatar nameplate-' + (this.config.nameplatePosition || 'below');
       this.element.dataset.userId = this.userId;
       this.element.dataset.playbackId = this.playbackId;
+
+      this.headEnterClass = 'th-enter-' + (this.config.headEntranceAnimation || 'slide-up');
+      this.headExitClass = 'th-exit-' + (this.config.headExitAnimation || 'fade');
+      this.nameEnterClass = 'th-enter-' + (this.config.nameplateEntranceAnimation || 'fade');
+      this.nameExitClass = 'th-exit-' + (this.config.nameplateExitAnimation || 'fade');
+
       this.image = document.createElement('img');
       this.image.alt = this.username;
       this.image.src = this.sprites.idle_neutral || '';
-      const name = document.createElement('span');
-      name.className = 'avatar-name';
-      name.textContent = this.username;
-      this.element.append(this.image, name);
+      this.image.classList.add(this.headEnterClass);
+
+      this.name = document.createElement('span');
+      this.name.className = 'avatar-name';
+      this.name.textContent = this.username;
+      this.name.classList.add(this.nameEnterClass);
+
+      this.element.append(this.image, this.name);
       avatarContainer?.appendChild(this.element);
       requestAnimationFrame(() => this.element.classList.add('is-visible'));
     }
@@ -226,13 +299,31 @@
       if (this.sprites[frame]) this.image.src = this.sprites[frame];
     }
 
+    updateConfig(config) {
+      this.config = config;
+      this.element.classList.remove('nameplate-above', 'nameplate-below', 'nameplate-hidden');
+      this.element.classList.add('nameplate-' + (config.nameplatePosition || 'below'));
+      this.headExitClass = 'th-exit-' + (config.headExitAnimation || 'fade');
+      this.nameExitClass = 'th-exit-' + (config.nameplateExitAnimation || 'fade');
+    }
+
     hide(fadeOutDuration, onComplete) {
+      const duration = fadeOutDuration !== undefined && Number(fadeOutDuration) === 0
+        ? 0
+        : Math.max(0, Number(fadeOutDuration) || 300);
+
+      this.element.style.setProperty('--th-exit-duration', duration + 'ms');
+      this.image.classList.remove(this.headEnterClass);
+      this.image.classList.add(this.headExitClass);
+      this.name.classList.remove(this.nameEnterClass);
+      this.name.classList.add(this.nameExitClass);
+
       this.element.classList.remove('is-visible');
       this.element.classList.add('is-leaving');
       setTimeout(() => {
         this.element.remove();
         onComplete?.();
-      }, Math.max(0, Number(fadeOutDuration) || 0));
+      }, duration);
     }
 
     stop() {
@@ -295,6 +386,23 @@
     activeAvatars.clear();
     updateStageState();
   });
+
+  socket.on('talkingheads:config:update', data => {
+    if (data?.config) {
+      applyOverlayConfig(data.config);
+    }
+  });
+
+  applyOverlayConfig(currentConfig);
+
+  fetch('/api/talkingheads/config')
+    .then(res => res.ok ? res.json() : null)
+    .then(data => {
+      if (data?.config) {
+        applyOverlayConfig(data.config);
+      }
+    })
+    .catch(() => {});
 
   updateStageState();
 })();

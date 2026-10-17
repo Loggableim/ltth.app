@@ -23,6 +23,58 @@ const {
 const ENV_CACHE_FILE = path.join(os.tmpdir(), 'ltth-env-cache.json');
 const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
 
+function registerServerShutdownSignals({
+    processRef = process,
+    serverProcess,
+    logger,
+    timers = { setTimeout, clearTimeout }
+}) {
+    let shutdownStarted = false;
+    let childExited = false;
+    let forceTimer;
+
+    const signalHandlers = new Map();
+    const cleanup = () => {
+        if (forceTimer !== undefined && forceTimer !== null) timers.clearTimeout(forceTimer);
+        for (const [signal, handler] of signalHandlers) {
+            processRef.removeListener(signal, handler);
+        }
+        signalHandlers.clear();
+    };
+
+    serverProcess.once('exit', () => {
+        childExited = true;
+        cleanup();
+    });
+
+    const registerSignal = signal => {
+        const handler = () => {
+            if (shutdownStarted || childExited) return;
+            shutdownStarted = true;
+            if (signal === 'SIGINT') {
+                logger.newLine();
+                logger.separator();
+                logger.info('Server wird beendet...');
+            }
+
+            serverProcess.kill(signal);
+
+            forceTimer = timers.setTimeout(() => {
+                if (childExited || serverProcess.exitCode !== null) return;
+                logger.warn('Server läuft nach dem Shutdown-Signal weiter; Launcher bleibt für einen Cleanup-Retry aktiv.');
+                shutdownStarted = false;
+                forceTimer = undefined;
+            }, 6000);
+            forceTimer.unref?.();
+        };
+        signalHandlers.set(signal, handler);
+        processRef.on(signal, handler);
+    };
+
+    registerSignal('SIGINT');
+    registerSignal('SIGTERM');
+}
+
 function resolveNpmCommandForNode(nodePath, existsSync = fs.existsSync, platform = process.platform) {
     const nodeDir = nodePath ? path.dirname(nodePath) : '';
     const npmCli = nodeDir ? path.join(nodeDir, 'node_modules', 'npm', 'bin', 'npm-cli.js') : '';
@@ -645,6 +697,7 @@ class Launcher {
             // Go launcher (or the caller) is reliably passed to the server process.
             const env = this.sanitizeNodeEnvironment(process.env);
             env.LTTH_LOG_DIR = this.rootLogsDir;
+            env.LTTH_LAUNCHER_SUPERVISOR_PID = String(process.pid);
             if (this.logArchiveDone) {
                 env.LTTH_LOG_ARCHIVE_DONE = 'true';
             }
@@ -676,26 +729,11 @@ class Launcher {
                 process.exit(code || 0);
             });
 
-            // process.once verhindert das Akkumulieren von Handlern bei wiederholtem Spawn
-            process.once('SIGINT', () => {
-                this.log.newLine();
-                this.log.separator();
-                this.log.info('Server wird beendet...');
-                serverProcess.kill('SIGINT');
-                // Wait for child to exit so port is released before launcher exits
-                serverProcess.once('exit', () => process.exit(0));
-                // Fallback: force exit after 6s (child has a 5s shutdown timeout)
-                const forceTimer = setTimeout(() => process.exit(0), 6000);
-                forceTimer.unref();
-            });
-
-            process.once('SIGTERM', () => {
-                serverProcess.kill('SIGTERM');
-                // Wait for child to exit so port is released before launcher exits
-                serverProcess.once('exit', () => process.exit(0));
-                // Fallback: force exit after 6s (child has a 5s shutdown timeout)
-                const forceTimer = setTimeout(() => process.exit(0), 6000);
-                forceTimer.unref();
+            // Keep the supervisor alive while a cleanup-blocked server remains retryable.
+            registerServerShutdownSignals({
+                processRef: process,
+                serverProcess,
+                logger: this.log
             });
         };
 
@@ -729,5 +767,6 @@ class Launcher {
 }
 
 Launcher.resolveNpmCommandForNode = resolveNpmCommandForNode;
+Launcher.registerServerShutdownSignals = registerServerShutdownSignals;
 
 module.exports = Launcher;

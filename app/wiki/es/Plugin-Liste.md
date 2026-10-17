@@ -101,7 +101,7 @@ http://localhost:3000/advanced-timer/overlay
 
 ---
 
-### 3. GCCE HUD Overlay
+### 2. GCCE HUD Overlay
 **Status:** 🔴 Early Beta
 **Version:** 1.0.0
 **Autor:** Pup Cid

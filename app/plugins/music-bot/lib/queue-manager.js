@@ -16,6 +16,8 @@ class QueueManager {
     this.api = api;
     this.db = api.getDatabase();
     this.queue = [];
+    this._mutationsClosed = false;
+    this._pendingQueueRestores = [];
     this.history = [];
     this.current = null;
     this.userLastRequest = new Map();
@@ -42,25 +44,33 @@ class QueueManager {
     return this.current;
   }
 
+  closeMutations() {
+    this._mutationsClosed = true;
+  }
+
   getPersistenceStatus() {
     return {
       ...this._persistenceGuard,
-      pendingCount: this.queue.length
+      pendingCount: this.queue.length,
+      recoveryPendingCount: (this._pendingQueueRestores || []).length
     };
   }
 
   addSkipImmunity(username) {
-    if (!username) return;
+    if (this._mutationsClosed || !username) return false;
     this.skipImmuneUsers.add(username.toLowerCase());
+    return true;
   }
 
   removeSkipImmunity(username) {
-    if (!username) return;
-    this.skipImmuneUsers.delete(username.toLowerCase());
+    if (this._mutationsClosed || !username) return false;
+    return this.skipImmuneUsers.delete(username.toLowerCase());
   }
 
   clearSkipImmunity() {
+    if (this._mutationsClosed) return false;
     this.skipImmuneUsers.clear();
+    return true;
   }
 
   isSkipImmune(username) {
@@ -70,6 +80,9 @@ class QueueManager {
 
   addVoteSkip(username, viewerCount) {
     const required = this._computeRequiredVotes(viewerCount);
+    if (this._mutationsClosed) {
+      return { skipped: false, votes: this.voteSkipVoters.size, required, shutdownPending: true };
+    }
     if (!this.current) {
       return { skipped: false, votes: this.voteSkipVoters.size, required };
     }
@@ -102,7 +115,9 @@ class QueueManager {
   }
 
   resetVoteSkips() {
+    if (this._mutationsClosed) return false;
     this.voteSkipVoters.clear();
+    return true;
   }
 
   getVoteVoters() {
@@ -142,12 +157,11 @@ class QueueManager {
       addedAt: Date.now()
     };
 
-    this.queue.push(songEntry);
+    const commit = this._commitQueueMutation([...this.queue, songEntry]);
+    if (!commit.success) return commit;
     if (songEntry.requesterKey) {
       this.userLastRequest.set(songEntry.requesterKey, Date.now());
     }
-
-    this.persistQueue();
 
     return {
       success: true,
@@ -157,29 +171,48 @@ class QueueManager {
   }
 
   shiftNext() {
-    this.current = this.queue.shift() || null;
-    this.persistQueue();
-    return this.current;
+    if (this._mutationsClosed) {
+      throw this._queueMutationError({ success: false, shutdownPending: true, errorCode: 'QUEUE_SHUTTING_DOWN' });
+    }
+    if (this.queue.length === 0) {
+      this.current = null;
+      return null;
+    }
+    const next = this.queue[0];
+    const commit = this._commitQueueMutation(this.queue.slice(1));
+    if (!commit.success) throw this._queueMutationError(commit);
+    this.current = next;
+    return next;
   }
 
   returnToFront(song) {
-    if (!song) return;
+    if (this._mutationsClosed) {
+      return { success: false, shutdownPending: true, errorCode: 'QUEUE_SHUTTING_DOWN' };
+    }
+    if (!song) return { success: true, skipped: true };
     if (song.id && this.queue.some((entry) => entry.id === song.id)) {
       this.current = null;
-      return;
+      return { success: true, alreadyQueued: true };
     }
-    this.queue.unshift(song);
+    const commit = this._commitQueueMutation([song, ...this.queue]);
+    if (!commit.success) {
+      if (commit.shutdownPending) return commit;
+      this._rememberPendingQueueRestore(song);
+      if (this.current?.id === song.id) this.current = null;
+      return { ...commit, recoveryPending: true };
+    }
     this.current = null;
-    this.persistQueue();
+    return { success: true };
   }
 
   clear() {
-    this.queue = [];
+    const commit = this._commitQueueMutation([]);
+    if (!commit.success) return commit;
     this.current = null;
     this.userLastRequest.clear();
     this.resetVoteSkips();
     this.clearSkipImmunity();
-    this.persistQueue();
+    return { success: true, count: 0 };
   }
 
   removeSong(index, expectedSongId = null) {
@@ -189,30 +222,43 @@ class QueueManager {
     if (expectedSongId && this.queue[index].id !== expectedSongId) {
       return { success: false, errorCode: 'QUEUE_ITEM_CHANGED', error: 'Queue item changed' };
     }
-    const [removed] = this.queue.splice(index, 1);
-    this.persistQueue();
+    const removed = this.queue[index];
+    const commit = this._commitQueueMutation(this.queue.filter((_entry, entryIndex) => entryIndex !== index));
+    if (!commit.success) return commit;
     return { success: true, song: removed };
   }
 
   reorderSong(fromIndex, toIndex) {
-    if (fromIndex < 0 || fromIndex >= this.queue.length) {
+    if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= this.queue.length) {
       return { success: false, error: 'Invalid source position' };
     }
-    if (toIndex < 0 || toIndex >= this.queue.length) {
+    if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex >= this.queue.length) {
       return { success: false, error: 'Invalid target position' };
     }
-    const [song] = this.queue.splice(fromIndex, 1);
-    this.queue.splice(toIndex, 0, song);
-    this.persistQueue();
+    const nextQueue = this.queue.slice();
+    const [song] = nextQueue.splice(fromIndex, 1);
+    nextQueue.splice(toIndex, 0, song);
+    const commit = this._commitQueueMutation(nextQueue);
+    if (!commit.success) return commit;
     return { success: true, queue: this.queue };
   }
 
   markPlaying(track) {
+    if (this._mutationsClosed) return false;
     this.current = track;
+    return true;
+  }
+
+  markGiftRequest(songId) {
+    if (this._mutationsClosed || !songId) return false;
+    const entry = this.queue.find((song) => song.id === songId);
+    if (!entry) return false;
+    entry.isGiftRequest = true;
+    return true;
   }
 
   setSongLocalPath(songId, localPath) {
-    if (!songId || !localPath) return false;
+    if (this._mutationsClosed || !songId || !localPath) return false;
     let updated = false;
     this.queue = this.queue.map((entry) => {
       if (entry.id !== songId) return entry;
@@ -227,7 +273,7 @@ class QueueManager {
   }
 
   setTrackLocalPath(trackKey, localPath) {
-    if (!trackKey || !localPath) return false;
+    if (this._mutationsClosed || !trackKey || !localPath) return false;
     let updated = false;
     this.queue = this.queue.map((entry) => {
       if (entry.trackKey !== trackKey) return entry;
@@ -242,6 +288,7 @@ class QueueManager {
   }
 
   addToHistory(track, skipped = false) {
+    if (this._mutationsClosed) return false;
     if (track) {
       const historyEntry = {
         ...track,
@@ -253,6 +300,7 @@ class QueueManager {
         this.history = this.history.slice(-50);
       }
       this._persistHistory(historyEntry);
+      return true;
     }
   }
 
@@ -480,7 +528,63 @@ class QueueManager {
     }, song.url || '');
   }
 
-  persistQueue() {
+  _blockedMutationResult() {
+    return {
+      success: false,
+      blocked: true,
+      persistenceBlocked: true,
+      errorCode: 'QUEUE_PERSISTENCE_BLOCKED',
+      error: 'Queue persistence is blocked; the queue was not changed.'
+    };
+  }
+
+  _queueMutationError(result) {
+    const error = new Error(result.error || 'Queue persistence failed; the queue was not changed.');
+    error.code = result.errorCode || 'QUEUE_PERSISTENCE_FAILED';
+    error.persistenceBlocked = result.persistenceBlocked === true;
+    return error;
+  }
+
+  _commitQueueMutation(nextQueue) {
+    if (this._mutationsClosed) {
+      return {
+        success: false,
+        blocked: true,
+        persistenceBlocked: false,
+        shutdownPending: true,
+        errorCode: 'QUEUE_SHUTTING_DOWN',
+        error: 'Music Bot is shutting down; the queue was not changed.'
+      };
+    }
+    if (this._persistenceGuard.blocked) return this._blockedMutationResult();
+    const persistResult = this.persistQueue(nextQueue);
+    if (persistResult.success !== true) {
+      if (persistResult.blocked !== true) {
+        this._engagePersistenceGuard('queue-write-failed', new Error(persistResult.error || 'queue write failed'));
+      }
+      return {
+        success: false,
+        blocked: this._persistenceGuard.blocked,
+        persistenceBlocked: this._persistenceGuard.blocked,
+        errorCode: persistResult.blocked === true ? 'QUEUE_PERSISTENCE_BLOCKED' : 'QUEUE_PERSISTENCE_FAILED',
+        error: persistResult.blocked === true
+          ? 'Queue persistence is blocked; the queue was not changed.'
+          : 'Queue persistence failed; the queue was not changed.'
+      };
+    }
+    this.queue = nextQueue;
+    this._rebuildRequesterState();
+    return { success: true };
+  }
+
+  _rememberPendingQueueRestore(song) {
+    if (!song) return;
+    if (!Array.isArray(this._pendingQueueRestores)) this._pendingQueueRestores = [];
+    if (song.id && this._pendingQueueRestores.some((entry) => entry.id === song.id)) return;
+    this._pendingQueueRestores.unshift({ ...song });
+  }
+
+  persistQueue(queueSnapshot = this.queue) {
     if (this._persistenceGuard.blocked) {
       return {
         success: false,
@@ -490,6 +594,17 @@ class QueueManager {
     }
 
     try {
+      const transaction = typeof this.db.transaction === 'function'
+        ? this.db.transaction.bind(this.db)
+        : this.db.db?.transaction?.bind(this.db.db);
+      if (!transaction) {
+        return {
+          success: false,
+          blocked: false,
+          error: 'Queue persistence requires database transaction support'
+        };
+      }
+
       const stmt = this.db.prepare(
         `INSERT INTO plugin_music_bot_queue
           (id, position, title, artist, duration, thumbnail, url, youtubeId, provider, providerId,
@@ -523,15 +638,8 @@ class QueueManager {
           });
         });
       };
-      const transaction = typeof this.db.transaction === 'function'
-        ? this.db.transaction.bind(this.db)
-        : this.db.db?.transaction?.bind(this.db.db);
-      if (transaction) {
-        transaction(writeSongs)(this.queue);
-      } else {
-        writeSongs(this.queue);
-      }
-      return { success: true, blocked: false, count: this.queue.length };
+      transaction(writeSongs)(queueSnapshot);
+      return { success: true, blocked: false, count: queueSnapshot.length };
     } catch (error) {
       this.api.log?.(`[music-bot] Failed to persist queue: ${error.message}`, 'error');
       return { success: false, blocked: false, error: error.message };
@@ -540,7 +648,9 @@ class QueueManager {
 
   restoreQueue(options = {}) {
     const wasPersistenceBlocked = this._persistenceGuard.blocked;
-    const pendingEntries = wasPersistenceBlocked ? [...this.queue] : [];
+      const pendingEntries = wasPersistenceBlocked
+        ? this._mergeQueueEntries(this._pendingQueueRestores || [], this.queue)
+        : [];
     let restorePhase = 'read';
     try {
       const rows = this.db
@@ -548,6 +658,9 @@ class QueueManager {
         .all();
       restorePhase = 'decode';
       const persistedEntries = rows.map((row) => this._entryFromPersistedRow(row));
+      const restoreCandidates = wasPersistenceBlocked
+        ? this._mergeQueueEntries(pendingEntries, persistedEntries)
+        : persistedEntries;
       const duplicatesDisabled =
         this.queueConfig.duplicateDetection === 'off' || this.queueConfig.allowDuplicates;
       const seen = new Set();
@@ -556,7 +669,7 @@ class QueueManager {
       let banned = 0;
 
       let banCheckError = null;
-      for (const entry of persistedEntries) {
+      for (const entry of restoreCandidates) {
         if (typeof options.isAllowed === 'function') {
           try {
             const decision = options.isAllowed(entry);
@@ -580,11 +693,7 @@ class QueueManager {
       }
 
       if (banCheckError) {
-        this.queue = wasPersistenceBlocked
-          ? this._mergeQueueEntries(persistedEntries, pendingEntries)
-          : this._mergeQueueEntries(this.queue, persistedEntries);
-        this._rebuildRequesterState();
-        this._clearPersistenceGuard();
+        this._engagePersistenceGuard('ban-check-failed', banCheckError);
         this.api.log?.(
           `[music-bot] Queue restore aborted because ban check failed: ${banCheckError.message}`,
           'error'
@@ -593,23 +702,28 @@ class QueueManager {
           restored: rows.length,
           deduped: 0,
           banned: 0,
-          error: 'ban-check-failed'
+          error: 'ban-check-failed',
+          persistenceBlocked: true
         };
       }
 
-      this.queue = wasPersistenceBlocked
-        ? this._mergeQueueEntries(restored, pendingEntries, {
-          dedupeTrackKeys: !duplicatesDisabled
-        })
-        : restored;
-      if (wasPersistenceBlocked) {
-        deduped += restored.length + pendingEntries.length - this.queue.length;
-      }
-      this._rebuildRequesterState();
       this._clearPersistenceGuard();
-      this.persistQueue();
+      const persistResult = this.persistQueue(restored);
+      if (persistResult.success !== true) {
+        this._engagePersistenceGuard('restore-write-failed', new Error(persistResult.error || 'queue restore write failed'));
+        return {
+          restored: restored.length,
+          deduped,
+          banned,
+          error: 'restore-write-failed',
+          persistenceBlocked: true
+        };
+      }
+      this.queue = restored;
+      this._rebuildRequesterState();
+      this._pendingQueueRestores = [];
       this.api.log?.(`[music-bot] Restored ${this.queue.length} songs from persistent queue`, 'info');
-      return { restored: this.queue.length, deduped, banned };
+      return { restored: this.queue.length, deduped, banned, persisted: true };
     } catch (error) {
       const reason = restorePhase === 'read'
         ? 'restore-read-failed'

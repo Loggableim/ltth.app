@@ -517,6 +517,65 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const socket = io({ auth: { role: 'overlay' } });
+    let destroyed = false;
+    let hasObservedSocketConnection = socket.connected === true;
+    let sessionSyncRevision = 0;
+    const socketHandlers = [];
+    const ownedTimeouts = new Set();
+    const ownedIntervals = new Set();
+
+    function scheduleTimeout(callback, delay, ...args) {
+      let timerId;
+      timerId = window.setTimeout(() => {
+        ownedTimeouts.delete(timerId);
+        if (!destroyed) callback(...args);
+      }, delay);
+      ownedTimeouts.add(timerId);
+      return timerId;
+    }
+
+    function scheduleInterval(callback, delay, ...args) {
+      const timerId = window.setInterval(() => {
+        if (!destroyed) callback(...args);
+      }, delay);
+      ownedIntervals.add(timerId);
+      return timerId;
+    }
+
+    function clearOwnedTimeout(timerId) {
+      window.clearTimeout(timerId);
+      ownedTimeouts.delete(timerId);
+    }
+
+    function clearOwnedInterval(timerId) {
+      window.clearInterval(timerId);
+      ownedIntervals.delete(timerId);
+    }
+
+    function registerSocketHandler(event, handler) {
+      const guardedHandler = (...args) => {
+        if (!destroyed) handler(...args);
+      };
+      socket.on(event, guardedHandler);
+      socketHandlers.push({ event, handler: guardedHandler });
+    }
+
+    function destroyRenderer() {
+      if (destroyed) return;
+      destroyed = true;
+      sessionSyncRevision += 1;
+      socketHandlers.forEach(({ event, handler }) => socket.off?.(event, handler));
+      socketHandlers.length = 0;
+      ownedTimeouts.forEach(timerId => window.clearTimeout(timerId));
+      ownedIntervals.forEach(timerId => window.clearInterval(timerId));
+      ownedTimeouts.clear();
+      ownedIntervals.clear();
+      socket.disconnect?.();
+    }
+
+    window.addEventListener('pagehide', event => {
+      if (!event.persisted) destroyRenderer();
+    });
 
     // Parse URL parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -729,15 +788,15 @@
 
       // Stop game time
       if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
+        clearOwnedInterval(gameTimeInterval);
         gameTimeInterval = null;
       }
 
       // Hide result after 5 seconds
-      setTimeout(() => {
+      scheduleTimeout(() => {
         gameResult.style.display = 'none';
         if (hideWhenInactive) {
-          setTimeout(() => {
+          scheduleTimeout(() => {
             hud.classList.add('hide-when-inactive');
           }, 2000);
         }
@@ -752,7 +811,7 @@
       plinkoNotificationText.textContent = text;
       plinkoNotification.classList.add('show');
 
-      setTimeout(() => {
+      scheduleTimeout(() => {
         plinkoNotification.classList.remove('show');
       }, duration);
     }
@@ -793,7 +852,8 @@
     });
 
     // Socket event handlers
-    socket.on('game-engine:game-started', (data) => {
+    registerSocketHandler('game-engine:game-started', (data) => {
+      sessionSyncRevision += 1;
       console.log('Game started:', data);
       currentSession = data.sessionId;
       currentGameType = data.gameType || 'connect4';
@@ -801,21 +861,23 @@
 
       // Start game time counter
       if (gameTimeInterval) {
-        clearInterval(gameTimeInterval);
+        clearOwnedInterval(gameTimeInterval);
       }
-      gameTimeInterval = setInterval(updateGameTime, 1000);
+      gameTimeInterval = scheduleInterval(updateGameTime, 1000);
 
       updateHUD(data.state, currentGameType);
     });
 
-    socket.on('game-engine:move-made', (data) => {
+    registerSocketHandler('game-engine:move-made', (data) => {
       if (data.sessionId === currentSession) {
+        sessionSyncRevision += 1;
         updateHUD(data.state, currentGameType);
       }
     });
 
-    socket.on('game-engine:game-ended', (data) => {
+    registerSocketHandler('game-engine:game-ended', (data) => {
       if (data.sessionId === currentSession) {
+        sessionSyncRevision += 1;
         updateHUD(data.state, currentGameType);
         showGameResult(data);
         currentSession = null;
@@ -824,7 +886,7 @@
     });
 
     // Plinko-specific events
-    socket.on('plinko:spawn-ball', (data) => {
+    registerSocketHandler('plinko:spawn-ball', (data) => {
       console.log('Plinko ball spawned:', data);
 
       // Add to active balls
@@ -842,7 +904,7 @@
       updatePlinkoActivity();
     });
 
-    socket.on('plinko:ball-result', (data) => {
+    registerSocketHandler('plinko:ball-result', (data) => {
       console.log('Plinko ball result:', data);
 
       // Remove from active balls
@@ -871,14 +933,17 @@
       updatePlinkoActivity();
     });
 
-    socket.on('plinko:config-updated', (data) => {
+    registerSocketHandler('plinko:config-updated', (data) => {
       console.log('Plinko config updated:', data);
     });
 
     // Load active session on init
-    fetch('/api/game-engine/active-session')
+    function loadActiveSession() {
+      const requestRevision = ++sessionSyncRevision;
+      return fetch('/api/game-engine/active-session')
       .then(res => res.json())
       .then(data => {
+        if (destroyed || requestRevision !== sessionSyncRevision) return;
         // Support all game types: connect4, chess, plinko
         if (data && data.gameType && data.state) {
           currentSession = data.sessionId;
@@ -893,9 +958,9 @@
           gameStartTime = Date.now() - estimatedElapsedMs;
 
           if (gameTimeInterval) {
-            clearInterval(gameTimeInterval);
+            clearOwnedInterval(gameTimeInterval);
           }
-          gameTimeInterval = setInterval(updateGameTime, 1000);
+          gameTimeInterval = scheduleInterval(updateGameTime, 1000);
 
           updateHUD(data.state, currentGameType);
         } else if (!hideWhenInactive) {
@@ -903,11 +968,22 @@
         }
       })
       .catch(err => {
+        if (destroyed || requestRevision !== sessionSyncRevision) return;
         console.error('Failed to load active session:', err);
         if (!hideWhenInactive) {
           hud.classList.add('active');
         }
       });
+    }
+
+    registerSocketHandler('connect', () => {
+      if (hasObservedSocketConnection) {
+        loadActiveSession();
+      } else {
+        hasObservedSocketConnection = true;
+      }
+    });
+    loadActiveSession();
   </script>
 </body>
 </html>

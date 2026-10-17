@@ -381,12 +381,16 @@
         }
 
         if (connectionMeta) {
-            const queueSize = state.status.queueStatus?.queueSize || 0;
-            connectionMeta.textContent = runtimeText(
-                'status.queue_theme',
-                'Queue {queue} | Theme {theme}',
-                { queue: queueSize, theme: document.documentElement.dataset.theme || 'night' }
-            );
+            if (state.status.warning) {
+                connectionMeta.textContent = state.status.warning;
+            } else {
+                const queueSize = state.status.queueStatus?.queueSize || 0;
+                connectionMeta.textContent = runtimeText(
+                    'status.queue_theme',
+                    'Queue {queue} | Theme {theme}',
+                    { queue: queueSize, theme: document.documentElement.dataset.theme || 'night' }
+                );
+            }
         }
 
         const testBtn = document.getElementById('testActionBtn');
@@ -970,6 +974,7 @@
             const data = await response.json();
             if (data.success) {
                 state.config = data.config || nextConfig;
+                state.status.warning = data.warning || null;
                 const savedTheme = normalizeTheme(state.config.ui?.theme || 'night');
                 persistThemeSelection(savedTheme);
                 applyTheme(savedTheme);
@@ -978,7 +983,9 @@
                 renderSetup();
                 renderStatus();
                 updateSummary();
-                if (!silent) {
+                if (data.warning) {
+                    alert(data.warning);
+                } else if (!silent) {
                     alert(runtimeText('messages.settings_saved', 'Settings saved successfully.'));
                 }
             } else if (!silent) {

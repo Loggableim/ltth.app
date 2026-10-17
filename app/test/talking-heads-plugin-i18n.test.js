@@ -20,7 +20,22 @@ const uiKeys = [
   'plugins.talking-heads.talking_heads_ui.stream_director.sections.viewer_bar',
   'plugins.talking-heads.talking_heads_ui.stream_director.overlay.assigning',
   'plugins.talking-heads.talking_heads_ui.local_assets.title',
-  'plugins.talking-heads.talking_heads_ui.local_assets.messages.configSaved'
+  'plugins.talking-heads.talking_heads_ui.local_assets.messages.configSaved',
+  'plugins.talking-heads.talking_heads_ui.stream_director.kickers.nameplate_style',
+  'plugins.talking-heads.talking_heads_ui.stream_director.sections.nameplate_style',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_position',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_family',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_size',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_font_color',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_background_color',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_background_opacity',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_text_shadow',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_text_stroke',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.head_entrance_animation',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.head_exit_animation',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_entrance_animation',
+  'plugins.talking-heads.talking_heads_ui.stream_director.labels.nameplate_exit_animation',
+  'plugins.talking-heads.talking_heads_ui.stream_director.preview_speaker'
 ];
 
 describe('Talking Heads UI i18n', () => {

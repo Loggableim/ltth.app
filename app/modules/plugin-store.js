@@ -20,6 +20,11 @@ const {
 } = require('./plugin-identities');
 const { version: DEFAULT_LTTH_VERSION } = require('../package.json');
 const { createPluginReleasePolicy } = require('./plugin-release-policy');
+const {
+  assertPluginManifestNotRetired,
+  assertPluginNotRetired,
+  isRetiredPluginManifest
+} = require('./plugin-retirement');
 
 const DEFAULT_OFFICIAL_STORE_URL = process.env.LTTH_PLUGIN_STORE_URL || 'https://ltth.app/plugin-store.json';
 
@@ -116,6 +121,14 @@ function copyDirectory(sourceDir, targetDir) {
 
 function cloneJson(value) {
   return value === undefined ? undefined : JSON.parse(JSON.stringify(value));
+}
+
+function filterRetiredPlugins(registry) {
+  if (!registry || !Array.isArray(registry.plugins)) return registry;
+  return {
+    ...registry,
+    plugins: registry.plugins.filter(plugin => !isRetiredPluginManifest(plugin))
+  };
 }
 
 function isWindowsLockError(error) {
@@ -312,7 +325,7 @@ class PluginStore {
 
     const registry = await response.json();
     this.validateRegistry(registry, source);
-    const filteredRegistry = this.releasePolicy.filterRegistry(registry);
+    const filteredRegistry = filterRetiredPlugins(this.releasePolicy.filterRegistry(registry));
     this.cache.set(source.id, { loadedAt: Date.now(), registry: filteredRegistry });
     return filteredRegistry;
   }
@@ -347,10 +360,10 @@ class PluginStore {
       try {
         const registry = parseJsonText(fs.readFileSync(registryPath, 'utf8'));
         this.validateRegistry(registry);
-        return this.releasePolicy.filterRegistry({
+        return filterRetiredPlugins(this.releasePolicy.filterRegistry({
           ...registry,
           generatedFrom: registry.generatedFrom || 'bundled-store-manifest'
-        });
+        }));
       } catch (error) {
         this.logger.warn?.(`Failed to load bundled plugin store registry: ${error.message}`);
       }
@@ -378,6 +391,7 @@ class PluginStore {
         if (!manifest.id || manifest.disabled === true) {
           continue;
         }
+        if (isRetiredPluginManifest(manifest)) continue;
         if (this.releasePolicy.isClosedBetaId(manifest.id)) continue;
 
         const runtimeManifestId = assertPluginId(manifest.id);
@@ -429,6 +443,7 @@ class PluginStore {
       try {
         const manifest = parseJsonText(fs.readFileSync(manifestPath, 'utf8'));
         if (manifest.id) {
+          if (isRetiredPluginManifest(manifest)) continue;
           if (this.releasePolicy.isClosedBetaId(manifest.id)) continue;
           const runtimeManifestId = assertPluginId(manifest.id);
           const id = canonicalizePluginId(runtimeManifestId);
@@ -453,6 +468,7 @@ class PluginStore {
 
   normalizeStorePlugin(plugin, source, locale, installedPlugins) {
     const runtimeManifestId = assertPluginId(plugin.id);
+    assertPluginManifestNotRetired(plugin);
     this.releasePolicy.assertAllowed(runtimeManifestId);
     const id = canonicalizePluginId(runtimeManifestId);
     const installed = installedPlugins.get(id);
@@ -527,7 +543,7 @@ class PluginStore {
     for (const source of this.getSources().filter((item) => item.enabled)) {
       try {
         const registry = await this.fetchRegistry(source, forceRefresh);
-        for (const plugin of registry.plugins) {
+        for (const plugin of filterRetiredPlugins(registry).plugins) {
           const normalized = this.normalizeStorePlugin(plugin, source, locale, installedPlugins);
           if (normalized.access?.hidden === true && !showHiddenPlugins) {
             continue;
@@ -538,7 +554,7 @@ class PluginStore {
       } catch (error) {
         if (source.official) {
           const fallbackRegistry = this.buildBundledOfficialRegistry();
-          for (const plugin of fallbackRegistry.plugins) {
+          for (const plugin of filterRetiredPlugins(fallbackRegistry).plugins) {
             const normalized = this.normalizeStorePlugin(plugin, source, locale, installedPlugins);
             if (normalized.access?.hidden === true && !showHiddenPlugins) {
               continue;
@@ -577,6 +593,7 @@ class PluginStore {
 
   async findPlugin(sourceId, pluginId) {
     const safeSourceId = assertPluginId(sourceId);
+    assertPluginNotRetired(pluginId);
     this.releasePolicy.assertAllowed(pluginId);
     const safePluginId = canonicalizePluginId(assertPluginId(pluginId));
     const source = this.getSources().find((item) => item.id === safeSourceId);
@@ -624,6 +641,7 @@ class PluginStore {
       throw new Error('Invalid plugin.json: missing id, name, or entry');
     }
 
+    assertPluginManifestNotRetired(manifest);
     const safeManifestId = assertPluginId(manifest.id);
     this.releasePolicy.assertAllowed(safeManifestId);
     const canonicalManifestId = canonicalizePluginId(safeManifestId);
@@ -756,9 +774,11 @@ class PluginStore {
   }
 
   async installPlugin(sourceId, pluginId, options = {}) {
+    assertPluginNotRetired(pluginId);
     this.releasePolicy.assertAllowed(pluginId);
     const safePluginId = canonicalizePluginId(assertPluginId(pluginId));
     const plugin = options.plugin || (await this.findPlugin(sourceId, safePluginId)).plugin;
+    assertPluginManifestNotRetired(plugin);
     this.releasePolicy.assertAllowed(plugin.id);
     const minLtthVersion = String(plugin.minLtthVersion || '').trim();
     if (
@@ -874,6 +894,7 @@ class PluginStore {
   }
 
   async rollbackPlugin(sourceId, pluginId, version = '1.11.1') {
+    assertPluginNotRetired(pluginId);
     const safePluginId = canonicalizePluginId(assertPluginId(pluginId));
     const { plugin } = await this.findPlugin(sourceId, safePluginId);
     const rollbackPackage = this.getRollbackPackage(plugin, version);

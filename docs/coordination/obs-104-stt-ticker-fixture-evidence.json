@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "status": "source-hash-bound-cpu-jsdom-fixture-run",
+  "manifest": {
+    "path": "docs/coordination/obs-104-stt-ticker-fixture.json",
+    "sha256": "eccb5b36439d64e7ae6bcd526adcbc672d38b12d7d377afe2b7a22c401dfaec1",
+    "files": 7,
+    "localeFiles": 4,
+    "bytes": 275912
+  },
+  "testCommand": "cd app; ..\\runtime\\node\\node.exe node_modules\\jest\\bin\\jest.js --runInBand --no-cache --detectOpenHandles --runTestsByPath test\\obs-stt-renderer-fixtures.test.js",
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 11,
+    "testsFailed": 0,
+    "snapshots": 0,
+    "recordedAt": "2026-10-07"
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-stt-renderer-fixtures.test.js",
+      "sha256": "bc5564a86fd3543335545e7c46c228705bb6f9f29349224d046df62d9bf9a046"
+    },
+    {
+      "path": "app/test/helpers/obs-stt-renderer-fixture.js",
+      "sha256": "695be602cf9eb9819d936003678c0b3aed57a2ce6d846ce5e92c3d44bbdd8890"
+    },
+    {
+      "path": "scripts/obs-pilot/renderer-fixture-contract.js",
+      "sha256": "47738b20cf04f8d543eaea43b270fcc44542adcb8cdab8b49d7a40cfebedbeba"
+    }
+  ],
+  "transport": {
+    "origin": "http://127.0.0.1:3000 as JSDOM URL only",
+    "requestHandling": "JSDOM request interceptor and injected fetch; no TCP listener",
+    "socketHandling": "synthetic in-memory socket shim; no audio capture, speech service, or STT backend"
+  },
+  "coverage": {
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "events": [
+      "stt-ticker:interim",
+      "stt-ticker:transcript",
+      "stt-ticker:clear"
+    ],
+    "malformedPayloads": "bounded malformed/null payloads leave the ticker empty",
+    "localeRace": "late translation/socket results after pagehide do not mutate closed renderer",
+    "negative": "unknown HTTP routes, including /api/i18n/locales, unsupported socket events and provider paths return fixture 404",
+    "localeDiscoveryDenial": "The actual /api/i18n/locales fetch is attempted and rejected by the existing interceptor as unknown-route; the fixture allowlist is unchanged.",
+    "cleanup": "The bounded 100 ms shared-i18n retry binds the renderer's existing socket after script-order delay. BFCache pagehide preserves it; final pagehide removes only the renderer-owned global reference, shared i18n listeners, renderer listeners and observers, then disconnects the local socket."
+  },
+  "notProven": [
+    "OBS Browser Source behavior",
+    "real Socket.IO/browser transport",
+    "STT provider or audio integration"
+  ]
+}

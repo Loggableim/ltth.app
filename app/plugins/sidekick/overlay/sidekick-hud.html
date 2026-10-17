@@ -82,6 +82,12 @@
       animation: none;
     }
 
+    .availability-message {
+      color: #ffcdd2;
+      font-size: 11px;
+      margin-left: auto;
+    }
+
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
@@ -194,27 +200,8 @@
 <body>
   <div class="overlay-container top-right" id="overlay">
     <div class="overlay-header">
-      <div class="status-dot" id="status-dot"></div>
       <span class="overlay-title">🤖 Sidekick</span>
-    </div>
-
-    <div class="stats-grid">
-      <div class="stat-item">
-        <div class="stat-value" id="stat-chats">0</div>
-        <div class="stat-label">Chat/Min</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-gifts">0</div>
-        <div class="stat-label">Gifts</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-follows">0</div>
-        <div class="stat-label">Follows</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-value" id="stat-viewers">0</div>
-        <div class="stat-label">Viewer</div>
-      </div>
+      <span class="availability-message hidden" id="availability-message" role="status" aria-live="polite"></span>
     </div>
 
     <div class="recent-events" id="recent-events-section">
@@ -231,7 +218,7 @@
     const position = params.get('position') || 'top-right';
     const minimal = params.get('minimal') === 'true';
     const showEvents = params.get('events') !== 'false';
-    const maxEvents = parseInt(params.get('maxEvents')) || 5;
+    const maxEvents = Math.max(1, Math.min(10, parseInt(params.get('maxEvents')) || 5));
 
     // Apply settings
     const overlay = document.getElementById('overlay');
@@ -255,27 +242,22 @@
 
     // Recent events buffer
     const recentEvents = [];
+    const unavailableEndpoints = new Set();
 
-    // Update status
-    function updateStatus(status) {
-      const statusDot = document.getElementById('status-dot');
-      
-      if (status.muted) {
-        statusDot.className = 'status-dot muted';
-      } else if (!status.animaze?.isConnected) {
-        statusDot.className = 'status-dot disconnected';
+    function renderAvailability() {
+      const message = document.getElementById('availability-message');
+      if (unavailableEndpoints.has('events')) {
+        message.textContent = 'Event feed unavailable';
       } else {
-        statusDot.className = 'status-dot';
+        message.textContent = '';
       }
+      message.classList.toggle('hidden', unavailableEndpoints.size === 0);
+    }
 
-      // Update stats
-      const rates = status.currentRates || {};
-      const session = status.session || {};
-      
-      document.getElementById('stat-chats').textContent = rates.chatsPerMinute || 0;
-      document.getElementById('stat-gifts').textContent = session.totalGifts || 0;
-      document.getElementById('stat-follows').textContent = session.totalFollows || 0;
-      document.getElementById('stat-viewers').textContent = status.activeViewers || 0;
+    function setEndpointAvailability(endpoint, available) {
+      if (available) unavailableEndpoints.delete(endpoint);
+      else unavailableEndpoints.add(endpoint);
+      renderAvailability();
     }
 
     // Add event to list
@@ -290,49 +272,37 @@
     // Render event list
     function renderEvents() {
       const container = document.getElementById('event-list');
-      container.innerHTML = recentEvents.map(event => {
+      container.replaceChildren(...recentEvents.map(event => {
         const icon = eventIcons[event.type] || '📌';
-        let content = '';
-        
-        switch (event.type) {
-          case 'chat':
-            content = event.payload?.comment?.substring(0, 30) || '';
-            if (event.payload?.comment?.length > 30) content += '...';
-            break;
-          case 'gift':
-            content = event.payload?.giftName || 'Gift';
-            break;
-          default:
-            content = '';
+        const item = document.createElement('div');
+        item.className = 'event-item';
+        const iconEl = document.createElement('span');
+        iconEl.className = 'event-icon';
+        iconEl.textContent = icon;
+        const userEl = document.createElement('span');
+        userEl.className = 'event-user';
+        userEl.textContent = event.nickname || 'Viewer';
+        item.append(iconEl, userEl);
+        const content = event.type === 'chat' ? event.payload?.comment : event.payload?.giftName;
+        if (content) {
+          const contentEl = document.createElement('span');
+          contentEl.className = 'event-content';
+          const text = String(content);
+          const chatText = event.type === 'chat' && event.payload?.commentTruncated
+            ? `${text.slice(0, 27)}...`
+            : text.slice(0, 30);
+          contentEl.textContent = ` ${chatText}`;
+          item.appendChild(contentEl);
         }
-        
-        return `
-          <div class="event-item">
-            <span class="event-icon">${icon}</span>
-            <span class="event-user">${event.nickname || event.uid}</span>
-            ${content ? `<span class="event-content"> ${content}</span>` : ''}
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Fetch initial status
-    async function fetchStatus() {
-      try {
-        const res = await fetch('/api/sidekick/status');
-        const data = await res.json();
-        if (data.success) {
-          updateStatus(data.status);
-        }
-      } catch (err) {
-        console.error('Failed to fetch status:', err);
-      }
+        return item;
+      }));
     }
 
     // Fetch recent events
     async function fetchEvents() {
       try {
-        const res = await fetch('/api/sidekick/events?limit=' + maxEvents);
+        const res = await fetch('/api/sidekick/public-events?limit=' + maxEvents);
+        if (!res.ok) throw new Error('Events request failed');
         const data = await res.json();
         if (data.success && data.events) {
           data.events.forEach(event => {
@@ -345,21 +315,20 @@
           }
           recentEvents.sort((a, b) => b.ts - a.ts);
           renderEvents();
+          setEndpointAvailability('events', true);
+        } else {
+          setEndpointAvailability('events', false);
         }
       } catch (err) {
+        setEndpointAvailability('events', false);
         console.error('Failed to fetch events:', err);
       }
     }
 
-    // Socket events
-    socket.on('sidekick:status', updateStatus);
-    
-    // Initial load
-    fetchStatus();
+    // Load only the bounded chat/gift event feed; aggregate status is private.
     fetchEvents();
     
-    // Periodic updates
-    setInterval(fetchStatus, 2000);
+    // Periodic event-feed refresh.
     setInterval(fetchEvents, 5000);
   </script>
 </body>

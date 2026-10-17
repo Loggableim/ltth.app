@@ -84,6 +84,7 @@ const HTTP_RULES = Object.freeze([
   rule(['GET', 'HEAD'], exact('/socket.io/socket.io.js')),
   rule(['GET', 'POST'], exact('/socket.io/')),
   rule(['GET', 'HEAD'], exact('/js/i18n-client.js')),
+  rule(['GET', 'HEAD'], exact('/api/i18n/locales')),
   rule(['GET', 'HEAD'], pattern(/^\/api\/i18n\/translations\/(?:de|en|es|fr)$/)),
   rule(['GET', 'HEAD'], exact('/js/public-overlay-render-mode.js')),
   rule(['GET', 'HEAD'], exact('/js/matter.min.js')),
@@ -325,6 +326,7 @@ clarityhud.update.join
 clarityhud.update.like
 clarityhud.update.share
 clarityhud.update.subscribe
+clarityhud.update.superfan-display
 clarityhud.update.treasure
 clarityhud:multi:chat
 clarityhud:multi:gift

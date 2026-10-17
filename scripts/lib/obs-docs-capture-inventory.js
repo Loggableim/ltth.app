@@ -4,39 +4,29 @@ const { buildGuides } = require('../plugin-tutorial-source');
 const { TEMPORARY_SOURCE_NAME, TUTORIAL_SCENE_NAME } = require('./obs-docs-capture-session');
 
 const OBS_DOCS_CAPTURE_LOCALES = Object.freeze(['de', 'en', 'es', 'fr']);
-const EXPECTED_OVERLAY_GUIDE_COUNT = 26;
+const EXPECTED_OVERLAY_GUIDE_COUNT = 17;
 
 // Each entry is an explicit Browser Source target, rather than a hidden
 // fallback in the runner. This is the capture resolution declared for the
 // corresponding shipped overlay workflow.
 const OBS_OVERLAY_DIMENSIONS = Object.freeze({
   'advanced-timer': { width: 1280, height: 720 },
-  chatango: { width: 1280, height: 720 },
   clarityhud: { width: 1280, height: 720 },
   coinbattle: { width: 1280, height: 720 },
   'emoji-rain': { width: 1280, height: 720 },
   fireworks: { width: 1280, height: 720 },
-  openshock: { width: 1280, height: 720 },
-  'interactive-story': { width: 1280, height: 720 },
-  goals: { width: 1280, height: 720 },
-  'game-engine': { width: 1280, height: 720 },
-  'minecraft-connect': { width: 1280, height: 720 },
-  'music-bot': { width: 1280, height: 720 },
-  'quiz-show': { width: 1280, height: 720 },
-  schnorrbecher: { width: 1280, height: 720 },
-  spotlight: { width: 1280, height: 720 },
-  streamalchemy: { width: 1280, height: 720 },
-  'stt-ticker': { width: 1280, height: 720 },
-  'talking-heads': { width: 1280, height: 720 },
-  toptier: { width: 1280, height: 720 },
-  'milestone-leaderboard': { width: 1280, height: 720 },
   'flame-overlay': { width: 1280, height: 720 },
-  'visual-fx-frame-webgpu': { width: 1280, height: 720 },
+  'game-engine': { width: 1280, height: 720 },
+  goals: { width: 1280, height: 720 },
+  'milestone-leaderboard': { width: 1280, height: 720 },
+  'minecraft-connect': { width: 1280, height: 720 },
+  openshock: { width: 1280, height: 720 },
+  'quiz-show': { width: 1280, height: 720 },
+  spotlight: { width: 1280, height: 720 },
+  'stt-ticker': { width: 1280, height: 720 },
+  toptier: { width: 1280, height: 720 },
   'weather-control': { width: 1280, height: 720 },
-  'webgpu-weather-control': { width: 1920, height: 1080 },
-  'webgpu-emoji-rain': { width: 1280, height: 720 },
-  'webgpu-fireworks': { width: 1280, height: 720 },
-  schnorrbecher: { width: 1280, height: 720 }
+  'webgpu-fireworks': { width: 1280, height: 720 }
 });
 
 function localBaseUrl(value) {

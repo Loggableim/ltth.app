@@ -36,13 +36,26 @@ describe('ThemeManager default theme', () => {
     expect(dom.window.document.documentElement.getAttribute('data-theme')).toBe('night');
   });
 
+  test.each(['day', 'night'])('restores a saved %s selection after a fresh dashboard load', (selectedTheme) => {
+    const firstLoad = loadThemeManager();
+    firstLoad.window.__themeManager.setTheme(selectedTheme);
+    expect(firstLoad.window.localStorage.getItem('dashboard-theme')).toBe(selectedTheme);
+
+    const reloaded = loadThemeManager(selectedTheme);
+    expect(reloaded.window.document.documentElement.getAttribute('data-theme')).toBe(selectedTheme);
+    expect(reloaded.window.__themeManager.getCurrentTheme()).toBe(selectedTheme);
+
+    firstLoad.window.close();
+    reloaded.window.close();
+  });
+
   test('keeps the Cid theme identity and exposes the green white violet brand palette', () => {
     const dom = loadThemeManager();
     const cid = dom.window.__themeManager.themes.cid;
 
     expect(dom.window.__themeManager.getCurrentTheme()).toBe('cid');
-    expect(cid.swatches).toEqual(['#166534', '#ffffff', '#7c3aed']);
-    expect(cid.description).toMatch(/neutral dark/i);
+    expect(cid.swatches).toEqual(['#4ade80', '#f5f7f2', '#7c3aed']);
+    expect(cid.description).toMatch(/green-tinted dark/i);
   });
 
   test('uses active-theme background, border, and text tokens for the theme panel', () => {

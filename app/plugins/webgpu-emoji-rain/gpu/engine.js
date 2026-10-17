@@ -48,6 +48,10 @@
     tokens: 80,
     lastTokenRefillAt: performance.now(),
     rateTimer: null,
+    lifecycleStopped: false,
+    hydrationGeneration: 0,
+    publicStateRevision: 0,
+    socketHandlers: [],
     inFlightSpawns: 0,
     lastMetricsSentAt: 0,
     isObsHud: locationPathname.split('/').includes('obs-hud'),
@@ -631,11 +635,20 @@
   }
 
   async function hydrateRuntimeState() {
+    if (state.lifecycleStopped) return false;
+    const generation = ++state.hydrationGeneration;
+    const revision = state.publicStateRevision;
     const [configPayload, mappingsPayload, overlayPayload] = await Promise.all([
       loadPayload('/api/webgpu-emoji-rain/config', { config: {} }),
       loadPayload('/api/webgpu-emoji-rain/user-mappings', { mappings: {} }),
       loadPayload('/api/webgpu-emoji-rain/overlay/state', { state: {} })
     ]);
+
+    if (
+      state.lifecycleStopped ||
+      generation !== state.hydrationGeneration ||
+      revision !== state.publicStateRevision
+    ) return false;
 
     state.config = configPayload?.config && typeof configPayload.config === 'object' ? configPayload.config : {};
     state.userMappings = mappingsPayload?.mappings && typeof mappingsPayload.mappings === 'object' ? mappingsPayload.mappings : {};
@@ -648,44 +661,57 @@
     applyEnabledState(state.config.enabled !== false);
     state.renderer?.configure?.(state.config);
     applyOverlayState();
+    return true;
+  }
+
+  function registerSocketHandler(eventName, handler, { updatesPublicState = false } = {}) {
+    const guardedHandler = payload => {
+      if (state.lifecycleStopped) return;
+      if (updatesPublicState) state.publicStateRevision++;
+      handler(payload);
+    };
+    state.socket.on(eventName, guardedHandler);
+    state.socketHandlers.push([eventName, guardedHandler]);
   }
 
   function connectSocket() {
     if (state.socket) return;
     state.socket = io();
-    state.socket.on('connect', () => {
+    registerSocketHandler('connect', () => {
       void hydrateRuntimeState().catch(error => {
         console.warn(`[WebGPU EmojiRain] Failed to hydrate after Socket.IO reconnect: ${error.message}`);
       });
     });
-    state.socket.on('webgpu-emoji-rain:spawn', spawnEmoji);
-    state.socket.on('webgpu-emoji-rain:heart-balloons', spawnHearts);
-    state.socket.on('webgpu-emoji-rain:gift-balls', spawnGifts);
-    state.socket.on('webgpu-emoji-rain:clear', clearOverlay);
-    state.socket.on('webgpu-emoji-rain:pause', () => setPaused(true));
-    state.socket.on('webgpu-emoji-rain:resume', () => setPaused(false));
-    state.socket.on('webgpu-emoji-rain:toggle', payload => applyEnabledState(payload?.enabled !== false));
-    state.socket.on('webgpu-emoji-rain:opacity', payload => {
+    registerSocketHandler('webgpu-emoji-rain:spawn', spawnEmoji);
+    registerSocketHandler('webgpu-emoji-rain:heart-balloons', spawnHearts);
+    registerSocketHandler('webgpu-emoji-rain:gift-balls', spawnGifts);
+    registerSocketHandler('webgpu-emoji-rain:clear', clearOverlay);
+    registerSocketHandler('webgpu-emoji-rain:pause', () => setPaused(true), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:resume', () => setPaused(false), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:toggle', payload => applyEnabledState(payload?.enabled !== false), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:opacity', payload => {
       state.overlay.opacity = clamp(finiteNumber(payload?.opacity, state.overlay.opacity), 0, 1);
       document.body.style.opacity = String(state.overlay.opacity);
-    });
-    state.socket.on('webgpu-emoji-rain:speed', payload => setSpeed(payload?.speed));
-    state.socket.on('webgpu-emoji-rain:theme', payload => setTheme(payload?.theme));
-    state.socket.on('webgpu-emoji-rain:bounding-box', payload => setBoundingBox(payload?.boundingBox || payload));
-    state.socket.on('webgpu-emoji-rain:config-update', payload => {
+    }, { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:speed', payload => setSpeed(payload?.speed), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:theme', payload => setTheme(payload?.theme), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:bounding-box', payload => setBoundingBox(payload?.boundingBox || payload), { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:config-update', payload => {
       state.config = { ...state.config, ...(payload?.config || {}) };
       refreshRateConfiguration();
       state.renderer?.configure?.(state.config);
       applyEnabledState(payload?.enabled ?? state.config.enabled ?? true);
       applyOverlayState();
-    });
-    state.socket.on('webgpu-emoji-rain:user-mappings-update', payload => {
+    }, { updatesPublicState:true });
+    registerSocketHandler('webgpu-emoji-rain:user-mappings-update', payload => {
       state.userMappings = payload?.mappings && typeof payload.mappings === 'object' ? payload.mappings : {};
-    });
+    }, { updatesPublicState:true });
   }
 
   async function init() {
-    await hydrateRuntimeState();
+    if (state.lifecycleStopped) return;
+    const hydrated = await hydrateRuntimeState();
+    if (!hydrated || state.lifecycleStopped) return;
     connectSocket();
 
     if (typeof globalThis.setInterval === 'function') {
@@ -713,6 +739,7 @@
 
     applyOverlayState();
     const ready = await state.renderer.init();
+    if (state.lifecycleStopped) return;
     if (!ready) {
       document.getElementById('webgpu-fallback-hint')?.classList.add?.('visible');
     } else if (!state.rendererReady) {
@@ -720,11 +747,30 @@
     }
   }
 
-  window.addEventListener('beforeunload', () => {
+  const handlePageHide = event => {
+    if (event?.persisted === true || state.lifecycleStopped) return;
+    state.lifecycleStopped = true;
+    state.hydrationGeneration++;
     if (state.rateTimer && typeof globalThis.clearInterval === 'function') globalThis.clearInterval(state.rateTimer);
+    state.rateTimer = null;
     clearPendingQueues();
     state.renderer?.destroy?.();
-  });
+    for (const [eventName, handler] of state.socketHandlers) {
+      state.socket?.off?.(eventName, handler);
+    }
+    state.socketHandlers.length = 0;
+    state.socket?.disconnect?.();
+    window.removeEventListener('pagehide', handlePageHide);
+    window.removeEventListener('pageshow', handlePageShow);
+  };
+  const handlePageShow = event => {
+    if (event?.persisted !== true || state.lifecycleStopped || !state.socket?.connected) return;
+    void hydrateRuntimeState().catch(error => {
+      console.warn(`[WebGPU EmojiRain] Failed to hydrate after BFCache restore: ${error.message}`);
+    });
+  };
+  window.addEventListener('pagehide', handlePageHide);
+  window.addEventListener('pageshow', handlePageShow);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else void init();
 })();

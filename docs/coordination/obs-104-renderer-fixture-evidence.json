@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "status": "source-hash-bound-cpu-fixture-run",
+  "manifest": {
+    "path": "docs/coordination/obs-104-advanced-timer-fixture.json",
+    "sha256": "66dad3c79f39916a8fbd6a752bf83b827dcc806ad271c3c02ecd233a82e8a534",
+    "files": 8,
+    "localeFiles": 4,
+    "bytes": 291243
+  },
+  "testCommand": "cd app && node node_modules/jest/bin/jest.js --runInBand --no-cache --runTestsByPath test/obs-timer-goals-renderer-fixtures.test.js",
+  "result": {
+    "exitCode": 0,
+    "testSuitesPassed": 1,
+    "testsPassed": 29,
+    "testsFailed": 0,
+    "snapshots": 0,
+    "recordedAt": "2026-10-07"
+  },
+  "sourceWitnesses": [
+    {
+      "path": "app/test/obs-timer-goals-renderer-fixtures.test.js",
+      "sha256": "3d54faee0e7a6305f7dd5b1d81003aeb4663d11e9035c3cd58d896f6f479dc6f"
+    },
+    {
+      "path": "app/test/helpers/obs-overlay-jsdom-fixture.js",
+      "sha256": "a0afff33d4a32203a73f7199b24878ced5583b0c8e42bde598745b9a372387a9"
+    }
+  ],
+  "transport": {
+    "origin": "http://127.0.0.1:3000 as JSDOM URL only",
+    "requestHandling": "JSDOM request interceptor plus injected fetch; no TCP listener",
+    "socketHandling": "in-memory socket shim; browser Socket.IO bundle pinned in closure manifest but not executed; synthetic disconnect/connect retains registered event handlers"
+  },
+  "evidence": {
+    "locales": [
+      "de",
+      "en",
+      "es",
+      "fr"
+    ],
+    "initial": "Synthetic timer renders 01:30 in each locale.",
+    "update": "Matching advanced-timer:tick changes rendered value to 01:29; nonmatching timer id is ignored.",
+    "reloadRecovery": "HTTP 404, 503 and synthetic network failure show expected error; a new JSDOM load then renders the synthetic timer again.",
+    "cleanup": "pagehide disconnects and removes handlers; deferred HTTP completion after pagehide cannot render/register listeners; no recurring timer remains.",
+    "syntheticReconnect": "in de/en/es/fr the in-memory shim emits disconnect then connect without clearing renderer handlers; a later matching tick updates from 01:30 to 01:28, and pagehide then clears handlers and rejects reconnect after renderer cleanup.",
+    "bfcache": "persisted pagehide keeps the same shim handlers and a later synthetic tick updates; this is lifecycle restoration."
+  },
+  "separateBrowserReceipt": {
+    "path": "docs/coordination/evidence/advanced-timer-reconnect-20261007-final/browser-receipt.json",
+    "sha256": "1e6a1bea46cc62cc4aa9de5801083e4c706d5f15065cdb3a45a64c0c138f825a",
+    "scope": "separate synthetic loopback Socket.IO and Playwright browser run; not part of the in-process JSDOM fixture"
+  },
+  "notProven": [
+    "product Socket.IO/browser transport reconnect against the LTTH server; the separate receipt tests only the synthetic loopback host",
+    "product route or database behavior; the separate receipt uses the synthetic host route",
+    "OBS Browser Source output; the separate PNGs are Chromium screenshots, not OBS captures"
+  ]
+}

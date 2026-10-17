@@ -1,0 +1,1156 @@
+{
+  "schemaVersion": 1,
+  "status": "source-audit-and-isolated-handler-double-only-no-server-no-obs",
+  "generatedFrom": [
+    "docs/coordination/obs-104-source-inventory.json",
+    "docs/coordination/obs-locale-expectations.json",
+    "docs/coordination/obs-104-acceptance-matrix.json"
+  ],
+  "denominator": {
+    "canonicalPluginProfiles": 26,
+    "localesPerProfile": 4,
+    "generatedInventoryCases": 104
+  },
+  "excludedSupplement": {
+    "plugin": "sidekick",
+    "countedInCanonicalProfiles": false,
+    "reason": "The prior locale register stores it separately; it is outside the 26-profile inventory."
+  },
+  "routingOrder": {
+    "pluginRoutes": "Plugin-registered routes are mounted before static plugin-file middleware.",
+    "source": "app/server.js",
+    "pluginStaticAliasLine": 4024,
+    "globalPluginStaticLine": 4025,
+    "streamMonstersAliasSource": "app/modules/plugin-static-aliases.js"
+  },
+  "profiles": [
+    {
+      "plugin": "advanced-timer",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/advanced-timer/overlay/index.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/advanced-timer/overlay/index.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/advanced-timer/overlay/index.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/plugins/advanced-timer/overlay/overlay.js?v=3"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "Title and timer empty/not-found/recent-item labels use translation keys. Timer values/countdowns and configured timer names are data.",
+        "localeFiles": "app/plugins/advanced-timer/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/advanced-timer/overlay/index.html → overlay/overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "chatango",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/chatango/ui.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/chatango/ui.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/chatango/ui.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/js/theme-manager.js",
+        "https://st.chatango.com/js/gz/emb.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "The inventoried page is a settings/integration UI, not a pure chat overlay; its interface labels have translation keys. Chat content inside the third-party embed is provider data and is not localized by LTTH.",
+        "localeFiles": "app/plugins/chatango/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/chatango/ui.html",
+      "verification": "source-resolution-only",
+      "note": "This path is settings/integration UI, not a dedicated chat overlay; external Chatango embed script is present."
+    },
+    {
+      "plugin": "clarityhud",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/overlay/clarity/full?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/overlay/clarity/full?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/overlay/clarity/full?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/overlay/clarity/full?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/overlay/clarity/full",
+        "source": "app/plugins/clarityhud/main.js",
+        "line": 57
+      },
+      "servedHtml": "app/plugins/clarityhud/overlays/full.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/clarityhud/lib/animations.js",
+        "/plugins/clarityhud/lib/i18n-runtime.js",
+        "/plugins/clarityhud/lib/layout-engine.js",
+        "/plugins/clarityhud/lib/accessibility.js",
+        "/plugins/clarityhud/lib/emoji-parser.js",
+        "/plugins/clarityhud/lib/badge-renderer.js",
+        "/plugins/clarityhud/lib/message-parser.js",
+        "/plugins/clarityhud/lib/virtual-scroller.js",
+        "/plugins/clarityhud/overlays/full.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-helper",
+        "expectedVisibleCopy": "Static labels plus runtime event/status/anonymous/gift strings call the ClarityHUD translation helper. Nicknames, chat text, gift names, and event data remain source data; helper fallbacks are English when a key is missing.",
+        "localeFiles": "app/plugins/clarityhud/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/clarityhud/overlays/full.html → overlays/full.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "coinbattle",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/coinbattle/overlay/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/coinbattle/overlay/overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/coinbattle/overlay/overlay.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/plugins/coinbattle/overlay/overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-helper",
+        "expectedVisibleCopy": "Static team/leaderboard labels and runtime winner, achievement, placement, and empty-state strings use translation keys. Player/team names and score, coin, timer, and XP values are data.",
+        "localeFiles": "app/plugins/coinbattle/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/coinbattle/overlay/overlay.html → overlay/overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "emoji-rain",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/emoji-rain/obs-hud?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/emoji-rain/obs-hud",
+        "source": "app/plugins/emoji-rain/main.js",
+        "line": 1637
+      },
+      "servedHtml": "app/plugins/emoji-rain/obs-hud.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/js/matter.min.js",
+        "/socket.io/socket.io.js",
+        "/js/emoji-rain-obs-hud.js?v=heart-balloons-pop-3"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "HUD title and performance metric captions have translation keys; FPS, counts, resolution, frame time, and canvas effects are numeric/visual. This route serves obs-hud.html; the source inventory's entry field points to overlay.html instead.",
+        "localeFiles": "app/plugins/emoji-rain/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/emoji-rain/overlay.html → app/public/js/emoji-rain-engine.js",
+      "verification": "actual-handler-double-passed",
+      "note": "The GET selects obs-hud.html. HTML loads i18n-client.js, Matter.js and emoji-rain-obs-hud.js; it does not load emoji-rain-engine.js. Inventory matrix entry is wrong."
+    },
+    {
+      "plugin": "fireworks",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/fireworks/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/fireworks/overlay",
+        "source": "app/plugins/fireworks/main.js",
+        "line": 460
+      },
+      "servedHtml": "app/plugins/fireworks/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/fireworks/gpu/particle-system-soa.js",
+        "/plugins/fireworks/gpu/webgl-particle-engine.js",
+        "/plugins/fireworks/gpu/engine.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-translation-calls",
+        "expectedVisibleCopy": "Title and follower thank-you copy use translation keys. Debug labels FPS, Particles, and Renderer remain hardcoded English; usernames/avatar are event data and the rest is visual effects.",
+        "localeFiles": "app/plugins/fireworks/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/fireworks/overlay.html → gpu/engine.js",
+      "verification": "source-resolution-only",
+      "note": "The plugin GET route /fireworks/overlay sends this same HTML; the canonical /plugins/fireworks/overlay.html URL reaches it through static middleware."
+    },
+    {
+      "plugin": "flame-overlay",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/flame-overlay/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/flame-overlay/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/flame-overlay/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/flame-overlay/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/flame-overlay/overlay",
+        "source": "app/plugins/flame-overlay/main.js",
+        "line": 784
+      },
+      "servedHtml": "app/plugins/flame-overlay/renderer/index.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "default-config.js",
+        "post-processor.js",
+        "effects-engine.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "The document title has a translation key; the overlay surface is a canvas effect with no regular visible copy.",
+        "localeFiles": "app/plugins/flame-overlay/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/flame-overlay/renderer/index.html → effects-engine.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "game-engine",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/game-engine/overlay/game-hud.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/game-engine/overlay/game-hud.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/game-engine/overlay/game-hud.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-rerender",
+        "expectedVisibleCopy": "Game names, HUD status, turns, player labels, and game-state copy use shared translation keys. Player names, moves, scores, and board state are data.",
+        "localeFiles": "app/plugins/game-engine/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/game-engine/overlay/game-hud.html",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "goals",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/goals/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/goals/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/goals/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/goals/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/goals/overlay",
+        "source": "app/plugins/goals/backend/api.js",
+        "line": 58
+      },
+      "servedHtml": "app/plugins/goals/overlay/index.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/plugins/goals/overlay/overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "Document title is localized, but template strings including 'remaining' and 'Goal Reached!' are hardcoded English in overlay renderers. Goal names/descriptions are configured content; current/target values are numbers.",
+        "localeFiles": "app/plugins/goals/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/goals/overlay/index.html → overlay/overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "interactive-story",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/interactive-story/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/interactive-story/overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/interactive-story/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/js/public-overlay-render-mode.js",
+        "/socket.io/socket.io.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "Overlay chrome, vote instructions, timer, participant empty state, and generation status use translation keys. Story/chapter prose and answer text follow story configuration/model language, not the ?lang UI parameter.",
+        "localeFiles": "app/plugins/interactive-story/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/interactive-story/overlay.html",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "milestone-leaderboard",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/plugins/viewer-leaderboard/viewer-xp-i18n.js",
+        "/socket.io/socket.io.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+viewer-xp-helper",
+        "expectedVisibleCopy": "Title, subtitle, loading/empty states, and last-days wording use shared locale keys/helper fallbacks. Viewer names, ranks, XP totals, and optional profile images are data.",
+        "localeFiles": "app/plugins/milestone-leaderboard/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/milestone-leaderboard/vendor/viewer-leaderboard/overlays/leaderboard.html",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "minecraft-connect",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/minecraft-connect/overlay/minecraft_overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/minecraft-connect/overlay/minecraft_overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-helper",
+        "expectedVisibleCopy": "Action names, parameter labels, and 'triggered by' runtime copy resolve locale keys with English fallback strings. Minecraft usernames, entity/item identifiers, coordinates, counts, and durations are event data.",
+        "localeFiles": "app/plugins/minecraft-connect/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/minecraft-connect/overlay/minecraft_overlay.html → overlay/minecraft_overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "music-bot",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/music-bot/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/music-bot/overlay.html",
+        "source": "app/plugins/music-bot/main.js",
+        "line": 1991
+      },
+      "servedHtml": "app/plugins/music-bot/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "Overlay title, waiting/idle labels, and queue labels have translation keys. Track title, artist, album art, queue names, and playback progress are provider/runtime data and are not translated by ?lang.",
+        "localeFiles": "app/plugins/music-bot/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/music-bot/overlay.html",
+      "verification": "source-resolution-only",
+      "note": "The canonical URL itself is a registered GET handler and sends the same overlay.html file."
+    },
+    {
+      "plugin": "openshock",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/openshock/overlay/openshock_overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/openshock/overlay/openshock_overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/openshock/overlay/openshock_overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/openshock/openshock_overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-helper",
+        "expectedVisibleCopy": "Device/intensity/duration/pattern labels and runtime fallback copy use translation keys. Event type is currently uppercased from its canonical value; device names, percentages, durations, and event content are data.",
+        "localeFiles": "app/plugins/openshock/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/openshock/overlay/openshock_overlay.html → overlay/openshock_overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "quiz-show",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/quiz-show/quiz_show_overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/quiz-show/quiz_show_overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/quiz-show/quiz_show_overlay.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/js/public-overlay-render-mode.js",
+        "/quiz-show/quiz_show_overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-translation-calls",
+        "expectedVisibleCopy": "Round/status/empty labels and timer chrome use locale keys. Question, answer, and category language is created/configured separately by the quiz language setting; ?lang changes interface copy only.",
+        "localeFiles": "app/plugins/quiz-show/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/quiz-show/quiz_show_overlay.html → quiz_show_overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "schnorrbecher",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/overlay/coincup?transparent=1&lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/overlay/coincup",
+        "source": "app/plugins/schnorrbecher/main.js",
+        "line": 128
+      },
+      "servedHtml": "app/plugins/schnorrbecher/overlay/coincup.html",
+      "htmlScriptSources": [
+        "/js/matter.min.js",
+        "/socket.io/socket.io.js",
+        "/plugins/schnorrbecher/overlay/coincup.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "ignored-no-i18n-client",
+        "expectedVisibleCopy": "Static document/aria labels and 'Schnorr Becher' are German. The scene primarily displays a numeric counter, gift popup data, and coin animation; ?lang does not change it.",
+        "localeFiles": "app/plugins/schnorrbecher/locales/{de,en,es,fr}.json (present, but not loaded by this overlay entry)"
+      },
+      "matrixEntry": "app/plugins/schnorrbecher/overlay/coincup.html → overlay/coincup.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "spotlight",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/spotlight/overlays/chatter.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/spotlight/overlays/chatter.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/spotlight/overlays/chatter.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/spotlight/lib/animations.js",
+        "/plugins/spotlight/lib/text-effects.js",
+        "/plugins/spotlight/lib/template-renderer.js",
+        "/plugins/spotlight/overlays/single-overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-translator",
+        "expectedVisibleCopy": "Template labels, waiting/empty messages, event labels, anonymous fallback, and coin wording use translations with source fallbacks. Viewer nicknames, gift names, and event details are data.",
+        "localeFiles": "app/plugins/spotlight/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/spotlight/overlays/chatter.html → overlays/single-overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "stream-monsters",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/stream-monsters/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/stream-monsters/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/stream-monsters/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/stream-monsters/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/stream-monsters/overlay",
+        "source": "app/plugins/stream-monsters/backend/streammonsters/routes.js",
+        "line": 206
+      },
+      "servedHtml": "app/plugins/stream-monsters/streammonsters-overlay.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/plugins/stream-monsters/streammonsters-rules-v8-pacing.js",
+        "/plugins/stream-monsters/streammonsters-portrait-arena.js",
+        "/plugins/stream-monsters/streammonsters-effects-renderer.js",
+        "/plugins/stream-monsters/streammonsters-presentation.js",
+        "/plugins/stream-monsters/streammonsters-overlay-runtime.js",
+        "/plugins/stream-monsters/streammonsters-egg-stage-view.js",
+        "/plugins/stream-monsters/streammonsters-arena-director.js",
+        "/plugins/stream-monsters/streammonsters-audio-engine.js",
+        "/plugins/stream-monsters/streammonsters-arena-view.js",
+        "/plugins/stream-monsters/streammonsters-chat-view.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+overlay-config-override-and-rotation",
+        "expectedVisibleCopy": "Brand/title/status and arena labels use local locale files. The shared ?lang is parsed initially, but overlay config primaryLocale/locales subsequently controls and can rotate the displayed locale; default config is de/en. Four locales are supported when selected in overlay config.",
+        "localeFiles": "app/plugins/stream-monsters/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/stream-monsters/streammonsters-overlay.html → overlay runtime/view modules",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "stt-ticker",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/stt-ticker/overlay/ticker.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/stt-ticker/overlay/ticker.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/stt-ticker/overlay/ticker.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client",
+        "expectedVisibleCopy": "The title is localized; visible ticker lines are incoming transcription text and are not translated by ?lang. Theme/size/position query values control presentation only.",
+        "localeFiles": "app/plugins/stt-ticker/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/stt-ticker/overlay/ticker.html",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "talking-heads",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/talking-heads/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/talking-heads/overlay",
+        "source": "app/plugins/talking-heads/main.js",
+        "line": 1061
+      },
+      "servedHtml": "app/plugins/talking-heads/overlay.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/js/i18n-client.js",
+        "/overlay/talking-heads/assets/overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+custom-translation-base",
+        "expectedVisibleCopy": "Stage headings, idle/loading states, and accessibility labels use localized keys via /api/talkingheads/overlay/translations/{locale}. Spoken/TTS content, speaker names, and avatar labels are content/state and not translated by ?lang.",
+        "localeFiles": "app/plugins/talking-heads/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/talking-heads/overlay.html → assets/overlay.js",
+      "verification": "source-resolution-only",
+      "note": "The inventory URL /plugins/talking-heads/overlay.html is the static HTML. A distinct registered handler exists at /talking-heads/overlay and serves the alternate overlay.html; inventory URL does not hit that handler."
+    },
+    {
+      "plugin": "toptier",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/toptier/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/toptier/overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/toptier/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/toptier/assets/overlay.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client-title-only",
+        "expectedVisibleCopy": "The document title is localized. Runtime board labels Likes/Gifts and rank/score copy are hardcoded English; usernames and scores are data. ?lang does not localize those renderer-generated labels.",
+        "localeFiles": "app/plugins/toptier/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/toptier/overlay.html → assets/overlay.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "visual-fx-frame-webgpu",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/visual-fx-frame-webgpu/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/visual-fx-frame-webgpu/overlay",
+        "source": "app/plugins/visual-fx-frame-webgpu/main.js",
+        "line": 916
+      },
+      "servedHtml": "app/plugins/visual-fx-frame-webgpu/renderer/index.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/visual-fx-frame-webgpu/default-config.js",
+        "/visual-fx-frame-webgpu/adaptive-quality.js",
+        "/visual-fx-frame-webgpu/gpu-resources.js",
+        "/visual-fx-frame-webgpu/effect-pipelines.js",
+        "/visual-fx-frame-webgpu/hdr-post-processor.js",
+        "/visual-fx-frame-webgpu/webgpu-effects-engine.js",
+        "/visual-fx-frame-webgpu/overlay-controller.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client-title-only",
+        "expectedVisibleCopy": "Only the document title has a locale key. Main output is visual effects; optional ?debug=true status uses raw state/reason text and numeric metrics rather than translated copy.",
+        "localeFiles": "app/plugins/visual-fx-frame-webgpu/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/visual-fx-frame-webgpu/renderer/index.html → overlay-controller.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "weather-control",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/weather-control/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/weather-control/overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/weather-control/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/weather-control/weather-engine.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+runtime-helper",
+        "expectedVisibleCopy": "Community/quest/streak/meter labels and connection/reward wording use shared locale keys. Quest/reward titles are configuration data; progress, streak, and meter values are numeric.",
+        "localeFiles": "app/plugins/weather-control/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/weather-control/overlay.html → weather-engine.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "webgpu-emoji-rain",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/plugins/webgpu-emoji-rain/overlay.html?lang=fr"
+        }
+      ],
+      "routeResolution": "global-plugin-static",
+      "handler": {
+        "method": "GET",
+        "path": "/plugins/webgpu-emoji-rain/overlay.html",
+        "source": "app/server.js",
+        "line": 4025
+      },
+      "servedHtml": "app/plugins/webgpu-emoji-rain/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/webgpu-emoji-rain/gpu/webgpu-emoji-engine.js?v=3.0.5",
+        "/plugins/webgpu-emoji-rain/gpu/engine.js?v=3.0.5"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client-with-runtime-status-override",
+        "expectedVisibleCopy": "HTML title/fallback copy is keyed, but gpu/engine.js overwrites runtime status labels with hardcoded German strings (READY · WEBGPU, WEBGPU NICHT VERFÜGBAR, WEBGPU-GERÄT VERLOREN, WEBGPU-FEHLER, INITIALISIERE WEBGPU). Thus ?lang does not localize runtime status. Main output is canvas effects.",
+        "localeFiles": "app/plugins/webgpu-emoji-rain/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/webgpu-emoji-rain/overlay.html → gpu/engine.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "webgpu-fireworks",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/webgpu-fireworks/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/webgpu-fireworks/overlay",
+        "source": "app/plugins/webgpu-fireworks/main.js",
+        "line": 1496
+      },
+      "servedHtml": "app/plugins/webgpu-fireworks/overlay.html",
+      "htmlScriptSources": [
+        "/js/i18n-client.js",
+        "/socket.io/socket.io.js",
+        "/plugins/webgpu-fireworks/gpu/spawn-command-policy.js?v=3.1.1-depth3d-1",
+        "/plugins/webgpu-fireworks/gpu/visible-envelope.js?v=3.1.1-glyph-envelope-1",
+        "/plugins/webgpu-fireworks/gpu/boykisser-geometry.js?v=3.1.1-particle-rocket-1",
+        "/plugins/webgpu-fireworks/gpu/webgpu-particle-engine.js?v=3.1.1-particle-rocket-1",
+        "/plugins/webgpu-fireworks/gpu/show-plan-v2-runtime.js?v=3.1.1-particle-rocket-1",
+        "/plugins/webgpu-fireworks/gpu/engine.js?v=3.1.1-particle-rocket-1"
+      ],
+      "localeContract": {
+        "queryBehavior": "shared-i18n-client+partial-runtime-copy",
+        "expectedVisibleCopy": "Title and follower thank-you copy are keyed. Debug labels FPS/Particles/Renderer remain English; user name/avatar are event data and effects are visual.",
+        "localeFiles": "app/plugins/webgpu-fireworks/locales/{de,en,es,fr}.json"
+      },
+      "matrixEntry": "app/plugins/webgpu-fireworks/overlay.html → gpu/engine.js",
+      "verification": "source-resolution-only",
+      "note": ""
+    },
+    {
+      "plugin": "webgpu-weather-control",
+      "localeCases": [
+        {
+          "locale": "de",
+          "url": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=de"
+        },
+        {
+          "locale": "en",
+          "url": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=en"
+        },
+        {
+          "locale": "es",
+          "url": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=es"
+        },
+        {
+          "locale": "fr",
+          "url": "http://127.0.0.1:3000/webgpu-weather-control/overlay?lang=fr"
+        }
+      ],
+      "routeResolution": "registered-plugin-get-handler",
+      "handler": {
+        "method": "GET",
+        "path": "/webgpu-weather-control/overlay",
+        "source": "app/plugins/webgpu-weather-control/main.js",
+        "line": 664
+      },
+      "servedHtml": "app/plugins/webgpu-weather-control/overlay.html",
+      "htmlScriptSources": [
+        "/socket.io/socket.io.js",
+        "/plugins/webgpu-weather-control/gpu/weather-framegraph.js",
+        "/plugins/webgpu-weather-control/gpu/cinematic-weather-engine.js"
+      ],
+      "localeContract": {
+        "queryBehavior": "ignored-no-i18n-client",
+        "expectedVisibleCopy": "Visible community HUD labels (Community Weather, Meter, Quest, Streak, Reward) and optional debug diagnostics are hardcoded English; configured quest/reward names and metric values are data. ?lang is ignored.",
+        "localeFiles": "app/plugins/webgpu-weather-control/locales/{de,en,es,fr}.json (present, but not loaded by this overlay entry)"
+      },
+      "matrixEntry": "app/plugins/webgpu-weather-control/overlay.html",
+      "verification": "source-resolution-only",
+      "note": ""
+    }
+  ]
+}

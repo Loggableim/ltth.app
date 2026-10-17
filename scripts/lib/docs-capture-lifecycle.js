@@ -73,7 +73,8 @@ async function closeCaptureBrowser(browser, { label, timeoutMs }) {
 }
 
 function childHasExited(child) {
-  return !child || (child.exitCode !== null && child.exitCode !== undefined);
+  return !child || (child.exitCode !== null && child.exitCode !== undefined)
+    || (child.signalCode !== null && child.signalCode !== undefined);
 }
 
 function requestChildExit(child, signal, timeoutMs) {

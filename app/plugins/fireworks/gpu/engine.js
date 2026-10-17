@@ -3948,9 +3948,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (DEBUG) console.log('[Fireworks] Advanced engine ready');
 });
 
-window.addEventListener('pagehide', () => {
-    if (engine) engine.destroy();
-}, { once: true });
+window.addEventListener('pagehide', (event) => {
+    if (!event.persisted && engine) engine.destroy();
+});
 
 // Only expose engine after initialization
 if (typeof window !== 'undefined') {

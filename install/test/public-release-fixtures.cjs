@@ -42,6 +42,24 @@ for (const [name, changes] of Object.entries({
   version: { 'app/package.json': '{"version":"1.4.4"}' }, missing: { 'app/launch.js': null }, policy: { 'app/config/plugin-release-policy.json': '{"schemaVersion":2}' },
   beta: { 'app/plugins/music-bot/main.js': 'bad' }, renamed: { 'app/plugins/vendor/plugin.json': '{"id":"sidekick"}' }, chatango: { 'app/public/js/chatango-theme-adapter.js': 'bad' }
 })) test(`rejects ${name} before install`, () => { const bytes = archive(changes); assert.throws(() => api.validatePublicZip(bytes, manifest(bytes))); });
+for (const member of ['app/.env', 'app/.ENV', 'app/.env.local', 'app/config/.env.production', 'app/config/.env.example', 'app/.env.', 'app/.env ']) {
+  test(`public archive rejects environment member ${JSON.stringify(member)} without changing existing local env`, (t) => {
+    const dir = temp(t); const app = existing(dir); const localEnv = Buffer.from([0, 255, 4, 9, 13, 10]); fs.writeFileSync(path.join(app, '.env'), localEnv);
+    const bytes = archive({ [member]: 'SYNTHETIC_ONLY=1' });
+    assert.throws(() => api.applyPublicEntries(api.validatePublicZip(bytes, manifest(bytes)), dir), /environment file|Unsafe ZIP path/);
+    assert.deepEqual(fs.readFileSync(path.join(app, '.env')), localEnv); assert.equal(fs.readFileSync(path.join(app, 'old'), 'utf8'), 'unchanged');
+  });
+}
+test('canonical versioned app/.env.example is allowed and update preserves local env bytes and harmless files', (t) => {
+  const localEnv = Buffer.from([0, 255, 1, 7, 13, 10]); const dir = temp(t); const app = existing(dir); fs.writeFileSync(path.join(app, '.env'), localEnv);
+  const bytes = archive({ 'app/.env.example': 'API_KEY=__SYNTHETIC_PLACEHOLDER__\n', 'app/config/readme.txt': 'harmless synthetic member' });
+  const entries = api.validatePublicZip(bytes, manifest(bytes)); assert.ok(entries.has('app/.env.example'));
+  const result = api.applyPublicEntries(entries, dir);
+  assert.deepEqual(fs.readFileSync(path.join(app, '.env')), localEnv);
+  assert.equal(fs.readFileSync(path.join(app, '.env.example'), 'utf8'), 'API_KEY=__SYNTHETIC_PLACEHOLDER__\n');
+  assert.equal(fs.readFileSync(path.join(app, 'config', 'readme.txt'), 'utf8'), 'harmless synthetic member');
+  assert.deepEqual(fs.readFileSync(path.join(result.backup, '.env')), localEnv);
+});
 test('rejects digest and bytes mismatch', () => { const bytes = archive(); const m = manifest(bytes); assert.throws(() => api.validatePublicZip(bytes, { ...m, bytes: m.bytes + 1 })); assert.throws(() => api.validatePublicZip(bytes, { ...m, sha256: '0'.repeat(64) })); });
 test('fresh public install never needs Git', (t) => { const dir = temp(t); const result = api.applyPublicEntries(clean(), dir); assert.equal(result.backup, null); assert.equal(fs.readFileSync(path.join(dir, 'app', 'server.js'), 'utf8'), 'server'); });
 test('offline update preserves pointer/secrets/config bytes and old recovery copy', (t) => {
@@ -91,6 +109,19 @@ for (const id of [...withdrawn, 'chatango', 'streamalchemy']) test(`complete wit
   const bytes = archive({ 'app/config/plugin-release-policy.json': JSON.stringify({ schemaVersion: 1, closedBeta: withdrawn, aliases: { streamalchemy: 'stream-monsters' }, publicAssetPathOwners: {} }), [`app/plugins/${id}/main.js`]: 'withdrawn' });
   assert.throws(() => api.validatePublicZip(bytes, manifest(bytes)));
 });
+for (const spelling of ['Chatango', 'Ｃｈａｔａｎｇｏ', '%63hatango', '%2563hatango']) {
+  test(`public installer rejects normalized retired path spelling ${spelling}`, () => {
+    const bytes = archive({ [`app/plugins/${spelling}/main.js`]: 'synthetic retired path' });
+    assert.throws(() => api.validatePublicZip(bytes, manifest(bytes)), /Withdrawn plugin directory/);
+  });
+}
+for (const [field, spelling] of [['id', 'Ｃｈａｔａｎｇｏ'], ['aliases', '%63hatango'], ['replaces', '%2563hatango']]) {
+  test(`public installer rejects normalized retired manifest ${field} ${spelling}`, () => {
+    const identity = field === 'id' ? { id: spelling } : { id: 'ordinary', [field]: [spelling] };
+    const bytes = archive({ 'app/plugins/ordinary/plugin.json': JSON.stringify(identity) });
+    assert.throws(() => api.validatePublicZip(bytes, manifest(bytes)), /Withdrawn\/invalid plugin identity/);
+  });
+}
 
 test('legacy plugin private JSON is protected even beside a release-owned asset', (t) => {
   const dir = temp(t); const app = existing(dir); const data = path.join(app, 'plugins', 'example', 'data'); fs.mkdirSync(data, { recursive: true }); const privateFile = path.join(data, 'private.json'); fs.writeFileSync(privateFile, '{"keep":"private"}');

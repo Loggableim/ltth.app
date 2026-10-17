@@ -6,6 +6,13 @@ const net = require('net');
 const os = require('os');
 const path = require('path');
 const { spawn, spawnSync } = require('child_process');
+const {
+  createStartupOutputCollector,
+  formatEarlyExitDiagnostic,
+  formatStartupOutput,
+  resolveBundledNode
+} = require('./lib/capture-startup-diagnostics');
+const { createDocsCaptureChildEnvironment } = require('./lib/docs-capture-child-env');
 const { buildSpec } = require('./product-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
 
@@ -141,11 +148,15 @@ function freePort() {
   });
 }
 
-async function waitForHealth(baseUrl, child) {
+async function waitForHealth(baseUrl, child, getStartupOutput) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < 90_000) {
     if (child.exitCode !== null) {
-      throw new Error(`Isolated LTTH process exited with code ${child.exitCode}`);
+      throw new Error(formatEarlyExitDiagnostic({
+        code: child.exitCode,
+        signal: child.signalCode,
+        output: getStartupOutput?.() || {}
+      }));
     }
     try {
       const response = await fetch(`${baseUrl}/api/health`, {
@@ -158,17 +169,34 @@ async function waitForHealth(baseUrl, child) {
   throw new Error('Timed out waiting for isolated LTTH capture process');
 }
 
-function runPlaywright(args, env) {
-  const executable = process.platform === 'win32'
-    ? path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node_modules', 'npm', 'bin', 'npx-cli.js')
-    : 'npx';
-  const command = process.platform === 'win32' ? process.execPath : executable;
-  const commandArgs = process.platform === 'win32'
-    ? [executable, '--yes', '--package', '@playwright/cli', 'playwright-cli', ...args]
-    : ['--yes', '--package', '@playwright/cli', 'playwright-cli', ...args];
+function resolveLocalPlaywrightCli(repoRoot) {
+  const packageRoot = path.join(repoRoot, 'app', 'node_modules', '@playwright', 'cli');
+  const manifestPath = path.join(packageRoot, 'package.json');
+  if (!fs.existsSync(manifestPath)) {
+    throw new Error('Local @playwright/cli is required; capture does not install packages or use npx.');
+  }
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  if (manifest.name !== '@playwright/cli') {
+    throw new Error('Local Playwright CLI package identity is invalid.');
+  }
+  const bin = typeof manifest.bin === 'string'
+    ? manifest.bin
+    : manifest.bin?.['playwright-cli'] || Object.values(manifest.bin || {})[0];
+  if (typeof bin !== 'string' || !bin.trim()) {
+    throw new Error('Local @playwright/cli does not declare a command entry point.');
+  }
+  const cliPath = path.resolve(packageRoot, bin);
+  const relative = path.relative(path.resolve(packageRoot), cliPath);
+  if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative) || !fs.existsSync(cliPath)) {
+    throw new Error('Local @playwright/cli entry point is invalid.');
+  }
+  return cliPath;
+}
+
+function runPlaywright(args, env, { runtimePath, cliPath }) {
   const result = spawnSync(
-    command,
-    commandArgs,
+    runtimePath,
+    [cliPath, ...args],
     {
       cwd: REPO_ROOT,
       env,
@@ -590,41 +618,38 @@ function updateManifest(captureResults) {
 
 async function main() {
   const arenaOnly = process.argv.includes('--arena-only');
+  const captureNode = resolveBundledNode(REPO_ROOT);
+  const playwrightCliPath = resolveLocalPlaywrightCli(REPO_ROOT);
   const port = await freePort();
   const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-sm111-capture-'));
-  const capturePluginDir = prepareDocsPluginFixture(REPO_ROOT, profileDir, 'streamalchemy');
-  const childEnv = {
-    ...process.env,
-    LOCALAPPDATA: profileDir,
-    LTTH_PORT: String(port),
-    LTTH_DOCS_CAPTURE: 'true',
-    LTTH_DOCS_SAFE_MODE: 'true',
-    LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
-    LTTH_NO_BROWSER: 'true',
-    DISABLE_SWAGGER: 'true',
-    LTTH_BIND_ADDRESS: '127.0.0.1',
-    LTTH_DOCS_CAPTURE_PLUGIN_DIR: capturePluginDir
-  };
-  const child = spawn(process.execPath, [path.join(APP_ROOT, 'server.js')], {
-    cwd: APP_ROOT,
-    env: childEnv,
-    stdio: ['ignore', 'pipe', 'pipe'],
-    windowsHide: true
-  });
-  let startupLog = '';
-  const appendLog = chunk => {
-    startupLog = `${startupLog}${chunk.toString()}`.slice(-24_000);
-  };
-  child.stdout.on('data', appendLog);
-  child.stderr.on('data', appendLog);
-  const baseUrl = `http://127.0.0.1:${port}`;
+  const allowedPluginIds = ['stream-monsters'];
+  let capturePluginDir = null;
+  let childEnv = null;
+  let child = null;
+  let getStartupOutput = () => ({ stdout: '', stderr: '' });
   const session = `streammonsters-v111-${process.pid}`;
   const captureResults = [];
   try {
-    await waitForHealth(baseUrl, child);
+    capturePluginDir = prepareDocsPluginFixture(REPO_ROOT, profileDir, allowedPluginIds);
+    childEnv = createDocsCaptureChildEnvironment({
+      profileDir,
+      port,
+      allowedPluginIds,
+      pluginDir: capturePluginDir
+    });
+    child = spawn(captureNode.executablePath, [path.join(APP_ROOT, 'server.js')], {
+      cwd: APP_ROOT,
+      env: childEnv,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+    getStartupOutput = createStartupOutputCollector(child);
+    const baseUrl = `http://127.0.0.1:${port}`;
+    await waitForHealth(baseUrl, child, getStartupOutput);
     runPlaywright(
       ['--session', session, 'open', `${baseUrl}/streammonsters/ui?lang=en`, '--browser', 'chrome'],
-      childEnv
+      childEnv,
+      { runtimePath: captureNode.executablePath, cliPath: playwrightCliPath }
     );
     for (const locale of LOCALES) {
       const creatorPath = outputPath('stream-monsters-creator-1.11', locale);
@@ -651,7 +676,8 @@ async function main() {
           '--filename',
           playwrightCodePath
         ],
-        childEnv
+        childEnv,
+        { runtimePath: captureNode.executablePath, cliPath: playwrightCliPath }
       );
       const parsed = parseRunCodeResult(stdout);
       if (!parsed) {
@@ -678,17 +704,27 @@ async function main() {
     }
     console.log('Captured Stream Monsters 1.11 in an isolated free-port LTTH profile.');
   } catch (error) {
-    throw new Error(`${error.message}\nIsolated LTTH startup log:\n${startupLog}`);
+    const startupOutput = /(?:stdout|stderr) tail:/.test(error.message)
+      ? ''
+      : formatStartupOutput(getStartupOutput());
+    throw new Error(`${error.message}${startupOutput ? `\nIsolated LTTH startup output:\n${startupOutput}` : ''}`);
   } finally {
-    try {
-      runPlaywright(['--session', session, 'close'], childEnv);
-    } catch (_) {}
-    if (child.exitCode === null) child.kill();
-    await new Promise(resolve => {
-      if (child.exitCode !== null) return resolve();
-      child.once('exit', resolve);
-      setTimeout(resolve, 5_000).unref();
-    });
+    if (childEnv && fs.existsSync(playwrightCliPath)) {
+      try {
+        runPlaywright(['--session', session, 'close'], childEnv, {
+          runtimePath: captureNode.executablePath,
+          cliPath: playwrightCliPath
+        });
+      } catch (_) {}
+    }
+    if (child && child.exitCode === null) child.kill();
+    if (child && child.exitCode === null) {
+      await new Promise(resolve => {
+        if (child.exitCode !== null) return resolve();
+        child.once('exit', resolve);
+        setTimeout(resolve, 5_000).unref();
+      });
+    }
     fs.rmSync(profileDir, { recursive: true, force: true });
   }
 }
@@ -703,6 +739,7 @@ if (require.main === module) {
 module.exports = {
   captureCode,
   pngDimensions,
+  resolveLocalPlaywrightCli,
   replaceScopedEntries,
   updateManifest,
   validateArenaCaptureReceipt

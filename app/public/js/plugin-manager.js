@@ -499,7 +499,7 @@ class PluginManager {
         if (category === 'integrations') return /integration|bridge|api|osc|minecraft|vdoninja|openshock|connect/.test(`${categoryText} ${id}`);
         if (category === 'overlays') return /overlay|hud|emoji|rain|firework|flame|ticker|spotlight|avatar|head/.test(`${categoryText} ${id}`);
         if (category === 'utilities') {
-            return !['audio', 'games', 'automation', 'integrations', 'overlays', 'open-beta']
+            return !['audio', 'games', 'automation', 'integrations', 'overlays']
                 .some(otherCategory => this.storePluginMatchesCategory(plugin, otherCategory));
         }
         return true;
@@ -1001,7 +1001,7 @@ class PluginManager {
         const category = this.getStorePluginCategoryLabel(plugin);
         const badges = this.renderStorePluginBadges(plugin);
         const screenshots = Array.isArray(plugin.screenshots) && plugin.screenshots.length > 0
-            ? plugin.screenshots.map(src => `<img src="${this.escapeHtml(src)}" alt="" style="width: 100%; border-radius: 8px; border: 1px solid var(--color-border);">`).join('')
+            ? plugin.screenshots.map(src => `<div data-store-screenshot-frame style="min-height: 120px; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden;"><img src="${this.escapeHtml(src)}" alt="${this.escapeHtml(`${plugin.name || plugin.id} screenshot`)}" style="width: 100%; display: block;" onerror="this.remove(); this.parentElement.textContent='Screenshot unavailable'; this.parentElement.setAttribute('role','status');"></div>`).join('')
             : '<div style="height: 120px; border: 1px dashed var(--color-border); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); font-size: 0.9rem;">No screenshots yet</div>';
 
         drawer.style.display = 'block';

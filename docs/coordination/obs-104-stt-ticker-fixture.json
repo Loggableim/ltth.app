@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "fixtureId": "stt-ticker-source-fixture-v1",
+  "status": "cpu-only-source-fixture-no-listener-no-obs",
+  "caseCount": 4,
+  "files": [
+    {
+      "path": "app/node_modules/socket.io/client-dist/socket.io.js",
+      "bytes": 155836,
+      "sha256": "bc425714aa8f2547d6939e3721ebafd3830a7562a1f6cb08acc1e794bd707954",
+      "role": "browser-socket-client-source"
+    },
+    {
+      "path": "app/plugins/stt-ticker/locales/de.json",
+      "bytes": 16925,
+      "sha256": "4ea0fbe59622346a49ef9c51d167e501e34dc781d9c1c1873a695d00a4161663",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/stt-ticker/locales/en.json",
+      "bytes": 16202,
+      "sha256": "66b67d854381e58efa104ad304040c879ac5430bc167889aa66402df6311a60a",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/stt-ticker/locales/es.json",
+      "bytes": 17766,
+      "sha256": "53ad87a7648a2e6946be616d060830e44ff97d919fb0e3e2b112cd06e56426a1",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/stt-ticker/locales/fr.json",
+      "bytes": 17861,
+      "sha256": "a36c1868c3c74d8d6be88805c85aae0921f86308c3ea55980e42782d6cbc573d",
+      "role": "plugin-locale"
+    },
+    {
+      "path": "app/plugins/stt-ticker/overlay/ticker.html",
+      "bytes": 26415,
+      "sha256": "8dc2cb79d18fd5f362897b1f1adb0209eb1cab921451b7389d32d6efd7e7895b",
+      "role": "renderer-entry-inline-css-js"
+    },
+    {
+      "path": "app/public/js/i18n-client.js",
+      "bytes": 24907,
+      "sha256": "058ab13e6e37428d4dcf0be3f71e0f1a2e17dabcfa4e3407bac8fc401c3375a5",
+      "role": "shared-i18n-client"
+    }
+  ],
+  "runnerContract": {
+    "transport": "in-process-jsdom-interceptor",
+    "origin": "http://127.0.0.1:3000 (synthetic JSDOM URL only; requests are intercepted in process)",
+    "listenerStarted": false,
+    "assetGetRoutes": [
+      {
+        "path": "/js/i18n-client.js",
+        "source": "app/public/js/i18n-client.js"
+      },
+      {
+        "path": "/socket.io/socket.io.js",
+        "source": "synthetic in-memory Socket.IO shim; pinned browser client source is recorded but not executed in current JSDOM fixture"
+      }
+    ],
+    "apiGetPatterns": [
+      "/api/i18n/translations/{de|en|es|fr} (fixture reads the corresponding pinned plugin locale file)"
+    ],
+    "socketEventsConsumed": [
+      "connect",
+      "disconnect",
+      "stt-ticker:clear",
+      "stt-ticker:interim",
+      "stt-ticker:transcript"
+    ],
+    "driverEvents": [
+      {
+        "event": "stt-ticker:interim",
+        "payload": {
+          "text": "Synthetic caption fixture.",
+          "isFinal": false
+        }
+      },
+      {
+        "event": "stt-ticker:transcript",
+        "payload": {
+          "text": "Synthetic caption fixture."
+        }
+      },
+      {
+        "event": "stt-ticker:clear",
+        "payload": null
+      }
+    ],
+    "pluginControlProducer": "excluded; speech recognition, audio capture, provider services and STT plugin runtime are not started or connected",
+    "externalNetwork": "blocked",
+    "productProfileOrCredentialData": "excluded",
+    "cleanup": "dispatch pagehide, assert socket shim disconnect and observer/timer cleanup, close JSDOM; parent theme and localStorage are isolated to the synthetic JSDOM instance"
+  }
+}

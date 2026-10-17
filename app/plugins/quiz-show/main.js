@@ -8,7 +8,8 @@ class QuizShowPlugin {
     constructor(api) {
         this.api = api;
 
-        // Plugin-specific database for questions, packages, sounds, etc. (not scoped)
+        // Plugin-specific database for questions, packages, seasons, and history
+        // scoped to the active user profile.
         this.db = null;
         
         // Main scoped database for viewer-related data (quiz_leaderboard_entries)
@@ -269,41 +270,12 @@ class QuizShowPlugin {
 
     async initDatabase() {
         try {
-            // Use ConfigPathManager to get persistent storage path
-            const ConfigPathManager = require('../../modules/config-path-manager');
-            const configPathManager = new ConfigPathManager();
-            
-            // Ensure plugin data directory exists
-            const pluginDataDir = configPathManager.getPluginDataDir('quiz_show');
-            if (!fs.existsSync(pluginDataDir)) {
-                fs.mkdirSync(pluginDataDir, { recursive: true });
-            }
-            
+            // Bind Quiz Show seasons and history to the profile captured by PluginAPI.
+            // Legacy global DB import is explicit and handled by a separate future flow.
+            const pluginDataDir = this.api.ensurePluginDataDir({ profileScoped: true });
             const dbPath = path.join(pluginDataDir, 'quiz_show.db');
-            
-            // Migrate old database if exists
-            const oldDbPath = path.join(__dirname, 'data', 'quiz_show.db');
-            const oldDataDir = path.join(__dirname, 'data');
-            
-            if (fs.existsSync(oldDataDir) && !fs.existsSync(dbPath)) {
-                this.api.log('Migrating quiz show database to user folder...', 'info');
-                // Copy only database files to new location for security
-                const files = fs.readdirSync(oldDataDir);
-                for (const file of files) {
-                    // Only migrate database files (.db, .db-shm, .db-wal)
-                    if (file.endsWith('.db') || file.endsWith('.db-shm') || file.endsWith('.db-wal')) {
-                        const oldFilePath = path.join(oldDataDir, file);
-                        const newFilePath = path.join(pluginDataDir, file);
-                        if (!fs.existsSync(newFilePath)) {
-                            fs.copyFileSync(oldFilePath, newFilePath);
-                            this.api.log(`Migrated ${file}`, 'info');
-                        }
-                    }
-                }
-                this.api.log('Database migration completed', 'info');
-            }
 
-            // Initialize plugin-specific database for questions/packages (not scoped)
+            // Initialize plugin-specific profile database for questions/packages/seasons.
             this.db = new Database(dbPath);
             this.db.pragma('journal_mode = WAL');
             
