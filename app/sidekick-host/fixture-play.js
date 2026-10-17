@@ -49,7 +49,8 @@ async function playFixture({
     lines.push(JSON.stringify({ atMs: clock, ...entry }));
   };
 
-  const planner = new ShowPlanner(createDemoPorts());
+  // The fake music-bot cooldown reads this virtual clock. HostCore stays unchanged.
+  const planner = new ShowPlanner(createDemoPorts({ now: () => clock }));
   const spoken = [];
   const output = createTextAdapter({
     write: text => {
