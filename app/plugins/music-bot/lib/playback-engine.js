@@ -927,12 +927,11 @@ class PlaybackEngine extends EventEmitter {
       this._handleProcessClose(child, childSocket, generation, code);
     });
 
-    child.stderr?.on('data', (data) => {
-      if (this.process !== child || this._processGeneration !== generation) return;
-      const message = data.toString();
-      if (message.toLowerCase().includes('error')) {
-        this.emit('error', new Error(message));
-      }
+    // MPV stderr is human-oriented diagnostic output, not a stable error
+    // protocol. Drain it without changing state; process errors and structured
+    // IPC end-file events own failure reporting.
+    child.stderr?.on('data', () => {
+      // Keep stderr flowing without interpreting its human-readable text.
     });
 
     try {
