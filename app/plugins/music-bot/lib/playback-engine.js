@@ -81,6 +81,7 @@ class PlaybackEngine extends EventEmitter {
     this._lastProbeConnected = null;
     this._lastMediaTitle = null;
     this._lastMediaBasename = null;
+    this._lastStderrLogAt = null;
   }
 
   _installHeartbeatStateAccessors() {
@@ -884,6 +885,7 @@ class PlaybackEngine extends EventEmitter {
   async _startProcess() {
     this._assertNotDestroyed();
     this._lastProbeConnected = null;
+    this._lastStderrLogAt = null;
     const generation = ++this._processGeneration;
 
     const ipcIdentity = `${Date.now()}-${randomUUID()}`;
@@ -929,9 +931,10 @@ class PlaybackEngine extends EventEmitter {
 
     // MPV stderr is human-oriented diagnostic output, not a stable error
     // protocol. Drain it without changing state; process errors and structured
-    // IPC end-file events own failure reporting.
-    child.stderr?.on('data', () => {
-      // Keep stderr flowing without interpreting its human-readable text.
+    // IPC end-file events own failure reporting. A rate-limited debug hint is
+    // still logged so field issues remain debuggable.
+    child.stderr?.on('data', (chunk) => {
+      this._logMpvStderr(child, chunk);
     });
 
     try {
@@ -944,6 +947,24 @@ class PlaybackEngine extends EventEmitter {
       }
       throw error;
     }
+  }
+
+  _logMpvStderr(child, chunk) {
+    if (this.process !== child) return;
+    const intervalMs = Number(this.config?.stderrLogIntervalMs) > 0
+      ? Number(this.config.stderrLogIntervalMs)
+      : 1000;
+    const now = this._now();
+    if (this._lastStderrLogAt !== null && now - this._lastStderrLogAt < intervalMs) {
+      return;
+    }
+    const text = Buffer.isBuffer(chunk) ? chunk.toString('utf8') : String(chunk ?? '');
+    const line = text.replace(/\s+/g, ' ').trim();
+    if (!line) return;
+    this._lastStderrLogAt = now;
+    const maxLength = 240;
+    const snippet = line.length > maxLength ? `${line.slice(0, maxLength)}…` : line;
+    this.api.log?.(`[music-bot] MPV stderr: ${snippet}`, 'debug');
   }
 
   _handleProcessClose(child, childSocket, generation, code) {

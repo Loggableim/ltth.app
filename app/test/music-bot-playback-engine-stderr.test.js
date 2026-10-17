@@ -90,4 +90,57 @@ describe('Music Bot MPV stderr handling', () => {
     expect(engine.state).toBe('playing');
     expect(engine.nowPlaying).toEqual({ id: 'healthy-track', title: 'Healthy track' });
   });
+
+  test('logs a rate-limited debug line for MPV stderr output', async () => {
+    await engine._startProcess();
+
+    child.stderr.write('[cplayer] Playing: local-track.wav\n');
+
+    expect(engine.api.log).toHaveBeenCalledTimes(1);
+    expect(engine.api.log).toHaveBeenCalledWith(
+      expect.stringContaining('[music-bot] MPV stderr: [cplayer] Playing: local-track.wav'),
+      'debug'
+    );
+  });
+
+  test('suppresses repeated stderr lines inside the interval and logs again afterwards', async () => {
+    let clock = 1000;
+    const clockedEngine = new PlaybackEngine({ defaultVolume: 50, mpvPath: 'mpv' }, { log: jest.fn() }, { now: () => clock });
+    clockedEngine._getAudioOutputArgs = () => [];
+    clockedEngine._connectSocket = jest.fn(async () => new EventEmitter());
+    const clockedChild = createChildProcess(4321);
+    spawn.mockReturnValue(clockedChild);
+    await clockedEngine._startProcess();
+
+    clockedChild.stderr.write('[cplayer] first line\n');
+    clock = 1400;
+    clockedChild.stderr.write('[cplayer] second line\n');
+    clock = 2600;
+    clockedChild.stderr.write('[cplayer] third line\n');
+
+    expect(clockedEngine.api.log).toHaveBeenCalledTimes(2);
+    expect(clockedEngine.api.log.mock.calls[0][0]).toContain('first line');
+    expect(clockedEngine.api.log.mock.calls[1][0]).toContain('third line');
+  });
+
+  test('does not log blank stderr output', async () => {
+    await engine._startProcess();
+
+    child.stderr.write('   \n\t\n');
+
+    expect(engine.api.log).not.toHaveBeenCalled();
+  });
+
+  test('caps the logged stderr snippet and stays on a single line', async () => {
+    await engine._startProcess();
+
+    child.stderr.write(`${'x'.repeat(500)}\nsecond line\n`);
+
+    expect(engine.api.log).toHaveBeenCalledTimes(1);
+    const [message, level] = engine.api.log.mock.calls[0];
+    expect(level).toBe('debug');
+    expect(message).not.toContain('\n');
+    expect(message.length).toBeLessThan(300);
+    expect(message.endsWith('…')).toBe(true);
+  });
 });

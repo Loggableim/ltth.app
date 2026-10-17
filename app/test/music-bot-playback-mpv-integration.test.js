@@ -2,15 +2,17 @@ const fs = require('fs');
 const net = require('net');
 const os = require('os');
 const path = require('path');
+const { EventEmitter } = require('events');
 const { spawnSync } = require('child_process');
 const PlaybackController = require('../plugins/music-bot/lib/playback-controller');
 
 const CHOCOLATEY_MPV_PATH = 'C:\\ProgramData\\chocolatey\\lib\\mpvio.install\\tools\\mpv.exe';
+const MPV_PROBE_TIMEOUT_MS = 5000;
 
 function probeMpv(candidate) {
   const result = spawnSync(candidate, ['--version'], {
     encoding: 'utf8',
-    timeout: 5000,
+    timeout: MPV_PROBE_TIMEOUT_MS,
     windowsHide: true
   });
   if (result.error || result.status !== 0) return null;
@@ -18,10 +20,25 @@ function probeMpv(candidate) {
   return version.trim() || null;
 }
 
+function findOnPath(command, { pathValue = process.env.PATH || '', fileExists = fs.existsSync } = {}) {
+  const extensions = process.platform === 'win32'
+    ? ['.exe', '.cmd', '.bat', '']
+    : [''];
+  for (const dir of String(pathValue).split(path.delimiter)) {
+    if (!dir) continue;
+    for (const extension of extensions) {
+      const candidate = path.join(dir, command + extension);
+      if (fileExists(candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
 function resolveMpv({
   configuredPath = String(process.env.LTTH_TEST_MPV_PATH || '').trim(),
   chocolateyPath = CHOCOLATEY_MPV_PATH,
   fileExists = fs.existsSync,
+  resolveOnPath = (command) => findOnPath(command, { fileExists }),
   probe = probeMpv
 } = {}) {
   const candidates = [];
@@ -31,8 +48,10 @@ function resolveMpv({
   if (fileExists(chocolateyPath)) {
     candidates.push(chocolateyPath);
   }
-  candidates.push('mpv');
-
+  const pathCandidate = resolveOnPath('mpv');
+  if (pathCandidate && !candidates.includes(pathCandidate)) {
+    candidates.push(pathCandidate);
+  }
   for (const candidate of candidates) {
     const version = probe(candidate);
     if (version) return { path: candidate, version };
@@ -40,11 +59,32 @@ function resolveMpv({
   return null;
 }
 
-const mpv = resolveMpv();
-const MPV_PATH = mpv?.path || null;
-const integrationTest = MPV_PATH ? test : test.skip;
+function hasMpvCandidate({
+  configuredPath = String(process.env.LTTH_TEST_MPV_PATH || '').trim(),
+  chocolateyPath = CHOCOLATEY_MPV_PATH,
+  fileExists = fs.existsSync,
+  resolveOnPath = (command) => findOnPath(command, { fileExists })
+} = {}) {
+  if (configuredPath && fileExists(configuredPath)) return true;
+  if (fileExists(chocolateyPath)) return true;
+  return Boolean(resolveOnPath('mpv'));
+}
 
-function integrationName(name, mpvFound = Boolean(MPV_PATH)) {
+// Resolve the real MPV lazily: requiring this file must never spawn a probe.
+// The cheap candidate check below decides the collection-time skip, while the
+// expensive `--version` spawn only happens when a test actually runs.
+let mpvResolution;
+function getMpv() {
+  if (mpvResolution === undefined) {
+    mpvResolution = hasMpvCandidate() ? resolveMpv() : null;
+  }
+  return mpvResolution;
+}
+
+const mpvCandidateAvailable = hasMpvCandidate();
+const integrationTest = mpvCandidateAvailable ? test : test.skip;
+
+function integrationName(name, mpvFound = mpvCandidateAvailable) {
   return mpvFound ? name : 'skipped: no mpv found - ' + name;
 }
 
@@ -54,6 +94,7 @@ test('MPV resolution rejects failed candidates and continues in the configured o
     configuredPath: 'configured-mpv',
     chocolateyPath: 'chocolatey-mpv',
     fileExists: () => true,
+    resolveOnPath: () => 'mpv',
     probe: (candidate) => {
       probedCandidates.push(candidate);
       return candidate === 'mpv' ? 'mpv v0.41.0' : null;
@@ -69,11 +110,29 @@ test('MPV resolution returns no candidate and names the skip when all version pr
     configuredPath: 'configured-mpv',
     chocolateyPath: 'chocolatey-mpv',
     fileExists: () => true,
+    resolveOnPath: () => 'mpv',
     probe: () => null
   });
 
   expect(resolved).toBeNull();
   expect(integrationName('starts real MPV', false)).toBe('skipped: no mpv found - starts real MPV');
+});
+
+test('MPV resolution does not spawn a probe when no candidate exists', () => {
+  const probedCandidates = [];
+  const resolved = resolveMpv({
+    configuredPath: 'configured-mpv',
+    chocolateyPath: 'chocolatey-mpv',
+    fileExists: () => false,
+    resolveOnPath: () => null,
+    probe: (candidate) => {
+      probedCandidates.push(candidate);
+      return null;
+    }
+  });
+
+  expect(probedCandidates).toEqual([]);
+  expect(resolved).toBeNull();
 });
 
 function delay(ms) {
@@ -106,9 +165,9 @@ async function verifyExitedPids(pids, label) {
   console.info('[music-bot MPV ' + label + '] pids=' + uniquePids.join(',') + ' exited=true');
 }
 
-async function isIpcEndpointAvailable(ipcPath) {
+function isIpcEndpointAvailable(ipcPath, timeoutMs = 500, connect = net.createConnection) {
   return new Promise((resolve) => {
-    const socket = net.createConnection(ipcPath);
+    const socket = connect(ipcPath);
     let settled = false;
     const finish = (available) => {
       if (settled) return;
@@ -117,11 +176,35 @@ async function isIpcEndpointAvailable(ipcPath) {
       socket.destroy();
       resolve(available);
     };
-    const timer = setTimeout(() => finish(true), 500);
+    // A connect that neither succeeds nor errors within the timeout means the
+    // endpoint is not usable. Reporting it as "available" made the removal
+    // wait retry for its full budget on Windows before failing.
+    const timer = setTimeout(() => finish(false), timeoutMs);
     socket.once('connect', () => finish(true));
     socket.once('error', () => finish(false));
   });
 }
+
+test('IPC availability probe reports an endpoint as usable when it connects', async () => {
+  const socket = new EventEmitter();
+  socket.destroy = jest.fn();
+
+  const pending = isIpcEndpointAvailable('fake-ipc', 500, () => socket);
+  socket.emit('connect');
+
+  await expect(pending).resolves.toBe(true);
+  expect(socket.destroy).toHaveBeenCalled();
+});
+
+test('IPC availability probe reports an endpoint as unusable when connect times out', async () => {
+  const socket = new EventEmitter();
+  socket.destroy = jest.fn();
+
+  const available = await isIpcEndpointAvailable('fake-ipc', 20, () => socket);
+
+  expect(available).toBe(false);
+  expect(socket.destroy).toHaveBeenCalled();
+});
 
 async function waitForIpcEndpointRemoval(ipcPath, timeoutMs = 3000) {
   const deadline = Date.now() + timeoutMs;
@@ -139,7 +222,7 @@ function createController({ crossfadeDuration = 0, defaultVolume = 0 } = {}) {
   return new PlaybackController({
     defaultVolume,
     crossfadeDuration,
-    mpvPath: MPV_PATH,
+    mpvPath: getMpv()?.path,
     audioOutputDriver: 'null',
     normalization: { enabled: false }
   }, { log: jest.fn() });
@@ -420,6 +503,9 @@ integrationTest(integrationName('shutdown destroys its real MPV process and IPC 
   }
 }, 10000);
 
-if (mpv?.version) {
-  console.info('[music-bot MPV integration] ' + mpv.version.split(/\r?\n/)[0] + ' on ' + process.platform + ' ' + os.release());
-}
+afterAll(() => {
+  const resolved = getMpv();
+  if (resolved?.version) {
+    console.info('[music-bot MPV integration] ' + resolved.version.split(/\r?\n/)[0] + ' on ' + process.platform + ' ' + os.release());
+  }
+});
