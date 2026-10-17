@@ -29,7 +29,9 @@ class HostCore {
 
   // Handles one chat message. Returns a result object for logs and tests.
   async handleChat(message) {
-    const user = String(message?.user ?? 'unknown');
+    // Chat identity: prefer the stable uniqueId, then the demo "user" field, then nickname.
+    // A plugin action must be attributable to one viewer, not a shared placeholder.
+    const user = String(message?.uniqueId ?? message?.user ?? message?.nickname ?? 'unknown');
     const text = String(message?.text ?? '');
     const command = parseChatCommand(text);
 
@@ -39,7 +41,7 @@ class HostCore {
         this.log({ kind: 'ignored', reason: 'not-in-active-plugin', command: command.name, plugin: port.id, user });
         return { type: 'ignored', reason: 'not-in-active-plugin' };
       }
-      const outcome = await port.handle(command.name, command.args);
+      const outcome = await port.handle(command.name, command.args, { user });
       const emitted = await this.emitChatText(outcome.text);
       this.log({ kind: 'command', command: command.name, plugin: port.id, user, emitted: emitted.emitted, reason: emitted.reason });
       return { type: 'command', command: command.name, plugin: port.id, ...emitted };

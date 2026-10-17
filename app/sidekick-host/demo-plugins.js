@@ -4,8 +4,8 @@ const { createPluginPort } = require('./plugin-port');
 const { createMusicBotAdapter } = require('./adapters/music-bot-adapter');
 const { createFakeMusicBot } = require('./testing/fake-music-bot');
 
-// HostCore does not pass the chat user into port.handle. Every !song on this
-// demo port therefore shares one synthetic requester so the fake cooldown applies.
+// Fallback requester used only when a chat event carries no identity. HostCore now
+// forwards the chat user through port.handle so per-viewer cooldowns and limits apply.
 const DEFAULT_REQUESTED_BY = 'viewer_01';
 const SONG_ACCEPTED = 'Song-Wunsch angenommen. Die Warteschlange ist aktualisiert.';
 
@@ -21,7 +21,7 @@ function createSongAdapter(options) {
 // !song goes through the Music-Bot adapter. !sound does not enqueue.
 function createDemoPorts(options = {}) {
   const adapter = createSongAdapter(options);
-  const requestedBy = typeof options.requestedBy === 'string' && options.requestedBy
+  const fallbackRequestedBy = typeof options.requestedBy === 'string' && options.requestedBy
     ? options.requestedBy
     : DEFAULT_REQUESTED_BY;
 
@@ -33,9 +33,12 @@ function createDemoPorts(options = {}) {
   const music = createPluginPort({
     id: 'music-sound',
     commands: ['!song', '!sound'],
-    handle: async (command, args) => {
+    handle: async (command, args, context) => {
       if (command !== '!song') return { text: 'Sound abgespielt.' };
       const query = Array.isArray(args) && typeof args[0] === 'string' ? args[0] : '';
+      const requestedBy = typeof context?.user === 'string' && context.user
+        ? context.user
+        : fallbackRequestedBy;
       const result = await adapter.enqueue({ query, requestedBy });
       if (result && result.ok) return { text: SONG_ACCEPTED };
       const text = result && typeof result.text === 'string' && result.text

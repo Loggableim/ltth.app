@@ -23,9 +23,9 @@ function makeHost({ adapter, replyEngine, now = () => 0, maxEvents = 18 } = {}) 
     return createPluginPort({
       id: port.id,
       commands: [...port.commands],
-      handle: async (command, args) => {
+      handle: async (command, args, context) => {
         calls.push({ plugin: port.id, command, args });
-        return original(command, args);
+        return original(command, args, context);
       }
     });
   });

@@ -22,11 +22,11 @@ function createPluginPort(plugin) {
   return Object.freeze({
     id: plugin.id,
     commands: Object.freeze([...plugin.commands]),
-    handle: async (command, args) => {
+    handle: async (command, args, context) => {
       if (!plugin.commands.includes(command)) {
         throw new Error(`plugin port ${plugin.id}: command ${command} not handled`);
       }
-      const result = await plugin.handle(command, args);
+      const result = await plugin.handle(command, args, context);
       return { text: typeof result?.text === 'string' ? result.text : '' };
     }
   });
