@@ -1,0 +1,10 @@
+{"type":"chat","username":"viewer_01","uniqueId":"viewer_01","nickname":"Viewer Eins","userId":"7001","text":"hallo zusammen"}
+{"type":"chat","username":"viewer_02","uniqueId":"viewer_02","nickname":"Viewer Zwei","userId":"7002","text":"!sound"}
+{"type":"chat","username":"viewer_03","uniqueId":"viewer_03","nickname":"Viewer Drei","userId":"7003","text":"!quiz a"}
+{"type":"gift","username":"viewer_04","uniqueId":"viewer_04","nickname":"Viewer Vier","userId":"7004","gift":"rose","repeatCount":1}
+{"type":"gift","username":"viewer_05","uniqueId":"viewer_05","nickname":"Viewer Fuenf","userId":"7005","gift":"galaxy","repeatCount":3}
+{"type":"follow","username":"viewer_06","uniqueId":"viewer_06","nickname":"Viewer Sechs","userId":"7006"}
+{"type":"like","username":"viewer_07","uniqueId":"viewer_07","nickname":"Viewer Sieben","userId":"7007","count":12}
+{"type":"share","username":"viewer_08","uniqueId":"viewer_08","nickname":"Viewer Acht","userId":"7008"}
+{"type":"chat","username":"viewer_09","uniqueId":"viewer_09","nickname":"Viewer Neun","userId":"7009","text":""}
+{"type":"chat","username":"viewer_10","uniqueId":"viewer_10","nickname":"Viewer Zehn","userId":"7010","text":"danke fuer den stream"}
