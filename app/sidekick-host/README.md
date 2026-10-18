@@ -72,6 +72,41 @@ Das Skript liest keinen Key und öffnet kein Netz. Es zählt nur die normalisier
 npx jest --runInBand test/sidekick-host-live-read.test.js --verbose
 ```
 
+## Live-Chat-Quelle (Eulerstream, nur lesend)
+
+`adapters/live-read-source.js` verbindet die echte Live-Chat-Quelle mit dem Adapter. Die Quelle
+wird injiziert (z. B. `modules/adapters/EulerstreamAdapter.js`, der `chat`, `gift` und `social`
+sendet). Dieses Modul öffnet selbst kein Netz und liest keinen Key:
+
+- Es abonniert ausschliesslich mit `on`/`off`. Es gibt keinen `send`-, `reply`-, `post`-, `write`-
+  oder Moderationsaufruf. Getestet wird das gegen eine Fake-Quelle, die jeden Aufruf mitschreibt.
+- Es reduziert Roh-Events auf `{ type, text }`: `chat`, `gift` und `follow`. Eulerstream sendet
+  Follows als `social`; als Follow zählt `action === 1` oder ein Anzeigetyp mit `follow`
+  (Shares mit `action === 2` werden verworfen).
+- Identität (username, uniqueId, userId, nickname) wird nicht kopiert.
+- Reconnect: Bei `disconnected` wird `connect()` auf einer festen Delay-Leiter erneut versucht,
+  höchstens `maxAttempts` mal. Der Scheduler ist injizierbar, damit Tests nicht warten.
+  `EulerstreamAdapter` verbindet sich selbst neu, deshalb ist die Leiter standardmässig aus und
+  für einfache injizierte Quellen gedacht.
+
+`adapters/live-read-keys.js` liest den Eulerstream-Fallback-Key von einer Quelle **ausserhalb des
+Repos** (Umgebungsvariable `EULER_FALLBACK_API_KEY` oder Datei über `EULER_FALLBACK_KEY_FILE`).
+`describeKeySource` und `redactKey` liefern nur eine gekürzte Beschreibung; der Key erscheint nie
+in Ausgabe, Log, Fehlermeldung oder PR. Die Datei liegt nie im Repo und wird nie committet.
+
+```bash
+npm run sidekick:live-read-eulerstream
+```
+
+Das Skript spielt `demo/live-read-fixture.jsonl` über eine In-Memory-Quelle ab. Es liest keinen
+Key und öffnet kein Netz; die echten Live-Tests (`EULER_FALLBACK_API_KEY`) laufen nur auf Cids PC.
+
+Die Tests laufen offline gegen die Fake-Quelle und eine Fake-Uhr:
+
+```bash
+npx jest --runInBand test/sidekick-host-live-read-source.test.js --verbose
+```
+
 ## Aufbau
 
 | Datei | Aufgabe |
@@ -89,14 +124,18 @@ npx jest --runInBand test/sidekick-host-live-read.test.js --verbose
 | `adapters/animaze-adapter.js` | Animaze nur als Adapter mit injiziertem Transport. `HostCore` kennt Animaze nicht. |
 | `adapters/live-read-adapter.js` | Nur lesende Schnittstelle zur Live-Chat-Quelle: `start`/`poll`/`stop`, normalisierte Events, Identität entfernt. |
 | `adapters/live-read-stream.js` | Fixture-Queue mit `connect`/`read`/`close` für Tests ohne echte Verbindung. |
+| `adapters/live-read-source.js` | Nur lesende Eulerstream-Quelle: `connect`/`read`/`close`, Follow-Erkennung, bounded Reconnect. |
+| `adapters/live-read-keys.js` | Liest den Fallback-Key aus externer Quelle (`EULER_FALLBACK_API_KEY`/`EULER_FALLBACK_KEY_FILE`), redigiert. |
 | `testing/live-read-fixture.js` | Lädt `demo/live-read-fixture.jsonl` und baut daraus einen Fixture-Stream. |
+| `testing/fake-live-source.js` | In-Memory-Fake der Live-Quelle; zeichnet alle Aufrufe auf (Read-Only-Nachweis). |
 | `live-read-fixture-play.js` | Spielt das Live-Read-Fixture offline ab und zählt normalisierte Typen. |
+| `live-read-eulerstream-play.js` | Spielt das Fixture über die Eulerstream-Quelle offline ab (Reconnect/Key nicht nötig). |
 | `demo.js` | Startpunkt für die Demo. |
 | `fixture-play.js` | Spielt `demo/fixture-feed.jsonl` offline ab und zählt. |
 
 ## Lücken (Stand dieses Branches)
 
-- Der echte Live-Chat-Anschluss fehlt weiterhin. Vorhanden sind die nur lesende Schnittstelle und ein Fixture-Stream; die reale Eulerstream-/TikTok-Verbindung (Reconnect, Key aus externer Quelle) folgt in `lt-4r0`.
+- Die Eulerstream-/TikTok-Verbindung ist jetzt als nur lesende Quelle vorhanden (Bridge, Follow-Erkennung, bounded Reconnect, Key aus externer Quelle). Offen: der echte Live-Lauf mit `EULER_FALLBACK_API_KEY` auf Cids PC; hier laufen nur Fake-Quelle und Fixture.
 - Der Animaze-Transport ist nicht verdrahtet. Für die Demo reicht der Text-Adapter.
 - `openrouter/free` ist nur teilweise geprüft: Live-Check am 15.10. um 22:0x, 10 Anfragen, 5 Antworten, 5 Fehler der Klasse `error`. Antwortqualität und Latenz sind nicht bewertet.
 - Der Lesetest (ab 09:00) ist nicht Teil dieser Demo und läuft nur im freigegebenen Rahmen.
