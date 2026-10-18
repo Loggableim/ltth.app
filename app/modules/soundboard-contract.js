@@ -31,6 +31,12 @@
  * PERMISSION_DENIED). Der Contract fuehrt die Codes nur fuer den
  * Sound-Kontext mit, damit Fehlerpfade einheitlich benannt sind.
  *
+ * `COMMAND_EVENT_TYPE` ist `'command'`. WICHTIG fuer T2: das bestehende
+ * Backend (`SoundboardManager.playSound`) akzeptiert nur
+ * `gift|follow|subscribe|share|like|test|preview|animation` als `eventType`
+ * und stuft Unbekanntes auf `'unknown'` herunter. T2 muss `'command'` dort
+ * ergaenzen, damit Chat-Sounds korrekt als Command-Events gefuehrt werden.
+ *
  * --- Eingabe ------------------------------------------------------------------------
  *
  * @typedef {Object} SoundRequest
@@ -65,6 +71,7 @@
  * @typedef {Object} CommandResult
  * @property {boolean} success
  * @property {string} [message]
+ * @property {string} [messageKey]   i18n-Key (MESSAGE_KEYS oder SUCCESS_MESSAGE_KEY).
  * @property {string} [error]
  * @property {string} [errorCode]
  * @property {boolean} [displayOverlay]
@@ -146,6 +153,8 @@ const DEFAULT_MESSAGES = Object.freeze({
 
 const REQUIRED_CLIENT_METHODS = Object.freeze(['isEnabled', 'resolve', 'play']);
 const OPTIONAL_CLIENT_METHODS = Object.freeze(['getAudioTarget']);
+
+const SUCCESS_MESSAGE_KEY = 'soundboard.command.success.playing';
 
 const CONTROL_CHAR_PATTERN = /[\u0000-\u001f\u007f]/;
 
@@ -345,12 +354,20 @@ function toCommandResult(result) {
   }
   if (result.success) {
     const label = result.sound ? result.sound.label : 'sound';
-    return Object.freeze({ success: true, message: `Playing "${label}"` });
+    return Object.freeze({
+      success: true,
+      message: `Playing "${label}"`,
+      messageKey: SUCCESS_MESSAGE_KEY,
+      params: Object.freeze({ name: label })
+    });
   }
+  const errorCode = result.errorCode || ERROR_CODES.PLAYBACK_FAILED;
   return Object.freeze({
     success: false,
     error: result.message || 'Sound command failed.',
-    errorCode: result.errorCode || ERROR_CODES.PLAYBACK_FAILED,
+    errorCode,
+    messageKey: MESSAGE_KEYS[errorCode] || MESSAGE_KEYS[ERROR_CODES.PLAYBACK_FAILED],
+    params: result.params || Object.freeze({}),
     displayOverlay: true
   });
 }
@@ -409,6 +426,7 @@ function assertSoundboardClient(client) {
  *   enabled: boolean,
  *   audioTarget: string,
  *   setEnabled: (value: boolean) => void,
+ *   setAudioTarget: (value: string) => void,
  *   addSound: (sound: Object) => void,
  *   removeSound: (name: string) => void,
  *   reset: () => void
@@ -531,6 +549,7 @@ module.exports = {
   DEFAULT_MESSAGES,
   REQUIRED_CLIENT_METHODS,
   OPTIONAL_CLIENT_METHODS,
+  SUCCESS_MESSAGE_KEY,
   normalizeSoundName,
   soundKey,
   assertSoundRequest,

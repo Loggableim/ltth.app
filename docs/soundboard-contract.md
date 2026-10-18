@@ -66,6 +66,32 @@ Quellen (`RESOLUTION_SOURCES`, Reihenfolge in `SOURCE_ORDER`):
 - Ziele (`AUDIO_TARGETS`): `dashboard`, `obs_overlay`, `both` (Default
   `DEFAULT_AUDIO_TARGET`); spiegelt die Setting `soundboard_audio_target`.
 
+## GCCE-Antwort (`toCommandResult`)
+
+`toCommandResult(result)` liefert eine eingefrorene Antwort:
+
+```js
+// Erfolg
+{ success: true, message: 'Playing "Airhorn"',
+  messageKey: 'soundboard.command.success.playing', params: { name: 'Airhorn' } }
+// Fehler
+{ success: false, error: 'Unknown sound "x".', errorCode: 'SOUND_NOT_FOUND',
+  messageKey: 'soundboard.command.errors.notFound', params: { name: 'x' },
+  displayOverlay: true }
+```
+
+`messageKey` ist der i18n-Key (Erfolg: `SUCCESS_MESSAGE_KEY`, Fehler:
+`MESSAGE_KEYS[errorCode]`), damit die Command-Schicht die Meldung in allen vier
+Sprachen ausgeben kann. `message`/`error` bleiben der englische Fallback.
+
+## Event-Typ des Chat-Befehls
+
+`COMMAND_EVENT_TYPE` = `'command'`. Das bestehende Backend
+(`SoundboardManager.playSound`) kennt als `eventType` nur
+`gift|follow|subscribe|share|like|test|preview|animation` und stuft Unbekanntes
+auf `'unknown'` herunter. **T2 muss `'command'` in der Backend-Liste ergaenzen**,
+sonst landen Chat-Sounds als `unknown` im Payload.
+
 ## Client-Interface
 
 ```js
@@ -101,6 +127,7 @@ h.resolveCalls; h.playCalls; h.setEnabled(false); h.addSound(...); h.reset();
 - `EVENT_TYPES` = `gift|follow|subscribe|share|like|test|preview|animation|command`
 - `COMMAND_EVENT_TYPE` = `'command'` (Event-Typ des Chat-Befehls)
 - `AUDIO_TARGETS` = `['dashboard', 'obs_overlay', 'both']`
+- `SUCCESS_MESSAGE_KEY` = `'soundboard.command.success.playing'`
 - `ERROR_CODES` und `MESSAGE_KEYS` (i18n) siehe Modul
 
 Constants sind eingefroren; `CONTRACT_VERSION` beschreibt den Contract-Stand.

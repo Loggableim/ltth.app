@@ -15,6 +15,7 @@ const {
   MESSAGE_KEYS,
   DEFAULT_MESSAGES,
   REQUIRED_CLIENT_METHODS,
+  SUCCESS_MESSAGE_KEY,
   normalizeSoundName,
   assertSoundRequest,
   isSoundRequest,
@@ -65,6 +66,7 @@ describe('soundboard-contract constants', () => {
 
   test('REQUIRED_CLIENT_METHODS matches the documented interface', () => {
     expect(REQUIRED_CLIENT_METHODS).toEqual(['isEnabled', 'resolve', 'play']);
+    expect(SUCCESS_MESSAGE_KEY).toBe('soundboard.command.success.playing');
   });
 });
 
@@ -202,16 +204,30 @@ describe('soundboard-contract playback results', () => {
 
   test('toCommandResult maps success and failure onto the GCCE shape', () => {
     const ok = toCommandResult(createPlaybackSuccess(AIRHORN));
-    expect(ok).toEqual({ success: true, message: 'Playing "airhorn"' });
+    expect(ok).toEqual({
+      success: true,
+      message: 'Playing "airhorn"',
+      messageKey: SUCCESS_MESSAGE_KEY,
+      params: { name: 'airhorn' }
+    });
 
     const fail = toCommandResult(createPlaybackError(ERROR_CODES.SOUND_NOT_FOUND, { name: 'goose' }));
     expect(fail).toEqual({
       success: false,
       error: 'Unknown sound "goose".',
       errorCode: 'SOUND_NOT_FOUND',
+      messageKey: MESSAGE_KEYS[ERROR_CODES.SOUND_NOT_FOUND],
+      params: { name: 'goose' },
       displayOverlay: true
     });
     expect(() => toCommandResult(null)).toThrow(/must be an object/);
+  });
+
+  test('toCommandResult exposes a localizable messageKey for every error code', () => {
+    for (const code of Object.values(ERROR_CODES)) {
+      const result = toCommandResult(createPlaybackError(code, { name: 'x', remaining: 3 }));
+      expect(result.messageKey).toBe(MESSAGE_KEYS[code]);
+    }
   });
 });
 
