@@ -101,7 +101,7 @@ describe('Gesamt-Demo coverage', () => {
     expect(text).not.toMatch(/EULER_FALLBACK/);
   });
 
-  test('fasst das Ergebnis in einer Zeile zusammen', () => {
+  test('fasst das Ergebnis in der Zusammenfassung zusammen', () => {
     const summary = formatSummary(result);
     expect(summary).toContain('[gesamt-demo]');
     expect(summary).toContain('coverage');
