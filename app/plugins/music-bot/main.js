@@ -90,6 +90,8 @@ const DEFAULT_CONFIG = {
   commands: {
     request: 'sr',
     skip: 'skip',
+    play: 'play',
+    status: 'status',
     queue: 'queue',
     nowPlaying: 'np',
     volume: 'vol',
@@ -103,8 +105,10 @@ const DEFAULT_CONFIG = {
     vote2: 'vote2'
   },
   commandAliases: {
-    request: ['play', 'song', 'request'],
+    request: ['song', 'request'],
     skip: [],
+    play: ['resumeplay'],
+    status: ['state'],
     queue: ['q', 'list'],
     nowPlaying: ['now', 'playing', 'current'],
     volume: ['v', 'volume'],
@@ -149,6 +153,8 @@ const DEFAULT_CONFIG = {
   permissions: {
     request: 'viewer',
     skip: 'viewer',
+    play: 'mod',
+    status: 'viewer',
     volume: 'mod',
     pause: 'mod',
     resume: 'mod',
@@ -237,6 +243,9 @@ const DEFAULT_CONFIG = {
   }
 };
 
+// Spam-Schutz fuer Player-Steuerbefehle aus dem Chat (pro Nutzer und Befehl).
+const CHAT_PLAYER_COMMAND_COOLDOWN_MS = 5000;
+
 class MusicBotPlugin extends EventEmitter {
   constructor(api) {
     super();
@@ -285,6 +294,7 @@ class MusicBotPlugin extends EventEmitter {
     this._pendingRequests = new Set();
     this._requestCredits = new Map();
     this._userLikes = new Map();
+    this._chatPlayerCommandCooldowns = new Map();
     this._processedGiftEventIds = new Map();
     this.pluginDataDir = null;
     this.cacheDir = null;
@@ -3238,6 +3248,11 @@ class MusicBotPlugin extends EventEmitter {
           return this._skipCurrent(username);
         }
         return this._handleSkipVote(username, chatData);
+      case 'play':
+        return this._handleChatPlay(command, username);
+      case 'status':
+        this._emitChatResponse(this._formatChatStatus(), username);
+        return;
       case 'vote1':
       case 'vote2': {
         const result = this._castNextSongVote(username, command.type === 'vote1' ? 1 : 2);
@@ -3298,6 +3313,8 @@ class MusicBotPlugin extends EventEmitter {
         const parts = [];
         if (cmds.request) parts.push(`${prefix}${cmds.request} <song>`);
         if (cmds.skip) parts.push(`${prefix}${cmds.skip}`);
+        if (cmds.play) parts.push(`${prefix}${cmds.play} [position]`);
+        if (cmds.status) parts.push(`${prefix}${cmds.status}`);
         if (cmds.queue) parts.push(`${prefix}${cmds.queue}`);
         if (cmds.nowPlaying) parts.push(`${prefix}${cmds.nowPlaying}`);
         if (cmds.mysong) parts.push(`${prefix}${cmds.mysong}`);
@@ -3367,6 +3384,101 @@ class MusicBotPlugin extends EventEmitter {
       if (streamer && streamer.toLowerCase() === (username || '').toLowerCase()) return true;
     } catch (_) { /* ignore db errors */ }
     return false;
+  }
+
+  /**
+   * Spam-Schutz fuer Player-Steuerbefehle aus dem Chat.
+   * @param {string} commandType
+   * @param {string} username
+   * @returns {{allowed: boolean, remainingSeconds: number}}
+   */
+  _consumeChatPlayerCommandCooldown(commandType, username) {
+    if (!Number.isFinite(CHAT_PLAYER_COMMAND_COOLDOWN_MS) || CHAT_PLAYER_COMMAND_COOLDOWN_MS <= 0) {
+      return { allowed: true, remainingSeconds: 0 };
+    }
+    const key = `${commandType}:${String(username || 'viewer').toLowerCase()}`;
+    const now = Date.now();
+    const blockedUntil = this._chatPlayerCommandCooldowns.get(key) || 0;
+    if (blockedUntil > now) {
+      return { allowed: false, remainingSeconds: Math.ceil((blockedUntil - now) / 1000) };
+    }
+    this._chatPlayerCommandCooldowns.set(key, now + CHAT_PLAYER_COMMAND_COOLDOWN_MS);
+    return { allowed: true, remainingSeconds: 0 };
+  }
+
+  /**
+   * Baut die Statusausgabe direkt aus dem internen Player-Zustand
+   * (PlaybackController.getState/getNowPlaying + QueueManager.getQueue),
+   * damit sie konsistent zur Steuerung bleibt.
+   * @returns {string}
+   */
+  _formatChatStatus() {
+    const queueLength = this.queueManager?.getQueue?.().length || 0;
+    if (this._isSafetyLocked()) {
+      return `Status: gesperrt (Safety-Lock) | Queue: ${queueLength}`;
+    }
+    const state = this.playbackEngine?.getState?.() || 'idle';
+    const current = this.playbackEngine?.getNowPlaying?.() || null;
+    const nowPlaying = current ? `Jetzt läuft: ${current.title}` : 'Nichts läuft';
+    return `Status: ${state} | ${nowPlaying} | Queue: ${queueLength}`;
+  }
+
+  async _handleChatPlay(command, username) {
+    if (this._isSafetyLocked()) {
+      this._emitChatResponse(this._lockedResult().error, username);
+      return;
+    }
+
+    const cooldown = this._consumeChatPlayerCommandCooldown('play', username);
+    if (!cooldown.allowed) {
+      this._emitChatResponse(
+        `Bitte warte ${cooldown.remainingSeconds}s bis zum nächsten ${this.config.commandPrefix}${this.config.commands.play}.`,
+        username
+      );
+      return;
+    }
+
+    const queue = this.queueManager.getQueue();
+    const index = command?.index;
+    if (index !== null && index !== undefined) {
+      if (!Number.isInteger(index) || index < 0 || index >= queue.length) {
+        this._emitChatResponse('Diese Queue-Position gibt es nicht.', username);
+        return;
+      }
+      const moved = this.queueManager.reorderSong(index, 0);
+      if (!moved?.success) {
+        this._emitChatResponse('Song nicht gefunden.', username);
+        return;
+      }
+      const current = this.playbackEngine.getNowPlaying();
+      const result = current
+        ? await this._skipCurrent(`chat-play:${username}`)
+        : await this._playNextFromQueue('chat-play');
+      const track = result?.next || result?.song || moved.song || queue[index] || null;
+      this._emitQueue();
+      this._emitChatResponse(`Spiele jetzt "${track?.title || '?'}".`, username);
+      return;
+    }
+
+    const current = this.playbackEngine.getNowPlaying();
+    const state = this.playbackEngine.getState?.() || 'idle';
+    if (current && (state === 'paused' || state === 'pausing')) {
+      await this.playbackEngine.resume();
+      this._emitResumed();
+      this._emitChatResponse(`Weiter: ${current.title}`, username);
+      return;
+    }
+    if (current && (state === 'playing' || this.playbackEngine.isPlaying?.())) {
+      this._emitChatResponse(`Es läuft bereits: ${current.title}`, username);
+      return;
+    }
+
+    const next = await this._playNextFromQueue('chat-play');
+    if (!next?.success) {
+      this._emitChatResponse('Kein Song in der Queue.', username);
+      return;
+    }
+    this._emitChatResponse(`Spiele jetzt "${next.song?.title || '?'}".`, username);
   }
 
   _createRequestAbort(req) {

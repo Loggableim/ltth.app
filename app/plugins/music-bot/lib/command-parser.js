@@ -82,8 +82,17 @@ class CommandParser {
       }
       case 'skip':
         return { type, force: requiredPermission !== 'viewer' };
+      case 'play': {
+        // Optional 1-based queue position; null means "resume/start playback".
+        const playIndexArg = Number(args[0]);
+        if (Number.isFinite(playIndexArg) && playIndexArg > 0) {
+          return { type, index: Math.floor(playIndexArg) - 1 };
+        }
+        return { type, index: null };
+      }
       case 'queue':
       case 'nowPlaying':
+      case 'status':
       case 'pause':
       case 'resume':
       case 'clear':
