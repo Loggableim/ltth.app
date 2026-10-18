@@ -51,6 +51,27 @@ npm run sidekick:fixture
 
 Das Skript liest keinen Key und öffnet kein Netz. `gapMs` schiebt nur eine virtuelle Uhr, damit Leerlauf das Rate-Limit öffnet. Die Zusammenfassung zählt Antwortquote, Plugin-Wechsel, vom Ausgabe-Filter verworfene Texte und Fallbacks auf Textvorlagen.
 
+## Live-Chat-Adapter (nur lesend, Fixture)
+
+Der Adapter `adapters/live-read-adapter.js` ist die Schnittstelle von einer echten Live-Chat-Quelle zum Host. Er ist ausschliesslich lesend:
+
+- Nur `start`, `poll` und `stop` sind vorhanden. Es gibt keine `send`-, `reply`-, `post`- oder Moderationsmethode.
+- Er konsumiert nur einen injizierten Stream (`connect`/`read`/`close`). Kein Netzwerk, kein Key, kein Config-Zugriff in diesem Modul.
+- Er normalisiert Roh-Events auf `{ type, text }`: bekannt sind `chat`, `gift`, `follow`; alles andere wird `{ type: 'other', text: '' }`.
+- Identität (username, uniqueId, nickname, userId) wird entfernt. Namen erscheinen nie in den Events oder im Log.
+
+Für Tests ohne echte Verbindung liefert `adapters/live-read-stream.js` eine Fixture-Queue (`createFixtureStream`). Das Fixture `demo/live-read-fixture.jsonl` enthält ausschliesslich synthetische Viewer und deckt `chat`, `gift`, `follow` und unbekannte Typen (`like`, `share`) ab.
+
+```bash
+npm run sidekick:live-read-fixture
+```
+
+Das Skript liest keinen Key und öffnet kein Netz. Es zählt nur die normalisierten Typen. Die Vertragstests laufen offline:
+
+```bash
+npx jest --runInBand test/sidekick-host-live-read.test.js --verbose
+```
+
 ## Aufbau
 
 | Datei | Aufgabe |
@@ -66,12 +87,16 @@ Das Skript liest keinen Key und öffnet kein Netz. `gapMs` schiebt nur eine virt
 | `reply-filter.js` | Entfernt Links, Mentions, Steuerzeichen. Blockt definierte Inhalte. |
 | `adapters/text-adapter.js` | Reine Textausgabe. |
 | `adapters/animaze-adapter.js` | Animaze nur als Adapter mit injiziertem Transport. `HostCore` kennt Animaze nicht. |
+| `adapters/live-read-adapter.js` | Nur lesende Schnittstelle zur Live-Chat-Quelle: `start`/`poll`/`stop`, normalisierte Events, Identität entfernt. |
+| `adapters/live-read-stream.js` | Fixture-Queue mit `connect`/`read`/`close` für Tests ohne echte Verbindung. |
+| `testing/live-read-fixture.js` | Lädt `demo/live-read-fixture.jsonl` und baut daraus einen Fixture-Stream. |
+| `live-read-fixture-play.js` | Spielt das Live-Read-Fixture offline ab und zählt normalisierte Typen. |
 | `demo.js` | Startpunkt für die Demo. |
 | `fixture-play.js` | Spielt `demo/fixture-feed.jsonl` offline ab und zählt. |
 
 ## Lücken (Stand dieses Branches)
 
-- Der echte Live-Chat-Anschluss fehlt. Es gibt nur den lokalen Test-Feed.
+- Der echte Live-Chat-Anschluss fehlt weiterhin. Vorhanden sind die nur lesende Schnittstelle und ein Fixture-Stream; die reale Eulerstream-/TikTok-Verbindung (Reconnect, Key aus externer Quelle) folgt in `lt-4r0`.
 - Der Animaze-Transport ist nicht verdrahtet. Für die Demo reicht der Text-Adapter.
 - `openrouter/free` ist nur teilweise geprüft: Live-Check am 15.10. um 22:0x, 10 Anfragen, 5 Antworten, 5 Fehler der Klasse `error`. Antwortqualität und Latenz sind nicht bewertet.
 - Der Lesetest (ab 09:00) ist nicht Teil dieser Demo und läuft nur im freigegebenen Rahmen.
