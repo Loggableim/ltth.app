@@ -10,6 +10,8 @@
     let streamStartTime = null;
     let runtimeInterval = null;
     let runtimeSparklineData = [];
+    let currentPluginSnapshot = null;
+    let pluginSnapshotRequest = null;
     const MAX_SPARKLINE_POINTS = 60;
     const SOCKET_CHECK_TIMEOUT_MS = 10000;
     const SOCKET_CHECK_INTERVAL_MS = 100;
@@ -23,23 +25,88 @@
     }
 
     /**
-     * Fetch active plugins from API
-     * @returns {Promise<Set<string>>} Set of active plugin IDs
+     * Fetch the validated public/local plugin inventory used by quick actions.
      */
-    async function fetchActivePlugins() {
-        try {
-            const response = await fetch('/api/plugins');
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success && data.plugins) {
-                    return new Set(data.plugins.filter(p => p.enabled).map(p => p.id));
+    async function fetchPluginSnapshot() {
+        if (pluginSnapshotRequest) return pluginSnapshotRequest;
+        pluginSnapshotRequest = (async () => {
+            for (let attempt = 0; attempt <= 3; attempt += 1) {
+                try {
+                    const response = await fetch('/api/plugins');
+                    if (!response.ok) throw new Error(`Plugin API returned ${response.status}`);
+                    const data = await response.json();
+                    if (!data.success || !Array.isArray(data.plugins) ||
+                        !['public', 'local'].includes(data.distributionMode)) {
+                        throw new Error('Plugin API returned an invalid inventory response');
+                    }
+                    return {
+                        distributionMode: data.distributionMode,
+                        availablePlugins: new Set(data.plugins.map(plugin => plugin.id)),
+                        activePlugins: new Set(data.plugins.filter(plugin => plugin.enabled).map(plugin => plugin.id))
+                    };
+                } catch (error) {
+                    if (attempt === 3) {
+                        console.warn('[Dashboard Enhancements] Plugin inventory is not available:', error);
+                        return null;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
                 }
             }
-        } catch (error) {
-            console.warn('[Dashboard Enhancements] Could not load plugin states:', error);
+            return null;
+        })();
+        try {
+            return await pluginSnapshotRequest;
+        } finally {
+            pluginSnapshotRequest = null;
         }
-        return new Set();
     }
+
+    function setQuickActionControlsPending() {
+        document.querySelectorAll('.quick-action-btn[data-plugin], .sidebar-quick-icon[data-plugin]').forEach(element => {
+            element.dataset.pluginState = 'pending';
+            element.style.display = 'none';
+            element.disabled = true;
+            element.setAttribute('aria-hidden', 'true');
+            element.setAttribute('aria-disabled', 'true');
+        });
+    }
+
+    function applyQuickActionInventory(snapshot) {
+        document.querySelectorAll('.quick-action-btn[data-plugin], .sidebar-quick-icon[data-plugin]').forEach(element => {
+            const pluginId = element.getAttribute('data-plugin');
+            const blocked = snapshot.distributionMode === 'public' && !snapshot.availablePlugins.has(pluginId);
+            const enabled = snapshot.activePlugins.has(pluginId);
+            const span = element.querySelector('span');
+
+            if (span?.hasAttribute('data-original-text')) {
+                span.textContent = span.getAttribute('data-original-text');
+                span.removeAttribute('data-original-text');
+            }
+
+            element.style.display = blocked ? 'none' : '';
+            element.setAttribute('aria-hidden', blocked ? 'true' : 'false');
+            element.dataset.pluginState = blocked ? 'blocked' : (enabled ? 'enabled' : 'disabled');
+            element.disabled = blocked || !enabled;
+            element.setAttribute('aria-disabled', String(blocked || !enabled));
+            element.classList.toggle('quick-action-disabled', !blocked && !enabled);
+
+            if (blocked) return;
+            if (enabled) {
+                element.title = '';
+                if (element.getAttribute('data-state') === 'disabled') element.setAttribute('data-state', 'idle');
+                return;
+            }
+
+            element.setAttribute('data-state', 'disabled');
+            element.title = getTranslation('dashboard.quick_action.enable_plugin_hint', 'Enable this plugin to use quick actions');
+            if (span) {
+                span.setAttribute('data-original-text', span.textContent);
+                span.textContent = getTranslation('dashboard.quick_action.plugin_disabled', 'Plugin disabled');
+            }
+        });
+    }
+
+    setQuickActionControlsPending();
 
     // ========== INITIALIZATION ==========
     document.addEventListener('DOMContentLoaded', () => {
@@ -81,92 +148,37 @@
     // ========== REFRESH QUICK ACTION BUTTONS ==========
     async function refreshQuickActionButtons() {
         console.log('[Dashboard Enhancements] Refreshing Quick Action Buttons');
+        const freshSnapshot = await fetchPluginSnapshot();
+        if (freshSnapshot) currentPluginSnapshot = freshSnapshot;
+        const snapshot = freshSnapshot || currentPluginSnapshot;
+        if (!snapshot) {
+            setQuickActionControlsPending();
+            return false;
+        }
 
-        // Load active plugins (empty set means no plugins enabled, but we still need to process button states)
-        const activePlugins = await fetchActivePlugins();
-
-        console.log('[Dashboard Enhancements] Active plugins:', Array.from(activePlugins));
-
-        // Update quick action buttons based on plugin states
-        const buttons = document.querySelectorAll('.quick-action-btn[data-plugin]');
-        buttons.forEach(button => {
-            const pluginId = button.getAttribute('data-plugin');
-            const span = button.querySelector('span');
-            
-            if (pluginId && activePlugins.has(pluginId)) {
-                // Plugin is enabled - restore button
-                if (button.disabled || button.classList.contains('quick-action-disabled')) {
-                    console.log(`[Dashboard Enhancements] Re-enabling quick action button for plugin: ${pluginId}`);
-                    button.classList.remove('quick-action-disabled');
-                    button.disabled = false;
-                    button.title = '';
-                    
-                    // Restore original text if it was changed
-                    if (span && span.hasAttribute('data-original-text')) {
-                        span.textContent = span.getAttribute('data-original-text');
-                        span.removeAttribute('data-original-text');
-                    }
-                    
-                    // Set temporary 'idle' state while loadQuickActionButtonStates loads the actual state
-                    button.setAttribute('data-state', 'idle');
-                }
-            } else if (pluginId && !activePlugins.has(pluginId)) {
-                // Plugin is disabled - show disabled state
-                if (!button.disabled) {
-                    console.log(`[Dashboard Enhancements] Disabling quick action button for plugin: ${pluginId}`);
-                    button.setAttribute('data-state', 'disabled');
-                    button.classList.add('quick-action-disabled');
-                    button.disabled = true;
-                    button.title = getTranslation('dashboard.quick_action.enable_plugin_hint', 'Enable this plugin to use quick actions');
-                    
-                    // Update the span text to show disabled message
-                    if (span && !span.hasAttribute('data-original-text')) {
-                        span.setAttribute('data-original-text', span.textContent);
-                        span.textContent = getTranslation('dashboard.quick_action.plugin_disabled', 'Plugin disabled');
-                    }
-                }
-            }
-        });
-
-        // Reload states for active plugins (sets the actual on/off state)
-        await loadQuickActionButtonStates(activePlugins);
+        applyQuickActionInventory(snapshot);
+        await loadQuickActionButtonStates(snapshot.activePlugins);
 
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+        return true;
     }
 
     // ========== QUICK ACTION BUTTONS ==========
     async function initializeQuickActionButtons() {
         console.log('[Dashboard Enhancements] Initializing Quick Action Buttons');
 
-        // Load active plugins first
-        const activePlugins = await fetchActivePlugins();
-
-        // Check and update quick action buttons for disabled plugins
-        const buttons = document.querySelectorAll('.quick-action-btn[data-plugin]');
-        buttons.forEach(button => {
-            const pluginId = button.getAttribute('data-plugin');
-            if (pluginId && !activePlugins.has(pluginId)) {
-                // Plugin is disabled - show disabled state
-                button.setAttribute('data-state', 'disabled');
-                button.classList.add('quick-action-disabled');
-                button.disabled = true;
-                button.title = getTranslation('dashboard.quick_action.enable_plugin_hint', 'Enable this plugin to use quick actions');
-                
-                // Update the span text to show disabled message (only if not already set)
-                const span = button.querySelector('span');
-                if (span && !span.hasAttribute('data-original-text')) {
-                    span.setAttribute('data-original-text', span.textContent);
-                    span.textContent = getTranslation('dashboard.quick_action.plugin_disabled', 'Plugin disabled');
-                }
-                console.log(`[Dashboard Enhancements] Quick action button disabled for inactive plugin: ${pluginId}`);
-            }
-        });
-
-        // Load initial states for active plugins
-        await loadQuickActionButtonStates(activePlugins);
+        const freshSnapshot = await fetchPluginSnapshot();
+        if (freshSnapshot) currentPluginSnapshot = freshSnapshot;
+        const snapshot = freshSnapshot || currentPluginSnapshot;
+        if (snapshot) {
+            applyQuickActionInventory(snapshot);
+            await loadQuickActionButtonStates(snapshot.activePlugins);
+        } else {
+            setQuickActionControlsPending();
+        }
 
         // Attach click handlers to all quick action buttons
         const allButtons = document.querySelectorAll('.quick-action-btn');
@@ -220,23 +232,18 @@
     async function initializeSidebarQuickIcons() {
         console.log('[Dashboard Enhancements] Initializing Sidebar Quick Icons');
 
-        // Load active plugins first
-        const activePlugins = await fetchActivePlugins();
+        const freshSnapshot = await fetchPluginSnapshot();
+        if (freshSnapshot) currentPluginSnapshot = freshSnapshot;
+        const snapshot = freshSnapshot || currentPluginSnapshot;
+        if (!snapshot) {
+            setQuickActionControlsPending();
+            return;
+        }
+        applyQuickActionInventory(snapshot);
 
         // Get all sidebar quick icons
         const sidebarIcons = document.querySelectorAll('.sidebar-quick-icon');
         console.log(`[Dashboard Enhancements] Found ${sidebarIcons.length} sidebar quick icons`);
-
-        // Check and update sidebar icons for disabled plugins
-        sidebarIcons.forEach(icon => {
-            const pluginId = icon.getAttribute('data-plugin');
-            if (pluginId && !activePlugins.has(pluginId)) {
-                // Plugin is disabled - set disabled state
-                icon.setAttribute('data-state', 'disabled');
-                icon.disabled = true;
-                console.log(`[Dashboard Enhancements] Sidebar icon disabled for inactive plugin: ${pluginId}`);
-            }
-        });
 
         // Sync states with main quick action buttons
         syncSidebarIconStates();

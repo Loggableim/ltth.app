@@ -9,6 +9,7 @@
 
 const FORMAT_VERSION = '1.0.0';
 const APP_NAME = 'pupcids-little-tiktool-helper';
+const { normalizeScopedPluginIds } = require('./profile-scoped-data');
 
 /**
  * Creates a new backup manifest object.
@@ -21,8 +22,8 @@ const APP_NAME = 'pupcids-little-tiktool-helper';
  * @param {Array}  [opts.warnings] - Non-fatal warnings generated during export
  * @returns {object} manifest object
  */
-function createManifest({ appVersion, profile, options, plugins, warnings } = {}) {
-    return {
+function createManifest({ appVersion, profile, options, plugins, warnings, profileScopedDataPlugins } = {}) {
+    const manifest = {
         formatVersion: FORMAT_VERSION,
         app: {
             name: APP_NAME,
@@ -34,6 +35,10 @@ function createManifest({ appVersion, profile, options, plugins, warnings } = {}
         plugins: plugins || [],
         warnings: warnings || []
     };
+    if (Array.isArray(profileScopedDataPlugins) && profileScopedDataPlugins.length) {
+        manifest.profileScopedDataPlugins = profileScopedDataPlugins;
+    }
+    return manifest;
 }
 
 /**
@@ -72,6 +77,13 @@ function validateManifest(manifest) {
 
     if (!Array.isArray(manifest.warnings)) {
         errors.push('warnings must be an array');
+    }
+
+    if (manifest.profileScopedDataPlugins !== undefined) {
+        if (!Array.isArray(manifest.profileScopedDataPlugins) ||
+            normalizeScopedPluginIds(manifest.profileScopedDataPlugins).length !== manifest.profileScopedDataPlugins.length) {
+            errors.push('profileScopedDataPlugins contains unsupported plugin IDs');
+        }
     }
 
     // Version compatibility check – warn on future major versions

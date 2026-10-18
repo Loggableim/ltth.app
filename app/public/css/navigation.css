@@ -1261,7 +1261,6 @@ html:is(
     grid-column: 1 / -1;
 }
 
-.dashboard-side-column .shoutbox-section,
 .dashboard-side-column .updates-section {
     padding: 1.25rem;
 }
@@ -1274,10 +1273,6 @@ html:is(
     max-height: 280px;
 }
 
-.dashboard-side-column .shoutbox-container {
-    min-height: 320px;
-}
-
 #view-dashboard {
     position: relative;
 }
@@ -1288,8 +1283,8 @@ html:is(
     inset: 0;
     pointer-events: none;
     background:
-        radial-gradient(circle at 24% 12%, rgba(34, 211, 238, 0.12), transparent 24rem),
-        radial-gradient(circle at 82% 8%, rgba(52, 211, 153, 0.10), transparent 20rem),
+        radial-gradient(circle at 24% 12%, rgba(124, 58, 237, 0.08), transparent 24rem),
+        radial-gradient(circle at 82% 8%, rgba(74, 222, 128, 0.045), transparent 20rem),
         radial-gradient(circle at 62% 86%, rgba(139, 92, 246, 0.10), transparent 22rem);
     opacity: 0.9;
     z-index: 0;
@@ -2773,11 +2768,15 @@ input:checked + .toggle-slider:before {
         position: fixed;
         transform: translateX(-100%);
         z-index: 10000;
+        visibility: hidden;
+        transition: transform var(--transition-speed) ease, visibility 0s linear var(--transition-speed);
     }
 
     .sidebar.mobile-open {
         transform: translateX(0);
         box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+        visibility: visible;
+        transition-delay: 0s;
     }
 
     .main-content {

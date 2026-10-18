@@ -165,7 +165,9 @@ function createPublicOverlayMiddleware({ logger = console } = {}) {
   };
 }
 
-function protectPublicSocket({ socket, logger = console }) {
+const { createPublicReleaseEventGuard } = require('./public-overlay-release-event-policy');
+
+function protectPublicSocket({ socket, logger = console, pluginReleasePolicy }) {
   const hostname = normalizeHostname(socket?.handshake?.headers?.host);
   const isPublic = isQuickTunnelHost(hostname);
   socket.data = socket.data || {};
@@ -175,9 +177,10 @@ function protectPublicSocket({ socket, logger = console }) {
     return socket;
   }
 
+  const releaseEventAllowed = createPublicReleaseEventGuard(pluginReleasePolicy);
   socket.join(PUBLIC_QUICK_TUNNEL_ROOM);
   socket.use(([eventName], next) => {
-    if (isIncomingSocketEventAllowed(eventName)) {
+    if (isIncomingSocketEventAllowed(eventName) && releaseEventAllowed('incoming', eventName)) {
       next();
       return;
     }
@@ -194,7 +197,7 @@ function protectPublicSocket({ socket, logger = console }) {
   socket.emit = (eventName, ...args) => {
     if (
       typeof eventName === 'string' &&
-      !isOutgoingSocketEventAllowed(eventName)
+      (!isOutgoingSocketEventAllowed(eventName) || !releaseEventAllowed('outgoing', eventName))
     ) {
       logger.warn?.(
         'Blocked one disallowed outgoing public Quick Tunnel Socket.IO event.'
@@ -217,10 +220,10 @@ function protectPublicSocket({ socket, logger = console }) {
   return socket;
 }
 
-function attachPublicSocketPolicy({ io, logger = console }) {
+function attachPublicSocketPolicy({ io, logger = console, pluginReleasePolicy }) {
   io.use((socket, next) => {
     try {
-      protectPublicSocket({ socket, logger });
+      protectPublicSocket({ socket, logger, pluginReleasePolicy });
       next();
     } catch (error) {
       next(error);

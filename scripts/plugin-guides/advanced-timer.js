@@ -26,7 +26,7 @@ module.exports = Object.freeze({
   "requirement": "obs",
   "safety": "obs",
   "mode": "ui",
-  "overlay": "/plugins/advanced-timer/overlay/index.html",
+  "overlay": "/advanced-timer/overlay",
   "related": [
     "goals",
     "game-engine"
@@ -551,31 +551,31 @@ module.exports = Object.freeze({
       "copy": {
         "de": {
           "title": "Timer Overlay als Overlay-Vorschau oeffnen",
-          "body": "Erstelle zuerst einen lokalen 90-Sekunden-Testtimer. Oeffne dann dessen echte Overlay-URL mit dem erzeugten timer-Parameter ausschliesslich in einer nicht sendenden OBS-Testszene.",
+          "body": "Erstelle zuerst einen lokalen 90-Sekunden-Testtimer. Oeffne dann dessen echte Overlay-URL mit dem erzeugten timer-Parameter ausschliesslich in einer nicht sendenden OBS-Testszene. Dieser Ablauf prueft nur den Timer-Countdown; Rotator-Eintraege und Schwelleneffekte sind optional und gehoeren nicht zu dieser Pruefung.",
           "expected": "Das Overlay zeigt den lokalen Testtimer mit 01:30.",
           "alt": "Timer Overlay als Overlay-Vorschau oeffnen - Timerdauer, Startsignal und Ablaufregeln"
         },
         "en": {
           "title": "Open Timer Overlay as an overlay preview",
-          "body": "First create a local 90-second test timer. Then open its real Overlay URL with the generated timer parameter only in an OBS test scene that is not live.",
+          "body": "First create a local 90-second test timer. Then open its real Overlay URL with the generated timer parameter only in an OBS test scene that is not live. This workflow checks only the timer countdown; rotator entries and threshold effects are optional and are not part of this check.",
           "expected": "The overlay shows the local test timer at 01:30.",
           "alt": "Open Timer Overlay as an overlay preview - timer duration, start signal, and flow rules"
         },
         "es": {
           "title": "Abre Timer Overlay como vista previa de overlay",
-          "body": "Primero crea un temporizador de prueba local de 90 segundos. Despues abre su URL real de Overlay con el parametro timer generado solo en una escena de prueba de OBS que no esta al aire.",
+          "body": "Primero crea un temporizador de prueba local de 90 segundos. Despues abre su URL real de Overlay con el parametro timer generado solo en una escena de prueba de OBS que no esta al aire. Este flujo solo comprueba la cuenta atras; las entradas del rotador y los efectos por umbral son opcionales y no forman parte de esta comprobacion.",
           "expected": "El overlay muestra el temporizador local de prueba en 01:30.",
           "alt": "Abre Timer Overlay como vista previa de overlay - duración, señal de inicio y reglas de flujo del temporizador"
         },
         "fr": {
           "title": "Ouvrez Timer Overlay comme apercu overlay",
-          "body": "Creez d abord un minuteur de test local de 90 secondes. Ouvrez ensuite sa vraie URL Overlay avec le parametre timer genere uniquement dans une scene de test OBS non diffusee.",
+          "body": "Creez d abord un minuteur de test local de 90 secondes. Ouvrez ensuite sa vraie URL Overlay avec le parametre timer genere uniquement dans une scene de test OBS non diffusee. Ce parcours verifie uniquement le compte a rebours; les entrees du rotateur et les effets de seuil sont facultatifs et ne sont pas inclus dans cette verification.",
           "expected": "L overlay affiche le minuteur de test local a 01:30.",
           "alt": "Ouvrez Timer Overlay comme apercu overlay - durée, signal de départ et règles du minuteur"
         }
       },
       "capture": {
-        "route": "/plugins/advanced-timer/overlay/index.html",
+        "route": "/advanced-timer/overlay",
         "assertVisible": "#timer-container",
         "focusText": {
           "de": "Timer Overlay als Overlay-Vorschau oeffnen",
@@ -596,26 +596,26 @@ module.exports = Object.freeze({
         }
       },
       "workflow": {
-        "route": "/plugins/advanced-timer/overlay/index.html",
+        "route": "/advanced-timer/overlay",
         "instructions": {
           "de": {
             "title": "Timer Overlay als Overlay-Vorschau oeffnen",
-            "body": "Erstelle zuerst einen lokalen 90-Sekunden-Testtimer. Oeffne dann dessen echte Overlay-URL mit dem erzeugten timer-Parameter ausschliesslich in einer nicht sendenden OBS-Testszene.",
+            "body": "Erstelle zuerst einen lokalen 90-Sekunden-Testtimer. Oeffne dann dessen echte Overlay-URL mit dem erzeugten timer-Parameter ausschliesslich in einer nicht sendenden OBS-Testszene. Dieser Ablauf prueft nur den Timer-Countdown; Rotator-Eintraege und Schwelleneffekte sind optional und gehoeren nicht zu dieser Pruefung.",
             "expected": "Das Overlay zeigt den lokalen Testtimer mit 01:30."
           },
           "en": {
             "title": "Open Timer Overlay as an overlay preview",
-            "body": "First create a local 90-second test timer. Then open its real Overlay URL with the generated timer parameter only in an OBS test scene that is not live.",
+            "body": "First create a local 90-second test timer. Then open its real Overlay URL with the generated timer parameter only in an OBS test scene that is not live. This workflow checks only the timer countdown; rotator entries and threshold effects are optional and are not part of this check.",
             "expected": "The overlay shows the local test timer at 01:30."
           },
           "es": {
             "title": "Abre Timer Overlay como vista previa de overlay",
-            "body": "Primero crea un temporizador de prueba local de 90 segundos. Despues abre su URL real de Overlay con el parametro timer generado solo en una escena de prueba de OBS que no esta al aire.",
+            "body": "Primero crea un temporizador de prueba local de 90 segundos. Despues abre su URL real de Overlay con el parametro timer generado solo en una escena de prueba de OBS que no esta al aire. Este flujo solo comprueba la cuenta atras; las entradas del rotador y los efectos por umbral son opcionales y no forman parte de esta comprobacion.",
             "expected": "El overlay muestra el temporizador local de prueba en 01:30."
           },
           "fr": {
             "title": "Ouvrez Timer Overlay comme apercu overlay",
-            "body": "Creez d abord un minuteur de test local de 90 secondes. Ouvrez ensuite sa vraie URL Overlay avec le parametre timer genere uniquement dans une scene de test OBS non diffusee.",
+            "body": "Creez d abord un minuteur de test local de 90 secondes. Ouvrez ensuite sa vraie URL Overlay avec le parametre timer genere uniquement dans une scene de test OBS non diffusee. Ce parcours verifie uniquement le compte a rebours; les entrees du rotateur et les effets de seuil sont facultatifs et ne sont pas inclus dans cette verification.",
             "expected": "L overlay affiche le minuteur de test local a 01:30."
           }
         },
@@ -634,7 +634,7 @@ module.exports = Object.freeze({
           },
           {
             "type": "goto",
-            "route": "/plugins/advanced-timer/overlay/index.html"
+            "route": "/advanced-timer/overlay"
           },
           {
             "type": "open-overlay-preview",
@@ -649,7 +649,7 @@ module.exports = Object.freeze({
           {
             "type": "url",
             "expected": {
-              "path": "/plugins/advanced-timer/overlay/index.html",
+              "path": "/advanced-timer/overlay",
               "query": {"lang":"$locale","timer":"non-empty"},
               "exactQuery": true
             }

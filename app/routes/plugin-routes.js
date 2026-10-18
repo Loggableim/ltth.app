@@ -64,7 +64,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
     const storeAccountResponse = options.storeAccountResponse || ((req) => buildStoreAccountResponse(req, env));
     const claimBetaLicense = options.claimBetaLicense || ((req) => claimBetaLicenseForStoreAccount(req.storeAccount || {}, { env, logger }));
     // Multer für ZIP-Upload konfigurieren
-    const pluginUploadDir = path.join(__dirname, '..', 'plugins', '_uploads');
+    const pluginUploadDir = options.pluginUploadDir || path.join(__dirname, '..', 'plugins', '_uploads');
     if (!fs.existsSync(pluginUploadDir)) {
         fs.mkdirSync(pluginUploadDir, { recursive: true });
     }
@@ -424,6 +424,9 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
 
             res.json({
                 success: true,
+                distributionMode: pluginLoader.releasePolicy?.getSnapshot?.().publicMode === true
+                    ? 'public'
+                    : 'local',
                 plugins: allPlugins
             });
         } catch (error) {
@@ -572,6 +575,7 @@ function setupPluginRoutes(app, pluginLoader, apiLimiter, uploadLimiter, logger,
                     packagePath: req.file.originalname || path.basename(zipPath)
                 });
                 safePluginId = canonicalizePluginId(runtimeManifestId);
+                pluginLoader.releasePolicy?.assertAllowed(runtimeManifestId);
                 entryPath = resolvePluginEntryPath(pluginDir, manifest.entry);
             } catch (error) {
                 fs.rmSync(tempDir, { recursive: true, force: true });

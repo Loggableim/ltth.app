@@ -9,6 +9,8 @@ const syncScript = path.join(repoRoot, 'scripts', 'sync-streammonsters-product.j
 const projectedFiles = [
   'app/plugins/stream-monsters/product-contract.json',
   'app/plugins/stream-monsters/plugin.json',
+  // Read by the sync script for closedBeta/alias checks; missing in the fixture caused ENOENT.
+  'app/config/plugin-release-policy.json',
   'plugin-store.json',
   'scripts/plugin-guides/stream-monsters.js',
   'streammonsters/index.html',
@@ -119,11 +121,6 @@ describe('Stream Monsters product contract', () => {
       parsed.version = '0.0.0';
       return `${JSON.stringify(parsed, null, 2)}\n`;
     }],
-    ['Store entry', 'plugin-store.json', (value) => {
-      const parsed = JSON.parse(value);
-      parsed.plugins.find(plugin => plugin.id === 'stream-monsters').access.type = 'public';
-      return `${JSON.stringify(parsed, null, 2)}\n`;
-    }],
     ['guide metadata', 'scripts/plugin-guides/stream-monsters.js', value => (
       value.replace('Arcade Clash', 'Drifted Arena')
     )],
@@ -147,6 +144,21 @@ describe('Stream Monsters product contract', () => {
       fs.rmSync(fixtureRoot, { recursive: true, force: true });
     }
   });
+
+  test('closed-beta plugin leaves plugin-store.json unprojected (sync-streammonsters-product.js:110-112)', () => {
+    const fixtureRoot = createProjectionFixture();
+    try {
+      const target = path.join(fixtureRoot, 'plugin-store.json');
+      fs.writeFileSync(target, fs.readFileSync(target, 'utf8').replace('"stream-monsters"', '"stream-monsters-drift"'), 'utf8');
+
+      const result = runSync(fixtureRoot, '--check');
+
+      expect(result.status).toBe(0);
+    } finally {
+      fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
 
   test('write mode is deterministic and repairs every projection', () => {
     const fixtureRoot = createProjectionFixture();

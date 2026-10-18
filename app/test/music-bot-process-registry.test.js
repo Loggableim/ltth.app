@@ -543,7 +543,7 @@ describe('Music Bot orphan reconciliation', () => {
   test.each([
     ['emergency stop', (controller) => controller.emergencyStop()],
     ['player reset', (controller) => controller.resetPlayer()],
-    ['shutdown', (controller) => controller.shutdown()]
+    ['application shutdown', (controller) => controller.shutdown({ reconcileOrphans: true })]
   ])('%s also removes marked orphan processes', async (_label, invoke) => {
     const processRegistry = {
       findMarkedProcesses: jest.fn(async () => []),
@@ -554,6 +554,36 @@ describe('Music Bot orphan reconciliation', () => {
     await invoke(controller);
 
     expect(processRegistry.cleanupMarked).toHaveBeenCalledWith({ timeoutMs: 2000 });
+  });
+
+  test('application shutdown waits for slot shutdown before scanning marked processes', async () => {
+    const order = [];
+    const processRegistry = {
+      findMarkedProcesses: jest.fn(async () => []),
+      cleanupMarked: jest.fn(async () => {
+        order.push('marked-process-scan');
+        return { found: [], killed: [], remaining: [] };
+      })
+    };
+    const controller = createController(processRegistry);
+    attachOwnedSlot(controller, {
+      pid: 4802,
+      state: 'playing',
+      nowPlaying: { id: 'active-track', title: 'Active track' },
+      shutdown: async () => {
+        order.push('slot-shutdown-start');
+        await Promise.resolve();
+        order.push('slot-shutdown-complete');
+      }
+    });
+
+    await controller.shutdown({ reconcileOrphans: true });
+
+    expect(order).toEqual([
+      'slot-shutdown-start',
+      'slot-shutdown-complete',
+      'marked-process-scan'
+    ]);
   });
 
   test('does not scan or kill marked processes while controller playback is active', async () => {

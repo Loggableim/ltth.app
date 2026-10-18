@@ -1,5 +1,5 @@
 {
-  "version": "1.4.4",
+  "version": "1.5.0",
   "updated_at": "2026-10-07T00:00:00Z",
-  "notes": "LTTH 1.4.4 is an interim release with verified shutdown persistence, overlay lifecycle/localization fixes and isolated backend checks. OBS matrix acceptance and remaining live/provider checks are still open."
+  "notes": "LTTH 1.5.0. See CHANGELOG.md for release details."
 }

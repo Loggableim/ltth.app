@@ -55,6 +55,7 @@ const STATE = {
   activeCards: new Map(),   // cardId → { element, slotId, timerId }
   _cardCounter: 0,
   _initialized: false,
+  _languageCallbackRegistered: false,
   // Ticker state
   _tickerItems: [],
   _tickerAnimId: null,
@@ -115,6 +116,31 @@ function applySettings(settings) {
   applyTickerSettings(settings);
 }
 
+function eventLabel(type) {
+  const config = EVENT_CONFIG[type];
+  return ClarityHUDI18n.text(`overlay.event.${type}`, config?.label || type);
+}
+
+function localizedHighlightLabel(type, data) {
+  const giftName = data.gift?.name || data.giftName || null;
+  const giftCount = data.gift?.count || data.repeatCount || null;
+  if (giftName && giftCount && giftCount > 1) {
+    return ClarityHUDI18n.text('overlay.gift_sent_count', 'sent {gift} x{count}', { gift: giftName, count: giftCount });
+  }
+  if (giftName) {
+    return ClarityHUDI18n.text('overlay.gift_sent', 'sent {gift}', { gift: giftName });
+  }
+  return eventLabel(type);
+}
+
+function refreshLocalizedContent() {
+  STATE.activeCards.forEach(({ element, type, data, isHighlight }) => {
+    const action = element.querySelector(isHighlight ? '.highlight-action' : '.alert-action');
+    if (action) action.textContent = isHighlight ? localizedHighlightLabel(type, data) : eventLabel(type);
+  });
+  renderTicker();
+}
+
 async function loadSettings() {
   try {
     const response = await fetch('/api/clarityhud/settings/stream');
@@ -137,6 +163,7 @@ async function loadSettings() {
 function connectSocket() {
   const socket = io();
   STATE.socket = socket;
+  if (!window.socket) window.socket = socket;
 
   socket.on('connect', () => {
     HUD_LOG.debug('[CLARITY STREAM] Connected to server');
@@ -274,7 +301,7 @@ function showAlertCard(type, data, slotId, ttl) {
 
   const action = document.createElement('div');
   action.className = 'alert-action';
-  action.textContent = cfg.label;
+  action.textContent = eventLabel(type);
   content.appendChild(action);
 
   if (type === 'chat') {
@@ -315,7 +342,7 @@ function showAlertCard(type, data, slotId, ttl) {
     removeCard(cardId);
   }, ttl);
 
-  STATE.activeCards.set(cardId, { element: card, slotId, timerId });
+  STATE.activeCards.set(cardId, { element: card, slotId, timerId, type, data, isHighlight: false });
 }
 
 // ==================== HIGHLIGHT CARD ====================
@@ -354,15 +381,7 @@ function showHighlightCard(type, data, slotId, ttl) {
   // Action label with optional count
   const actionEl = document.createElement('div');
   actionEl.className = 'highlight-action';
-  const giftName = data.gift?.name || data.giftName || null;
-  const giftCount = data.gift?.count || data.repeatCount || null;
-  if (giftName && giftCount && giftCount > 1) {
-    actionEl.textContent = ClarityHUDI18n.text('overlay.gift_sent_count', 'sent {gift} x{count}', { gift: giftName, count: giftCount });
-  } else if (giftName) {
-    actionEl.textContent = ClarityHUDI18n.text('overlay.gift_sent', 'sent {gift}', { gift: giftName });
-  } else {
-    actionEl.textContent = cfg.label;
-  }
+  actionEl.textContent = localizedHighlightLabel(type, data);
   card.appendChild(actionEl);
 
   // Coins badge
@@ -397,7 +416,7 @@ function showHighlightCard(type, data, slotId, ttl) {
     removeCard(cardId);
   }, ttl);
 
-  STATE.activeCards.set(cardId, { element: card, slotId, timerId });
+  STATE.activeCards.set(cardId, { element: card, slotId, timerId, type, data, isHighlight: true });
 }
 
 // ==================== ANIMATION ====================
@@ -567,7 +586,7 @@ function addTickerItem(type, data) {
   if (!cfg) return;
 
   const username = data.user?.nickname || data.nickname || data.username || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous');
-  let text = cfg.label;
+  let text = eventLabel(type);
 
   if (type === 'gift') {
     const giftName = data.gift?.name || data.giftName || '';
@@ -582,7 +601,7 @@ function addTickerItem(type, data) {
     }
   }
 
-  STATE._tickerItems.push({ icon: cfg.icon, username, text });
+  STATE._tickerItems.push({ icon: cfg.icon, username, text, type, data });
   if (STATE._tickerItems.length > TICKER_MAX_ITEMS) {
     STATE._tickerItems.shift();
   }
@@ -622,7 +641,8 @@ function renderTickerItems(container, items) {
     name.textContent = item.username;
     tickerItem.appendChild(name);
 
-    tickerItem.appendChild(document.createTextNode(` ${item.text}`));
+    const text = item.type ? tickerText(item.type, item.data) : item.text;
+    tickerItem.appendChild(document.createTextNode(` ${text}`));
     fragment.appendChild(tickerItem);
 
     const separator = document.createElement('span');
@@ -631,6 +651,21 @@ function renderTickerItems(container, items) {
   });
 
   container.appendChild(fragment);
+}
+
+function tickerText(type, data) {
+  const cfg = EVENT_CONFIG[type];
+  if (!cfg) return '';
+  if (type === 'gift') {
+    const giftName = data.gift?.name || data.giftName || '';
+    const coins = data.gift?.coins || data.coins || 0;
+    if (giftName) return `${giftName}` + (coins > 0 ? ` (${coins} 🪙)` : '');
+  }
+  if (type === 'chat') {
+    const message = data.message || data.comment || '';
+    if (message) return message.length > 40 ? `${message.slice(0, 40)}…` : message;
+  }
+  return eventLabel(type);
 }
 
 /**
@@ -685,6 +720,11 @@ function capitalize(str) {
 
 async function _initOnce() {
   HUD_LOG.debug('[CLARITY STREAM] Initializing stream overlay...');
+
+  if (!STATE._languageCallbackRegistered && window.i18n?.onLanguageChange) {
+    window.i18n.onLanguageChange(refreshLocalizedContent);
+    STATE._languageCallbackRegistered = true;
+  }
 
   // Inject StreamAnimations CSS
   if (typeof StreamAnimations !== 'undefined') {

@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "closedBeta": [
+    "animazingpal",
+    "interactive-story",
+    "music-bot",
+    "osc-bridge",
+    "schnorrbecher",
+    "sidekick",
+    "stream-monsters",
+    "talking-heads",
+    "visual-fx-frame-webgpu",
+    "webgpu-emoji-rain",
+    "webgpu-weather-control"
+  ],
+  "aliases": {
+    "streamalchemy": "stream-monsters"
+  },
+  "publicAssetPathOwners": {
+    "/js/osc-bridge-ui.js": "osc-bridge",
+    "/js/webgpu-emoji-rain-ui.js": "webgpu-emoji-rain",
+    "/osc-bridge-icon.png": "osc-bridge",
+    "/osc-bridge-logo.png": "osc-bridge"
+  }
+}

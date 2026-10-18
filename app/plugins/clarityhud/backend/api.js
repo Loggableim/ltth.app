@@ -43,6 +43,7 @@ class ClarityHUDBackend {
     this.multiStreamMaxMessages = DEFAULT_SETTINGS.multi.maxMessages;
     this.customPresets = [];
     this.version = VERSION;
+    this._overlayEventCounter = 0;
 
     // Like aggregation buffer. The flush window is configurable through full settings.
     this._likeBuffer = {
@@ -336,7 +337,7 @@ class ClarityHUDBackend {
           this.api.emit(`clarityhud.settings.${dock}`, this.settings[dock]);
         }
 
-        if (validation.customPresets.length > 0) {
+        if (validation.customPresetsProvided) {
           this.customPresets = validation.customPresets;
           await this.api.setConfig('clarityhud.customPresets', this.customPresets);
         }
@@ -649,6 +650,7 @@ class ClarityHUDBackend {
       const messageText = data.message || data.comment || '';
       
       const chatEvent = {
+        eventId: this.createOverlayEventId('chat'),
         user: {
           uniqueId: data.uniqueId || data.username || 'unknown',
           nickname: data.nickname || data.username || 'Anonymous',
@@ -1056,6 +1058,11 @@ class ClarityHUDBackend {
     }
   }
 
+  createOverlayEventId(type) {
+    this._overlayEventCounter += 1;
+    return `${type}_${Date.now()}_${this._overlayEventCounter}`;
+  }
+
   /**
    * Clear event queue for specific type
    */
@@ -1296,6 +1303,7 @@ class ClarityHUDBackend {
     try {
       // Normalize the event
       const normalizedEvent = {
+        eventId: this.createOverlayEventId('multi'),
         sourceId: sourceId,
         sourceLabel: sourceLabel,
         streamIndex: streamIndex,
@@ -1337,6 +1345,7 @@ class ClarityHUDBackend {
     try {
       // Normalize the gift event
       const normalizedEvent = {
+        eventId: this.createOverlayEventId('multi'),
         sourceId: sourceId,
         sourceLabel: sourceLabel,
         streamIndex: streamIndex,

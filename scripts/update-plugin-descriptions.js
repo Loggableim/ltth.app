@@ -22,12 +22,6 @@ const pluginDescriptions = {
     es: 'Permite que aplicaciones externas controlen la herramienta mediante HTTP y WebSocket. Proporciona endpoints de API REST y streaming de eventos en tiempo real para integraciones de terceros.',
     fr: 'Permet aux applications externes de contrôler l\'outil via HTTP et WebSocket. Fournit des endpoints API REST et streaming d\'événements en temps réel pour les intégrations tierces.'
   },
-  'chatango': {
-    en: 'Integrates Chatango chat rooms into your stream. Configure embeddable chat widgets, customize appearance, and receive chat messages as events for use in flows and automations.',
-    de: 'Integriert Chatango-Chaträume in Ihren Stream. Konfigurieren Sie einbettbare Chat-Widgets, passen Sie das Aussehen an und erhalten Sie Chat-Nachrichten als Events für Flows und Automatisierungen.',
-    es: 'Integra salas de chat de Chatango en tu transmisión. Configura widgets de chat insertables, personaliza la apariencia y recibe mensajes de chat como eventos para usar en flujos y automatizaciones.',
-    fr: 'Intègre les salons de chat Chatango dans votre stream. Configurez des widgets de chat intégrables, personnalisez l\'apparence et recevez les messages de chat comme événements pour les flux et automatisations.'
-  },
   'clarityhud': {
     en: 'Ultra-minimalistic, VR-optimized and accessible HUD overlays for chat and activity feeds. Designed for clarity and readability in virtual reality environments.',
     de: 'Ultra-minimalistische, VR-optimierte und barrierefreie HUD-Overlays für Chat und Activity-Feeds. Entwickelt für Klarheit und Lesbarkeit in Virtual-Reality-Umgebungen.',

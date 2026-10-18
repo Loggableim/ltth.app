@@ -2629,6 +2629,26 @@ function projectWeatherGamificationResponse(payload) {
  */
 function projectPublicOverlayPayload(eventName, payload) {
   switch (eventName) {
+    // Wheel outputs carry raw setup, reward, spin, and SHOCK details. The
+    // public wheel surface has no approved renderer DTO yet, so keep these
+    // events local-only until one is reviewed and implemented.
+    case 'wheel:audio-updated':
+    case 'wheel:config':
+    case 'wheel:config-updated':
+    case 'wheel:queue-processing':
+    case 'wheel:spin-error':
+    case 'wheel:spin-queued':
+    case 'wheel:spin-result':
+    case 'wheel:spin-start':
+    case 'wheel:spin-timeout':
+      return null;
+    case 'tts:playback:ended':
+      // Renderer lifecycle metadata has no approved public consumer DTO.
+      return null;
+    case 'unified-queue:status':
+    case 'unified-queue:wheel-queued':
+      // These queue snapshots/events contain raw internal correlation IDs.
+      return null;
     case 'emoji-rain:user-mappings-update':
       return projectEmojiRainUserMappingsUpdate(payload);
     case 'game-engine:current-state':

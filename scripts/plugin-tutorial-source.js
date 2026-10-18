@@ -87,9 +87,10 @@ function captureEvidenceStep(step) {
 function buildGuides(repoRoot) {
   const catalog = loadPublishedPluginCatalog(repoRoot);
   const manifests = catalog.plugins;
+  const storeIds = new Set(catalog.storeIds);
   const byId = new Map(GUIDE_MODULES.map((guide) => [guide.id, guide]));
   const expectedIds = catalog.guideIds;
-  const definedIds = [...byId.keys()].sort();
+  const definedIds = [...byId.keys()].filter((id) => catalog.guideIds.includes(id)).sort();
   if (JSON.stringify(expectedIds) !== JSON.stringify(definedIds)) {
     const missing = expectedIds.filter((id) => !byId.has(id));
     const stale = definedIds.filter((id) => !expectedIds.includes(id));
@@ -114,6 +115,7 @@ function buildGuides(repoRoot) {
       name,
       version: record.version || 'current',
       devStatus: record.devStatus || record.accessType || 'available',
+      storeAvailable: storeIds.has(record.id),
       category: record.category || 'plugin',
       copy,
       related: contract.related || [],

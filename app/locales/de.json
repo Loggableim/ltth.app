@@ -121,7 +121,6 @@
     "streamalchemy": "Stream Monsters",
     "gcce": "Globale Chat-Befehls-Engine",
     "gcce_hud": "GCCE HUD-Overlay",
-    "chatango": "Chatango",
     "thermal_printer": "Thermaldrucker",
     "config_import": "Konfiguration Importieren",
     "animazingpal": "AnimazingPal",
@@ -133,9 +132,6 @@
     "stt_capture": "STT-Erfassung",
     "developer_guides": "Entwicklerleitfäden",
     "webgpu_fireworks": "WebGPU Fireworks"
-  },
-  "chatango": {
-    "loading": "Community-Chat wird geladen..."
   },
   "talking_heads_ui": {
     "title": "Talking Heads - KI-Avatar-Animation",
@@ -416,6 +412,9 @@
     "minigames": "Mini-Spiele"
   },
   "events": {
+    "superfan_label": "SuperFan",
+    "superfan_join": "SuperFan ist dem LIVE beigetreten",
+    "superfan_event": "SuperFan-Ereignis empfangen",
     "gift": "{username} hat {giftName} x{repeatCount} gesendet ({coins} Münzen)",
     "follow": "{username} folgt dir!",
     "subscribe": "{username} hat abonniert!",
@@ -712,7 +711,35 @@
     "dark": "Nacht-Modus",
     "auto": "Auto (System)",
     "high_contrast": "Hoher Kontrast",
-    "vision_impaired": "Modus für Sehbehinderte"
+    "vision_impaired": "Modus für Sehbehinderte",
+    "selector": {
+      "title": "Design ändern",
+      "options": {
+        "vision-impaired": {
+          "name": "Sehfreundlicher Modus",
+          "description": "Große Schrift und besonders hoher Kontrast",
+          "badge": "Barrierefreiheit"
+        },
+        "cid": {
+          "name": "Cid",
+          "description": "Neutrales dunkles Markenthema mit grünen und violetten Akzenten",
+          "badge": "Marke"
+        },
+        "night": {
+          "name": "Nachtmodus",
+          "description": "Dunkles Legacy-Design"
+        },
+        "day": {
+          "name": "Tagmodus",
+          "description": "Helles Design"
+        },
+        "contrast": {
+          "name": "Hoher Kontrast",
+          "description": "Legacy-Modus mit hohem Kontrast",
+          "badge": "Legacy"
+        }
+      }
+    }
   },
   "common": {
     "loading": "Laden...",
