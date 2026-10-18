@@ -74,7 +74,11 @@ const DEFAULT_CONFIG = {
     autoConnect: true,
     reconnectOnDisconnect: true,
     reconnectDelay: 5000,
-    maxReconnectAttempts: 10
+    maxReconnectAttempts: 10,
+    maxReconnectDelayMs: 30000,
+    connectTimeoutMs: 10000,
+    requestTimeoutMs: 10000,
+    handshakeTimeoutMs: 5000
   },
   
   // Style settings

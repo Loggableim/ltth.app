@@ -1,488 +1,210 @@
 /**
- * Sidekick Plugin - Animaze/ChatPal WebSocket Client
- * 
- * WebSocket client for connecting to Animaze ChatPal API.
- * Handles connection, reconnection, and message sending with batching support.
+ * Sidekick Plugin - Animaze/ChatPal high-level client
+ *
+ * Adds the message queue and speech pacing on top of the raw
+ * {@link AnimazeTransport} (see ./animazeTransport.js for the wire contract).
+ *
+ * The transport socket implementation can be injected through `options`
+ * (`socketFactory`, `setTimeout`, `clearTimeout`) which allows the client to be
+ * exercised against mocks without a running Animaze instance.
  */
 
-const WebSocket = require('ws');
+const {
+  AnimazeTransport,
+  SpeechState,
+  ANIMAZE_ACTIONS,
+  buildSendMessageCommand
+} = require('./animazeTransport');
 
-/**
- * Speech state tracker for Animaze ChatPal
- */
-class SpeechState {
-  constructor() {
-    this.isSpeaking = false;
-    this.speechStartedAt = null;
-    this.speechEndedAt = null;
-    this.listeners = {
-      start: [],
-      end: []
-    };
-  }
-  
-  markStarted() {
-    this.isSpeaking = true;
-    this.speechStartedAt = Date.now();
-    this.listeners.start.forEach(cb => {
-      try { cb(); } catch (e) { /* ignore */ }
-    });
-  }
-  
-  markEnded() {
-    this.isSpeaking = false;
-    this.speechEndedAt = Date.now();
-    this.listeners.end.forEach(cb => {
-      try { cb(); } catch (e) { /* ignore */ }
-    });
-  }
-  
-  onStart(callback) {
-    this.listeners.start.push(callback);
-  }
-  
-  onEnd(callback) {
-    this.listeners.end.push(callback);
-  }
-  
-  /**
-   * Wait for speech to end
-   * @param {number} timeoutMs - Maximum wait time
-   * @returns {Promise<boolean>} True if speech ended, false if timeout
-   */
-  waitForEnd(timeoutMs = 15000) {
-    return new Promise((resolve) => {
-      if (!this.isSpeaking) {
-        resolve(true);
-        return;
-      }
-      
-      let resolved = false;
-      
-      const onEnd = () => {
-        if (!resolved) {
-          resolved = true;
-          resolve(true);
-        }
-      };
-      
-      this.onEnd(onEnd);
-      
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          resolve(false);
-        }
-      }, timeoutMs);
-    });
-  }
-}
+const DEFAULT_WAIT_START_TIMEOUT_MS = 1200;
+const DEFAULT_MAX_SPEECH_MS = 15000;
+const DEFAULT_POST_GAP_MS = 250;
+const DEFAULT_MAX_LINE_LENGTH = 140;
 
-/**
- * Animaze/ChatPal WebSocket client
- */
 class AnimazeClient {
-  constructor(api, config) {
+  constructor(api, config, options = {}) {
     this.api = api;
     this.config = config;
-    
-    this.ws = null;
-    this.isConnected = false;
-    this.reconnectTimer = null;
-    this.reconnectAttempts = 0;
-    
-    // Speech state tracker
-    this.speechState = new SpeechState();
-    
+
+    this.transport = new AnimazeTransport(api, config, options);
+    // Shared with the transport so external readers (main.js) keep working.
+    this.speechState = this.transport.speechState;
+
     // Message queue for when waiting for speech
     this.messageQueue = [];
     this.processingQueue = false;
-    
-    // Request ID counter
-    this.requestIdCounter = 0;
-    this.pendingRequests = new Map();
-    
-    // Statistics
-    this.stats = {
-      messagesSent: 0,
-      messagesReceived: 0,
-      reconnectCount: 0,
-      errors: 0
+
+    this._onSpeechEnded = () => {
+      this._processQueue();
     };
+    this.transport.on('speech-ended', this._onSpeechEnded);
   }
-  
+
   /**
-   * Get WebSocket URI
+   * @returns {boolean}
+   */
+  get isConnected() {
+    return this.transport.isConnected;
+  }
+
+  /**
    * @returns {string} WebSocket URI
    */
   getUri() {
-    const host = this.config.animaze?.host || '127.0.0.1';
-    const port = this.config.animaze?.port || 9000;
-    return `ws://${host}:${port}`;
+    return this.transport.getUri();
   }
-  
+
   /**
-   * Connect to Animaze
-   * @returns {Promise<boolean>} True if connected
+   * Connect to Animaze.
+   * @returns {Promise<boolean>}
    */
   async connect() {
-    if (this.isConnected) {
-      return true;
-    }
-    
-    // Close existing connection
-    if (this.ws) {
-      try {
-        this.ws.close();
-      } catch (e) { /* ignore */ }
-      this.ws = null;
-    }
-    
-    const uri = this.getUri();
-    this.api.log(`Connecting to Animaze at ${uri}...`, 'info');
-    
-    return new Promise((resolve) => {
-      try {
-        this.ws = new WebSocket(uri, {
-          handshakeTimeout: 5000
-        });
-        
-        this.ws.on('open', () => {
-          this.isConnected = true;
-          this.reconnectAttempts = 0;
-          this.api.log('Connected to Animaze successfully', 'info');
-          
-          // Start queue processor
-          this._processQueue();
-          
-          resolve(true);
-        });
-        
-        this.ws.on('message', (data) => {
-          this._handleMessage(data);
-        });
-        
-        this.ws.on('close', () => {
-          const wasConnected = this.isConnected;
-          this.isConnected = false;
-          this.speechState.markEnded();
-          
-          if (wasConnected) {
-            this.api.log('Disconnected from Animaze', 'info');
-          }
-          
-          // Auto-reconnect if enabled
-          if (this.config.animaze?.reconnectOnDisconnect && 
-              this.config.animaze?.enabled) {
-            this._scheduleReconnect();
-          }
-        });
-        
-        this.ws.on('error', (error) => {
-          this.stats.errors++;
-          this.api.log(`Animaze WebSocket error: ${error.message}`, 'error');
-          this.isConnected = false;
-          resolve(false);
-        });
-        
-        // Connection timeout
-        setTimeout(() => {
-          if (!this.isConnected) {
-            this.api.log('Connection to Animaze timed out', 'warn');
-            if (this.ws) {
-              try { this.ws.close(); } catch (e) { /* ignore */ }
-            }
-            resolve(false);
-          }
-        }, 10000);
-        
-      } catch (error) {
-        this.api.log(`Failed to connect to Animaze: ${error.message}`, 'error');
-        this.stats.errors++;
-        resolve(false);
-      }
-    });
+    return this.transport.connect();
   }
-  
+
   /**
-   * Disconnect from Animaze
+   * Disconnect from Animaze.
    */
   disconnect() {
-    // Clear reconnect timer
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    
-    // Close WebSocket
-    if (this.ws) {
-      try {
-        this.ws.close();
-      } catch (e) { /* ignore */ }
-      this.ws = null;
-    }
-    
-    this.isConnected = false;
-    this.reconnectAttempts = 0;
-    this.speechState.markEnded();
-    
-    this.api.log('Disconnected from Animaze', 'info');
+    this.transport.disconnect();
   }
-  
+
   /**
-   * Schedule a reconnection attempt
-   * @private
-   */
-  _scheduleReconnect() {
-    const maxAttempts = this.config.animaze?.maxReconnectAttempts || 10;
-    
-    if (this.reconnectAttempts >= maxAttempts) {
-      this.api.log('Max reconnect attempts reached', 'warn');
-      return;
-    }
-    
-    this.reconnectAttempts++;
-    this.stats.reconnectCount++;
-    
-    // Exponential backoff with jitter
-    const baseDelay = this.config.animaze?.reconnectDelay || 5000;
-    const delay = Math.min(
-      baseDelay * Math.pow(1.5, this.reconnectAttempts - 1) + 
-      Math.random() * 1000,
-      30000 // Max 30 seconds
-    );
-    
-    this.api.log(`Scheduling reconnect attempt ${this.reconnectAttempts} in ${Math.round(delay)}ms`, 'info');
-    
-    this.reconnectTimer = setTimeout(async () => {
-      await this.connect();
-    }, delay);
-  }
-  
-  /**
-   * Handle incoming message
-   * @private
-   */
-  _handleMessage(data) {
-    try {
-      const message = JSON.parse(data.toString());
-      this.stats.messagesReceived++;
-      
-      // Handle speech state events
-      const action = message.action || message.event || '';
-      
-      if (action === 'ChatbotSpeechStarted') {
-        this.speechState.markStarted();
-        this.api.log('ChatPal started speaking', 'debug');
-      } else if (action === 'ChatbotSpeechEnded') {
-        this.speechState.markEnded();
-        this.api.log('ChatPal finished speaking', 'debug');
-        // Process next message in queue
-        this._processQueue();
-      }
-      
-      // Handle pending request responses
-      if (message.id && this.pendingRequests.has(message.id)) {
-        const { resolve } = this.pendingRequests.get(message.id);
-        this.pendingRequests.delete(message.id);
-        resolve(message);
-      }
-      
-      // Handle errors
-      if (message.error) {
-        this.api.log(`Animaze error: ${message.error}`, 'error');
-        this.stats.errors++;
-      }
-      
-    } catch (error) {
-      this.api.log(`Failed to parse Animaze message: ${error.message}`, 'warn');
-    }
-  }
-  
-  /**
-   * Send a command to Animaze
-   * @param {Object} command - Command object
-   * @param {boolean} waitForResponse - Wait for response
-   * @returns {Promise<Object|boolean>} Response or success status
+   * Send a raw command envelope.
+   * @param {Object} command
+   * @param {boolean} [waitForResponse=false]
+   * @returns {Promise<Object|boolean|null>}
    */
   async sendCommand(command, waitForResponse = false) {
-    if (!this.isConnected || !this.ws) {
-      this.api.log('Cannot send command: Not connected to Animaze', 'warn');
-      return waitForResponse ? null : false;
-    }
-    
-    try {
-      if (waitForResponse) {
-        command.id = `sidekick_${++this.requestIdCounter}_${Date.now()}`;
-      }
-      
-      const message = JSON.stringify(command);
-      this.ws.send(message);
-      this.stats.messagesSent++;
-      
-      if (waitForResponse) {
-        return new Promise((resolve) => {
-          this.pendingRequests.set(command.id, { resolve });
-          
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            if (this.pendingRequests.has(command.id)) {
-              this.pendingRequests.delete(command.id);
-              resolve(null);
-            }
-          }, 10000);
-        });
-      }
-      
-      return true;
-    } catch (error) {
-      this.api.log(`Failed to send command: ${error.message}`, 'error');
-      this.stats.errors++;
-      return waitForResponse ? null : false;
-    }
+    return this.transport.send(command, { waitForResponse });
   }
-  
+
   /**
-   * Send a message to ChatPal
-   * @param {string} text - Message text
-   * @param {boolean} useEcho - Use -echo prefix for TTS only
-   * @param {number} priority - Message priority (higher = more important)
-   * @returns {Promise<boolean>} True if queued/sent
+   * Queue a message for ChatPal.
+   * @param {string} text
+   * @param {boolean} [useEcho=false] - use -echo prefix for TTS only
+   * @param {number} [priority=1] - higher = more important
+   * @returns {Promise<boolean>} true when queued
    */
   async sendMessage(text, useEcho = false, priority = 1) {
     if (!text || !text.trim()) {
       return false;
     }
-    
-    // Trim to max line length
-    const maxLen = this.config.style?.maxLineLength || 140;
+
+    const maxLen = this.config.style?.maxLineLength || DEFAULT_MAX_LINE_LENGTH;
     let trimmedText = text.trim();
     if (trimmedText.length > maxLen) {
       trimmedText = trimmedText.substring(0, maxLen - 1) + '…';
     }
-    
-    // Apply echo prefix if needed
+
     const finalText = useEcho ? `-echo ${trimmedText}` : trimmedText;
-    
-    // Add to queue
+
     this.messageQueue.push({
       text: finalText,
       priority,
       timestamp: Date.now()
     });
-    
+
     // Sort by priority (higher first)
     this.messageQueue.sort((a, b) => b.priority - a.priority);
-    
+
     this.api.log(`Message queued: ${finalText}`, 'debug');
-    
-    // Try to process queue
+
     this._processQueue();
-    
+
     return true;
   }
-  
+
   /**
-   * Process message queue
+   * Process the message queue: send one message and wait for speech to end.
    * @private
    */
   async _processQueue() {
     if (this.processingQueue || this.messageQueue.length === 0) {
       return;
     }
-    
-    if (!this.isConnected) {
-      // Try to connect
-      await this.connect();
-      if (!this.isConnected) {
+
+    if (!this.transport.isConnected) {
+      await this.transport.connect();
+      if (!this.transport.isConnected) {
         return;
       }
     }
-    
-    // Wait for speech to end
+
     if (this.speechState.isSpeaking) {
       return;
     }
-    
+
     this.processingQueue = true;
-    
+
     try {
       const item = this.messageQueue.shift();
       if (!item) {
         this.processingQueue = false;
         return;
       }
-      
-      const command = {
-        action: 'ChatbotSendMessage',
-        message: item.text,
-        priority: item.priority
-      };
-      
+
+      const command = buildSendMessageCommand(item.text, { priority: item.priority });
+
       this.api.log(`Sending to ChatPal: ${item.text}`, 'info');
-      await this.sendCommand(command);
-      
-      // Wait for speech to start and end
+      this.transport.send(command);
+
       const speechConfig = this.config.speech || {};
-      const waitStartTimeout = speechConfig.waitStartTimeoutMs || 1200;
-      const maxSpeechTime = speechConfig.maxSpeechMs || 15000;
-      const postGap = speechConfig.postGapMs || 250;
-      
+      const waitStartTimeout = speechConfig.waitStartTimeoutMs || DEFAULT_WAIT_START_TIMEOUT_MS;
+      const maxSpeechTime = speechConfig.maxSpeechMs || DEFAULT_MAX_SPEECH_MS;
+      const postGap = speechConfig.postGapMs || DEFAULT_POST_GAP_MS;
+
       // Wait a bit for speech to start
       await new Promise(resolve => setTimeout(resolve, waitStartTimeout));
-      
+
       // If speaking, wait for it to end
       if (this.speechState.isSpeaking) {
         await this.speechState.waitForEnd(maxSpeechTime);
       }
-      
+
       // Post-speech gap
       await new Promise(resolve => setTimeout(resolve, postGap));
-      
+
     } catch (error) {
+      this.transport.stats.errors++;
       this.api.log(`Queue processing error: ${error.message}`, 'error');
-      this.stats.errors++;
     } finally {
       this.processingQueue = false;
-      
+
       // Continue processing if more messages
       if (this.messageQueue.length > 0) {
         setImmediate(() => this._processQueue());
       }
     }
   }
-  
+
   /**
-   * Get connection status
-   * @returns {Object} Status object
+   * @returns {Object} status snapshot
    */
   getStatus() {
     return {
-      driver: 'animaze',
-      isConnected: this.isConnected,
-      isSpeaking: this.speechState.isSpeaking,
-      queueLength: this.messageQueue.length,
-      reconnectAttempts: this.reconnectAttempts,
-      stats: { ...this.stats }
+      ...this.transport.getStatus(),
+      queueLength: this.messageQueue.length
     };
   }
-  
+
   /**
-   * Update configuration
-   * @param {Object} config - New configuration
+   * @param {Object} config
    */
   updateConfig(config) {
     this.config = config;
+    this.transport.updateConfig(config);
   }
-  
+
   /**
-   * Clean up resources
+   * Clean up resources.
    */
   destroy() {
-    this.disconnect();
+    this.transport.removeListener('speech-ended', this._onSpeechEnded);
+    this.transport.destroy();
     this.messageQueue = [];
-    this.pendingRequests.clear();
+    this.processingQueue = false;
   }
 }
 
-module.exports = { AnimazeClient, SpeechState };
+module.exports = { AnimazeClient, SpeechState, ANIMAZE_ACTIONS };

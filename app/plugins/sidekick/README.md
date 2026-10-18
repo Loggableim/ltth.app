@@ -109,6 +109,66 @@ Die Konfiguration wird in der LTTH-Datenbank gespeichert und kann über die UI o
 
 - `sidekick:status` - Status-Updates
 
+## Animaze-Transport
+
+Der Animaze-Transport kapselt die WebSocket-Verbindung zum Animaze ChatPal.
+Er ist als eigenes Modul `backend/animazeTransport.js` implementiert und wird
+von `backend/animazeClient.js` (Queue + Speech-Pacing) genutzt.
+
+### Interface
+
+- Transport: WebSocket, Default `ws://<host>:<port>` (`animaze.host`/`animaze.port`).
+- Steuerbefehl (LTTH -> Animaze):
+  `{ action: 'ChatbotSendMessage', message: '<Text>', priority?: number, id?: string }`
+- Events (Animaze -> LTTH):
+  - `{ action: 'ChatbotSpeechStarted' }` - Avatar beginnt zu sprechen
+  - `{ action: 'ChatbotSpeechEnded' }` - Avatar hat aufgehoert zu sprechen
+  - `{ id: '<request-id>', ... }` - Antwort auf einen Befehl mit `id`
+  - `{ error: '<Beschreibung>' }` - Server-Fehler
+
+### Graceful Degradation
+
+Wenn Animaze nicht erreichbar ist (Verbindung abgelehnt, Handshake-Timeout,
+fehlende WebSocket-Implementierung, ungueltige Payloads) wirft der Transport
+**nie** eine Exception. Stattdessen:
+
+- `connect()` loest zu `false` auf, `isConnected === false`,
+- Fehler/Timeouts werden klar geloggt (`[Animaze] ...`),
+- malformed Nachrichten werden verworfen und gezaehlt
+  (`stats.malformedMessages`), ohne den Stream zu unterbrechen.
+
+### Tests gegen Mocks
+
+`AnimazeTransport` (und damit `AnimazeClient`) akzeptiert eine injizierbare
+`socketFactory`, sodass die Implementierung ohne laufende Animaze-Instanz gegen
+Mocks getestet werden kann:
+
+```js
+const { AnimazeTransport } = require('./backend/animazeTransport');
+const transport = new AnimazeTransport(api, config, {
+  socketFactory: (uri, opts) => new MockSocket(uri, opts)
+});
+```
+
+Tests: `test/animaze-transport.test.js` (Encode/Decode, Verbindungsfehler,
+Timeouts, Speech-Events, Reconnect) und `test/animaze-client.test.js`
+(Queue, Graceful Degradation, Status).
+
+### Live-Test (Cids Windows-PC)
+
+Der Live-Test laeuft auf Cids Windows-PC (Animaze ist dort installiert); er
+blockiert die Worker nicht.
+
+1. Animaze auf dem Windows-PC starten und ChatPal/WebSocket aktivieren.
+2. In LTTH/Sidekick als Avatar-Driver `animaze` waehlen und `animaze.host`
+   auf `127.0.0.1`, `animaze.port` auf den ChatPal-Port (Default `9000`) setzen.
+3. `POST /api/sidekick/animaze/connect` -> `{ success: true, isConnected: true }`.
+4. `POST /api/sidekick/animaze/test` mit `{ "message": "Hallo Animaze" }` ->
+   der Avatar spricht; `GET /api/sidekick/animaze/status` zeigt
+   `isSpeaking: true/false` und steigende `stats.messagesSent`.
+5. Negativtest: Animaze schliessen und erneut verbinden -> `connect()` liefert
+   `false`, klare Warn im Log, keine Exception; `stats.errors` steigt.
+
 ## Technische Details
 
 ### Architektur
@@ -124,7 +184,8 @@ sidekick/
 │   ├── eventBus.js      # Event System
 │   ├── deduper.js       # Event Deduplication
 │   ├── rateLimit.js     # Rate Limiting
-│   ├── animazeClient.js # WebSocket Client
+│   ├── animazeClient.js # Animaze ChatPal Client (Queue + Speech)
+│   ├── animazeTransport.js # Animaze/ChatPal WebSocket-Transport + Codec
 │   ├── responseEngine.js # Relevanz-Scoring
 │   ├── outboxBatcher.js # Message Batching
 │   └── metrics.js       # Analytics
