@@ -72,6 +72,20 @@ Das Skript liest keinen Key und öffnet kein Netz. Es zählt nur die normalisier
 npx jest --runInBand test/sidekick-host-live-read.test.js --verbose
 ```
 
+## Gesamt-Demo (offline, lt-luo T1)
+
+Fährt die Drafts der Woche in einem Lauf offline durch (Host-Szenen, Live-Read-Fixture, Animaze-Mock, Music-Bot-Adapter, Rate-Limit) und gibt eine Abdeckungsmatrix mit Lücken und Cid-PC-Testliste aus:
+
+```bash
+npm run sidekick:gesamt-demo
+```
+
+Details stehen in `GESAMT-DEMO.md`. Die Tests laufen offline und sperren `fetch`/`WebSocket`:
+
+```bash
+npx jest --runInBand test/sidekick-host-gesamt-demo.test.js --verbose
+```
+
 ## Aufbau
 
 | Datei | Aufgabe |
@@ -91,6 +105,7 @@ npx jest --runInBand test/sidekick-host-live-read.test.js --verbose
 | `adapters/live-read-stream.js` | Fixture-Queue mit `connect`/`read`/`close` für Tests ohne echte Verbindung. |
 | `testing/live-read-fixture.js` | Lädt `demo/live-read-fixture.jsonl` und baut daraus einen Fixture-Stream. |
 | `live-read-fixture-play.js` | Spielt das Live-Read-Fixture offline ab und zählt normalisierte Typen. |
+| `gesamt-demo.js` | Gesamt-Demo über alle Drafts der Woche: Szenen, Fixture, Mocks, Abdeckungsmatrix. |
 | `demo.js` | Startpunkt für die Demo. |
 | `fixture-play.js` | Spielt `demo/fixture-feed.jsonl` offline ab und zählt. |
 
