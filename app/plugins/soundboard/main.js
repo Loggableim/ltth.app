@@ -8,6 +8,8 @@ const SoundboardApiRoutes = require('./api-routes');
 const MyInstantsAPI = require('./myinstants-api');
 const AudioCacheManager = require('./audio-cache');
 const CacheCleanupJob = require('./cache-cleanup');
+const { SoundboardCommandClient } = require('./command-client');
+const { SoundboardCommandHandler } = require('./command-handler');
 
 const DEFAULT_GIPHY_API_KEY = 'HFGAjZBhpxeQkITNlLQTbAI91qPmWVZp';
 
@@ -665,7 +667,7 @@ class SoundboardManager extends EventEmitter {
             }
         }
 
-        const validEventTypes = ['gift', 'follow', 'subscribe', 'share', 'like', 'test', 'preview', 'animation'];
+        const validEventTypes = ['gift', 'follow', 'subscribe', 'share', 'like', 'test', 'preview', 'animation', 'command'];
         let validEventType = 'unknown';
         if (metadata.eventType && typeof metadata.eventType === 'string') {
             const normalizedType = metadata.eventType.toLowerCase().trim();
@@ -683,6 +685,9 @@ class SoundboardManager extends EventEmitter {
             timestamp: Date.now(),
             giftId: validGiftId,
             eventType: validEventType,
+            requestedBy: metadata.requestedBy !== undefined && metadata.requestedBy !== null
+                ? String(metadata.requestedBy)
+                : null,
             repeatCount: Math.max(parseInt(metadata.repeatCount || 1, 10) || 1, 1)
         };
 
@@ -714,6 +719,7 @@ class SoundboardManager extends EventEmitter {
             label: soundData.label,
             giftId: soundData.giftId,
             eventType: soundData.eventType,
+            requestedBy: soundData.requestedBy || null,
             repeatCount: soundData.repeatCount,
             timestamp: soundData.timestamp,
             audioTarget: audioTarget
@@ -771,6 +777,10 @@ class SoundboardPlugin {
     constructor(api) {
         this.api = api;
         this.soundboard = null;
+        this.commandClient = null;
+        this.commandHandler = null;
+        this.gcceCommandsRegistered = false;
+        this.gcceEventListeners = [];
     }
 
     async init() {
@@ -825,7 +835,44 @@ class SoundboardPlugin {
         // Register TikTok event handlers
         this.registerTikTokEventHandlers();
 
+        // Initialize the !sound chat command (contract-bound client + handler)
+        this.initSoundCommand();
+
+        // Register the !sound command with GCCE (retries via lifecycle events)
+        this.setupGCCEIntegrationListeners();
+        this.registerGCCECommands();
+
         this.api.log('✅ Soundboard Plugin initialized', 'info');
+    }
+
+    /**
+     * Build the `!sound` command client/handler on top of the real soundboard
+     * backend and its data sources.
+     */
+    initSoundCommand() {
+        const logger = {
+            info: (msg) => this.api.log(msg, 'info'),
+            warn: (msg) => this.api.log(msg, 'warn'),
+            error: (msg) => this.api.log(msg, 'error'),
+            debug: (msg) => this.api.log(msg, 'debug')
+        };
+
+        const soundsDir = path.join(__dirname, '../../public/sounds');
+
+        this.commandClient = new SoundboardCommandClient({
+            soundboard: this.soundboard,
+            db: this.api.getDatabase(),
+            logger,
+            soundsDir,
+            fs,
+            myinstants: this.myinstantsAPI,
+            fetcher: this.fetcher
+        });
+
+        this.commandHandler = new SoundboardCommandHandler({
+            client: this.commandClient,
+            logger
+        });
     }
 
     /**
@@ -1443,7 +1490,150 @@ class SoundboardPlugin {
         return this.soundboard;
     }
 
+    /**
+     * Public accessor for the `!sound` command handler (tests/diagnostics).
+     */
+    getCommandHandler() {
+        return this.commandHandler;
+    }
+
+    /**
+     * Register the `!sound` command with GCCE. Safe to call repeatedly; it
+     * unregisters the plugin's own commands first and refuses to steal a
+     * command owned by another plugin.
+     */
+    registerGCCECommands() {
+        try {
+            const gcce = this._getGCCEInstance();
+            if (!gcce || typeof gcce.registerCommandsForPlugin !== 'function') {
+                this.gcceCommandsRegistered = false;
+                this.api.log('💬 [SOUNDBOARD] GCCE not available yet, will retry', 'debug');
+                return;
+            }
+
+            if (typeof gcce.getCommandOwner === 'function') {
+                const owner = gcce.getCommandOwner('sound');
+                if (owner && owner !== 'soundboard') {
+                    this.api.log(`[SOUNDBOARD] Command "sound" is owned by ${owner}; registration skipped`, 'warn');
+                    return;
+                }
+            }
+
+            try {
+                if (typeof gcce.unregisterCommandsForPlugin === 'function') {
+                    gcce.unregisterCommandsForPlugin('soundboard');
+                }
+            } catch (error) {
+                // Ignore: no commands registered yet.
+            }
+
+            const result = gcce.registerCommandsForPlugin('soundboard', [{
+                name: 'sound',
+                description: 'Play a sound from the soundboard (gift sounds, local files, MyInstants)',
+                syntax: '/sound <name>',
+                permission: 'all',
+                enabled: true,
+                minArgs: 0,
+                maxArgs: 12,
+                category: 'Soundboard',
+                cooldown: { user: 5000, global: 2000 },
+                handler: (args, context) => this.commandHandler.handle(args, context)
+            }]);
+
+            this.gcceCommandsRegistered = Array.isArray(result.registered) && result.registered.length > 0;
+            this.api.log(`💬 [SOUNDBOARD] Registered commands with GCCE: ${(result.registered || []).join(', ') || 'none'}`, 'info');
+            if (Array.isArray(result.failed) && result.failed.length > 0) {
+                this.api.log(`💬 [SOUNDBOARD] Failed to register: ${result.failed.join(', ')}`, 'warn');
+            }
+        } catch (error) {
+            this.api.log(`❌ [SOUNDBOARD] Error registering GCCE commands: ${error.message}`, 'error');
+        }
+    }
+
+    /**
+     * Unregister the plugin's GCCE commands.
+     */
+    unregisterGCCECommands() {
+        try {
+            const gcce = this._getGCCEInstance();
+            if (gcce && typeof gcce.unregisterCommandsForPlugin === 'function') {
+                gcce.unregisterCommandsForPlugin('soundboard');
+            }
+        } catch (error) {
+            this.api.log(`[SOUNDBOARD] Error unregistering GCCE commands: ${error.message}`, 'warn');
+        } finally {
+            this.gcceCommandsRegistered = false;
+        }
+    }
+
+    /**
+     * Listen for GCCE lifecycle events so `!sound` also registers when GCCE is
+     * enabled or reloaded after the soundboard has finished loading.
+     */
+    setupGCCEIntegrationListeners() {
+        if (this.gcceEventListeners.length > 0 || typeof this.api.on !== 'function') {
+            return;
+        }
+
+        const registerWhenGCCEAvailable = (eventName, payload) => {
+            const pluginId = typeof payload === 'string' ? payload : payload && payload.id;
+            if (eventName !== 'gcce:ready' && pluginId !== 'gcce') return;
+            this.registerGCCECommands();
+        };
+
+        const markGCCEUnavailable = (payload) => {
+            const pluginId = typeof payload === 'string' ? payload : payload && payload.id;
+            if (pluginId !== 'gcce') return;
+            this.gcceCommandsRegistered = false;
+        };
+
+        const listeners = [
+            ['gcce:ready', (payload) => registerWhenGCCEAvailable('gcce:ready', payload)],
+            ['plugin:loaded', (payload) => registerWhenGCCEAvailable('plugin:loaded', payload)],
+            ['plugin:enabled', (payload) => registerWhenGCCEAvailable('plugin:enabled', payload)],
+            ['plugin:reloaded', (payload) => registerWhenGCCEAvailable('plugin:reloaded', payload)],
+            ['plugin:unloaded', markGCCEUnavailable],
+            ['plugin:disabled', markGCCEUnavailable]
+        ];
+
+        listeners.forEach(([event, callback]) => {
+            if (this.api.on(event, callback)) {
+                this.gcceEventListeners.push({ event, callback });
+            }
+        });
+    }
+
+    /**
+     * Remove the GCCE lifecycle listeners registered above.
+     */
+    removeGCCEIntegrationListeners() {
+        if (this.gcceEventListeners.length === 0) return;
+        if (typeof this.api.removeListener === 'function') {
+            this.gcceEventListeners.forEach(({ event, callback }) => {
+                this.api.removeListener(event, callback);
+            });
+        }
+        this.gcceEventListeners = [];
+    }
+
+    /**
+     * Resolve the loaded GCCE plugin instance, if any.
+     */
+    _getGCCEInstance() {
+        const loaded = this.api.pluginLoader && this.api.pluginLoader.loadedPlugins;
+        if (loaded && typeof loaded.get === 'function') {
+            const plugin = loaded.get('gcce');
+            if (plugin && plugin.instance) return plugin.instance;
+        }
+        if (typeof this.api.getPlugin === 'function') {
+            return this.api.getPlugin('gcce');
+        }
+        return null;
+    }
+
     async destroy() {
+        this.removeGCCEIntegrationListeners();
+        this.unregisterGCCECommands();
         if (this.soundboard) {
             this.soundboard.destroy();
         }
