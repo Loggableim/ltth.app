@@ -70,3 +70,11 @@ setInterval(() => scheduler.tick(), 5000); // Aufrufer treibt den Scheduler
 
 - `getStatus()`: `{ started, toleranceMs, count, applied, skipped, failed, pending, nextAt, activePluginId, entries }`
 - Events: `switch` (angewendet), `skip` (uebersprungen), `error` (fehlgeschlagen).
+
+## Tests
+
+- `app/test/plugin-scheduler.test.js` — Unit-Tests der Zeitlogik gegen Fake-Uhr/Fake-Controller (T2).
+- `app/test/plugin-scheduler-integration.test.js` — Integrationstests (T3, `lt-4wn`): fahren den
+  Scheduler gegen den echten `PluginLoader` (Enable/Disable auf der Platte, State-Datei,
+  Toleranz, Fehlerfaelle) und sichern die Contract-Konformitaet zu
+  `app/modules/plugin-scheduler-contract.js` (T1) ab.
