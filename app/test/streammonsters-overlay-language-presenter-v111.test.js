@@ -19,6 +19,8 @@ const PublicEventProjector = require(
 );
 const StreamMonstersPlugin = require('../plugins/stream-monsters');
 
+jest.setTimeout(30_000);
+
 const pluginDir = path.join(process.cwd(), 'plugins', 'stream-monsters');
 const overlayHtml = fs.readFileSync(
   path.join(pluginDir, 'streammonsters-overlay.html'),

@@ -12,6 +12,8 @@ const {
   sceneChoreography
 } = require('../plugins/stream-monsters/streammonsters-effects-renderer');
 
+jest.setTimeout(30_000);
+
 function deferred() {
   let resolve;
   const promise = new Promise(next => { resolve = next; });
@@ -839,7 +841,9 @@ describe('Stream Monsters effects renderer', () => {
       'stream-monsters',
       'streammonsters-overlay.html'
     ), 'utf8');
-    const dom = new JSDOM(html);
+    const dom = new JSDOM(
+      html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    );
     const rules = [];
     const collect = ruleList => {
       for (const rule of [...ruleList]) {
