@@ -47,6 +47,11 @@ const RadioSupervisor = require('./lib/radio-supervisor');
 const MusicCatalog = require('./lib/music-catalog');
 const PlaylistStore = require('./lib/playlist-store');
 const PlaylistImportService = require('./lib/playlist-import-service');
+const {
+  createMusicBotChatBinding,
+  createMusicBotChatClient,
+  resolveMusicBotBaseUrl
+} = require('../../modules/music-bot-chat-binding');
 
 const DEFAULT_PRECACHE_LOOKAHEAD = 2;
 const MAX_PRECACHE_LOOKAHEAD = 5;
@@ -234,6 +239,11 @@ const DEFAULT_CONFIG = {
     enabled: true,
     lookahead: 2,
     maxConcurrentDownloads: 1
+  },
+  chatHttp: {
+    enabled: false,
+    baseUrl: null,
+    timeoutMs: 30000
   }
 };
 
@@ -264,6 +274,8 @@ class MusicBotPlugin extends EventEmitter {
     this._lastResolverProgress = null;
     this._controllerSafetySyncPromise = Promise.resolve();
     this._configUpdateTail = Promise.resolve();
+    this._chatHttpBinding = null;
+    this._chatFetchImpl = null;
 
     // Constructor-only state stays inert for tests and route registration. The
     // persisted/default live-safe lock is applied atomically by _loadConfig().
@@ -1141,6 +1153,7 @@ class MusicBotPlugin extends EventEmitter {
 
   _distributeLiveConfig(config) {
     this.config = config;
+    this._chatHttpBinding = null;
     if (this.queueManager) {
       this.queueManager.config = config;
       this.queueManager.queueConfig = config.queue;
@@ -3232,6 +3245,9 @@ class MusicBotPlugin extends EventEmitter {
     const username = this._getChatUsername(chatData);
     switch (command.type) {
       case 'request':
+        if (this._isChatHttpEnabled()) {
+          return this._handleRequestViaHttp(command.query, username, chatData);
+        }
         return this._handleRequest(command.query, username, chatData);
       case 'skip':
         if (command.force) {
@@ -3414,6 +3430,101 @@ class MusicBotPlugin extends EventEmitter {
       this.api.log(`[music-bot] Failed to request song: ${error.message}`, 'error');
       this._emitToast('error', { titleKey: 'apiError', message: error.message || '' });
       return { success: false, error: error.message };
+    }
+  }
+
+  _isChatHttpEnabled() {
+    return Boolean(this.config?.chatHttp?.enabled);
+  }
+
+  _getChatHttpBinding() {
+    if (this._chatHttpBinding) return this._chatHttpBinding;
+    if (!this._isChatHttpEnabled()) return null;
+
+    const chatHttp = this.config.chatHttp || {};
+    const baseUrl = resolveMusicBotBaseUrl({
+      baseUrl: chatHttp.baseUrl,
+      getConfig: typeof this.api?.getConfig === 'function'
+        ? (key) => this.api.getConfig(key)
+        : undefined,
+      envPort: process.env.PORT
+    });
+
+    let client;
+    try {
+      client = createMusicBotChatClient({
+        fetchImpl: this._chatFetchImpl,
+        baseUrl,
+        timeoutMs: chatHttp.timeoutMs
+      });
+    } catch (error) {
+      this.api?.log?.(`[music-bot] Chat-HTTP deaktiviert: ${error.message}`, 'warn');
+      return null;
+    }
+
+    this._chatHttpBinding = createMusicBotChatBinding({
+      client,
+      logger: (message) => this.api?.log?.(`[music-bot] ${message}`, 'error')
+    });
+    return this._chatHttpBinding;
+  }
+
+  async _handleRequestViaHttp(query, username, chatData = {}) {
+    const binding = this._getChatHttpBinding();
+    if (!binding) {
+      return this._handleRequest(query, username, chatData);
+    }
+
+    if (!query) {
+      this._emitChatResponse('Bitte gib einen Song an.', username);
+      this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestRequired' });
+      return;
+    }
+
+    const lowerUser = username.toLowerCase();
+    if (this._pendingRequests.has(lowerUser)) {
+      this._emitChatResponse('Dein vorheriger Request wird noch verarbeitet.', username);
+      return;
+    }
+
+    if (this.config.monetization?.likeGateEnabled) {
+      const likes = this._getUserLikes(username);
+      const requiredLikes = Math.max(1, Number(this.config.monetization?.minLikesPerUser) || 1);
+      if (likes < requiredLikes) {
+        this._emitChatResponse(`Du brauchst mindestens ${requiredLikes} Likes für !sr. Aktuell: ${likes}.`, username);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestLikesRequired', params: { username, likes, requiredLikes } });
+        return;
+      }
+    }
+
+    if (this.config.monetization?.payToPlayEnabled) {
+      const availableCredits = this._getRequestCredits(username);
+      if (availableCredits < 1) {
+        this._emitChatResponse('Für !sr benötigst du ein konfiguriertes Gift bzw. genügend Coins.', username);
+        this._emitToast('warn', { titleKey: 'requestRejectedTitle', messageKey: 'requestGiftRequired', params: { username } });
+        return;
+      }
+    }
+
+    this._pendingRequests.add(lowerUser);
+    try {
+      const result = await binding.handle(
+        { type: 'request', query },
+        {
+          username,
+          requestedBy: username,
+          requesterAvatar: chatData?.profilePictureUrl || chatData?.avatar || null
+        }
+      );
+      if (result?.message) {
+        this._emitChatResponse(result.message, username);
+      }
+      if (result?.ok && this.config.monetization?.payToPlayEnabled) {
+        this._consumeRequestCredit(username);
+      }
+      return result;
+    } finally {
+      this._pendingRequests.delete(lowerUser);
     }
   }
 
