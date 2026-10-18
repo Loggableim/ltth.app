@@ -2,7 +2,7 @@
 
 Verbindlicher Contract fuer die Chat-Befehle `!play`, `!skip` und `!status`.
 Die Implementierung (Anbindung an den Music-Bot) liegt in T2
-(`app/plugins/music-bot/main.js`, Draft-PR #175). Dieses Dokument und das Modul
+(`app/plugins/music-bot/main.js`). Dieses Dokument und das Modul
 `app/plugins/music-bot/lib/player-command-contract.js` sind die Referenz für
 beide Teile.
 
@@ -26,7 +26,8 @@ Kein Merge (HOLD lt-8z6).
 
 - Prefix ist konfigurierbar (`DEFAULT_COMMAND_PREFIX = '!'`).
 - Erkennung ist case-insensitiv und toleriert umgebende Whitespaces.
-- Namensauflösung: Default-Name, konfigurierter Name, danach Alias.
+- Namensauflösung: zuerst die Default-Namen, dann die konfigurierten Namen
+  (ueberschreiben den jeweiligen Default-Namen), zuletzt die Aliase.
 
 ## Payload-Form
 
