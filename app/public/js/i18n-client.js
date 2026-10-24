@@ -466,10 +466,6 @@ class I18nClient {
                 
                 console.log(`✅ [i18n] Language changed to: ${newLocale}`);
                 
-                // Show notification (if available)
-                if (typeof showNotification === 'function') {
-                    showNotification(`Language changed to ${newLocale}`, 'success');
-                }
             } else {
                 console.error(`❌ [i18n] Failed to change language to: ${newLocale}`);
                 selectElement.value = this.currentLocale; // Revert

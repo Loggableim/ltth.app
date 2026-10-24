@@ -11,6 +11,11 @@ function loadI18nClient(window) {
   window.eval(`${trimmedSource}\nwindow.__I18nClient = I18nClient;`);
 }
 
+function loadDashboard(window) {
+  const scriptPath = path.join(__dirname, '..', 'public', 'js', 'dashboard.js');
+  window.eval(fs.readFileSync(scriptPath, 'utf8'));
+}
+
 describe('i18n client fallback rendering', () => {
   test('keeps existing fallback text when updateDOM runs before initialization', () => {
     const dom = new JSDOM(
@@ -125,5 +130,45 @@ describe('i18n client fallback rendering', () => {
 
     expect(window.fetch)
       .toHaveBeenCalledWith('/api/talkingheads/overlay/translations/de');
+  });
+
+  test('switches language through the real dashboard handler without a success alert', async () => {
+    const dom = new JSDOM(
+      '<!doctype html><html lang="de"><body><select id="topbar-language-selector"><option value="de">Deutsch</option><option value="fr">Français</option></select><button id="connect-btn"><span>Verbinden</span></button><button id="disconnect-btn" disabled></button><span data-i18n="custom.title">Title</span></body></html>',
+      { url: 'http://127.0.0.1:3000/dashboard.html', runScripts: 'outside-only' }
+    );
+    const { window } = dom;
+    if (window.document.readyState !== 'complete') {
+      await new Promise(resolve => window.addEventListener('load', resolve, { once: true }));
+    }
+    loadI18nClient(window);
+    window.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        custom: { title: 'Titre' },
+        dashboard: { connect: 'Connecter' }
+      })
+    });
+    window.alert = jest.fn();
+
+    const i18n = new window.__I18nClient();
+    i18n.initialized = true;
+    i18n.currentLocale = 'de';
+    i18n.translations.de = { custom: { title: 'Titel' } };
+    window.i18n = i18n;
+    loadDashboard(window);
+    i18n.setupLanguageSwitcher(window.document.getElementById('topbar-language-selector'));
+
+    const selector = window.document.getElementById('topbar-language-selector');
+    selector.value = 'fr';
+    selector.dispatchEvent(new window.Event('change', { bubbles: true }));
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+
+    expect(i18n.getLocale()).toBe('fr');
+    expect(window.document.documentElement.lang).toBe('fr');
+    expect(window.document.querySelector('[data-i18n="custom.title"]').textContent).toBe('Titre');
+    expect(window.document.querySelector('#connect-btn span').textContent).toBe('Connecter');
+    expect(window.alert).not.toHaveBeenCalled();
+    dom.window.close();
   });
 });

@@ -9,6 +9,10 @@ const { spawn } = require('child_process');
 const { buildSpec, LOCALES: PRODUCT_LOCALES } = require('./product-screenshot-spec');
 const { buildDocsSpec, LOCALES: DOCS_LOCALES } = require('./docs-screenshot-spec');
 const { prepareDocsPluginFixture } = require('./lib/docs-capture-plugin-fixture');
+const {
+  getDocumentationCaptureAllowedEnvironmentKeys,
+  validateDocumentationCaptureEnvironment
+} = require('../app/modules/docs-capture-policy');
 const { assertNoBlockedNetworkAttempts, createCaptureReceipt, isAllowedCaptureNetworkUrl } = require('./lib/capture-receipt');
 const {
   assertWorkflowOperationsExecuted,
@@ -38,6 +42,7 @@ const LIFECYCLE_TIMEOUT_MS = Number(process.env.SCREENSHOT_LIFECYCLE_TIMEOUT_MS 
 const FAILURE_CONTEXT_TIMEOUT_MS = Number(process.env.SCREENSHOT_FAILURE_CONTEXT_TIMEOUT_MS || 1000);
 const DEBUG_CAPTURE = process.env.SCREENSHOT_DEBUG_CAPTURE === 'true';
 const START_APP = process.env.SCREENSHOT_START_APP !== 'false';
+const DASHBOARD_ONLY = process.env.SCREENSHOT_MODE === 'dashboard-only';
 const RUNTIME_PLUGIN_ROUTE_PREFIXES = new Set(['flame-overlay', 'visual-fx-frame-webgpu']);
 const DOCUMENTATION_DEMO_INPUT_VALUES = Object.freeze({
   'emoji-rain/choose-emojis': '💧, ✨, 🎉'
@@ -89,9 +94,92 @@ function browserExecutablePath() {
   return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
-function outputPath(asset, locale) {
+function assertSandboxedDashboardBrowserSupport(executablePath) {
+  if (!executablePath || !fs.existsSync(executablePath)) {
+    throw new Error('Dashboard capture requires a locally installed browser with sandbox support');
+  }
+  const stat = fs.statSync(executablePath);
+  if (!stat.isFile()) throw new Error('Dashboard capture browser executable is not a regular file');
+  return executablePath;
+}
+
+function outputPath(asset, locale, outputRoot = SCREENSHOT_ROOT) {
   const relative = asset.canonical.replace(/^\/screenshots\//, '');
-  return path.join(locale === 'en' ? SCREENSHOT_ROOT : path.join(SCREENSHOT_ROOT, locale), relative);
+  return path.join(locale === 'en' ? outputRoot : path.join(outputRoot, locale), relative);
+}
+
+function isAllowedDashboardCaptureUrl(value, origin) {
+  try {
+    const url = new URL(value);
+    const allowed = new URL(origin);
+    return allowed.protocol === 'http:'
+      && allowed.hostname === '127.0.0.1'
+      && !url.username
+      && !url.password
+      && url.origin === allowed.origin;
+  } catch (_error) {
+    return false;
+  }
+}
+
+function validateDashboardOutputDirectory(outputDir, repoRoot = REPO_ROOT) {
+  if (!outputDir || !path.isAbsolute(outputDir)) {
+    throw new Error('Dashboard capture requires an explicit absolute SCREENSHOT_OUTPUT_DIR');
+  }
+  const resolved = path.resolve(outputDir);
+  const relative = path.relative(path.resolve(repoRoot), resolved);
+  if (relative === '' || (!relative.startsWith('..' + path.sep) && relative !== '..' && !path.isAbsolute(relative))) {
+    throw new Error('Dashboard capture output directory must be outside the repository');
+  }
+  if (!path.basename(resolved).toLowerCase().startsWith('ltth-dashboard-capture-')) {
+    throw new Error('Dashboard capture output directory must use its dedicated disposable temp prefix');
+  }
+  if (path.dirname(resolved) !== path.resolve(os.tmpdir())) {
+    throw new Error('Dashboard capture output directory must be a direct child of the system temp directory');
+  }
+  if (fs.existsSync(resolved)) {
+    throw new Error('Dashboard capture output directory must not already exist');
+  }
+  const realTempRoot = fs.realpathSync(path.resolve(os.tmpdir()));
+  const realRepoRoot = fs.realpathSync(path.resolve(repoRoot));
+  const realTempRelative = path.relative(realTempRoot, path.dirname(resolved));
+  if (realTempRelative !== '') {
+    throw new Error('Dashboard capture output parent must resolve to the system temp directory');
+  }
+  const repoRelative = path.relative(realRepoRoot, path.dirname(resolved));
+  if (repoRelative === '' || (!repoRelative.startsWith('..' + path.sep) && repoRelative !== '..' && !path.isAbsolute(repoRelative))) {
+    throw new Error('Dashboard capture output parent must resolve outside the repository');
+  }
+  return resolved;
+}
+
+function createDashboardOutputDirectory(requestedPath, repoRoot = REPO_ROOT) {
+  const resolved = validateDashboardOutputDirectory(requestedPath, repoRoot);
+  const created = fs.mkdtempSync(`${resolved}-`);
+  const realCreated = fs.realpathSync(created);
+  const realTempRoot = fs.realpathSync(path.resolve(os.tmpdir()));
+  const relative = path.relative(realTempRoot, realCreated);
+  const realRepoRoot = fs.realpathSync(path.resolve(repoRoot));
+  const repoRelative = path.relative(realRepoRoot, realCreated);
+  if (!relative || relative.startsWith('..' + path.sep) || path.isAbsolute(relative)
+    || repoRelative === '' || (!repoRelative.startsWith('..' + path.sep) && repoRelative !== '..' && !path.isAbsolute(repoRelative))) {
+    fs.rmSync(created, { recursive: true, force: true });
+    throw new Error('Dashboard capture output must resolve to a new directory inside the system temp directory');
+  }
+  return realCreated;
+}
+
+function validateDashboardCaptureResponse(response, origin) {
+  if (!response) throw new Error('Dashboard navigation returned no response');
+  const responseUrl = response.url();
+  if (!isAllowedDashboardCaptureUrl(responseUrl, origin)) {
+    throw new Error(`Dashboard navigation escaped its allowed origin: ${responseUrl}`);
+  }
+  const status = response.status();
+  if (status >= 300 && status < 400) {
+    throw new Error(`Dashboard navigation redirects are not allowed (HTTP ${status})`);
+  }
+  return response;
 }
 
 function urlFor(baseUrl, route, locale) {
@@ -164,6 +252,96 @@ async function attachPluginAssetRewrite(page) {
   });
 }
 
+function createDashboardProfileRestartFixture() {
+  let activeProfile = 'default';
+  return {
+    get activeProfile() { return activeProfile; },
+    scheduleRestart() { activeProfile = 'ltth-dashboard-qa'; },
+    response(url, method) {
+      const parsed = new URL(url);
+      if (method !== 'GET' || parsed.pathname !== '/api/profiles/active') return null;
+      return {
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          activeProfile,
+          pendingProfile: null,
+          requiresRestart: false,
+          port: Number(parsed.port)
+        })
+      };
+    }
+  };
+}
+
+async function dispatchDashboardFixtureEvent(page, eventName, data) {
+  const listenerCount = await page.evaluate((name, payload) => {
+    const listeners = window.socket?.listeners(name) || [];
+    listeners.forEach((listener) => listener(payload));
+    return listeners.length;
+  }, eventName, data);
+  if (!listenerCount) throw new Error(`Dashboard fixture event has no client listeners: ${eventName}`);
+  return listenerCount;
+}
+
+async function attachDashboardOnlyRequestPolicy(page, origin, options = {}) {
+  const { profileRestartFixture = null, requestEvidence = null } = options;
+  await page.setRequestInterception(true);
+  page.on('request', (request) => {
+    const url = request.url();
+    const redirectResponse = request.redirectChain?.().length ? request.redirectChain()[request.redirectChain().length - 1]?.response?.() : null;
+    if (redirectResponse) {
+      try {
+        validateDashboardCaptureResponse(redirectResponse, origin);
+      } catch (_error) {
+        request.abort('blockedbyclient').catch(() => {});
+        return;
+      }
+    }
+    if (!isAllowedDashboardCaptureUrl(url, origin)) {
+      if (requestEvidence) {
+        const entry = { url, method: request.method(), resourceType: request.resourceType() };
+        requestEvidence.blocked.push(entry);
+        try {
+          const blockedUrl = new URL(url);
+          const hostname = blockedUrl.hostname.toLowerCase();
+          if (['http:', 'https:'].includes(blockedUrl.protocol)
+            && !['127.0.0.1', 'localhost', '[::1]', '::1'].includes(hostname)) {
+            requestEvidence.external.push(entry);
+          }
+        } catch (_error) {
+            requestEvidence.external.push(entry);
+        }
+      }
+      request.abort('blockedbyclient').catch(() => {});
+      return;
+    }
+    if (profileRestartFixture) {
+      const fixtureResponse = profileRestartFixture.response(url, request.method());
+      if (fixtureResponse) {
+        request.respond(fixtureResponse).catch(() => {});
+        return;
+      }
+    }
+    if (requestEvidence && /\/api\/(?:i18n|profiles\/active)(?:\/|\?|$)/.test(url)) {
+      requestEvidence.allowed ||= [];
+      requestEvidence.allowed.push({ url, method: request.method(), resourceType: request.resourceType() });
+    }
+    request.continue({ url });
+  });
+}
+
+function assertNoDashboardExternalRequests(requestEvidence) {
+  if (requestEvidence.external.length) {
+    const urls = requestEvidence.external.map((entry) => entry.url).join(', ');
+    throw new Error(`Dashboard capture attempted an external request; blocked and stopping: ${urls}`);
+  }
+}
+
+async function assertDashboardNavigationResponse(response, origin) {
+  return validateDashboardCaptureResponse(response, origin);
+}
+
 function freePort() {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -173,6 +351,55 @@ function freePort() {
       server.close((error) => error ? reject(error) : resolve(port));
     });
   });
+}
+
+function buildSafeCaptureEnvironment({ profileDir, port, pluginDir, allowedPluginIds = '', platform = process.platform, tempDir = os.tmpdir(), systemEnvironment = process.env }) {
+  const profileRoot = path.resolve(profileDir);
+  const root = path.resolve(tempDir);
+  const logsDir = path.join(profileRoot, 'logs');
+  const environment = {
+    TEMP: root,
+    TMP: root,
+    LOCALAPPDATA: profileRoot,
+    LTTH_LOG_DIR: logsDir,
+    LTTH_PORT: String(port),
+    LTTH_DOCS_CAPTURE: 'true',
+    LTTH_DOCS_CAPTURE_ALLOWED_PLUGINS: allowedPluginIds,
+    LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
+    LTTH_NO_BROWSER: 'true',
+    DISABLE_SWAGGER: 'true',
+    LTTH_BIND_ADDRESS: '127.0.0.1'
+  };
+  if (platform === 'win32') {
+    for (const key of ['SystemRoot', 'WINDIR']) {
+      if (systemEnvironment[key]) environment[key] = systemEnvironment[key];
+    }
+    for (const key of ['HOMEDRIVE', 'HOMEPATH', 'LOGONSERVER', 'PATH', 'SYSTEMDRIVE', 'USERDOMAIN', 'USERNAME', 'USERPROFILE']) {
+      environment[key] = '';
+    }
+  } else {
+    environment.TMPDIR = root;
+  }
+  if (pluginDir) environment.LTTH_DOCS_CAPTURE_PLUGIN_DIR = path.resolve(pluginDir);
+  return environment;
+}
+
+function validateSafeCaptureEnvironment(environment, options = {}) {
+  const allowedKeys = getDocumentationCaptureAllowedEnvironmentKeys(options.platform || process.platform);
+  for (const key of Object.keys(environment)) {
+    if (![...allowedKeys].some((allowedKey) => allowedKey.toLowerCase() === key.toLowerCase())) {
+      throw new Error(`Safe capture environment contains unsupported variable: ${key}`);
+    }
+  }
+  return validateDocumentationCaptureEnvironment(environment, options);
+}
+
+function getCapturePluginAllowlist(pluginDir) {
+  if (!pluginDir) return '';
+  return fs.readdirSync(pluginDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(pluginDir, entry.name, 'plugin.json')))
+    .map((entry) => entry.name)
+    .join(',');
 }
 
 function waitForServer(child, baseUrl) {
@@ -214,24 +441,25 @@ async function startIsolatedApp(profileName, guideId = null) {
     return { baseUrl: EXTERNAL_BASE_URL, child: null, profileDir: null };
   }
   const port = await freePort();
-  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `ltth-docs-capture-${profileName}-`));
-  const docsCapturePluginDir = COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
-  const child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
-    cwd: path.join(REPO_ROOT, 'app'),
-    env: {
-      ...process.env,
-      LOCALAPPDATA: profileDir,
-      LTTH_PORT: String(port),
-      LTTH_DOCS_CAPTURE: 'true',
-      LTTH_DOCS_SAFE_MODE: 'true',
-      LTTH_DISABLE_TIKTOK_AUTO_RECONNECT: 'true',
-      LTTH_NO_BROWSER: 'true',
-      DISABLE_SWAGGER: 'true',
-      LTTH_BIND_ADDRESS: '127.0.0.1',
-      ...(docsCapturePluginDir ? { LTTH_DOCS_CAPTURE_PLUGIN_DIR: docsCapturePluginDir } : {})
-    },
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), `${DASHBOARD_ONLY ? 'ltth-dashboard-capture-profile-' : 'ltth-docs-capture-'}${profileName}-`));
+  let child;
+  try {
+    const logsDir = path.join(profileDir, 'logs');
+    fs.mkdirSync(logsDir, { recursive: true });
+    const docsCapturePluginDir = !DASHBOARD_ONLY && COLLECTION === 'docs' ? prepareDocsPluginFixture(REPO_ROOT, profileDir, guideId) : null;
+    const allowedPluginIds = getCapturePluginAllowlist(docsCapturePluginDir);
+    const childEnvironment = buildSafeCaptureEnvironment({ profileDir, port, pluginDir: docsCapturePluginDir, allowedPluginIds });
+    validateSafeCaptureEnvironment(childEnvironment);
+    child = spawn(process.execPath, [path.join(REPO_ROOT, 'app', 'server.js')], {
+      cwd: path.join(REPO_ROOT, 'app'),
+      env: childEnvironment,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true
+    });
+  } catch (error) {
+    fs.rmSync(profileDir, { recursive: true, force: true });
+    throw error;
+  }
   let startupLog = '';
   const appendStartupLog = (chunk) => {
     startupLog = `${startupLog}${chunk.toString()}`.slice(-16000);
@@ -261,7 +489,8 @@ async function stopIsolatedApp(app, label = 'isolated LTTH app') {
     cleanupError = error;
   }
   try {
-    if (app.profileDir && app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))) {
+    if (app.profileDir && (app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-docs-capture-'))
+      || app.profileDir.startsWith(path.join(os.tmpdir(), 'ltth-dashboard-capture-profile-')))) {
       fs.rmSync(app.profileDir, { recursive: true, force: true });
     }
   } catch (error) {
@@ -270,17 +499,19 @@ async function stopIsolatedApp(app, label = 'isolated LTTH app') {
   if (cleanupError) throw cleanupError;
 }
 
-function applyCaptureDocumentSettings(lang) {
+function applyCaptureDocumentSettings(lang, preserveSavedLocale = false) {
   localStorage.setItem('dashboard-theme', 'cid');
-  localStorage.setItem('app_locale', lang);
+  const savedLocale = preserveSavedLocale ? localStorage.getItem('app_locale') : null;
+  const effectiveLocale = savedLocale || lang;
+  if (!savedLocale || !preserveSavedLocale) localStorage.setItem('app_locale', lang);
   const root = document.documentElement;
   if (!root) {
-    document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang), { once: true });
+    document.addEventListener('DOMContentLoaded', () => applyCaptureDocumentSettings(lang, preserveSavedLocale), { once: true });
     return;
   }
   root.setAttribute('data-theme', 'cid');
-  root.lang = lang;
-  root.dataset.lang = lang;
+  root.lang = effectiveLocale;
+  root.dataset.lang = effectiveLocale;
 }
 
 function isBlockedExternalRequestConsoleError(message) {
@@ -291,7 +522,7 @@ function isBlockedExternalRequestConsoleError(message) {
     && !isAllowedCaptureNetworkUrl(location.url);
 }
 
-async function configurePage(page, locale) {
+async function configurePage(page, locale, options = {}) {
   page.__docsCaptureConsoleErrors = [];
   page.__docsCaptureNetwork = [];
   page.__docsCaptureBlockedNetwork = [];
@@ -305,7 +536,7 @@ async function configurePage(page, locale) {
     }
   });
   page.on('pageerror', (error) => page.__docsCaptureConsoleErrors.push(error.message));
-  await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale);
+  await page.evaluateOnNewDocument(applyCaptureDocumentSettings, locale, options.preserveSavedLocale === true);
 }
 
 async function synchronizeCaptureLocale(page, locale) {
@@ -1378,6 +1609,201 @@ async function captureProduct(spec, assets, locales) {
   return { outputs, failures };
 }
 
+async function captureDashboardOnly(locale, outputDir) {
+  const app = await startIsolatedApp('dashboard-only');
+  let browser;
+  try {
+    const origin = app.baseUrl;
+    const parsedOrigin = new URL(origin);
+    if (parsedOrigin.origin !== origin || parsedOrigin.protocol !== 'http:' || parsedOrigin.hostname !== '127.0.0.1') {
+      throw new Error('Dashboard capture origin must be exactly http://127.0.0.1:<port>');
+    }
+    const puppeteer = loadPuppeteer();
+    const executablePath = assertSandboxedDashboardBrowserSupport(browserExecutablePath());
+    browser = await puppeteer.launch({ headless: 'new', ...(executablePath ? { executablePath } : {}) });
+    const page = await browser.newPage();
+    const profileRestartFixture = createDashboardProfileRestartFixture();
+    const requestEvidence = { allowed: [], blocked: [], external: [], localeResponses: [] };
+    const consoleEvidence = [];
+    const dialogEvidence = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error' || message.text().includes('[i18n]')) consoleEvidence.push(message.text());
+    });
+    page.on('pageerror', (error) => consoleEvidence.push(error.message));
+    page.on('dialog', async (dialog) => {
+      dialogEvidence.push({ type: dialog.type(), message: dialog.message() });
+      await dialog.dismiss();
+    });
+    page.on('response', (response) => {
+      if (/\/api\/i18n\/translations\//.test(response.url())) {
+        requestEvidence.localeResponses.push({ url: response.url(), status: response.status() });
+      }
+    });
+    await configurePage(page, locale, { preserveSavedLocale: true });
+    await attachDashboardOnlyRequestPolicy(page, origin, { profileRestartFixture, requestEvidence });
+    const target = new URL('/dashboard.html', origin);
+    target.searchParams.set('lang', locale);
+    const response = await page.goto(target.href, { waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS, redirect: 'manual' });
+    await assertDashboardNavigationResponse(response, origin);
+    await page.waitForFunction(() => window.i18n?.initialized === true, { timeout: LIFECYCLE_TIMEOUT_MS });
+    await page.waitForFunction(() => window.socket?.listeners?.('tiktok:status')?.length > 0
+      && window.profileManager?.activeProfile === 'default', { timeout: TIMEOUT_MS });
+    assertNoDashboardExternalRequests(requestEvidence);
+
+    const captures = {};
+    const captureState = async (name) => {
+      assertNoDashboardExternalRequests(requestEvidence);
+      const state = await page.evaluate(() => ({
+        language: document.documentElement.lang,
+        locale: window.i18n?.getLocale?.() || null,
+        savedLocale: localStorage.getItem('app_locale'),
+        connection: document.getElementById('connection-info')?.textContent?.trim() || '',
+        status: document.getElementById('connection-status')?.textContent?.trim() || '',
+        connectDisabled: Boolean(document.getElementById('connect-btn')?.disabled),
+        disconnectDisabled: Boolean(document.getElementById('disconnect-btn')?.disabled),
+        eventRows: document.querySelectorAll('#event-log tr').length,
+        eventText: [...document.querySelectorAll('#event-log tr')].map((row) => row.textContent.trim()),
+        activeProfile: document.getElementById('current-profile-name')?.textContent?.trim() || '',
+        selectedProfile: window.profileManager?.selectedProfile || null,
+        profileSwitchPending: Boolean(window.profileManager?.profileSwitchPending),
+        connectLabel: document.querySelector('#connect-btn span')?.textContent?.trim() || '',
+        restartOverlay: Boolean(document.getElementById('server-restart-overlay')),
+        profileSwitchWarning: Boolean(document.getElementById('profile-switch-warning'))
+      }));
+      const screenshotPath = path.join(outputDir, `dashboard-${name}.png`);
+      await page.screenshot({ path: screenshotPath, type: 'png', fullPage: false });
+      captures[name] = { ...state, screenshotPath };
+      console.log(`[dashboard-capture] captured ${name}`);
+      return state;
+    };
+
+    const assertState = (name, state, predicate) => {
+      if (!predicate(state)) throw new Error(`Dashboard fixture state did not meet its expected UI contract: ${name}`);
+    };
+
+    const initial = await captureState('initial-empty');
+    assertState('initial-empty', initial, (state) => state.status === 'Getrennt'
+      && state.eventRows === 0 && !state.connectDisabled && state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'connecting' });
+    const loading = await captureState('connecting');
+    assertState('connecting', loading, (state) => state.connection.includes('Verbindung wird aufgebaut')
+      && state.connectDisabled && !state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', {
+      status: 'connection_error',
+      error: 'Lokaler QA-Fehlerfixture'
+    });
+    const error = await captureState('connection-error');
+    assertState('connection-error', error, (state) => state.connection.includes('Lokaler QA-Fehlerfixture')
+      && !state.connectDisabled && state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', {
+      status: 'connected',
+      username: 'dashboard_qa_fixture'
+    });
+    const connected = await captureState('connected-fixture');
+    assertState('connected-fixture', connected, (state) => state.connection.includes('@dashboard_qa_fixture')
+      && state.connectDisabled && !state.disconnectDisabled);
+    await dispatchDashboardFixtureEvent(page, 'tiktok:status', { status: 'disconnected' });
+    await dispatchDashboardFixtureEvent(page, 'tiktok:event', {
+      type: 'chat',
+      data: { username: 'qa_viewer', uniqueId: 'qa_viewer', message: 'Lokale Event-Fixture', teamMemberLevel: 0 }
+    });
+    await dispatchDashboardFixtureEvent(page, 'tiktok:event', {
+      type: 'gift',
+      data: { username: 'qa_viewer', giftName: 'Fixture Rose', repeatCount: 1, coins: 1, teamMemberLevel: 0 }
+    });
+    const eventHistory = await captureState('local-event-history');
+    assertState('local-event-history', eventHistory, (state) => state.status === 'Getrennt'
+      && state.eventRows === 2 && state.eventText.some((text) => text.includes('Lokale Event-Fixture'))
+      && state.eventText.some((text) => text.includes('Fixture Rose')));
+
+    await page.evaluate(() => window.history.replaceState({}, '', '/dashboard.html'));
+    await page.waitForFunction(() => document.getElementById('topbar-language-selector')?.value === window.i18n?.getLocale?.(), { timeout: TIMEOUT_MS });
+    await page.evaluate(() => {
+      const selector = document.getElementById('topbar-language-selector');
+      selector.value = 'fr';
+      selector.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const languageSwitchStartedAt = Date.now();
+    try {
+      await page.waitForFunction(() => window.i18n?.getLocale?.() === 'fr', { timeout: 15000 });
+    } catch (error) {
+      const languageDiagnostic = {
+        elapsedMs: Date.now() - languageSwitchStartedAt,
+        recentConsoleErrors: consoleEvidence.slice(-10),
+        localeRequests: requestEvidence.allowed.filter((entry) => entry.url.includes('/api/i18n/')),
+        localeResponses: requestEvidence.localeResponses,
+        blockedRequestCount: requestEvidence.blocked.length
+      };
+      throw new Error(`Immediate language switch did not complete: ${error.message}; evidence=${JSON.stringify(languageDiagnostic)}`);
+    }
+    const languageChanged = await captureState('language-fr-immediate');
+    captures['language-fr-immediate'].switchDurationMs = Date.now() - languageSwitchStartedAt;
+    assertState('language-fr-immediate', languageChanged, (state) => state.language === 'fr'
+      && state.locale === 'fr' && state.savedLocale === 'fr' && state.connectLabel === 'Connecter');
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: TIMEOUT_MS });
+    try {
+      await page.waitForFunction(() => window.i18n?.initialized === true && window.i18n?.getLocale?.() === 'fr', { timeout: LIFECYCLE_TIMEOUT_MS });
+    } catch (error) {
+      const reloadDiagnostic = await page.evaluate(() => ({
+        readyState: document.readyState,
+        locale: window.i18n?.getLocale?.() || null,
+        initialized: window.i18n?.initialized ?? null,
+        savedLocale: localStorage.getItem('app_locale'),
+        documentLanguage: document.documentElement.lang,
+        url: location.href
+      })).catch((probeError) => ({ probeError: probeError.message }));
+      throw new Error(`Language persistence after dashboard reload did not complete: ${error.message}; evidence=${JSON.stringify({ reloadDiagnostic, recentConsoleErrors: consoleEvidence.slice(-10), localeResponses: requestEvidence.localeResponses, dialogs: dialogEvidence.slice(-5) })}`);
+    }
+    const languageAfterReload = await captureState('language-fr-after-reload');
+    assertState('language-fr-after-reload', languageAfterReload, (state) => state.language === 'fr'
+      && state.locale === 'fr' && state.savedLocale === 'fr');
+
+    profileRestartFixture.scheduleRestart();
+    const reload = page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: LIFECYCLE_TIMEOUT_MS });
+    await page.evaluate((profile) => {
+      if (typeof window.profileManager?.beginProfileRestart !== 'function') {
+        throw new Error('Local profile restart method is unavailable');
+      }
+      void window.profileManager.beginProfileRestart({ to: profile, requiresRestart: true, restartScheduled: true });
+    }, profileRestartFixture.activeProfile);
+    await reload;
+    await page.waitForFunction(() => window.i18n?.initialized === true
+      && window.i18n?.getLocale?.() === 'fr'
+      && window.profileManager?.activeProfile === 'ltth-dashboard-qa', { timeout: TIMEOUT_MS });
+    const profileRestart = await captureState('profile-restart-completed');
+    assertState('profile-restart-completed', profileRestart, (state) => state.activeProfile === 'ltth-dashboard-qa'
+      && state.selectedProfile === 'ltth-dashboard-qa' && !state.profileSwitchPending && !state.restartOverlay
+      && state.language === 'fr' && state.savedLocale === 'fr');
+    assertNoDashboardExternalRequests(requestEvidence);
+
+    const statePath = path.join(outputDir, 'dashboard-state.json');
+    const state = {
+      origin,
+      route: '/dashboard.html',
+      requestedLocale: locale,
+      fixtures: {
+        socketEventsDispatchedLocally: ['connecting', 'connection_error', 'connected', 'disconnected', 'chat', 'gift'],
+        restartProfile: profileRestartFixture.activeProfile,
+        profileRestartWasServerFixture: true,
+        profileRestartWasStartedThroughLocalProfileManager: true,
+        profileSwitchedSocketEventWasVerified: false,
+        connectButtonWasClicked: false
+      },
+      captures,
+      requestEvidence,
+      consoleErrors: consoleEvidence,
+      dialogs: dialogEvidence,
+      statePath
+    };
+    fs.writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf8');
+    console.log(JSON.stringify({ outputDir, statePath, captures, requestEvidence }, null, 2));
+    await page.close();
+  } finally {
+    if (browser) await browser.close();
+    await stopIsolatedApp(app, 'dashboard-only');
+  }
+}
+
 function compatibleDocsOutput(output, expectedById) {
   const asset = expectedById.get(output.id);
   if (!asset || !DOCS_LOCALES.includes(output.locale)) return false;
@@ -1427,6 +1853,24 @@ function mergePartialDocsOutputs(spec, newOutputs) {
 }
 
 async function capture() {
+  if (DASHBOARD_ONLY) {
+    if (COLLECTION !== 'product' || !START_APP) {
+      throw new Error('Dashboard-only capture requires the isolated local product capture mode');
+    }
+    if (process.env.LTTH_DOCS_CAPTURE !== undefined || process.env.SCREENSHOT_START_APP === 'false') {
+      throw new Error('Dashboard-only capture does not allow external or pre-existing app processes');
+    }
+    const outputDir = createDashboardOutputDirectory(process.env.SCREENSHOT_OUTPUT_DIR);
+    const locale = String(process.env.SCREENSHOT_LANGS || 'de').split(',')[0].trim().toLowerCase();
+    try {
+      if (!PRODUCT_LOCALES.includes(locale)) throw new Error('Dashboard-only capture locale is unsupported');
+      await captureDashboardOnly(locale, outputDir);
+    } catch (error) {
+      fs.rmSync(outputDir, { recursive: true, force: true });
+      throw error;
+    }
+    return;
+  }
   const fullSpec = COLLECTION === 'docs' ? buildDocsSpec(REPO_ROOT) : buildSpec(REPO_ROOT);
   const locales = (process.env.SCREENSHOT_LANGS || (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).join(','))
     .split(',').map((value) => value.trim().toLowerCase()).filter((value) => (COLLECTION === 'docs' ? DOCS_LOCALES : PRODUCT_LOCALES).includes(value));
@@ -1459,7 +1903,23 @@ async function capture() {
   if (result.failures.length) process.exitCode = 1;
 }
 
-capture().catch((error) => {
-  console.error(`Fatal screenshot capture error: ${error.stack || error.message}`);
-  process.exitCode = 1;
-});
+if (require.main === module) {
+  capture().catch((error) => {
+    console.error(`Fatal screenshot capture error: ${error.stack || error.message}`);
+    process.exitCode = 1;
+  });
+}
+
+module.exports = {
+  attachDashboardOnlyRequestPolicy,
+  assertDashboardNavigationResponse,
+  assertNoDashboardExternalRequests,
+  buildSafeCaptureEnvironment,
+  createDashboardProfileRestartFixture,
+  createDashboardOutputDirectory,
+  dispatchDashboardFixtureEvent,
+  getCapturePluginAllowlist,
+  isAllowedDashboardCaptureUrl,
+  validateDashboardOutputDirectory,
+  validateSafeCaptureEnvironment
+};
