@@ -67,6 +67,10 @@ const STATE = {
   messageParser: null,
   virtualScroller: null,
   messagesContainer: null,
+  isLoadingHistory: false,
+  pendingLiveMessages: [],
+  initializationPromise: null,
+  initializationRequested: false,
   eventCount: 0
 };
 
@@ -112,7 +116,19 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Initialize systems
   initializeSystems();
-  
+
+  // Let the shared i18n client observe locale changes through this view's
+  // existing Socket.IO connection and refresh translated fallback content.
+  window.i18n?.onLanguageChange?.(() => {
+    if (STATE.virtualScroller) {
+      STATE.virtualScroller.setItems(STATE.messages);
+    } else if (STATE.messagesContainer) {
+      renderMessageHistory();
+    }
+    updateDebugStatus('Ready - Waiting for events');
+    updateDebugSocket(STATE.socket?.connected ? 'Connected ✅' : 'Disconnected ⚠️');
+  });
+
   // Connect to socket
   connectSocket();
   
@@ -195,7 +211,10 @@ function connectSocket() {
   updateDebugStatus('Connecting to Socket.IO...');
   
   STATE.socket = io();
-  
+  // Expose the renderer-owned socket for the shared locale synchronizer.
+  // Preserve a socket already published by the host page.
+  if (!window.socket) window.socket = STATE.socket;
+
   STATE.socket.on('connect', () => {
     HUD_LOG.debug('[CHAT HUD] ✅ CONNECTED to server - Socket ID:', STATE.socket.id);
     updateDebugSocket('Connected ✅');
@@ -219,6 +238,11 @@ function connectSocket() {
   STATE.socket.on('clarityhud.update.chat', (chatData) => {
     HUD_LOG.debug('[CHAT HUD] 📨 EVENT RECEIVED - clarityhud.update.chat:', chatData);
     updateDebugEvents();
+    if (STATE.isLoadingHistory) {
+      if (STATE.pendingLiveMessages.length >= STATE.settings.maxMessages) STATE.pendingLiveMessages.shift();
+      STATE.pendingLiveMessages.push(chatData);
+      return;
+    }
     addMessage(chatData);
   });
   
@@ -261,25 +285,39 @@ function detectSystemPreferences() {
 
 // ==================== INITIALIZATION ====================
 // P6: Retry wrapper – up to 3 attempts with 2-second delays.
-async function init() {
+function init() {
+  STATE.initializationRequested = true;
+  if (STATE.initializationPromise) return STATE.initializationPromise;
+
   const MAX_RETRIES = 3;
   const RETRY_DELAY_MS = 2000;
-
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    try {
-      await _initOnce();
-      return; // success
-    } catch (error) {
-      HUD_LOG.error(`[CHAT HUD] Init attempt ${attempt}/${MAX_RETRIES} failed:`, error);
-      updateDebugStatus(`Init error (attempt ${attempt}/${MAX_RETRIES}): ${error.message}`);
-
-      if (attempt < MAX_RETRIES) {
+  const runInitialization = async () => {
+    let attempt = 1;
+    while (true) {
+      STATE.initializationRequested = false;
+      try {
+        await _initOnce();
+        if (STATE.initializationRequested) continue;
+        return;
+      } catch (error) {
+        HUD_LOG.error(`[CHAT HUD] Init attempt ${attempt}/${MAX_RETRIES} failed:`, error);
+        updateDebugStatus(`Init error (attempt ${attempt}/${MAX_RETRIES}): ${error.message}`);
+        if (STATE.initializationRequested) continue;
+        if (attempt >= MAX_RETRIES) {
+          updateDebugStatus(`Failed after ${MAX_RETRIES} attempts. Check console.`);
+          return;
+        }
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-      } else {
-        updateDebugStatus(`Failed after ${MAX_RETRIES} attempts. Check console.`);
+        attempt += 1;
       }
     }
-  }
+  };
+
+  STATE.initializationPromise = runInitialization().finally(() => {
+    STATE.initializationPromise = null;
+    if (STATE.initializationRequested) void init();
+  });
+  return STATE.initializationPromise;
 }
 
 async function _initOnce() {
@@ -299,22 +337,7 @@ async function _initOnce() {
     HUD_LOG.warn('[CHAT HUD] ⚠️ Settings response not successful, using defaults');
   }
 
-  // Load initial state (existing messages)
-  try {
-    const stateResponse = await fetch('/api/clarityhud/state/chat');
-    const stateData = await stateResponse.json();
-    
-    if (stateData.success && stateData.events && stateData.events.chat) {
-      HUD_LOG.debug('[CHAT HUD] ✅ Loading initial messages:', stateData.events.chat.length);
-      // Add existing messages to the display
-      stateData.events.chat.forEach(msg => {
-        addMessage(msg);
-      });
-    }
-  } catch (error) {
-    HUD_LOG.warn('[CHAT HUD] ⚠️ Could not load initial state:', error);
-    // Continue without initial messages
-  }
+  await loadInitialHistory();
 
   // Initialize virtual scrolling if enabled
   if (STATE.settings.useVirtualScrolling) {
@@ -324,6 +347,60 @@ async function _initOnce() {
 
   HUD_LOG.debug('[CHAT HUD] ✅ Chat overlay initialized and ready to receive events');
   updateDebugStatus('Ready - Waiting for events');
+}
+
+async function loadInitialHistory() {
+  STATE.isLoadingHistory = true;
+  STATE.pendingLiveMessages = [];
+  const previousMessages = STATE.messages.slice();
+  let loaded = false;
+  try {
+    const stateResponse = await fetch('/api/clarityhud/state/chat');
+    const stateData = await stateResponse.json();
+
+    if (stateData.success && stateData.events && Array.isArray(stateData.events.chat)) {
+      const snapshot = stateData.events.chat.slice()
+        .map(normalizeMessage)
+        .filter(message => message && message.text);
+      const pending = STATE.pendingLiveMessages
+        .map(normalizeMessage)
+        .filter(message => message && message.text);
+      // The server queue and renderer both store newest-first; keep that order
+      // so trimming consistently removes older events at the end.
+      STATE.messages = mergeMessagesById([...pending.slice().reverse(), ...snapshot, ...previousMessages]);
+      trimMessages();
+      HUD_LOG.debug('[CHAT HUD] ✅ Restored messages from state:', STATE.messages.length);
+      renderMessageHistory();
+      loaded = true;
+    }
+  } catch (error) {
+    HUD_LOG.warn('[CHAT HUD] ⚠️ Could not load initial state:', error);
+    // Keep the existing display and apply buffered live events below.
+  } finally {
+    STATE.isLoadingHistory = false;
+    const pending = STATE.pendingLiveMessages;
+    STATE.pendingLiveMessages = [];
+    if (!loaded) pending.forEach(addMessage);
+  }
+}
+
+function mergeMessagesById(messages) {
+  const seenIds = new Set();
+  return messages.filter(message => {
+    if (seenIds.has(message.id)) return false;
+    seenIds.add(message.id);
+    return true;
+  });
+}
+
+function renderMessageHistory() {
+  if (STATE.virtualScroller) {
+    STATE.virtualScroller.setItems(STATE.messages);
+    return;
+  }
+  if (!STATE.messagesContainer) return;
+  STATE.messagesContainer.replaceChildren();
+  STATE.messages.slice().reverse().forEach(renderMessage);
 }
 
 /**
@@ -339,11 +416,19 @@ function initializeVirtualScrolling() {
   STATE.virtualScroller = new VirtualScroller(container, {
     itemHeight: parseInt(STATE.settings.fontSize) * STATE.settings.lineHeight * 2.5,
     maxItems: STATE.settings.maxMessages * 2, // Keep double for smooth scrolling
-    renderCallback: renderMessageElement
+    renderCallback: renderVirtualMessageElement
   });
 
   // Replace messages container with virtual scroller
   STATE.messagesContainer.style.display = 'none';
+}
+
+function renderVirtualMessageElement(messageData, index) {
+  const element = renderMessageElement(messageData, index);
+  // VirtualScroller inserts rendered rows directly and does not use the
+  // non-virtual renderer's animation callback, so make these rows visible.
+  if (element) element.classList.add('visible');
+  return element;
 }
 
 // ==================== SETTINGS ====================
@@ -453,47 +538,55 @@ function applySettings(newSettings) {
 // ==================== MESSAGE HANDLING ====================
 function addMessage(chatData) {
   HUD_LOG.debug('[CHAT HUD] Received chat event:', chatData);
-  
-  // Normalize the data structure from backend
-  // Backend sends: { user: {...}, message: "...", comment: "...", raw: {...} }
-  const normalizedData = {
-    user: chatData.user || {
-      uniqueId: chatData.uniqueId || 'unknown',
-      nickname: chatData.nickname || chatData.uniqueId || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous'),
-      profilePictureUrl: chatData.profilePictureUrl || null,
-      badge: chatData.badge || null
-    },
-    text: chatData.message || chatData.comment || '',
-    emotes: [],
-    raw: chatData.raw || chatData,
-    timestamp: Date.now(),
-    id: `chat_${Date.now()}_${++_eventCounter}`
-  };
 
-  HUD_LOG.debug('[CHAT HUD] Normalized data:', normalizedData);
+  if (STATE.isLoadingHistory) {
+    if (STATE.pendingLiveMessages.length >= STATE.settings.maxMessages) STATE.pendingLiveMessages.shift();
+    STATE.pendingLiveMessages.push(chatData);
+    return;
+  }
 
+  const normalizedData = normalizeMessage(chatData);
   if (!normalizedData.text) {
     HUD_LOG.warn('[CHAT HUD] Invalid chat data - no message:', chatData);
     return;
   }
 
-  // Add to messages array
-  STATE.messages.push(normalizedData);
-
-  // Trim to max messages
+  if (STATE.messages.some(message => message.id === normalizedData.id)) return;
+  STATE.messages.unshift(normalizedData);
   trimMessages();
 
   HUD_LOG.debug('[CHAT HUD] Rendering message...');
-
-  // Render message
   if (STATE.virtualScroller) {
-    // Add to virtual scroller
     STATE.virtualScroller.addItems([normalizedData], false);
     STATE.virtualScroller.scrollToBottom('smooth');
   } else {
-    // Regular rendering
-    renderMessage(normalizedData);
+    renderMessageHistory();
   }
+}
+
+function normalizeMessage(chatData) {
+  // Backend queue entries include a timestamp; live events may omit it.
+  const timestamp = Number.isFinite(Number(chatData.timestamp)) ? Number(chatData.timestamp) : Date.now();
+  const text = chatData.message || chatData.comment || '';
+  const user = chatData.user || {
+    uniqueId: chatData.uniqueId || 'unknown',
+    nickname: chatData.nickname || chatData.uniqueId || ClarityHUDI18n.text('overlay.anonymous', 'Anonymous'),
+    profilePictureUrl: chatData.profilePictureUrl || null,
+    badge: chatData.badge || null
+  };
+  const isPublicProjectionHost = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.trycloudflare\.com$/i.test(window.location.hostname);
+  const projectedRawEventToken = isPublicProjectionHost && typeof chatData.raw?.userId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(chatData.raw.userId)
+    ? chatData.raw.userId
+    : null;
+  return {
+    user,
+    text,
+    emotes: [],
+    raw: chatData.raw || chatData,
+    timestamp,
+    id: chatData.eventId || projectedRawEventToken || `chat_${Date.now()}_${++_eventCounter}`
+  };
 }
 
 /**
@@ -693,7 +786,7 @@ function trimMessages() {
 
   // Remove excess messages from array
   while (STATE.messages.length > maxMessages) {
-    STATE.messages.shift();
+    STATE.messages.pop();
   }
 }
 

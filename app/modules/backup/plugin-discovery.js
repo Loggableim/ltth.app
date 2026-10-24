@@ -160,7 +160,7 @@ function restorePluginSettings(db, pluginId, settings, mode = 'merge') {
         VALUES (?, ?)
     `);
 
-    const restore = db.transaction(() => {
+    const restore = withDatabaseTransaction(db, () => {
         if (mode === 'replace') {
             const deleteStmt = db.prepare("DELETE FROM settings WHERE key LIKE ?");
             for (const identityId of getIdentityCandidateIds(pluginId)) {
@@ -228,7 +228,7 @@ function restoreGlobalSettings(db, settings, mode = 'merge') {
         VALUES (?, ?)
     `);
 
-    const restore = db.transaction(() => {
+    const restore = withDatabaseTransaction(db, () => {
         for (const [key, value] of Object.entries(settings)) {
             if (key.startsWith('plugin:')) continue; // handled separately
             const rawValue = typeof value === 'string' ? value : JSON.stringify(value);
@@ -252,6 +252,25 @@ function restoreGlobalSettings(db, settings, mode = 'merge') {
 
     restore();
     return { imported, skipped };
+}
+
+function withDatabaseTransaction(db, callback) {
+    if (typeof db.transaction === 'function') return db.transaction(callback);
+    const rawDb = db.db;
+    if (!rawDb || typeof rawDb.exec !== 'function') {
+        throw new Error('Database does not provide transaction support');
+    }
+    return (...args) => {
+        rawDb.exec('BEGIN IMMEDIATE');
+        try {
+            const result = callback(...args);
+            rawDb.exec('COMMIT');
+            return result;
+        } catch (error) {
+            try { rawDb.exec('ROLLBACK'); } catch (_) { /* preserve original error */ }
+            throw error;
+        }
+    };
 }
 
 module.exports = {

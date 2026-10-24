@@ -361,7 +361,11 @@
     // Request initial profile if username provided
     const initialUsername = urlParams.get('username');
     if (initialUsername) {
-      socket.emit('viewer-xp:public-profile:request', initialUsername);
+      const requestInitialProfile = () => {
+        if (!isDisposed) socket.emit('viewer-xp:public-profile:request', initialUsername);
+      };
+      socket.on('connect', requestInitialProfile);
+      if (socket.connected) requestInitialProfile();
     }
   </script>
 </body>

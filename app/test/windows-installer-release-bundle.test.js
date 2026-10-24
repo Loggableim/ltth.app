@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
+const archiver = require('archiver');
 
 const installerPath = path.join(__dirname, '..', '..', 'install', 'install.ps1');
 const repoRoot = path.join(__dirname, '..', '..');
@@ -19,14 +20,21 @@ function windowsPowerShellEnvironment() {
 }
 
 function hasWindowsPowerShell() {
-  return process.platform === 'win32'
-    && spawnSync('powershell.exe', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], {
-      encoding: 'utf8',
-      env: windowsPowerShellEnvironment()
-    }).status === 0;
+  if (process.platform !== 'win32') return false;
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-Command', '$PSVersionTable.PSVersion.Major'], {
+    encoding: 'utf8',
+    env: windowsPowerShellEnvironment()
+  });
+  if (result.error) {
+    throw new Error(`Could not probe Windows PowerShell (${result.error.code}): ${result.error.message}`);
+  }
+  if (result.status !== 0) {
+    throw new Error(`Windows PowerShell probe failed (status ${result.status}, signal ${result.signal || 'none'}): ${(result.stderr || result.stdout || '').slice(0, 4000)}`);
+  }
+  return result.status === 0;
 }
 
-function invokeInstallerFunctions(functionNames, body) {
+function invokeInstallerFunctions(functionNames, body, { allowNonzero = false } = {}) {
   const script = [
     '$ErrorActionPreference = "Stop"',
     '$tokens = $null',
@@ -38,10 +46,19 @@ function invokeInstallerFunctions(functionNames, body) {
     'foreach ($definition in $definitions) { Invoke-Expression $definition.Extent.Text }',
     body
   ].join('; ');
-  return spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], {
     encoding: 'utf8',
     env: windowsPowerShellEnvironment()
   });
+  if (result.error) {
+    throw new Error(`Windows PowerShell child could not start (${result.error.code}): ${result.error.message}`);
+  }
+  if (result.status !== 0 && !allowNonzero) {
+    const stdout = (result.stdout || '').slice(0, 4000);
+    const stderr = (result.stderr || '').slice(0, 4000);
+    throw new Error(`Windows PowerShell child failed (status ${result.status}, signal ${result.signal || 'none'}).\nstdout:\n${stdout}\nstderr:\n${stderr}`);
+  }
+  return result;
 }
 
 function encodedJson(value) {
@@ -52,19 +69,170 @@ function sha256Buffer(buffer) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
-function invokeManifestValidation(manifest) {
+function writeZip(filename, entries) {
+  return new Promise((resolve, reject) => {
+    const output = fs.createWriteStream(filename);
+    const archive = archiver('zip', { zlib: { level: 0 } });
+    output.once('close', resolve);
+    output.once('error', reject);
+    archive.once('error', reject);
+    archive.pipe(output);
+    for (const [name, contents] of Object.entries(entries)) {
+      archive.append(contents, { name });
+    }
+    archive.finalize().catch(reject);
+  });
+}
+
+function appBundleFunctions() {
+  return [
+    'Use-OfficialWindowsZipBootstrap',
+    'Get-AppBundleManifestUrl',
+    'Get-AppBundleZipUrl',
+    'Assert-ReleaseArtifactManifest',
+    'Assert-AppBundleReleaseManifest',
+    'Assert-ReleaseArtifactFile',
+    'Read-AppBundleZipJson',
+    'Assert-PublicAppBundleArchive',
+    'Test-AppRootDirectory',
+    'Test-AppDirectoryContainsPersistentData',
+    'Assert-AppDirectorySafeForReplacement',
+    'Find-AppRootDirectory',
+    'Copy-DirectoryContents',
+    'Install-AppBundleFromZip'
+  ];
+}
+
+function downloadSourceFunctions() {
+  return [
+    'Use-OfficialWindowsZipBootstrap',
+    'Test-AppRootDirectory',
+    'Test-AppDirectoryContainsPersistentData',
+    'Assert-AppDirectorySafeForReplacement',
+    'Find-AppRootDirectory',
+    'Copy-DirectoryContents',
+    'Install-AppBundleFromZip',
+    'Download-Source'
+  ];
+}
+
+async function createAppBundleZip(filename, {
+  version = '1.5.0',
+  policy = JSON.parse(fs.readFileSync(path.join(repoRoot, 'app', 'config', 'plugin-release-policy.json'), 'utf8')),
+  marker = { channel: 'public' },
+  omitPolicy = false,
+  omitMarker = false,
+  pluginPath = 'plugins/goals/plugin.json',
+  pluginManifest = { id: 'goals' }
+} = {}) {
+  const prefix = `ltth_${version}/app/`;
+  const entries = {
+    [`${prefix}package.json`]: JSON.stringify({ name: 'ltth-app', version }),
+    [`${prefix}launch.js`]: "console.log('fixture');\n"
+  };
+  if (!omitMarker) entries[`${prefix}config/distribution-mode.json`] = JSON.stringify(marker);
+  if (!omitPolicy) entries[`${prefix}config/plugin-release-policy.json`] = JSON.stringify(policy);
+  if (pluginPath) entries[`${prefix}${pluginPath}`] = JSON.stringify(pluginManifest);
+  await writeZip(filename, entries);
+  return fs.readFileSync(filename);
+}
+
+function runInstallAppBundle({
+  tempDir,
+  zipPath,
+  remoteManifest,
+  remoteManifestRaw,
+  manifestUnavailable = false,
+  expectedVersion = '1.5.0'
+}) {
+  const escapedTempDir = tempDir.replace(/'/g, "''");
+  const escapedZipPath = zipPath.replace(/'/g, "''");
+  const body = [
+    `$LTTHDir = '${escapedTempDir}'`,
+    "$LTTHRepoOwner = 'Loggableim'",
+    "$LTTHRepoName = 'ltth.app'",
+    "$LTTHRepoBranch = 'main'",
+    "$script:LTTHInstallMode = 'latest'",
+    `$script:LTTHVersion = '${expectedVersion}'`,
+    `$script:ManifestBase64 = '${Buffer.from(remoteManifestRaw === undefined ? JSON.stringify(remoteManifest || {}) : remoteManifestRaw, 'utf8').toString('base64')}'`,
+    `$script:ManifestUnavailable = $${manifestUnavailable ? 'true' : 'false'}`,
+    '$script:ManifestUrl = $null',
+    '$script:ZipUrl = $null',
+    '$script:DownloadCalled = $false',
+    '$script:ExpandCalled = $false',
+    'function Log { param($Message) }',
+    'function Ok { param($Message) }',
+    'function Warn { param($Message) }',
+    'function Invoke-RestMethod { [CmdletBinding()] param([string]$Uri, [int]$TimeoutSec); $script:ManifestUrl = $Uri; if ($script:ManifestUnavailable) { throw "sidecar unavailable" }; $json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($script:ManifestBase64)); return (ConvertFrom-Json -InputObject $json -ErrorAction Stop) }',
+    `function Invoke-DownloadFileWithProgress { [CmdletBinding()] param([string]$Uri, [string]$OutFile, [string]$Activity); $script:DownloadCalled = $true; $script:ZipUrl = $Uri; Copy-Item -LiteralPath '${escapedZipPath}' -Destination $OutFile -Force }`,
+    'function Expand-Archive { [CmdletBinding()] param([string]$LiteralPath, [string]$DestinationPath, [switch]$Force); $script:ExpandCalled = $true; New-Item -ItemType Directory -Force -Path $DestinationPath | Out-Null; [System.IO.Compression.ZipFile]::ExtractToDirectory($LiteralPath, $DestinationPath) }',
+    '$success = $false',
+    '$errorText = $null',
+    'try { $null = Install-AppBundleFromZip; $success = $true } catch { $errorText = $_.Exception.Message }',
+    '$appDir = Join-Path $LTTHDir "app"',
+    '$packagePath = Join-Path $appDir "package.json"',
+    '[pscustomobject]@{ success = $success; error = $errorText; manifestUrl = $script:ManifestUrl; zipUrl = $script:ZipUrl; downloadCalled = $script:DownloadCalled; expandCalled = $script:ExpandCalled; installed = Test-Path -LiteralPath $packagePath; packageVersion = if (Test-Path -LiteralPath $packagePath) { (Get-Content -LiteralPath $packagePath -Raw | ConvertFrom-Json).version } else { $null } } | ConvertTo-Json -Compress'
+  ].join('; ');
+  return invokeInstallerFunctions(appBundleFunctions(), body);
+}
+
+function runDownloadSource({ tempDir, markerPaths, deferProtection = false }) {
+  const escapedTempDir = tempDir.replace(/'/g, "''");
+  const markerPathsBase64 = encodedJson(markerPaths);
+  const body = [
+    `$LTTHDir = '${escapedTempDir}'`,
+    '$script:LTTHDir = $LTTHDir',
+    "$LTTHRepoOwner = 'Loggableim'",
+    "$LTTHRepoName = 'ltth.app'",
+    "$LTTHRepoBranch = 'main'",
+    "$script:LTTHInstallMode = 'latest'",
+    "$script:LTTHVersion = 'latest'",
+    `$script:MarkerPathsBase64 = '${markerPathsBase64}'`,
+    '$script:manifestCalls = 0',
+    '$script:downloadCalls = 0',
+    '$script:expandCalls = 0',
+    '$script:gitFallbackCalls = 0',
+    '$script:gitReplacementCalls = 0',
+    '$script:guardCheckCount = 0',
+    'function Log { param($Message) }',
+    'function Ok { param($Message) }',
+    'function Warn { param($Message) }',
+    'function Invoke-RestMethod { $script:manifestCalls++; throw "fixture network blocked" }',
+    'function Invoke-DownloadFileWithProgress { $script:downloadCalls++; throw "fixture download blocked" }',
+    'function Expand-Archive { $script:expandCalls++; throw "fixture extraction blocked" }',
+    'function Ensure-Git { $script:gitFallbackCalls++; throw "fixture fallback blocked" }',
+    'function Resolve-Version { $script:gitFallbackCalls++; throw "fixture fallback blocked" }',
+    'function Invoke-GitClone { $script:gitReplacementCalls++; throw "fixture Git replacement blocked" }',
+    'function Invoke-Git { $script:gitReplacementCalls++; throw "fixture Git replacement blocked" }',
+    'function Repair-LauncherFile { }',
+    'function Restore-RepositoryFromFreshClone { $script:gitReplacementCalls++; throw "fixture Git replacement blocked" }',
+    ...(deferProtection ? ['function Test-AppDirectoryContainsPersistentData { $script:guardCheckCount++; return ($script:guardCheckCount -ge 2) }'] : []),
+    '$appDir = Join-Path $LTTHDir "app"',
+    '$markerPaths = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($script:MarkerPathsBase64)) | ConvertFrom-Json',
+    '$before = @{}; foreach ($relativePath in $markerPaths) { $markerPath = Join-Path $appDir $relativePath; $before[$relativePath] = (Get-FileHash -LiteralPath $markerPath -Algorithm SHA256).Hash }',
+    '$errorText = $null; try { Download-Source } catch { $errorText = $_.Exception.Message }',
+    '$after = @{}; foreach ($relativePath in $markerPaths) { $markerPath = Join-Path $appDir $relativePath; $after[$relativePath] = if (Test-Path -LiteralPath $markerPath -PathType Leaf) { (Get-FileHash -LiteralPath $markerPath -Algorithm SHA256).Hash } else { $null } }',
+    '[pscustomobject]@{ error = $errorText; guardCheckCount = $script:guardCheckCount; manifestCalls = $script:manifestCalls; downloadCalls = $script:downloadCalls; expandCalls = $script:expandCalls; gitFallbackCalls = $script:gitFallbackCalls; gitReplacementCalls = $script:gitReplacementCalls; markersUnchanged = ((ConvertTo-Json -Compress $before) -ceq (ConvertTo-Json -Compress $after)); appRootValid = (Test-AppRootDirectory -Path $appDir); backupCount = @(Get-ChildItem -LiteralPath $LTTHDir -Directory -Filter "app.bak-*" -ErrorAction SilentlyContinue).Count } | ConvertTo-Json -Compress'
+  ].join('; ');
+  return invokeInstallerFunctions(downloadSourceFunctions(), body);
+}
+
+function invokeManifestValidation(manifest, { allowNonzero = false } = {}) {
   return invokeInstallerFunctions(
-    ['Assert-LauncherReleaseManifest'],
+    ['Assert-ReleaseArtifactManifest', 'Assert-LauncherReleaseManifest'],
     [
       `$json = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodedJson(manifest)}'))`,
       '$manifest = $json | ConvertFrom-Json',
       'Assert-LauncherReleaseManifest -Manifest $manifest | ConvertTo-Json -Compress'
-    ].join('; ')
+    ].join('; '),
+    { allowNonzero }
   );
 }
 
 function releaseFunctions() {
   return [
+    'Assert-ReleaseArtifactManifest',
+    'Assert-ReleaseArtifactFile',
     'Use-OfficialLauncherRelease',
     'Get-LauncherReleaseManifestUrl',
     'Get-LauncherDownloadUrl',
@@ -239,7 +407,7 @@ describe('Official launcher release contract', () => {
     ];
 
     for (const [manifest, expectedField] of invalidCases) {
-      const rejected = invokeManifestValidation(manifest);
+      const rejected = invokeManifestValidation(manifest, { allowNonzero: true });
       expect(rejected.status).not.toBe(0);
       expect(`${rejected.stderr}\n${rejected.stdout}`).toContain(expectedField);
     }
@@ -371,5 +539,389 @@ describe('Verified launcher installation', () => {
     });
     expect(rejected.status).toBe(0);
     expect(JSON.parse(rejected.stdout).result).toBeNull();
+  });
+});
+
+describe('Verified Windows app ZIP bootstrap', () => {
+  let tempDir;
+  const expectedVersion = '1.5.0';
+
+  afterEach(() => {
+    if (tempDir) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+      tempDir = undefined;
+    }
+  });
+
+  function makeSidecar(zipBytes, overrides = {}) {
+    return {
+      schema: 1,
+      component: 'ltth_latest.zip',
+      version: expectedVersion,
+      tag: `v${expectedVersion}`,
+      commitSha: '0123456789abcdef0123456789abcdef01234567',
+      bytes: zipBytes.length,
+      sha256: sha256Buffer(zipBytes),
+      ...overrides
+    };
+  }
+
+  async function writeFixtureZip(options = {}) {
+    const zipPath = path.join(tempDir, 'ltth_latest.zip');
+    const zipBytes = await createAppBundleZip(zipPath, options);
+    return { zipPath, zipBytes };
+  }
+
+  test('validates sidecar, exact versioned bytes, and public policy before extracting', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-valid-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(true);
+    expect(state.manifestUrl).toBe('https://github.com/Loggableim/ltth.app/releases/latest/download/ltth_latest.json');
+    expect(state.zipUrl).toBe(`https://github.com/Loggableim/ltth.app/releases/download/v${expectedVersion}/ltth_latest.zip`);
+    expect(state.downloadCalled).toBe(true);
+    expect(state.expandCalled).toBe(true);
+    expect(state.installed).toBe(true);
+    expect(state.packageVersion).toBe(expectedVersion);
+  });
+
+  test('does not download or extract when the sidecar is missing', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-no-sidecar-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes),
+      manifestUnavailable: true
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain('Manifest');
+    expect(state.downloadCalled).toBe(false);
+    expect(state.expandCalled).toBe(false);
+    expect(state.installed).toBe(false);
+  });
+
+  const protectedDataMarkers = [
+    '.config_path',
+    'user_configs/default.db',
+    'user_data/viewer-fixture.json',
+    'uploads/animation-fixture.gif',
+    'plugins/music-bot/data/settings.json'
+  ];
+
+  test.each(protectedDataMarkers)('blocks legacy ZIP repair with protected %s and never enters Git fallback', marker => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-installer-protected-app-data-'));
+    const installDir = path.join(tempDir, 'install');
+    const appDir = path.join(installDir, 'app');
+    fs.mkdirSync(appDir, { recursive: true });
+    fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: 'legacy-fixture', version: '1.4.4' }));
+    const markerPath = path.join(appDir, marker);
+    fs.mkdirSync(path.dirname(markerPath), { recursive: true });
+    fs.writeFileSync(markerPath, `synthetic-preserve:${marker}`);
+
+    const result = runDownloadSource({ tempDir: installDir, markerPaths: [marker] });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.error).toContain('LTTH.AppDirectoryContainsPersistentData');
+    expect(state.manifestCalls).toBe(0);
+    expect(state.downloadCalls).toBe(0);
+    expect(state.expandCalls).toBe(0);
+    expect(state.gitFallbackCalls).toBe(0);
+    expect(state.gitReplacementCalls).toBe(0);
+    expect(state.markersUnchanged).toBe(true);
+    expect(state.appRootValid).toBe(false);
+    expect(state.backupCount).toBe(0);
+    expect(fs.readFileSync(markerPath, 'utf8')).toBe(`synthetic-preserve:${marker}`);
+    expect(fs.existsSync(path.join(appDir, 'launch.js'))).toBe(false);
+  });
+
+  test('rethrows a typed data guard raised at the ZIP boundary without Git fallback', () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-installer-racing-data-guard-'));
+    const installDir = path.join(tempDir, 'install');
+    const appDir = path.join(installDir, 'app');
+    fs.mkdirSync(path.join(appDir, 'user_data'), { recursive: true });
+    fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: 'legacy-fixture', version: '1.4.4' }));
+    const markerPath = path.join(appDir, 'user_data', 'viewer-fixture.json');
+    fs.writeFileSync(markerPath, 'synthetic-race-guard');
+
+    const result = runDownloadSource({
+      tempDir: installDir,
+      markerPaths: ['user_data/viewer-fixture.json'],
+      deferProtection: true
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.error).toContain('LTTH.AppDirectoryContainsPersistentData');
+    expect(state.guardCheckCount).toBe(2);
+    expect(state.manifestCalls).toBe(0);
+    expect(state.downloadCalls).toBe(0);
+    expect(state.expandCalls).toBe(0);
+    expect(state.gitFallbackCalls).toBe(0);
+    expect(state.gitReplacementCalls).toBe(0);
+    expect(state.markersUnchanged).toBe(true);
+    expect(state.backupCount).toBe(0);
+    expect(fs.readFileSync(markerPath, 'utf8')).toBe('synthetic-race-guard');
+  });
+
+  test('blocks direct ZIP repair before the sidecar when app-local state exists', () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-installer-direct-protected-data-'));
+    const installDir = path.join(tempDir, 'install');
+    const appDir = path.join(installDir, 'app');
+    fs.mkdirSync(path.join(appDir, 'user_configs'), { recursive: true });
+    fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: 'legacy-fixture', version: '1.4.4' }));
+    const profilePath = path.join(appDir, 'user_configs', 'default.db');
+    fs.writeFileSync(profilePath, 'synthetic-profile');
+
+    const result = runInstallAppBundle({
+      tempDir: installDir,
+      zipPath: path.join(tempDir, 'unused.zip'),
+      remoteManifest: {}
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain('LTTH.AppDirectoryContainsPersistentData');
+    expect(state.manifestUrl).toBeNull();
+    expect(state.downloadCalled).toBe(false);
+    expect(state.expandCalled).toBe(false);
+    expect(state.packageVersion).toBe('1.4.4');
+    expect(fs.readFileSync(profilePath, 'utf8')).toBe('synthetic-profile');
+  });
+
+  test('keeps a valid existing app with app-local markers on the normal skip path', () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-installer-valid-app-data-'));
+    const installDir = path.join(tempDir, 'install');
+    const appDir = path.join(installDir, 'app');
+    fs.mkdirSync(appDir, { recursive: true });
+    fs.writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: 'valid-fixture', version: '1.4.5' }));
+    fs.writeFileSync(path.join(appDir, 'launch.js'), '// synthetic app');
+    const markerPaths = protectedDataMarkers;
+    for (const marker of markerPaths) {
+      const markerPath = path.join(appDir, marker);
+      fs.mkdirSync(path.dirname(markerPath), { recursive: true });
+      fs.writeFileSync(markerPath, `synthetic-preserve:${marker}`);
+    }
+
+    const result = runDownloadSource({ tempDir: installDir, markerPaths });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.error).toBeNull();
+    expect(state.manifestCalls).toBe(0);
+    expect(state.downloadCalls).toBe(0);
+    expect(state.expandCalls).toBe(0);
+    expect(state.gitFallbackCalls).toBe(0);
+    expect(state.gitReplacementCalls).toBe(0);
+    expect(state.markersUnchanged).toBe(true);
+    expect(state.appRootValid).toBe(true);
+    expect(state.backupCount).toBe(0);
+    for (const marker of markerPaths) {
+      expect(fs.readFileSync(path.join(appDir, marker), 'utf8')).toBe(`synthetic-preserve:${marker}`);
+    }
+  });
+
+  test.each([
+    ['unknown fields', { futureField: 'not-in-schema' }, 'dokumentierten'],
+    ['negative byte count', { bytes: -1 }, 'bytes']
+  ])('rejects sidecar with %s before downloading the ZIP', async (_caseName, overrides, expectedError) => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-invalid-sidecar-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes, overrides)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain(expectedError);
+    expect(state.downloadCalled).toBe(false);
+    expect(state.expandCalled).toBe(false);
+    expect(state.installed).toBe(false);
+  });
+
+  test('rejects trailing JSON in the sidecar before downloading the ZIP', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-trailing-sidecar-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const validSidecar = JSON.stringify(makeSidecar(zipBytes));
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifestRaw: `${validSidecar} {"schema":1}`
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain('Manifest');
+    expect(state.downloadCalled).toBe(false);
+    expect(state.expandCalled).toBe(false);
+    expect(state.installed).toBe(false);
+  });
+
+  test('rejects a mismatched resolved version before downloading the ZIP', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-wrong-version-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes, { version: '1.4.4', tag: 'v1.4.4' })
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain('erwarteten Version');
+    expect(state.downloadCalled).toBe(false);
+    expect(state.expandCalled).toBe(false);
+  });
+
+  test.each([
+    ['byte-count mismatch', zipBytes => ({ bytes: zipBytes.length + 1 }), 'bytes'],
+    ['SHA-256 mismatch', () => ({ sha256: '0'.repeat(64) }), 'sha256']
+  ])('rejects ZIP %s before extraction', async (_caseName, makeOverrides, expectedError) => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-bad-hash-'));
+    const { zipPath, zipBytes } = await writeFixtureZip();
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes, makeOverrides(zipBytes))
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.error).toContain(expectedError);
+    expect(state.downloadCalled).toBe(true);
+    expect(state.expandCalled).toBe(false);
+    expect(state.installed).toBe(false);
+  });
+
+  test.each([
+    ['missing public marker', { omitMarker: true }],
+    ['missing release policy', { omitPolicy: true }],
+    ['malformed release policy', { policy: { schemaVersion: 2, closedBeta: [] } }],
+    ['invalid release policy alias', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], aliases: { streamalchemy: 'unknown-plugin' } }
+    }],
+    ['non-public marker', { marker: { channel: 'local' } }],
+    ['renamed closed-beta manifest ID', {
+      pluginPath: 'plugins/renamed/plugin.json',
+      pluginManifest: { id: 'music-bot' }
+    }],
+    ['renamed closed-beta alias', {
+      pluginPath: 'plugins/renamed/plugin.json',
+      pluginManifest: { id: 'public-wrapper', aliases: ['streamalchemy'] }
+    }],
+    ['renamed closed-beta replacement', {
+      pluginPath: 'plugins/renamed/plugin.json',
+      pluginManifest: { id: 'public-wrapper', replaces: ['streamalchemy'] }
+    }],
+    ['closed-beta directory name', {
+      pluginPath: 'plugins/music-bot/plugin.json',
+      pluginManifest: { id: 'public-wrapper' }
+    }],
+    ['nested closed-beta directory name under a public vendor', {
+      pluginPath: 'plugins/public/vendor/music-bot/plugin.json',
+      pluginManifest: { id: 'public-wrapper' }
+    }],
+    ['case-variant plugin paths and manifest IDs', {
+      pluginPath: 'Plugins/renamed/Plugin.json',
+      pluginManifest: { id: 'MUSIC-BOT' }
+    }],
+    ['invalid publicRuntimeExcluded ID', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicRuntimeExcluded: ['Bad ID'] }
+    }],
+    ['publicRuntimeExcluded duplicate of closed-beta ID', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicRuntimeExcluded: ['music-bot'] }
+    }],
+    ['publicAssetPathOwners owner not in blocked IDs', {
+      policy: { schemaVersion: 1, closedBeta: ['music-bot'], publicAssetPathOwners: { '/js/x.js': 'unknown-owner' } }
+    }],
+  ])('rejects app contents with %s before extraction', async (_caseName, zipOptions) => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-policy-'));
+    const { zipPath, zipBytes } = await writeFixtureZip(zipOptions);
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(false);
+    expect(state.downloadCalled).toBe(true);
+    expect(state.expandCalled).toBe(false);
+    expect(state.installed).toBe(false);
+  });
+
+  test('accepts an asset owner that is blocked only through publicRuntimeExcluded', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-runtime-excluded-'));
+    const { zipPath, zipBytes } = await writeFixtureZip({
+      policy: {
+        schemaVersion: 1,
+        closedBeta: ['music-bot'],
+        publicRuntimeExcluded: ['sidekick'],
+        publicAssetPathOwners: { '/js/sidekick-ui.js': 'sidekick' }
+      }
+    });
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(true);
+    expect(state.installed).toBe(true);
+  });
+
+  test('keeps unrelated nested public vendor plugin directories valid', async () => {
+    if (!hasWindowsPowerShell()) return;
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-app-bundle-public-vendor-'));
+    const { zipPath, zipBytes } = await writeFixtureZip({
+      pluginPath: 'plugins/public/vendor/unrelated/plugin.json',
+      pluginManifest: { id: 'public-vendor' }
+    });
+    const result = runInstallAppBundle({
+      tempDir: path.join(tempDir, 'install'),
+      zipPath,
+      remoteManifest: makeSidecar(zipBytes)
+    });
+
+    expect(result.status).toBe(0);
+    const state = JSON.parse(result.stdout);
+    expect(state.success).toBe(true);
+    expect(state.downloadCalled).toBe(true);
+    expect(state.expandCalled).toBe(true);
+    expect(state.installed).toBe(true);
+    expect(state.packageVersion).toBe(expectedVersion);
   });
 });

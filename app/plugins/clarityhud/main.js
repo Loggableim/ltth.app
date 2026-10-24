@@ -149,9 +149,8 @@ class ClarityHUDPlugin {
       await this.backend.handleSubscribeEvent(data);
     });
 
-    this.api.registerTikTokEvent('superfan', async (data) => {
-      await this.backend.handleSubscribeEvent(data);
-    });
+    // SuperFan event markers are not subscription notifications.
+    // Event-only display is handled by the dashboard until a separate overlay contract exists.
 
     this.api.registerTikTokEvent('join', async (data) => {
       await this.backend.handleJoinEvent(data);

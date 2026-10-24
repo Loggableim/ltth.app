@@ -3,8 +3,9 @@
 const fs = require('fs');
 const path = require('path');
 
+// Source scans must not ingest generated build or review snapshots from output directories.
 const SKIPPED_SOURCE_DIRECTORIES = new Set([
-  'node_modules', '.git', 'docs_archive', '.worktrees', '.superpowers'
+  'node_modules', '.git', 'docs_archive', '.worktrees', '.superpowers', 'output'
 ]);
 
 function compareText(left, right) {

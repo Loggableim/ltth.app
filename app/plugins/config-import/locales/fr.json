@@ -147,7 +147,24 @@
           "legacyDataFiles": "{count} ancien(s) fichier(s) de données",
           "legacyImportCompleted": "✅ Importation terminée avec succès !",
           "importedItems": "📦 Importé :",
-          "switchProfileRestart": "⚠️ Ouvrez Paramètres → Profils utilisateur, sélectionnez le profil importé, puis redémarrez l’application."
+          "switchProfileRestart": "⚠️ Ouvrez Paramètres → Profils utilisateur, sélectionnez le profil importé, puis redémarrez l’application.",
+          "scopedMergeRequired": "Les données du profil nécessitent le mode Fusionner. Sélectionnez Fusionner pour préserver les fichiers existants dans la destination.",
+          "persistentStateRequiresScoped": "L’état persistant de Schnorrbecher nécessite de sélectionner l’importation des données du profil.",
+          "recoveryRetainedHint": "La restauration n’a pas pu être terminée. Les données de récupération sont conservées au chemin indiqué. Ne supprimez pas ces fichiers ; consultez les détails et résolvez la récupération avant toute autre importation.",
+          "profileScopedTitle": "Données des modules par profil",
+          "profileScopedInfo": "Les métadonnées de l’archive ne choisissent jamais le profil cible.",
+          "profileScopedFiles": "Importer les fichiers Advanced Timer / Schnorrbecher propres au profil",
+          "profileScopedState": "Importer l’état persistant de Schnorrbecher (l’état de session n’est jamais importé)",
+          "targetProfile": "Profil cible",
+          "activeProfileInfo": "Profil serveur actif pour les réglages : {profile}. Les réglages globaux et du module sont désactivés si les fichiers vont vers un autre profil.",
+          "unknownActiveProfile": "inconnu",
+          "settingsTargetMustBeActive": "Les réglages globaux et du module ne peuvent être importés que dans le profil actif.",
+          "confirmProfileScopedImport": "Importer les fichiers dans le profil « {profile} » ? Les fichiers existants sont conservés ; les conflits arrêtent l’importation du module concerné.",
+          "scopedArchiveInfo": "Source de l’archive : {profile}. Contenu : {plugins}. Choisissez explicitement la cible ci-dessous ; les métadonnées sont informatives.",
+          "scopedArchiveMissing": "Cette archive ne contient aucune donnée explicitement associée à un profil. Les anciennes archives ne sont jamais attribuées automatiquement.",
+          "profileScopedExportFiles": "🔒 Données Advanced Timer et Schnorrbecher du profil actuel",
+          "profileScopedExportState": "Inclure l’état persistant de Schnorrbecher (l’état de session est toujours omis)",
+          "currentProfileSuffix": "actuel"
         }
       },
       "labels": {

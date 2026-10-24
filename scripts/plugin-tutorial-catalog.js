@@ -5,6 +5,7 @@
 // miss documentation.
 const fs = require('fs');
 const path = require('path');
+const { loadPublishedPluginCatalog } = require('./lib/published-plugin-catalog');
 
 const LOCALES = ['de', 'en', 'es', 'fr'];
 
@@ -12,7 +13,6 @@ const ROUTES = {
   'advanced-timer': ['/dashboard.html?view=plugins', '/advanced-timer/ui', '/advanced-timer/ui', '/advanced-timer/ui'],
   animazingpal: ['/dashboard.html?view=plugins', '/animazingpal/ui', '/animazingpal/ui', '/animazingpal/ui'],
   'api-bridge': ['/dashboard.html?view=plugins', '/dashboard.html?view=plugins', '/dashboard.html?view=plugins', '/dashboard.html?view=plugins'],
-  chatango: ['/dashboard.html?view=plugins', '/chatango/ui', '/chatango/ui', '/chatango/ui'],
   clarityhud: ['/dashboard.html?view=plugins', '/clarityhud/ui', '/clarityhud/ui', '/plugins/clarityhud/overlays/full.html'],
   coinbattle: ['/dashboard.html?view=plugins', '/coinbattle/ui', '/coinbattle/ui', '/plugins/coinbattle/overlay/overlay.html'],
   'config-import': ['/dashboard.html?view=plugins', '/config-import/ui', '/config-import/ui', '/config-import/ui'],
@@ -50,7 +50,7 @@ const ROUTES = {
 const PROFILES = {
   visual: ['clarityhud', 'emoji-rain', 'fireworks', 'flame-overlay', 'goals', 'spotlight', 'stt-ticker', 'toptier', 'weather-control', 'webgpu-weather-control', 'webgpu-emoji-rain', 'webgpu-fireworks', 'talking-heads'],
   game: ['advanced-timer', 'coinbattle', 'game-engine', 'interactive-story', 'quiz-show', 'stream-monsters'],
-  integration: ['animazingpal', 'chatango', 'minecraft-connect', 'multicam', 'music-bot', 'openshock', 'osc-bridge', 'thermal-printer', 'vdoninja'],
+  integration: ['animazingpal', 'minecraft-connect', 'multicam', 'music-bot', 'openshock', 'osc-bridge', 'thermal-printer', 'vdoninja'],
   audio: ['soundboard', 'tts'],
   system: ['api-bridge', 'config-import', 'gcce', 'gift-catalog', 'milestone-leaderboard', 'store-admin']
 };
@@ -157,7 +157,9 @@ function localizeRequirements(copy, access) {
 
 function buildCatalog(repoRoot) {
   const store = readStore(repoRoot);
-  const manifests = readManifests(repoRoot);
+  const catalog = loadPublishedPluginCatalog(repoRoot);
+  const manifests = catalog.plugins;
+  const storeIds = new Set(catalog.storeIds);
   const tutorials = manifests.map((manifest) => {
     const storeItem = store.get(manifest.id);
     const profile = profileFor(manifest.id);
@@ -171,7 +173,7 @@ function buildCatalog(repoRoot) {
       access,
       devStatus: manifest.devStatus || 'available',
       profile,
-      storeAvailable: Boolean(storeItem),
+      storeAvailable: storeIds.has(manifest.id),
       routes: ROUTES[manifest.id] || Array(4).fill('/dashboard.html?view=plugins'),
       localized: localizeRequirements(localized(profile, name, storeItem?.category || manifest.category || 'plugin', access), access),
       steps

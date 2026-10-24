@@ -16,14 +16,46 @@
  */
 
 const path = require('path');
+const { snapshotProfileDatabases } = require('./sqlite-snapshots');
+const fs = require('fs');
+const os = require('os');
 const archiver = require('archiver');
 const { createManifest } = require('./manifest');
 const { computeChecksum } = require('./checksum');
 const { discoverAllPluginSettings, discoverGlobalSettings } = require('./plugin-discovery');
 const { collectPluginFiles, collectFiles, DEFAULT_IGNORE_PATTERNS } = require('./file-collector');
 const { canonicalizePluginId, getIdentityCandidateIds } = require('../plugin-identities');
+const { PROFILE_SCOPED_PLUGIN_DATA, normalizeScopedPluginIds, canonicalProfileId, validateProfileId } = require('./profile-scoped-data');
 
 const USER_CONFIG_FILE_SIZE_LIMIT_BYTES = 500 * 1024 * 1024;
+
+function getUserConfigFileSizeLimit({ relPath }) {
+    const fileName = path.posix.basename(relPath.replace(/\\/g, '/'));
+    if (/\.db(?:-(?:wal|shm))?$/i.test(fileName)) {
+        return null;
+    }
+    return USER_CONFIG_FILE_SIZE_LIMIT_BYTES;
+}
+
+async function readProfileScopedFile(pluginId, file) {
+    const relPath = file.relPath.replace(/\\/g, '/');
+    if (pluginId !== 'advanced-timer' || relPath !== 'timers.db') {
+        return fs.readFileSync(file.absPath);
+    }
+
+    const Database = require('better-sqlite3');
+    const snapshotDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ltth-backup-sqlite-'));
+    const snapshotPath = path.join(snapshotDir, 'timers.db');
+    let sourceDb;
+    try {
+        sourceDb = new Database(file.absPath, { readonly: true, fileMustExist: true });
+        await sourceDb.backup(snapshotPath);
+        return fs.readFileSync(snapshotPath);
+    } finally {
+        if (sourceDb && sourceDb.open) sourceDb.close();
+        fs.rmSync(snapshotDir, { recursive: true, force: true });
+    }
+}
 
 /**
  * Export the current configuration to a ZIP archive written to a writable stream.
@@ -62,8 +94,23 @@ async function exportBackup(deps, opts = {}) {
         includeUserConfigs = true,
         includeUploads = true,
         includeUserData = true,
-        pluginFilter = null
+        pluginFilter = null,
+        profileScopedDataPlugins: requestedScopedDataPlugins = [],
+        includeSchnorrbecherPersistentState = false
     } = opts;
+    const profileScopedDataPlugins = normalizeScopedPluginIds(requestedScopedDataPlugins);
+    if (!Array.isArray(requestedScopedDataPlugins) || profileScopedDataPlugins.length !== requestedScopedDataPlugins.length) {
+        throw new Error('Invalid profile-scoped plugin data selection');
+    }
+    if (typeof includeSchnorrbecherPersistentState !== 'boolean' ||
+        (includeSchnorrbecherPersistentState && !profileScopedDataPlugins.includes('schnorrbecher'))) {
+        throw new Error('Persistent Schnorrbecher state requires an explicit Schnorrbecher profile-data export');
+    }
+    const scopedProfileId = canonicalProfileId(activeProfile);
+    if (profileScopedDataPlugins.length && !validateProfileId(scopedProfileId)) {
+        throw new Error('A valid active profile is required to export profile-scoped plugin data');
+    }
+    const profileScopedDataPluginSet = new Set(profileScopedDataPlugins);
 
     const warnings = [];
     const checksums = {};
@@ -90,12 +137,9 @@ async function exportBackup(deps, opts = {}) {
         });
     }
 
-    function getUserConfigFileSizeLimit({ relPath }) {
-        const fileName = path.posix.basename(normaliseArchivePath(relPath));
-        if (/\.db(?:-(?:wal|shm))?$/i.test(fileName)) {
-            return null;
-        }
-        return USER_CONFIG_FILE_SIZE_LIMIT_BYTES;
+    function isScopedPluginStagingPath(relPath) {
+        const segments = normaliseArchivePath(relPath).split('/');
+        return segments.some(segment => /^(?:\.legacy-timer-import-|\.legacy-import-|\.ltth-backup-stage-)/i.test(segment));
     }
 
     function discoverPluginDataIds() {
@@ -120,18 +164,7 @@ async function exportBackup(deps, opts = {}) {
         }
     }
 
-    function checkpointActiveDatabase() {
-        const sqliteDb = db && db.db && typeof db.db.pragma === 'function' ? db.db : db;
-        if (!sqliteDb || typeof sqliteDb.pragma !== 'function') {
-            return;
-        }
 
-        try {
-            sqliteDb.pragma('wal_checkpoint(PASSIVE)');
-        } catch (err) {
-            warnings.push(`Could not checkpoint active profile database before backup: ${err.message}`);
-        }
-    }
 
     // ── Collect data ──────────────────────────────────────────────────────────
 
@@ -166,7 +199,12 @@ async function exportBackup(deps, opts = {}) {
         const loadedPluginIds = pluginLoader
             ? Array.from(pluginLoader.loadedPlugins.keys()).map(canonicalizePluginId)
             : [];
-        const dataPluginIds = includePluginData ? discoverPluginDataIds() : [];
+        const dataPluginIds = includePluginData
+            ? [...new Set([
+                ...discoverPluginDataIds().filter(id => !PROFILE_SCOPED_PLUGIN_DATA.includes(id)),
+                ...profileScopedDataPlugins
+            ])]
+            : [];
         const allIds = [...new Set([...dbPluginIds, ...loadedPluginIds, ...dataPluginIds]
             .map(canonicalizePluginId))];
         const filterIds = pluginFilter
@@ -206,7 +244,40 @@ async function exportBackup(deps, opts = {}) {
 
     // ── Build archive ─────────────────────────────────────────────────────────
 
+    let profileFiles = [];
+    let releaseSnapshots = () => {};
+    if (includeUserConfigs && configPathManager?.getUserConfigsDir) {
+        const dir = configPathManager.getUserConfigsDir();
+        const collected = collectFiles(dir, dir, {
+            ignorePatterns: getUserConfigIgnorePatterns(),
+            maxFileSizeBytes: USER_CONFIG_FILE_SIZE_LIMIT_BYTES,
+            getMaxFileSizeBytes: getUserConfigFileSizeLimit
+        });
+        if (collected.warnings.length) {
+            throw new Error(`[user_configs] Collection failed: ${collected.warnings.join('; ')}`);
+        }
+        const snapshots = await snapshotProfileDatabases(collected.files);
+        profileFiles = snapshots.files;
+        releaseSnapshots = snapshots.cleanup;
+    }
+
+    let cleanupArchive = releaseSnapshots;
+    try {
     const archive = archiver('zip', { zlib: { level: 6 } });
+    const snapshotStreams = [];
+    cleanupArchive = () => {
+        archive.abort();
+        Promise.all(snapshotStreams.map(stream => new Promise(resolve => {
+            if (stream.closed) return resolve();
+            stream.once('close', resolve);
+            stream.destroy();
+        }))).then(releaseSnapshots);
+    };
+    archive.once('end', cleanupArchive);
+    archive.once('close', cleanupArchive);
+    // Keep the listener installed: Archiver can emit another queued error
+    // after destroy. Consumers still receive the original stream error.
+    archive.on('error', cleanupArchive);
 
     archive.on('warning', err => {
         warnings.push(`Archive warning: ${err.message}`);
@@ -225,17 +296,47 @@ async function exportBackup(deps, opts = {}) {
         }
 
         // Data directory files
-        if (includePluginData) {
-            const dataDir = configPathManager.getPluginDataDir(pluginId);
-            const { files, warnings: fileWarnings } = collectPluginFiles(dataDir);
+        if (includePluginData && PROFILE_SCOPED_PLUGIN_DATA.includes(pluginId) && !profileScopedDataPluginSet.has(pluginId)) {
+            warnings.push(`[${pluginId}] Profile-scoped data omitted; select the profile-data backup option to include the active profile's files.`);
+        } else if (includePluginData) {
+            const dataDir = profileScopedDataPluginSet.has(pluginId)
+                ? configPathManager.getPluginDataDir(pluginId, { profileId: scopedProfileId })
+                : configPathManager.getPluginDataDir(pluginId);
+            const { files, warnings: fileWarnings } = collectPluginFiles(dataDir, profileScopedDataPluginSet.has(pluginId)
+                ? { ignorePatterns: [...DEFAULT_IGNORE_PATTERNS, /^\.legacy-timer-import-/i, /^\.legacy-import-/i, /^\.ltth-backup-stage-/i] }
+                : {});
             warnings.push(...fileWarnings.map(w => `[${pluginId}] ${w}`));
+            const scopedFiles = profileScopedDataPluginSet.has(pluginId)
+                ? files.filter(file => !isScopedPluginStagingPath(file.relPath) && !/^timers\.db-(?:wal|shm)$/i.test(path.posix.basename(normaliseArchivePath(file.relPath))))
+                : files;
+            let schnorrPersistent = false;
+            let schnorrConfigSnapshot = null;
+            if (pluginId === 'schnorrbecher') {
+                const config = scopedFiles.find(file => file.relPath.replace(/\\/g, '/') === 'coin-jar-config.json');
+                try {
+                    schnorrConfigSnapshot = config ? await readProfileScopedFile(pluginId, config) : null;
+                    schnorrPersistent = Boolean(schnorrConfigSnapshot && JSON.parse(schnorrConfigSnapshot.toString('utf8')).persistenceMode === 'persistent');
+                } catch (_) { schnorrPersistent = false; }
+            }
 
-            for (const { absPath, relPath, size } of files) {
+            for (const { absPath, relPath } of scopedFiles) {
+                if (pluginId === 'schnorrbecher' && relPath.replace(/\\/g, '/') === 'coin-jar-state.json' &&
+                    (!includeSchnorrbecherPersistentState || !schnorrPersistent)) {
+                    if (includeSchnorrbecherPersistentState && !schnorrPersistent) {
+                        warnings.push('[schnorrbecher] Session state omitted; only explicitly selected persistent state can be backed up.');
+                    }
+                    continue;
+                }
                 const archivePath = `plugins/${pluginId}/data/${normaliseArchivePath(relPath)}`;
                 try {
-                    archive.file(absPath, { name: archivePath });
-                    // Checksum will be added after finalisation – approximated here by size
-                    // For correctness the checksum is computed during finalize via a pass-through
+                    if (profileScopedDataPluginSet.has(pluginId)) {
+                        const snapshot = pluginId === 'schnorrbecher' && relPath.replace(/\\/g, '/') === 'coin-jar-config.json'
+                            ? schnorrConfigSnapshot
+                            : await readProfileScopedFile(pluginId, { absPath, relPath });
+                        archive.append(snapshot, { name: archivePath });
+                    } else {
+                        archive.file(absPath, { name: archivePath });
+                    }
                 } catch (err) {
                     warnings.push(`[${pluginId}] Could not add file ${relPath}: ${err.message}`);
                 }
@@ -246,20 +347,14 @@ async function exportBackup(deps, opts = {}) {
     // User profile configs (profile DBs, active profile marker, plugin state)
     if (includeUserConfigs) {
         if (configPathManager && typeof configPathManager.getUserConfigsDir === 'function') {
-            checkpointActiveDatabase();
-
-            const userConfigsDir = configPathManager.getUserConfigsDir();
-            const { files, warnings: fileWarnings } = collectFiles(userConfigsDir, userConfigsDir, {
-                ignorePatterns: getUserConfigIgnorePatterns(),
-                maxFileSizeBytes: USER_CONFIG_FILE_SIZE_LIMIT_BYTES,
-                getMaxFileSizeBytes: getUserConfigFileSizeLimit
-            });
-            warnings.push(...fileWarnings.map(w => `[user_configs] ${w}`));
-            for (const { absPath, relPath } of files) {
-                try {
+            for (const { absPath, relPath } of profileFiles) {
+                if (/\.db$/i.test(relPath)) {
+                    const stream = fs.createReadStream(absPath, { fd: fs.openSync(absPath, 'r') });
+                    snapshotStreams.push(stream);
+                    stream.on('error', err => archive.destroy(err));
+                    archive.append(stream, { name: `user_configs/${normaliseArchivePath(relPath)}` });
+                } else {
                     archive.file(absPath, { name: `user_configs/${normaliseArchivePath(relPath)}` });
-                } catch (err) {
-                    warnings.push(`[user_configs] Could not add file ${relPath}: ${err.message}`);
                 }
             }
         } else {
@@ -312,8 +407,11 @@ async function exportBackup(deps, opts = {}) {
             includeUserConfigs,
             includeUploads,
             includeUserData,
-            pluginFilter: pluginFilter || 'all'
+            pluginFilter: pluginFilter || 'all',
+            profileScopedDataPlugins,
+            includeSchnorrbecherPersistentState
         },
+        profileScopedDataPlugins,
         plugins: pluginMeta,
         warnings
     });
@@ -321,9 +419,13 @@ async function exportBackup(deps, opts = {}) {
     appendJson(archive, 'manifest.json', manifest);
     appendJson(archive, 'checksums.json', checksums);
 
-    archive.finalize();
+    archive.finalize().catch(err => archive.destroy(err));
 
     return { stream: archive, warnings };
+    } catch (err) {
+        cleanupArchive();
+        throw err;
+    }
 }
 
-module.exports = { exportBackup };
+module.exports = { exportBackup, getUserConfigFileSizeLimit };

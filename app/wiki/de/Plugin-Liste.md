@@ -101,40 +101,6 @@ http://localhost:3000/advanced-timer/overlay
 
 ---
 
-### 2. Chatango Integration
-**Status:** 🔴 Early Beta
-**Version:** 1.0.0
-**Autor:** Pup Cid
-
-**Beschreibung:**
-Integriert Chatango-Chaträume in deinen Stream. Konfiguriere einbettbare Chat-Widgets, passe das Erscheinungsbild an und empfange Chat-Nachrichten als Events für Flows und Automatisierungen.
-
-**Features:**
-- 💬 Chatango-Chatroom-Integration
-- 🎨 Anpassbares Widget-Design
-- 📡 Echtzeit-Chat-Nachrichten als Events
-- 🔗 Flow-System-Kompatibilität
-- 👥 Moderations-Tools
-- 🌐 Multi-Chatroom-Support
-
-**Endpoints:**
-- `GET /api/chatango/status` - Verbindungsstatus
-- `POST /api/chatango/connect` - Chatroom verbinden
-- `POST /api/chatango/disconnect` - Verbindung trennen
-
-**Events:**
-- `chatango:message` - Neue Chat-Nachricht
-- `chatango:user-join` - Benutzer betritt Chatroom
-- `chatango:user-leave` - Benutzer verlässt Chatroom
-
-**Konfiguration:** Admin UI verfügbar
-
-**Bekannte Einschränkungen:**
-- ⚠️ Early Beta: Reconnection-Logic noch nicht optimiert
-- ⚠️ Einige Chatango-Features noch nicht unterstützt
-
----
-
 ### 3. GCCE HUD Overlay
 **Status:** 🔴 Early Beta
 **Version:** 1.0.0

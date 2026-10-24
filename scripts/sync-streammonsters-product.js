@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 'use strict';
 
+const { isClosedBetaPlugin } = require('./lib/published-plugin-catalog');
+
 const fs = require('fs');
 const path = require('path');
 
@@ -105,6 +107,9 @@ function projectManifest(root, contract) {
 function projectStore(root, contract) {
   const relativePath = 'plugin-store.json';
   const source = readText(root, relativePath);
+  if (isClosedBetaPlugin(root, contract.product.id)) {
+    return { relativePath, content: source };
+  }
   const registry = JSON.parse(source);
   const plugin = registry.plugins.find(entry => entry.id === contract.product.id);
   if (!plugin) throw new Error(`Missing Store entry: ${contract.product.id}`);
@@ -203,6 +208,8 @@ function projectPublicGuide(root, contract) {
   const relativePath = 'js/streammonsters-guide.js';
   let content = readText(root, relativePath);
   const projection = publicProjection(contract);
+  delete projection.packageFilename;
+  delete projection.access;
   const body = (
     `  const PRODUCT_PROJECTION = Object.freeze(${JSON.stringify(projection, null, 2)});`
   );
@@ -237,12 +244,10 @@ function projectPublicHtml(root, contract) {
     'data-streammonsters-version': projection.version,
     'data-streammonsters-rules-version': projection.rulesVersion,
     'data-streammonsters-arena-label': projection.arenaLabel,
-    'data-streammonsters-access': projection.access.type,
     'data-streammonsters-hatch-default-ms': projection.defaults.hatchDurationMs,
     'data-streammonsters-portrait-mode': projection.defaults.portraitBattleMode,
     'data-streammonsters-portrait-profile': projection.defaults.portraitProfile,
-    'data-streammonsters-locales': projection.locales.join(','),
-    'data-streammonsters-package': projection.packageFilename
+    'data-streammonsters-locales': projection.locales.join(',')
   };
   const projectedBody = Object.entries(attributes).reduce(
     (openingTag, [name, value]) => setHtmlAttribute(openingTag, name, value),
@@ -253,6 +258,9 @@ function projectPublicHtml(root, contract) {
     /<p class="sm-kicker" data-streammonsters-arena-label>[^<]*<\/p>/,
     `<p class="sm-kicker" data-streammonsters-arena-label>${projection.arenaLabel}</p>`
   );
+  content = content.replace(/\sdata-streammonsters-(?:access|package)="[^"]*"/g, '');
+  content = content.replace(/<a\b[^>]*id="(?:download-link|cta-download)"[^>]*>[\s\S]*?<\/a>/g, '');
+  content = content.replace(/<script\b[^>]*src="\/app\/plugins\/stream-monsters\/[^"]*"[^>]*>[\s\S]*?<\/script>/g, '');
   return { relativePath, content };
 }
 

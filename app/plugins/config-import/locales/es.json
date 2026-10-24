@@ -147,7 +147,24 @@
           "legacyDataFiles": "{count} archivo(s) de datos heredados",
           "legacyImportCompleted": "✅ ¡Importación completada correctamente!",
           "importedItems": "📦 Importado:",
-          "switchProfileRestart": "⚠️ Ve a Ajustes → Perfiles de usuario, cambia al perfil importado y reinicia la aplicación."
+          "switchProfileRestart": "⚠️ Ve a Ajustes → Perfiles de usuario, cambia al perfil importado y reinicia la aplicación.",
+          "scopedMergeRequired": "Los datos del perfil requieren el modo Combinar. Selecciona Combinar para conservar los archivos existentes en el destino.",
+          "persistentStateRequiresScoped": "El estado persistente de Schnorrbecher requiere seleccionar la importación de datos del perfil.",
+          "recoveryRetainedHint": "La restauración no pudo completarse. Los datos de recuperación se conservan en la ruta indicada. No elimines estos archivos; revisa los detalles y resuelve la recuperación antes de otra importación.",
+          "profileScopedTitle": "Datos de plugins por perfil",
+          "profileScopedInfo": "Los metadatos del archivo nunca eligen el perfil de destino.",
+          "profileScopedFiles": "Importar archivos de Advanced Timer / Schnorrbecher por perfil",
+          "profileScopedState": "Importar estado persistente de Schnorrbecher (nunca se importa el estado de sesión)",
+          "targetProfile": "Perfil de destino",
+          "activeProfileInfo": "Perfil activo del servidor para ajustes: {profile}. Los ajustes globales y del plugin se desactivan al importar archivos a otro perfil.",
+          "unknownActiveProfile": "desconocido",
+          "settingsTargetMustBeActive": "Los ajustes globales y del plugin solo se pueden importar al perfil activo.",
+          "confirmProfileScopedImport": "¿Importar archivos al perfil «{profile}»? Se conservan los archivos existentes; los conflictos detienen la importación de ese plugin.",
+          "scopedArchiveInfo": "Origen del archivo: {profile}. Incluye: {plugins}. Elige explícitamente el destino abajo; los metadatos solo son informativos.",
+          "scopedArchiveMissing": "Este archivo no contiene datos marcados por perfil. Los archivos antiguos nunca se asignan automáticamente.",
+          "profileScopedExportFiles": "🔒 Datos de Advanced Timer y Schnorrbecher del perfil actual",
+          "profileScopedExportState": "Incluir el estado persistente de Schnorrbecher (el estado de sesión siempre se omite)",
+          "currentProfileSuffix": "actual"
         }
       },
       "labels": {

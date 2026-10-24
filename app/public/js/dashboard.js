@@ -19,6 +19,8 @@ let dashboardTTSRenderer = null;
 // TTS Streaming buffer management
 const streamingBuffers = new Map();
 const blockedStreamingPlaybackIds = new Set();
+const abortedStreamingPlaybackIds = new Set();
+const MAX_ABORTED_STREAMING_PLAYBACK_IDS = 1024;
 
 // ========== STATS MENU NAVIGATION DATA ==========
 // Track event data for detail panels
@@ -633,6 +635,10 @@ function initializeSocketListeners() {
         handleStreamEnd(data);
     });
 
+    socket.on('tts:stream:abort', (data) => {
+        handleStreamAbort(data);
+    });
+
     // NOTE: Soundboard playback is handled by dashboard-soundboard.js (loaded separately)
     // to prevent double audio playback and to provide queue management and playback mode support
 }
@@ -1098,8 +1104,8 @@ function addEventToLog(type, data) {
     const username = data.username || data.uniqueId || data.nickname || 'Viewer';
 
     // Build team level badge - always show
-    let teamLevelBadge = '';
-    const teamLevel = data.teamMemberLevel || 0;
+    const rawTeamLevel = Number(data.teamMemberLevel);
+    const teamLevel = Number.isSafeInteger(rawTeamLevel) && rawTeamLevel > 0 ? rawTeamLevel : 0;
 
     // Define colors for different team levels:
     // White for level 0
@@ -1129,7 +1135,10 @@ function addEventToLog(type, data) {
         textColor = 'text-white';
     }
 
-    teamLevelBadge = `<span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badgeColor} ${textColor} ml-1" title="Team Level ${teamLevel}">${badgeIcon}${teamLevel}</span>`;
+    const teamLevelBadge = document.createElement('span');
+    teamLevelBadge.className = `inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${badgeColor} ${textColor} ml-1`;
+    teamLevelBadge.title = `Team Level ${teamLevel}`;
+    teamLevelBadge.textContent = `${badgeIcon}${teamLevel}`;
 
     let details = '';
     let typeIcon = '';
@@ -1156,6 +1165,17 @@ function addEventToLog(type, data) {
             typeIcon = '❤️ Like';
             details = `+${data.likeCount || 1} (Total: ${data.totalLikes || 0})`;
             break;
+        case 'superfan': {
+            const label = (key, fallback) => {
+                const translated = window.i18n && window.i18n.t(key);
+                return translated && translated !== key ? translated : fallback;
+            };
+            typeIcon = '⭐ ' + label('events.superfan_label', 'SuperFan');
+            details = data.superFanEventType === 'join'
+                ? label('events.superfan_join', 'SuperFan joined the LIVE')
+                : label('events.superfan_event', 'SuperFan event received');
+            break;
+        }
         case 'subscribe':
             typeIcon = '🌟 Subscribe';
             details = 'New subscriber!';
@@ -1165,12 +1185,15 @@ function addEventToLog(type, data) {
             details = JSON.stringify(data);
     }
 
-    row.innerHTML = `
-        <td class="py-2 pr-4 text-gray-400">${time}</td>
-        <td class="py-2 pr-4">${typeIcon}</td>
-        <td class="py-2 pr-4 font-semibold">${username}${teamLevelBadge}</td>
-        <td class="py-2">${details}</td>
-    `;
+    const values = [time, typeIcon, username, details];
+    const cellClasses = ['py-2 pr-4 text-gray-400', 'py-2 pr-4', 'py-2 pr-4 font-semibold', 'py-2'];
+    values.forEach((value, index) => {
+        const cell = document.createElement('td');
+        cell.className = cellClasses[index];
+        cell.textContent = value == null ? '' : String(value);
+        if (index === 2) cell.appendChild(teamLevelBadge);
+        row.appendChild(cell);
+    });
 
     // Am Anfang einfügen (neueste oben)
     logTable.insertBefore(row, logTable.firstChild);
@@ -3598,6 +3621,7 @@ function getAudioMimeType(format) {
 function handleStreamChunk(data) {
     const playbackId = data.playbackId || data.id;
     if (!playbackId) return;
+    if (abortedStreamingPlaybackIds.has(playbackId)) return;
     console.log(`🎵 [Dashboard] Stream chunk received for ${playbackId}`, {
         chunkNumber: streamingBuffers.has(playbackId) ? streamingBuffers.get(playbackId).chunks.length + 1 : 1,
         isFirst: data.isFirst
@@ -3654,6 +3678,7 @@ function handleStreamChunk(data) {
 function handleStreamEnd(data) {
     const playbackId = data.playbackId || data.id;
     if (!playbackId) return;
+    if (abortedStreamingPlaybackIds.has(playbackId)) return;
     console.log(`🎵 [Dashboard] Stream ended for ${playbackId}`, {
         totalChunks: data.totalChunks,
         totalBytes: data.totalBytes
@@ -3674,6 +3699,23 @@ function handleStreamEnd(data) {
 
     buffer.playbackStarted = true;
     playStreamingAudio(playbackId, data.source || buffer.source || null);
+}
+
+/**
+ * Discard a stream whose transport was aborted before EOF. This event never
+ * starts playback and its tombstone prevents already queued chunks from
+ * recreating the discarded buffer.
+ */
+function handleStreamAbort(data) {
+    const playbackId = data?.playbackId || data?.id;
+    if (!playbackId) return;
+
+    streamingBuffers.delete(playbackId);
+    blockedStreamingPlaybackIds.delete(playbackId);
+    abortedStreamingPlaybackIds.add(playbackId);
+    while (abortedStreamingPlaybackIds.size > MAX_ABORTED_STREAMING_PLAYBACK_IDS) {
+        abortedStreamingPlaybackIds.delete(abortedStreamingPlaybackIds.values().next().value);
+    }
 }
 
 /**

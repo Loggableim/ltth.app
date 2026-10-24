@@ -5330,6 +5330,9 @@ class QuizShowPlugin {
             currentQuestion: {
                 question: this.gameState.currentQuestion?.question || null,
                 answers: this.gameState.currentQuestion?.answers || [],
+                ...(typeof this.gameState.currentQuestion?.category === 'string'
+                    ? { category: this.gameState.currentQuestion.category.slice(0, 1000) }
+                    : {}),
                 // Don't send correct answer to overlay yet
             },
             timeRemaining: this.gameState.timeRemaining,

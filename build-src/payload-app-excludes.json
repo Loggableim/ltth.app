@@ -12,6 +12,18 @@
     "quiz-show-expansion-server-3001.err.log",
     "quiz-show-expansion-server-3001.log",
     "quiz-show-expansion-server.err.log",
-    "quiz-show-expansion-server.log"
+    "quiz-show-expansion-server.log",
+    "plugins/animazingpal",
+    "plugins/interactive-story",
+    "plugins/music-bot",
+    "plugins/osc-bridge",
+    "plugins/schnorrbecher",
+    "plugins/sidekick",
+    "plugins/stream-monsters",
+    "plugins/talking-heads",
+    "plugins/visual-fx-frame-webgpu",
+    "plugins/webgpu-emoji-rain",
+    "plugins/webgpu-weather-control",
+    "plugins/streamalchemy"
   ]
 }

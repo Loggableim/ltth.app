@@ -9,7 +9,7 @@ const MyInstantsAPI = require('./myinstants-api');
 const AudioCacheManager = require('./audio-cache');
 const CacheCleanupJob = require('./cache-cleanup');
 
-const DEFAULT_GIPHY_API_KEY = 'HFGAjZBhpxeQkITNlLQTbAI91qPmWVZp';
+const DEFAULT_GIPHY_API_KEY = null;
 
 /**
  * Soundboard Manager Class

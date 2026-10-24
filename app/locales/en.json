@@ -120,7 +120,6 @@
     "streamalchemy": "Stream Monsters",
     "gcce": "Global Chat Command Engine",
     "gcce_hud": "GCCE HUD Overlay",
-    "chatango": "Chatango",
     "thermal_printer": "Thermal Printer",
     "config_import": "Config Import",
     "animazingpal": "AnimazingPal",
@@ -133,9 +132,6 @@
     "stt_capture": "STT Capture",
     "developer_guides": "Developer Guides",
     "webgpu_fireworks": "WebGPU Fireworks"
-  },
-  "chatango": {
-    "loading": "Loading Community Chat..."
   },
   "talking_heads_ui": {
     "title": "Talking Heads - AI Avatar Animation",
@@ -416,6 +412,9 @@
     "minigames": "Mini Games"
   },
   "events": {
+    "superfan_label": "SuperFan",
+    "superfan_join": "SuperFan joined the LIVE",
+    "superfan_event": "SuperFan event received",
     "gift": "{username} sent {giftName} x{repeatCount} ({coins} coins)",
     "follow": "{username} followed!",
     "subscribe": "{username} subscribed!",
@@ -712,7 +711,35 @@
     "dark": "Night Mode",
     "auto": "Auto (System)",
     "high_contrast": "High Contrast",
-    "vision_impaired": "Vision Impaired"
+    "vision_impaired": "Vision Impaired",
+    "selector": {
+      "title": "Change theme",
+      "options": {
+        "vision-impaired": {
+          "name": "Vision Impaired",
+          "description": "Large text and extreme contrast",
+          "badge": "Accessibility"
+        },
+        "cid": {
+          "name": "Cid",
+          "description": "Neutral dark brand theme with green and violet accents",
+          "badge": "Brand"
+        },
+        "night": {
+          "name": "Night Mode",
+          "description": "Legacy dark theme"
+        },
+        "day": {
+          "name": "Day Mode",
+          "description": "Bright light theme"
+        },
+        "contrast": {
+          "name": "High Contrast",
+          "description": "Legacy high-contrast theme",
+          "badge": "Legacy"
+        }
+      }
+    }
   },
   "common": {
     "loading": "Loading...",

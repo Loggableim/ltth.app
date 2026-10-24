@@ -914,6 +914,59 @@ describe('Music Bot Safety Lock runtime integration', () => {
     expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
   });
 
+  test.each([
+    ['ordinary unload', {}, false],
+    ['application shutdown', { reason: 'application-shutdown' }, true]
+  ])('destroy waits for playback shutdown before persisting the queue and resolving during %s', async (_label, context, reconcileOrphans) => {
+    const { plugin } = hydratePlugin();
+    let releasePlaybackShutdown;
+    let playbackShutdownFinished = false;
+    plugin.playbackEngine.shutdown = jest.fn(({ reconcileOrphans: requested }) => {
+      expect(requested).toBe(reconcileOrphans);
+      return new Promise((resolve) => {
+        releasePlaybackShutdown = () => {
+          playbackShutdownFinished = true;
+          resolve();
+        };
+      });
+    });
+    plugin.queueManager.persistQueue = jest.fn(() => {
+      expect(playbackShutdownFinished).toBe(true);
+    });
+
+    let destroyResolved = false;
+    const destroyOperation = plugin.destroy(context).then(() => {
+      destroyResolved = true;
+    });
+
+    expect(plugin.playbackEngine.shutdown).toHaveBeenCalledTimes(1);
+    expect(plugin.playbackEngine.shutdown).toHaveBeenCalledWith({ reconcileOrphans });
+    expect(plugin.queueManager.persistQueue).not.toHaveBeenCalled();
+    await Promise.resolve();
+    expect(destroyResolved).toBe(false);
+
+    releasePlaybackShutdown();
+    await destroyOperation;
+
+    expect(playbackShutdownFinished).toBe(true);
+    expect(plugin.queueManager.persistQueue).toHaveBeenCalledTimes(1);
+    expect(destroyResolved).toBe(true);
+  });
+
+  test('plugin shutdown requests orphan reconciliation only for application shutdown', async () => {
+    const ordinary = hydratePlugin();
+    await ordinary.plugin.destroy();
+    expect(ordinary.plugin.playbackEngine.shutdown).toHaveBeenCalledWith({
+      reconcileOrphans: false
+    });
+
+    const application = hydratePlugin();
+    await application.plugin.destroy({ reason: 'application-shutdown' });
+    expect(application.plugin.playbackEngine.shutdown).toHaveBeenCalledWith({
+      reconcileOrphans: true
+    });
+  });
+
   test('destroy invalidates a deferred AutoDJ selection before it can start playback', async () => {
     const { plugin, queue, setNowPlaying } = hydratePlugin();
     queue.splice(0, queue.length);

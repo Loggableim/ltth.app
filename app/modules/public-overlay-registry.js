@@ -270,11 +270,8 @@ plinko:request-leaderboard
 slot:spin-completed
 unified-queue:request-status
 wheel:request-config
-wheel:spin-complete
 goals:subscribe
-goals:animation-end
 multigoals:subscribe
-tts:playback:ended
 talkingheads:avatar:spin:complete
 musicbot:request-status
 zappiehell:request:state

@@ -1,4 +1,5 @@
 {
+  "features.closedBeta.notice": "Bêta fermée · Bientôt disponible. Cette app n’est pas encore téléchargeable publiquement ; le développement local continue.",
   "home": {
     "meta": {
       "canonical": "https://ltth.app/?lang=fr",
@@ -271,7 +272,7 @@
       "suggestFeatures": "Suggérer des Fonctionnalités",
       "viewRoadmap": "Voir la Feuille de Route →",
       "close": "Fermer l'avis beta",
-      "compact": "Version 1.4.4 - nouveautés et retours",
+      "compact": "Version 1.5.0 - nouveautés et retours",
       "toggle": "Afficher ou masquer la mise à jour et les retours"
     }
   },
@@ -1215,6 +1216,12 @@
       "mascotAlt": "Mascotte PupCid qui fait un clin d'œil",
       "flowAlt": "Éditeur de flux LTTH",
       "overlayAlt": "Configuration d'overlay LTTH"
+    },
+    "closedBeta": {
+      "eyebrow": "BÊTA FERMÉE · BIENTÔT DISPONIBLE",
+      "title": "11 apps en bêta fermée",
+      "description": "Ces apps sont encore développées pour les versions locales. Elles ne sont pas disponibles au téléchargement public.",
+      "listLabel": "Apps en bêta fermée"
     }
   },
   "webgpuLanding.eyebrow": "OBS + WebGPU",
@@ -1343,7 +1350,6 @@
   "docs.plugin.advanced-timer.title": "Advanced Timer",
   "docs.plugin.animazingpal.title": "AnimazingPal",
   "docs.plugin.api-bridge.title": "API Bridge",
-  "docs.plugin.chatango.title": "Chatango Integration",
   "docs.plugin.clarityhud.title": "ClarityHUD",
   "docs.plugin.coinbattle.title": "CoinBattle",
   "docs.plugin.config-import.title": "Config Backup & Restore",
@@ -1484,7 +1490,6 @@
         "145": "Goals Modal in Electron klickbar (CSS Stacking + Focus in iframe behoben)",
         "146": "TTS Admin Panel in Electron klickbar (user-select, cursor fixes)",
         "147": "Plugin Disabled Detection verbessert",
-        "148": "Chatango Integration funktioniert in gepackter Electron App",
         "149": "Language Selector Flags werden korrekt angezeigt",
         "150": "TikTok TTS Engine 500 Errors",
         "151": "– Komplett-Rewrite mit hybridem Endpoint-Ansatz",
@@ -1646,7 +1651,6 @@
         "307": "- Modal-Inputs nicht anklickbar behoben",
         "308": "TTS Admin Panel nicht anklickbar in Electron",
         "309": "- Tabs und Buttons reagieren jetzt",
-        "310": "Chatango Integration in Electron",
         "311": "- Weißes Fenster-Problem behoben",
         "312": "Sprach-Selector Flaggen",
         "313": "- Flaggen-Icons werden jetzt korrekt angezeigt",
@@ -2090,7 +2094,7 @@
           "002": "PupCid's Little TikTool Helper",
           "003": "Lade die neueste Version von LTTH herunter und starte dein professionelles TikTok LIVE Streaming.",
           "004": "LTTH Windows Launcher",
-          "005": "Version 1.4.4",
+          "005": "Version 1.5.0",
           "006": "Der Launcher lädt automatisch Version",
           "007": "herunter und hält LTTH auf dem neuesten Stand",
           "008": "Letztes Update:",
@@ -2732,30 +2736,6 @@
           "020": "Nach dem Setup sind die Plugin-Funktionen sofort nutzbar.",
           "021": "Jetzt herunterladen",
           "022": "? Alle Features"
-        }
-      },
-      "plugin-chatango": {
-        "text": {
-          "001": "Chatango - PupCid's Little TikTool Helper",
-          "002": "Zusatzkanal in den Streambetrieb einbinden.",
-          "003": "Chatango erweitert den Chat-Kontext mit eigenen Moderationsregeln.",
-          "004": "Jetzt herunterladen",
-          "005": "Der Chatango-Embed folgt jetzt dem normalen LTTH-Dashboard-Look statt als grüner Fremdkörper aufzutauchen.",
-          "006": "Was macht Chatango? (Kurzfassung)",
-          "007": "Kanalzugriff absichern",
-          "008": "Moderationslog und Kontrolle",
-          "009": "Optionaler Overlay-Feed",
-          "010": "Tutorial (3 Schritte)",
-          "011": "Schritt 1:",
-          "012": "Chatango Zugangsdaten eintragen.",
-          "013": "Schritt 2:",
-          "014": "Kanalregeln festlegen.",
-          "015": "Schritt 3:",
-          "016": "Kurztest mit Beispielnachricht senden.",
-          "017": "Jetzt ausprobieren",
-          "018": "Nach dem Setup sind die Plugin-Funktionen sofort nutzbar.",
-          "019": "Jetzt herunterladen",
-          "020": "? Alle Features"
         }
       },
       "plugin-clarity-hud": {

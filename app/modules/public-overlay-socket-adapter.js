@@ -5,6 +5,8 @@ const {
 } = require('./public-overlay-registry');
 const { projectPublicOverlayPayload } = require('./public-overlay-payload-projection');
 
+const { createPublicReleaseEventGuard } = require('./public-overlay-release-event-policy');
+
 const PUBLIC_QUICK_TUNNEL_ROOM = '__ltth_public_quick_tunnel__';
 
 function restrictedOptions(options = {}) {
@@ -40,10 +42,11 @@ function isApplicationEventAllowed(packet) {
   return isOutgoingSocketEventAllowed(eventName);
 }
 
-function createPublicOverlayAdapter(BaseAdapter) {
+function createPublicOverlayAdapter(BaseAdapter, { pluginReleasePolicy } = {}) {
+  const releaseEventAllowed = createPublicReleaseEventGuard(pluginReleasePolicy);
   return class PublicOverlayAdapter extends BaseAdapter {
     broadcast(packet, options) {
-      if (!isApplicationEventAllowed(packet)) {
+      if (!isApplicationEventAllowed(packet) || !releaseEventAllowed('outgoing', packet?.data?.[0])) {
         return super.broadcast(packet, restrictedOptions(options));
       }
 
@@ -67,7 +70,7 @@ function createPublicOverlayAdapter(BaseAdapter) {
     }
 
     broadcastWithAck(packet, options, clientCountCallback, ack) {
-      if (!isApplicationEventAllowed(packet)) {
+      if (!isApplicationEventAllowed(packet) || !releaseEventAllowed('outgoing', packet?.data?.[0])) {
         return super.broadcastWithAck(packet, restrictedOptions(options), clientCountCallback, ack);
       }
 

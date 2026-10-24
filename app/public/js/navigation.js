@@ -8,6 +8,8 @@
 
     // ========== STATE ==========
     let currentView = 'dashboard';
+    let pluginInventoryMode = 'unknown';
+    let pendingInitialView = '';
     let sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
     const SIDEBAR_ICON_ACCENTS = {
         dashboard: '#f59e0b',
@@ -47,7 +49,6 @@
         streamalchemy: '#ec4899',
         gcce: '#f59e0b',
         'thermal-printer': '#64748b',
-        chatango: '#f97316',
         animazingpal: '#ef4444',
         'config-import': '#06b6d4',
         plugins: '#22c55e',
@@ -61,12 +62,16 @@
         VIEW_ALIASES[String(viewName || '').trim()] || String(viewName || '').trim()
     );
 
+    // Hide plugin-bound controls until the server confirms the local/public inventory.
+    markPluginElementsPending();
+
     // ========== INITIALIZATION ==========
     document.addEventListener('DOMContentLoaded', async () => {
         // Initialize UI immediately for better responsiveness
         initializeSidebar();
         initializeNavigation();
         initializeShortcuts();
+        markPluginElementsPending();
 
         // Re-initialize Lucide icons
         if (typeof lucide !== 'undefined') {
@@ -95,7 +100,7 @@
 
         // Load plugin visibility asynchronously (non-blocking)
         // This prevents the dashboard from appearing unresponsive
-        initializePluginVisibilityAsync();
+        await initializePluginVisibilityAsync();
     });
 
     // Async wrapper for plugin visibility initialization
@@ -546,6 +551,10 @@
         if (hash) {
             const viewElement = document.getElementById(`view-${hash}`);
             if (viewElement) {
+                if (viewElement.dataset.plugin && pluginInventoryMode === 'unknown') {
+                    pendingInitialView = hash;
+                    return;
+                }
                 switchView(hash);
                 return;
             }
@@ -556,6 +565,10 @@
         if (savedView) {
             // Check if view exists and is visible
             const viewElement = document.getElementById(`view-${savedView}`);
+            if (viewElement?.dataset.plugin && pluginInventoryMode === 'unknown') {
+                pendingInitialView = savedView;
+                return;
+            }
             if (isViewVisible(viewElement)) {
                 switchView(savedView);
             } else {
@@ -570,7 +583,8 @@
         }
 
         const pluginState = viewElement.dataset?.pluginState;
-        if (pluginState === 'disabled' || pluginState === 'missing') {
+        if (pluginState === 'pending' || pluginState === 'blocked' ||
+            pluginState === 'disabled' || pluginState === 'missing') {
             return false;
         }
 
@@ -814,119 +828,122 @@
     // Old toggle-based implementation has been removed
 
     // ========== PLUGIN VISIBILITY ==========
+    function markPluginElementsPending() {
+        document.querySelectorAll('[data-plugin]').forEach(element => {
+            element.dataset.pluginState = 'pending';
+            element.style.display = 'none';
+            element.setAttribute('aria-hidden', 'true');
+            if ('disabled' in element) element.disabled = true;
+            if (element.matches('a, button')) element.setAttribute('aria-disabled', 'true');
+        });
+    }
+
+    function restorePendingInitialView() {
+        if (!pendingInitialView) return;
+        const viewName = pendingInitialView;
+        pendingInitialView = '';
+        const viewElement = document.getElementById(`view-${viewName}`);
+        if (isViewVisible(viewElement)) {
+            switchView(viewName);
+        } else {
+            switchView('dashboard');
+        }
+    }
+
     async function initializePluginVisibility(retryCount = 0, maxRetries = 3) {
-        try {
-            // Load plugin list from server
-            const response = await fetch('/api/plugins');
-            if (!response.ok) {
-                // Retry if server isn't ready yet
-                if (retryCount < maxRetries) {
-                    console.log(`Plugin API not ready, retrying... (${retryCount + 1}/${maxRetries})`);
-                    setTimeout(() => {
-                        initializePluginVisibility(retryCount + 1, maxRetries);
-                    }, 500 * (retryCount + 1)); // Faster retry: 500ms, 1s, 1.5s
-                    return;
-                }
-                console.warn('Failed to load plugins for visibility check after retries');
-                return;
-            }
+        for (let attempt = retryCount; attempt <= maxRetries; attempt += 1) {
+            try {
+                const response = await fetch('/api/plugins');
+                if (!response.ok) throw new Error(`Plugin API returned ${response.status}`);
 
-            const data = await response.json();
-            if (!data.success) {
-                console.warn('Plugin API returned unsuccessful response');
-                return;
-            }
-
-            const availablePlugins = new Map(
-                (data.plugins || []).map((plugin) => [plugin.id, plugin])
-            );
-
-            // Create set of active plugin IDs
-            const activePlugins = new Set(
-                data.plugins
-                    .filter(p => p.enabled)
-                    .map(p => p.id)
-            );
-
-            console.log('✅ [Navigation] Active plugins loaded:', Array.from(activePlugins));
-
-            // Hide inactive sidebar entries, but keep non-sidebar plugin shells available
-            // for fallback views and conflict messaging.
-            // Exclude quick action buttons - they are handled separately in dashboard-enhancements.js
-            const pluginElements = document.querySelectorAll('[data-plugin]:not(.quick-action-btn)');
-            pluginElements.forEach(element => {
-                const requiredPlugin = element.getAttribute('data-plugin');
-                const pluginInfo = availablePlugins.get(requiredPlugin);
-                const isInstalled = Boolean(pluginInfo);
-                const isEnabled = activePlugins.has(requiredPlugin);
-                const isSidebarItem = element.classList.contains('sidebar-item');
-
-                if (isSidebarItem && !isEnabled) {
-                    element.style.display = 'none';
-                    element.dataset.pluginState = isInstalled ? 'disabled' : 'missing';
-                    element.classList.remove('plugin-disabled');
-                    element.classList.remove('plugin-missing');
-                    element.removeAttribute('aria-disabled');
-                    element.setAttribute('aria-hidden', 'true');
-                    console.log(`Hiding sidebar entry for inactive plugin: ${requiredPlugin}`);
-                    return;
+                const data = await response.json();
+                if (!data.success || !Array.isArray(data.plugins) ||
+                    !['public', 'local'].includes(data.distributionMode)) {
+                    throw new Error('Plugin API returned an invalid inventory response');
                 }
 
-                element.removeAttribute('aria-hidden');
+                pluginInventoryMode = data.distributionMode;
+                const availablePlugins = new Map(data.plugins.map(plugin => [plugin.id, plugin]));
+                const activePlugins = new Set(data.plugins.filter(plugin => plugin.enabled).map(plugin => plugin.id));
+                const pluginElements = document.querySelectorAll(
+                    '[data-plugin]:not(.quick-action-btn):not(.sidebar-quick-icon)'
+                );
 
-                if (!isInstalled) {
-                    const hasDedicatedView = document.getElementById(`view-${requiredPlugin}`)
-                        || document.querySelector(`.content-view[data-plugin="${requiredPlugin}"]`);
+                pluginElements.forEach(element => {
+                    const requiredPlugin = element.getAttribute('data-plugin');
+                    const pluginInfo = availablePlugins.get(requiredPlugin);
+                    const isInstalled = Boolean(pluginInfo);
+                    const isEnabled = activePlugins.has(requiredPlugin);
+                    const isSidebarItem = element.classList.contains('sidebar-item');
 
-                    if (!hasDedicatedView) {
+                    if (pluginInventoryMode === 'public' && !isInstalled) {
                         element.style.display = 'none';
-                        element.dataset.pluginState = 'missing';
-                        element.classList.add('plugin-missing');
-                        element.classList.remove('plugin-disabled');
+                        element.dataset.pluginState = 'blocked';
+                        element.classList.remove('plugin-disabled', 'plugin-missing');
+                        element.setAttribute('aria-hidden', 'true');
+                        if (element.matches('a, button')) element.setAttribute('aria-disabled', 'true');
+                        if ('disabled' in element) element.disabled = true;
+                        return;
+                    }
+
+                    if (isSidebarItem && !isEnabled) {
+                        element.style.display = 'none';
+                        element.dataset.pluginState = isInstalled ? 'disabled' : 'missing';
+                        element.classList.remove('plugin-disabled', 'plugin-missing');
+                        element.removeAttribute('aria-disabled');
+                        element.setAttribute('aria-hidden', 'true');
+                        return;
+                    }
+
+                    element.removeAttribute('aria-hidden');
+                    if (!isInstalled) {
+                        const hasDedicatedView = document.getElementById(`view-${requiredPlugin}`)
+                            || document.querySelector(`.content-view[data-plugin="${requiredPlugin}"]`);
+
+                        if (!hasDedicatedView) {
+                            element.style.display = 'none';
+                            element.dataset.pluginState = 'missing';
+                            element.classList.add('plugin-missing');
+                            element.classList.remove('plugin-disabled');
+                            return;
+                        }
+
+                        element.style.removeProperty('display');
+                        element.dataset.pluginState = 'missing-active-view';
+                        element.classList.add('plugin-disabled');
+                        element.classList.remove('plugin-missing');
+                        if (element.matches('a, button')) element.setAttribute('aria-disabled', 'true');
                         return;
                     }
 
                     element.style.removeProperty('display');
-                    element.dataset.pluginState = 'missing-active-view';
-                    element.classList.add('plugin-disabled');
+                    element.dataset.pluginState = isEnabled ? 'enabled' : 'disabled';
+                    element.classList.toggle('plugin-disabled', !isEnabled);
                     element.classList.remove('plugin-missing');
-                    if (element.classList.contains('sidebar-item')) {
-                        element.setAttribute('aria-disabled', 'true');
-                    }
-                    console.log(`Showing fallback sidebar entry for view-backed plugin: ${requiredPlugin}`);
-                    return;
+                    if (element.matches('a, button')) element.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
+                });
+
+                const activeView = document.getElementById(`view-${currentView}`);
+                if (activeView?.dataset.plugin && !isViewVisible(activeView)) {
+                    switchView('dashboard');
                 }
+                restorePendingInitialView();
 
-                element.style.removeProperty('display');
-                element.dataset.pluginState = isEnabled ? 'enabled' : 'disabled';
-                element.classList.toggle('plugin-disabled', !isEnabled);
-                element.classList.remove('plugin-missing');
-
-                if (element.classList.contains('sidebar-item')) {
-                    element.setAttribute('aria-disabled', isEnabled ? 'false' : 'true');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                applySidebarIconAccents();
+                normalizeViewerXpSidebarEntry();
+                return true;
+            } catch (error) {
+                if (attempt < maxRetries) {
+                    console.warn(`Plugin inventory unavailable; retrying (${attempt + 1}/${maxRetries})`, error);
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                    continue;
                 }
-
-                console.log(`${isEnabled ? 'Showing' : 'Marking inactive'} element for plugin: ${requiredPlugin}`);
-            });
-
-            // Re-initialize Lucide icons
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
+                console.error('Plugin inventory remains unknown; plugin navigation stays pending:', error);
+                return false;
             }
-            applySidebarIconAccents();
-            normalizeViewerXpSidebarEntry();
-
-        } catch (error) {
-            // Retry on network errors
-            if (retryCount < maxRetries) {
-                console.log(`Error loading plugins, retrying... (${retryCount + 1}/${maxRetries})`);
-                setTimeout(() => {
-                    initializePluginVisibility(retryCount + 1, maxRetries);
-                }, 500 * (retryCount + 1)); // Faster retry: 500ms, 1s, 1.5s
-                return;
-            }
-            console.error('Error checking plugin visibility after retries:', error);
         }
+        return false;
     }
 
     // Export for use in other modules

@@ -232,6 +232,8 @@ describe('Viewer-XP public overlay in-process renderer fixtures', () => {
   test('actual XP bar handles empty to synthetic profile/update/level transitions without private DOM fields', async () => {
     const fixture = await createRenderer('xp-bar', 'de', '?username=fixture-viewer');
     try {
+      expect(fixture.socketEmits).toEqual([]);
+      fixture.socketListeners.get('connect')();
       expect(fixture.socketEmits[0]).toEqual(['viewer-xp:public-profile:request', 'fixture-viewer']);
       expect(fixture.window.document.querySelector('#xpContainer').classList.contains('visible')).toBe(false);
       fixture.socketListeners.get('viewer-xp:public-profile')({
